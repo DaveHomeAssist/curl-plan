@@ -118,8 +118,8 @@ function parseLegacyResult(resultText) {
   const match = text.match(/^([WLD])\s*(\d+)\s*[-–]\s*(\d+)$/i);
   if (!match) {
     return {
-      us: "",
-      them: "",
+      us: null,
+      them: null,
       result: text.startsWith("L") ? "L" : text.startsWith("D") ? "D" : text ? "W" : ""
     };
   }
@@ -131,17 +131,34 @@ function parseLegacyResult(resultText) {
 }
 
 function computeResult(us, them, fallback = "") {
-  if (us === "" || them === "") return fallback;
+  if (us === null || us === "" || them === null || them === "") return fallback;
   if (Number(us) > Number(them)) return "W";
   if (Number(us) < Number(them)) return "L";
   return "D";
 }
 
 function normalizeWholeNumber(value) {
-  if (value === "") return "";
+  if (value === "" || value === null || value === undefined) return null;
   const num = Number(value);
-  if (!Number.isFinite(num)) return "";
+  if (!Number.isFinite(num)) return null;
   return Math.max(0, Math.round(num));
+}
+
+function relativeTimeFromIso(value) {
+  if (!value) return "never";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "unknown";
+  const diffMs = Date.now() - parsed.getTime();
+  if (diffMs < 60 * 1000) return "just now";
+  const minutes = Math.floor(diffMs / (60 * 1000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  return fmtDate(parsed.toISOString().slice(0, 10), false);
 }
 
 function pulseElement(element, className = "tap-pop", duration = 180) {
@@ -304,7 +321,7 @@ function calculateSeasonStats(items) {
   const wins = completed.filter(item => item.result === "W").length;
   const losses = completed.filter(item => item.result === "L").length;
   const draws = completed.filter(item => item.result === "D").length;
-  const scoredGames = games.filter(item => item.us !== "" && item.them !== "");
+  const scoredGames = games.filter(item => item.us !== null && item.us !== "" && item.them !== null && item.them !== "");
   const diffs = scoredGames.map(item => Number(item.us) - Number(item.them));
   const avgDiff = diffs.length ? (diffs.reduce((sum, diff) => sum + diff, 0) / diffs.length) : null;
   let streak = 0;

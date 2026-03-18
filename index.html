@@ -39,6 +39,7 @@
       <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
     </div>
 
+    <div class="view-context hidden" id="viewContext" aria-live="polite"></div>
     <div class="state-strip-shell" id="suggestedNextStrip" aria-live="polite"></div>
 
     <main class="section-stack">
@@ -207,6 +208,7 @@
               <div class="planner-label" id="planner-label">Today</div>
               <button type="button" class="btn btn-ghost btn-sm" data-planner-dir="1">Next</button>
               <button type="button" class="btn btn-primary" id="savePlannerBtn">Save Notes</button>
+              <span class="planner-save-status" id="plannerSaveStatus" aria-live="polite"></span>
             </div>
           </div>
 
@@ -269,6 +271,7 @@
 
             <div class="card">
               <div class="planner-card-kicker">Post-Game</div>
+              <div id="plannerGameBridge"></div>
               <div class="form-grid-2">
                 <div class="form-row">
                   <label class="form-label" for="pg-score-us">Our Score</label>
@@ -714,12 +717,12 @@
       </div>
       <div class="form-row">
         <label class="form-label">Ice Speed</label>
-        <div class="speed-row" id="speedControl">
-          <button type="button" class="speed-dot" data-speed="1" aria-label="Speed 1"></button>
-          <button type="button" class="speed-dot" data-speed="2" aria-label="Speed 2"></button>
-          <button type="button" class="speed-dot" data-speed="3" aria-label="Speed 3"></button>
-          <button type="button" class="speed-dot" data-speed="4" aria-label="Speed 4"></button>
-          <button type="button" class="speed-dot" data-speed="5" aria-label="Speed 5"></button>
+        <div class="speed-row" id="speedControl" role="radiogroup" aria-label="Ice speed">
+          <button type="button" class="speed-dot" data-speed="1" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 1 of 5"></button>
+          <button type="button" class="speed-dot" data-speed="2" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 2 of 5"></button>
+          <button type="button" class="speed-dot" data-speed="3" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 3 of 5"></button>
+          <button type="button" class="speed-dot" data-speed="4" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 4 of 5"></button>
+          <button type="button" class="speed-dot" data-speed="5" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 5 of 5"></button>
           <span class="mono" id="speedLabel">No speed selected</span>
         </div>
       </div>

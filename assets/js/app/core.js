@@ -164,9 +164,9 @@ const demoState = () => ({
     }
   ],
   issues: [
-    { id: "001", component: "Service Worker", description: "Offline cache not updating on curlplan_v_1 edits.", severity: "P1", status: "open", proposedFix: "Version-string the cache name in sw.js." },
-    { id: "002", component: "Form UI", description: "is-working button class triggers but doesn't clear.", severity: "P2", status: "deferred", proposedFix: "Add setTimeout clear to markWorking() function." },
-    { id: "003", component: "Local Storage", description: "importData fails on legacy schema versions.", severity: "P1", status: "open", proposedFix: "Implement a data-migration switch-case in DataManager." }
+    { id: "001", component: "Service Worker", description: "[Sample] Offline cache versioning lags after release edits.", severity: "P1", status: "open", proposedFix: "Version-string the cache name in sw.js." },
+    { id: "002", component: "Form UI", description: "[Sample] is-working button class triggers but does not clear.", severity: "P2", status: "deferred", proposedFix: "Add setTimeout clear to markWorking() function." },
+    { id: "003", component: "Local Storage", description: "[Sample] Legacy schema import needs a migration switch-case.", severity: "P1", status: "open", proposedFix: "Implement a data-migration switch-case in DataManager." }
   ],
   plannerEntries: {
     "2026-03-19": {
@@ -192,7 +192,7 @@ const demoState = () => ({
 let state = loadState();
 let uiPrefs = loadUiPrefs();
 let currentView = uiPrefs.lastView || "dashboard";
-let currentFilter = "all";
+let currentFilter = uiPrefs.calendarFilter || "all";
 let selectedEventId = state.events[0] ? state.events[0].id : null;
 let plannerDate = uiPrefs.lastPlannerDate || todayStr();
 let currentSpeed = 0;
@@ -228,20 +228,22 @@ function normalizeEvent(item) {
 function normalizeGame(item) {
   const candidate = item && typeof item === "object" ? item : {};
   const parsed = parseLegacyResult(candidate.result);
-  const us = candidate.us === "" ? "" : Number.isFinite(Number(candidate.us)) ? Number(candidate.us) : parsed.us;
-  const them = candidate.them === "" ? "" : Number.isFinite(Number(candidate.them)) ? Number(candidate.them) : parsed.them;
+  const us = normalizeWholeNumber(candidate.us);
+  const them = normalizeWholeNumber(candidate.them);
+  const normalizedUs = us === null ? parsed.us : us;
+  const normalizedThem = them === null ? parsed.them : them;
   return {
     id: asString(candidate.id) || createId(),
     date: asString(candidate.date) || todayStr(),
     opponent: asString(candidate.opponent),
-    us: us === "" ? "" : Number(us),
-    them: them === "" ? "" : Number(them),
-    result: computeResult(us, them, parsed.result || ""),
+    us: normalizedUs === null ? null : Number(normalizedUs),
+    them: normalizedThem === null ? null : Number(normalizedThem),
+    result: computeResult(normalizedUs, normalizedThem, parsed.result || ""),
     position: normalizePosition(candidate.position),
     rink: asString(candidate.rink),
     keyShot: asString(candidate.keyShot || candidate.keyshot || candidate.keyShots),
     notes: asString(candidate.notes),
-    shotPct: Number.isFinite(Number(candidate.shotPct)) ? Number(candidate.shotPct) : ""
+    shotPct: Number.isFinite(Number(candidate.shotPct)) ? Number(candidate.shotPct) : null
   };
 }
 
@@ -332,7 +334,38 @@ function normalizePlannerEntries(entries) {
   return output;
 }
 
-function normalizeState(raw, strict = false) {
+function appendValidationWarning(warnings, message) {
+  if (!Array.isArray(warnings) || !message || warnings.includes(message)) return;
+  warnings.push(message);
+}
+
+function warnAboutUnknownKeys(label, candidate, allowedKeys, warnings) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return;
+  const extras = Object.keys(candidate).filter(key => !allowedKeys.includes(key));
+  if (extras.length) {
+    appendValidationWarning(warnings, `${label}: unrecognized key${extras.length === 1 ? "" : "s"} ${extras.join(", ")}`);
+  }
+}
+
+function collectMissingFieldWarnings(label, items, requiredFields, warnings) {
+  if (!Array.isArray(items) || !requiredFields.length) return;
+  requiredFields.forEach((field) => {
+    const count = items.filter((item) => !item || typeof item !== "object" || !asString(item[field])).length;
+    if (count) appendValidationWarning(warnings, `${count} ${label}${count === 1 ? "" : "s"} missing ${field}`);
+  });
+}
+
+function collectEventWarnings(items, warnings) {
+  if (!Array.isArray(items)) return;
+  const missingTitle = items.filter((item) => !item || typeof item !== "object" || !(asString(item.title) || asString(item.name))).length;
+  const missingDate = items.filter((item) => !item || typeof item !== "object" || !asString(item.date)).length;
+  if (missingTitle) appendValidationWarning(warnings, `${missingTitle} event${missingTitle === 1 ? "" : "s"} missing title`);
+  if (missingDate) appendValidationWarning(warnings, `${missingDate} event${missingDate === 1 ? "" : "s"} missing date`);
+}
+
+function normalizeState(raw, options = false) {
+  const strict = typeof options === "object" ? Boolean(options.strict) : Boolean(options);
+  const warnings = typeof options === "object" ? options.warnings : null;
   const base = emptyState();
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     if (strict) throw new Error("Imported file is not a valid CurlPlan object.");
@@ -343,6 +376,29 @@ function normalizeState(raw, strict = false) {
     .some(key => Object.prototype.hasOwnProperty.call(raw, key));
   if (strict && !recognized) {
     throw new Error("Imported JSON does not match a CurlPlan export.");
+  }
+  if (Array.isArray(warnings)) {
+    const topLevelAllowed = ["events", "games", "practice", "notes", "ice", "issues", "planner", "plannerEntries", "version"];
+    const topLevelExtras = Object.keys(raw).filter(key => !topLevelAllowed.includes(key));
+    if (topLevelExtras.length) {
+      appendValidationWarning(warnings, `Top-level unrecognized key${topLevelExtras.length === 1 ? "" : "s"}: ${topLevelExtras.join(", ")}`);
+    }
+    if (Number.isFinite(Number(raw.version)) && Number(raw.version) < SCHEMA_VERSION) {
+      appendValidationWarning(warnings, `Legacy schema v${raw.version} detected. CurlPlan will normalize it to v${SCHEMA_VERSION}.`);
+    }
+    if (raw.planner && !raw.plannerEntries) {
+      appendValidationWarning(warnings, "Legacy planner format detected. It will be converted to planner entries.");
+    }
+    collectEventWarnings(raw.events, warnings);
+    collectMissingFieldWarnings("game", raw.games, ["date", "opponent"], warnings);
+    collectMissingFieldWarnings("practice session", raw.practice, ["date"], warnings);
+    collectMissingFieldWarnings("ice note", Array.isArray(raw.ice) ? raw.ice : raw.notes, ["date"], warnings);
+    collectMissingFieldWarnings("issue", raw.issues, ["component", "description"], warnings);
+    (Array.isArray(raw.events) ? raw.events : []).forEach((item, index) => warnAboutUnknownKeys(`Event ${index + 1}`, item, ["id", "title", "name", "type", "date", "time", "rink", "location", "team", "opponent", "position", "sheet", "notes"], warnings));
+    (Array.isArray(raw.games) ? raw.games : []).forEach((item, index) => warnAboutUnknownKeys(`Game ${index + 1}`, item, ["id", "date", "opponent", "us", "them", "result", "position", "rink", "keyShot", "keyshot", "keyShots", "notes", "shotPct"], warnings));
+    (Array.isArray(raw.practice) ? raw.practice : []).forEach((item, index) => warnAboutUnknownKeys(`Practice ${index + 1}`, item, ["id", "date", "duration", "shots", "focus", "notes"], warnings));
+    (Array.isArray(raw.ice) ? raw.ice : Array.isArray(raw.notes) ? raw.notes : []).forEach((item, index) => warnAboutUnknownKeys(`Ice note ${index + 1}`, item, ["id", "date", "rink", "speed", "curl", "notes"], warnings));
+    (Array.isArray(raw.issues) ? raw.issues : []).forEach((item, index) => warnAboutUnknownKeys(`Issue ${index + 1}`, item, ["id", "component", "description", "severity", "status", "proposedFix"], warnings));
   }
 
   const events = Array.isArray(raw.events) ? raw.events.map(normalizeEvent) : [];
@@ -403,6 +459,11 @@ function defaultUiPrefs() {
   return {
     lastView: "dashboard",
     lastPlannerDate: todayStr(),
+    calendarFilter: "all",
+    gameSort: "newest",
+    practiceSort: "newest",
+    iceSort: "newest",
+    lastExportAt: "",
     plannerTemplate: {
       rink: "",
       position: "",

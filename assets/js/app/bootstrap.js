@@ -32,6 +32,7 @@ document.addEventListener("click", event => {
     currentFilter = filterButton.dataset.filter;
     renderEventList();
     filterType.value = currentFilter;
+    saveUiPrefs({ ...uiPrefs, calendarFilter: currentFilter });
     document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
       button.classList.toggle("active-filter", button === filterButton);
     });
@@ -131,6 +132,9 @@ document.addEventListener("click", event => {
         queuePlannerAutosave();
       }
     }
+    if (action === "planner-log-game") {
+      openGameModalFromPlanner(actionButton.dataset.date || plannerDate);
+    }
     if (action === "toggle-game-expand") {
       expandedGameId = expandedGameId === actionButton.dataset.id ? null : actionButton.dataset.id;
       renderGames();
@@ -182,13 +186,19 @@ searchInput.addEventListener("input", renderEventList);
 ].forEach(([id, eventName, handler]) => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener(eventName, handler);
+  el.addEventListener(eventName, () => {
+    if (id === "gameSortSelect") saveUiPrefs({ ...uiPrefs, gameSort: el.value });
+    if (id === "practiceSortSelect") saveUiPrefs({ ...uiPrefs, practiceSort: el.value });
+    if (id === "iceSortSelect") saveUiPrefs({ ...uiPrefs, iceSort: el.value });
+    handler();
+  });
 });
 
 filterType.addEventListener("change", () => {
   pulseElement(filterType, "tap-pop", 180);
   currentFilter = filterType.value;
   renderEventList();
+  saveUiPrefs({ ...uiPrefs, calendarFilter: currentFilter });
   document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
     button.classList.toggle("active-filter", button.dataset.filter === currentFilter);
   });
@@ -231,6 +241,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const firstPlannerDate = Object.keys(state.plannerEntries).sort()[0];
     if (firstPlannerDate) plannerDate = firstPlannerDate;
   }
+  currentFilter = uiPrefs.calendarFilter || "all";
+  filterType.value = currentFilter;
+  document.getElementById("gameSortSelect").value = uiPrefs.gameSort || "newest";
+  document.getElementById("practiceSortSelect").value = uiPrefs.practiceSort || "newest";
+  document.getElementById("iceSortSelect").value = uiPrefs.iceSort || "newest";
   setSpeed(0);
   renderAll();
   setStatus("Ready.");

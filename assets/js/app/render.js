@@ -1,4 +1,6 @@
 // CurlPlan render layer and printable report composition
+let printedGameId = null;
+
 function renderSeasonStats() {
   const target = document.getElementById("seasonStatsGrid");
   const games = getGamesForRange(currentSeasonRange);
@@ -9,7 +11,7 @@ function renderSeasonStats() {
   if (rangeLabel) rangeLabel.textContent = getRangeLabel(currentSeasonRange, games);
 
   if (!games.length) {
-    target.innerHTML = renderEmpty("📈", "No games in this range yet.");
+    target.innerHTML = renderEmpty("📈", "Log your first game to unlock season insights.");
     return;
   }
 
@@ -24,51 +26,87 @@ function renderSeasonStats() {
     ? buildTrendSVG(stats.shotTrendGames, "shotPct", 220, 54)
     : '<div class="insight-meta">Log at least two shot percentages to draw the trend.</div>';
 
-  target.innerHTML = `
+  const cards = [];
+
+  cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Record</div>
       <div class="insight-value">${stats.wins}-${stats.losses}-${stats.draws}</div>
       <div class="insight-meta">${escapeHtml(getRangeLabel(currentSeasonRange, games))}</div>
       ${buildSparkline(recordValues, 220, 44, "sparkline-soft")}
     </div>
+  `);
+
+  if (positionBest) {
+    cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Best Position</div>
-      <div class="insight-value">${escapeHtml(positionBest ? `${positionBest.winPct}%` : "—")}</div>
-      <div class="insight-meta">${escapeHtml(positionBest ? `${positionBest.name} • ${positionBest.wins}-${positionBest.losses}-${positionBest.draws}` : "Not enough position data yet.")}</div>
-      ${positionValues.length ? buildSparkline(positionValues, 220, 44, "sparkline-soft") : '<div class="insight-meta">No position-tagged games in this range.</div>'}
+      <div class="insight-value">${escapeHtml(`${positionBest.winPct}%`)}</div>
+      <div class="insight-meta">${escapeHtml(`${positionBest.name} • ${positionBest.wins}-${positionBest.losses}-${positionBest.draws}`)}</div>
+      ${buildSparkline(positionValues, 220, 44, "sparkline-soft")}
     </div>
+    `);
+  }
+
+  if (stats.avgDiff !== null) {
+    cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Avg Score Differential</div>
-      <div class="insight-value">${stats.avgDiff === null ? "—" : `${stats.avgDiff > 0 ? "+" : ""}${stats.avgDiff.toFixed(1)}`}</div>
-      <div class="insight-meta">${escapeHtml(stats.avgDiff === null ? "No scored games in this range." : "Average points above or below opponent.")}</div>
-      ${stats.diffSpark.length ? buildSparkline(stats.diffSpark, 220, 44, "sparkline-soft") : '<div class="insight-meta">Score both sides to unlock this card.</div>'}
+      <div class="insight-value">${stats.avgDiff > 0 ? "+" : ""}${stats.avgDiff.toFixed(1)}</div>
+      <div class="insight-meta">Average points above or below opponent.</div>
+      ${buildSparkline(stats.diffSpark, 220, 44, "sparkline-soft")}
     </div>
+    `);
+  }
+
+  cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Longest Win Streak</div>
       <div class="insight-value">${escapeHtml(String(stats.longestStreak || 0))}</div>
       <div class="insight-meta">${escapeHtml(stats.longestStreak ? `Best run across ${stats.gameCount} game${stats.gameCount === 1 ? "" : "s"}.` : "No winning streak in this range yet.")}</div>
       ${buildSparkline(streakValues, 220, 44, "sparkline-soft")}
     </div>
+  `);
+
+  if (topRink) {
+    cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Top Rink Split</div>
-      <div class="insight-value">${escapeHtml(topRink ? `${topRink.winPct}%` : "—")}</div>
-      <div class="insight-meta">${escapeHtml(topRink ? `${topRink.name} • ${topRink.wins}-${topRink.losses}-${topRink.draws}` : "No rink-tagged games yet.")}</div>
-      ${rinkValues.length ? buildSparkline(rinkValues, 220, 44, "sparkline-soft") : '<div class="insight-meta">Save rink names to compare performance by club.</div>'}
+      <div class="insight-value">${escapeHtml(`${topRink.winPct}%`)}</div>
+      <div class="insight-meta">${escapeHtml(`${topRink.name} • ${topRink.wins}-${topRink.losses}-${topRink.draws}`)}</div>
+      ${buildSparkline(rinkValues, 220, 44, "sparkline-soft")}
     </div>
+    `);
+  }
+
+  if (stats.shotTrendGames.length) {
+    cards.push(`
     <div class="insight-card">
       <div class="insight-kicker">Shot % Trend</div>
-      <div class="insight-value">${escapeHtml(stats.shotTrendGames.length ? `${Math.round(stats.shotTrendGames.reduce((sum, item) => sum + Number(item.shotPct), 0) / stats.shotTrendGames.length)}%` : "—")}</div>
-      <div class="insight-meta">${escapeHtml(stats.shotTrendGames.length ? `Last ${stats.shotTrendGames.length} logged shot percentage${stats.shotTrendGames.length === 1 ? "" : "s"}.` : "Shot percentage is optional until you want trend tracking.")}</div>
+      <div class="insight-value">${escapeHtml(`${Math.round(stats.shotTrendGames.reduce((sum, item) => sum + Number(item.shotPct), 0) / stats.shotTrendGames.length)}%`)}</div>
+      <div class="insight-meta">${escapeHtml(`Last ${stats.shotTrendGames.length} logged shot percentage${stats.shotTrendGames.length === 1 ? "" : "s"}.`)}</div>
       ${shotTrendMarkup}
     </div>
-  `;
+    `);
+  }
+
+  target.innerHTML = cards.join("");
 }
 
 function renderPlannerChecklist() {
   const target = document.getElementById("plannerChecklist");
   if (!target) return;
-  target.innerHTML = plannerChecklist.length
-    ? plannerChecklist.map((item, index) => `
+  if (!plannerChecklist.length) {
+    target.innerHTML = '<div class="planner-checklist-empty">No checklist items yet. Add one below or reset to defaults.</div>';
+    return;
+  }
+  const checked = plannerChecklist.filter((item) => item.checked).length;
+  const total = plannerChecklist.length;
+  const pct = total ? Math.round((checked / total) * 100) : 0;
+  target.innerHTML = `
+    <div class="checklist-progress" aria-hidden="true"><div class="checklist-progress-fill" style="width:${pct}%"></div></div>
+    <div class="checklist-progress-label">${checked} / ${total} ready</div>
+    ${plannerChecklist.map((item, index) => `
       <div class="checklist-item${item.checked ? " is-checked" : ""}">
         <input type="checkbox" ${item.checked ? "checked" : ""} data-action="planner-check-toggle" data-index="${index}" aria-label="Toggle checklist item ${escapeHtml(item.text)}" />
         <div class="checklist-copy">${escapeHtml(item.text)}</div>
@@ -78,8 +116,8 @@ function renderPlannerChecklist() {
           <button type="button" class="btn btn-danger btn-sm" data-action="planner-check-remove" data-index="${index}">Remove</button>
         </div>
       </div>
-    `).join("")
-    : '<div class="planner-checklist-empty">No checklist items yet. Add one below or reset to defaults.</div>';
+    `).join("")}
+  `;
 }
 
 function getUpcomingEvents() {
@@ -180,6 +218,32 @@ function renderSuggestedNext() {
   );
 }
 
+function renderExportButtonLabel() {
+  const button = document.getElementById("exportBtn");
+  if (!button) return;
+  button.textContent = `Export (${uiPrefs.lastExportAt ? `last: ${relativeTimeFromIso(uiPrefs.lastExportAt)}` : "never"})`;
+}
+
+function renderViewContext() {
+  const target = document.getElementById("viewContext");
+  if (!target) return;
+  let html = "";
+  if (currentView === "calendar" && selectedEventId) {
+    const event = state.events.find((item) => item.id === selectedEventId);
+    if (event) {
+      html = `<button type="button" class="view-context-link" data-view="calendar">Calendar</button><span class="view-context-sep">→</span><span>Event: ${escapeHtml(event.title)}</span>`;
+    }
+  } else if (currentView === "games") {
+    const contextGame = state.games.find((item) => item.id === (printedGameId || expandedGameId));
+    if (contextGame) {
+      const label = printedGameId ? `Report: vs ${contextGame.opponent || "Unknown Opponent"}` : `Detail: vs ${contextGame.opponent || "Unknown Opponent"}`;
+      html = `<button type="button" class="view-context-link" data-view="games">Games</button><span class="view-context-sep">→</span><span>${escapeHtml(label)}</span>`;
+    }
+  }
+  target.innerHTML = html;
+  target.classList.toggle("hidden", !html);
+}
+
 function renderEventCard(item, selected = false) {
   const shortDate = fmtDateShort(item.date);
   return `
@@ -213,6 +277,7 @@ function renderEventList() {
     if (selectedEventId && !state.events.find(item => item.id === selectedEventId)) selectedEventId = null;
     target.innerHTML = renderEmpty("📅", "No events match the current filter.");
     renderSelectedEvent();
+    renderViewContext();
     return;
   }
   if (!selectedEventId || !state.events.find(item => item.id === selectedEventId)) {
@@ -220,6 +285,7 @@ function renderEventList() {
   }
   target.innerHTML = items.map(item => renderEventCard(item, item.id === selectedEventId)).join("");
   renderSelectedEvent();
+  renderViewContext();
 }
 
 function renderSelectedEvent() {
@@ -319,7 +385,7 @@ function renderDashboard() {
             <div class="muted">${escapeHtml(fmtDate(item.date))}</div>
           </div>
           <div class="pill-row">
-            ${(item.us !== "" && item.them !== "") ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : ""}
+            ${(item.us !== null && item.them !== null) ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : ""}
             ${item.result ? `<span class="result-badge ${resultClass(item.result)}">${escapeHtml(item.result)}</span>` : ""}
           </div>
         </div>
@@ -364,9 +430,9 @@ function renderGames() {
         item.position,
         item.result,
         item.date,
-        item.us !== "" ? String(item.us) : "",
-        item.them !== "" ? String(item.them) : "",
-        item.shotPct !== "" ? String(item.shotPct) : ""
+        item.us !== null ? String(item.us) : "",
+        item.them !== null ? String(item.them) : "",
+        item.shotPct !== null ? String(item.shotPct) : ""
       ].join(" ").toLowerCase().includes(gameQuery);
     })
     .sort((a, b) => gameSort === "oldest" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
@@ -378,9 +444,9 @@ function renderGames() {
     tbody.innerHTML = items.map(item => `
       <tr class="log-row${expandedGameId === item.id ? " is-expanded" : ""}" tabindex="0" role="button" data-action="toggle-game-expand" data-id="${escapeHtml(item.id)}" aria-expanded="${expandedGameId === item.id ? "true" : "false"}">
         <td class="mono">${escapeHtml(fmtDate(item.date))}</td>
-        <td><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No rink saved")}</span></td>
-        <td>${(item.us !== "" && item.them !== "") ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : '<span class="muted">—</span>'}</td>
-        <td>${item.shotPct !== "" ? `<span class="badge mono">${escapeHtml(String(item.shotPct))}%</span>` : '<span class="muted">—</span>'}</td>
+        <td><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No rink saved")}</span><br /><span class="mobile-row-hint">Tap to expand</span></td>
+        <td>${(item.us !== null && item.them !== null) ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : '<span class="muted">—</span>'}</td>
+        <td>${item.shotPct !== null ? `<span class="badge mono">${escapeHtml(String(item.shotPct))}%</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.result ? `<span class="result-badge ${resultClass(item.result)}">${escapeHtml(item.result)}</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.position ? `<span class="position-badge ${positionClass(item.position)}">${escapeHtml(item.position)}</span>` : '<span class="muted">—</span>'}</td>
         <td>${escapeHtml(item.notes || item.keyShot || "—")}</td>
@@ -426,6 +492,7 @@ function renderGames() {
     <div class="summary-row"><div class="summary-name">Games total</div><div class="summary-count">${items.length}</div></div>
     ${shotGames.length >= 2 ? `<div class="card-sm">${buildTrendSVG(shotGames, "shotPct", 260, 56)}<div class="muted">Last ${shotGames.length} logged shot percentages.</div></div>` : ""}
   `;
+  renderViewContext();
 }
 
 function renderPractice() {
@@ -651,16 +718,35 @@ function renderPlannerStateStrip(hasSavedEntry) {
 
 function renderGameDayBanner() {
   const target = document.getElementById("gameDayBanner");
+  const bridge = document.getElementById("plannerGameBridge");
   if (!target) return;
-  const linkedEvent = state.events
-    .filter(item => item.date === plannerDate)
-    .slice()
-    .sort(compareDateTime)[0];
-  if (!linkedEvent) {
+  if (bridge) bridge.innerHTML = "";
+  const plannerEntry = state.plannerEntries[plannerDate] || null;
+  const linkedEvent = typeof findPlannerLinkedEvent === "function"
+    ? findPlannerLinkedEvent(plannerDate, plannerEntry)
+    : state.events.filter(item => item.date === plannerDate).slice().sort(compareDateTime)[0];
+  const plannerOpponent = asString(plannerEntry?.opponent);
+  const plannerHasBridge = Boolean(plannerOpponent || linkedEvent);
+  if (!linkedEvent && !plannerHasBridge) {
     target.innerHTML = "";
     return;
   }
-  target.innerHTML = renderStateStrip("completed", `Game day focus for ${linkedEvent.title}`, `${fmtDate(plannerDate, false)}${linkedEvent.time ? ` at ${fmtTime(linkedEvent.time)}` : ""}${linkedEvent.rink ? ` • ${linkedEvent.rink}` : ""}`, { label: "Open Event", attr: `data-open-modal="event" data-id="${escapeHtml(linkedEvent.id)}"` });
+  const opponent = plannerOpponent || linkedEvent?.opponent || linkedEvent?.title || "this game";
+  const existingGame = state.games.find((item) => item.date === plannerDate && (!plannerOpponent || asString(item.opponent).toLowerCase() === plannerOpponent.toLowerCase()));
+  if (existingGame) {
+    target.innerHTML = renderStateStrip("completed", `Game already logged for ${opponent}`, `${fmtDate(plannerDate, false)}${linkedEvent?.rink ? ` • ${linkedEvent.rink}` : ""}`, { label: "Open Game Log", attr: 'data-view="games"' });
+  } else if (linkedEvent) {
+    target.innerHTML = renderStateStrip("completed", `Game day focus for ${linkedEvent.title}`, `${fmtDate(plannerDate, false)}${linkedEvent.time ? ` at ${fmtTime(linkedEvent.time)}` : ""}${linkedEvent.rink ? ` • ${linkedEvent.rink}` : ""}`, { label: "Open Event", attr: `data-open-modal="event" data-id="${escapeHtml(linkedEvent.id)}"` });
+  } else {
+    target.innerHTML = renderStateStrip("active", `Planner is ready for ${opponent}`, `${fmtDate(plannerDate, false)}${plannerEntry?.rink ? ` • ${plannerEntry.rink}` : ""}`, null);
+  }
+  if (bridge) {
+    if (existingGame) {
+      bridge.innerHTML = renderStateStrip("completed", "Game already in the log", "Use the game log to edit the saved result or print a report.", { label: "Open Game Log", attr: 'data-view="games"' });
+    } else if (plannerHasBridge) {
+      bridge.innerHTML = renderStateStrip("active", "Ready to log this game", "Use your planner date, opponent, rink, and position as the starting point.", { label: "Log This Game", attr: `data-action="planner-log-game" data-date="${escapeHtml(plannerDate)}"` });
+    }
+  }
 }
 
 function savePlanner(options = {}) {
@@ -693,8 +779,10 @@ function savePlanner(options = {}) {
   if (!options.silent) {
     setStatus("Planner saved.", "success");
     showToast("Planner saved");
+    showPlannerSaveStatus("Saved ✓");
   } else {
     setStatus("Planner autosaved.", "success");
+    showPlannerSaveStatus("Saved ✓");
   }
   return entry;
 }
@@ -710,6 +798,7 @@ function printGameReport(gameId) {
   const checklistItems = plannerEntry && plannerEntry.checklist ? plannerEntry.checklist : [];
   const checklistDone = checklistItems.filter(item => item.checked).length;
   const report = document.getElementById("printReport");
+  printedGameId = gameId;
   report.innerHTML = `
     <div class="report-sheet">
       <div class="report-header">
@@ -720,8 +809,8 @@ function printGameReport(gameId) {
         </div>
         <div class="report-block">
           <h3>Result</h3>
-          <div class="report-metric">${game.us !== "" && game.them !== "" ? `${escapeHtml(String(game.us))}-${escapeHtml(String(game.them))}` : "—"}</div>
-          <div class="report-subtitle">${escapeHtml(game.result || "No result logged")}${game.shotPct !== "" ? ` • Shot ${escapeHtml(String(game.shotPct))}%` : ""}</div>
+          <div class="report-metric">${game.us !== null && game.them !== null ? `${escapeHtml(String(game.us))}-${escapeHtml(String(game.them))}` : "—"}</div>
+          <div class="report-subtitle">${escapeHtml(game.result || "No result logged")}${game.shotPct !== null ? ` • Shot ${escapeHtml(String(game.shotPct))}%` : ""}</div>
         </div>
       </div>
       <div class="report-grid">
@@ -767,6 +856,7 @@ function printGameReport(gameId) {
   document.body.classList.add("printing-report");
   setStatus("Preparing game report for print.", "success");
   showToast("Preparing report");
+  renderViewContext();
   window.setTimeout(() => window.print(), 60);
 }
 
@@ -775,4 +865,6 @@ function clearPrintReport() {
   report.innerHTML = "";
   report.setAttribute("aria-hidden", "true");
   document.body.classList.remove("printing-report");
+  printedGameId = null;
+  renderViewContext();
 }

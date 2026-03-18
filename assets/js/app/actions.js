@@ -1,4 +1,84 @@
 // CurlPlan actions, modal flows, persistence triggers, and full rerender
+let modalDirtyState = {
+  modalId: "",
+  baseline: "",
+  dirty: false
+};
+let plannerGamePrefillDate = "";
+let plannerGameToastTargetId = "";
+
+function setModalTitle(type, isEdit) {
+  const labels = {
+    event: ["Add Event", "Edit Event"],
+    game: ["Log Game", "Edit Game"],
+    practice: ["Log Practice", "Edit Practice"],
+    ice: ["Add Ice Notes", "Edit Ice Notes"],
+    issue: ["Add Issue", "Edit Issue"]
+  };
+  const target = document.getElementById(`${type}ModalTitle`);
+  if (!target || !labels[type]) return;
+  target.textContent = labels[type][isEdit ? 1 : 0];
+}
+
+function showPlannerSaveStatus(message = "Saved") {
+  const target = document.getElementById("plannerSaveStatus");
+  if (!target) return;
+  target.textContent = message;
+  target.classList.add("is-visible");
+  window.clearTimeout(target._hideTimer);
+  target._hideTimer = window.setTimeout(() => {
+    target.classList.remove("is-visible");
+  }, 1500);
+}
+
+function isDirtyTrackableModal(modalId) {
+  return ["modal-event", "modal-game", "modal-practice", "modal-ice", "modal-issue"].includes(modalId);
+}
+
+function serializeModalFields(modalId) {
+  const overlay = document.getElementById(modalId);
+  if (!overlay) return "";
+  const values = Array.from(overlay.querySelectorAll("input, select, textarea")).map((field) => {
+    const key = field.id || field.name || field.type || field.tagName;
+    if (field.type === "checkbox" || field.type === "radio") {
+      return [key, Boolean(field.checked)];
+    }
+    return [key, field.value];
+  });
+  if (modalId === "modal-ice") {
+    values.push(["speed", currentSpeed]);
+  }
+  return JSON.stringify(values);
+}
+
+function resetModalDirty(modalId) {
+  if (!isDirtyTrackableModal(modalId)) {
+    modalDirtyState = { modalId: "", baseline: "", dirty: false };
+    return;
+  }
+  modalDirtyState = {
+    modalId,
+    baseline: serializeModalFields(modalId),
+    dirty: false
+  };
+}
+
+function markModalDirty(modalId) {
+  if (!isDirtyTrackableModal(modalId) || modalDirtyState.modalId !== modalId) return;
+  modalDirtyState.dirty = serializeModalFields(modalId) !== modalDirtyState.baseline;
+}
+
+function bindModalDirtyTracking(modalId) {
+  const overlay = document.getElementById(modalId);
+  if (!overlay || !isDirtyTrackableModal(modalId) || overlay.dataset.dirtyBound === "true") return;
+  const syncDirty = () => markModalDirty(modalId);
+  overlay.querySelectorAll("input, select, textarea").forEach((field) => {
+    field.addEventListener("input", syncDirty);
+    field.addEventListener("change", syncDirty);
+  });
+  overlay.dataset.dirtyBound = "true";
+}
+
 function plannerNav(dir) {
   const date = new Date(`${plannerDate}T00:00:00`);
   date.setDate(date.getDate() + Number(dir));
@@ -13,8 +93,10 @@ function setSpeed(value) {
   currentSpeed = Number(value);
   document.querySelectorAll(".speed-dot").forEach(dot => {
     dot.classList.toggle("active", Number(dot.dataset.speed) <= currentSpeed);
+    dot.setAttribute("aria-checked", Number(dot.dataset.speed) === currentSpeed ? "true" : "false");
   });
   speedLabel.textContent = speedText(currentSpeed);
+  markModalDirty("modal-ice");
 }
 
 function showView(name) {
@@ -32,17 +114,25 @@ function showView(name) {
     updatePlannerLabel();
     loadPlanner();
   }
+  if (name === "calendar") {
+    currentFilter = uiPrefs.calendarFilter || "all";
+    if (filterType) filterType.value = currentFilter;
+    document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
+      button.classList.toggle("active-filter", button.dataset.filter === currentFilter);
+    });
+  }
   if (window.location.hash !== `#${name}`) {
     window.history.replaceState(null, "", `#${name}`);
   }
   animateView(name);
   renderSuggestedNext();
+  renderViewContext();
 }
 
 function resetModal(type) {
   modalState[type] = null;
   if (type === "event") {
-    document.getElementById("eventModalTitle").textContent = "Add Event";
+    setModalTitle("event", false);
     document.getElementById("ev-name").value = "";
     document.getElementById("ev-date").value = todayStr();
     document.getElementById("ev-time").value = "";
@@ -54,7 +144,7 @@ function resetModal(type) {
     document.getElementById("eventDeleteBtn").classList.add("hidden");
   }
   if (type === "game") {
-    document.getElementById("gameModalTitle").textContent = "Log Game";
+    setModalTitle("game", false);
     document.getElementById("gm-date").value = todayStr();
     document.getElementById("gm-opponent").value = "";
     document.getElementById("gm-us").value = "";
@@ -67,7 +157,7 @@ function resetModal(type) {
     document.getElementById("gameDeleteBtn").classList.add("hidden");
   }
   if (type === "practice") {
-    document.getElementById("practiceModalTitle").textContent = "Log Practice";
+    setModalTitle("practice", false);
     document.getElementById("pr-date").value = todayStr();
     document.getElementById("pr-duration").value = "60 min";
     document.querySelectorAll(".pr-shot").forEach(input => input.checked = false);
@@ -76,7 +166,7 @@ function resetModal(type) {
     document.getElementById("practiceDeleteBtn").classList.add("hidden");
   }
   if (type === "ice") {
-    document.getElementById("iceModalTitle").textContent = "Add Ice Notes";
+    setModalTitle("ice", false);
     document.getElementById("ice-date").value = todayStr();
     document.getElementById("ice-rink").value = "";
     document.getElementById("ice-curl").value = "";
@@ -85,7 +175,7 @@ function resetModal(type) {
     setSpeed(0);
   }
   if (type === "issue") {
-    document.getElementById("issueModalTitle").textContent = "Add Issue";
+    setModalTitle("issue", false);
     document.getElementById("is-component").value = "";
     document.getElementById("is-severity").value = "P2";
     document.getElementById("is-description").value = "";
@@ -107,7 +197,7 @@ function openModal(type, id = "") {
   }
 
   if (type === "event" && item) {
-    document.getElementById("eventModalTitle").textContent = "Edit Event";
+    setModalTitle("event", true);
     document.getElementById("ev-name").value = item.title;
     document.getElementById("ev-date").value = item.date;
     document.getElementById("ev-time").value = item.time;
@@ -120,7 +210,7 @@ function openModal(type, id = "") {
   }
 
   if (type === "game" && item) {
-    document.getElementById("gameModalTitle").textContent = "Edit Game";
+    setModalTitle("game", true);
     document.getElementById("gm-date").value = item.date;
     document.getElementById("gm-opponent").value = item.opponent;
     document.getElementById("gm-us").value = item.us;
@@ -134,7 +224,7 @@ function openModal(type, id = "") {
   }
 
   if (type === "practice" && item) {
-    document.getElementById("practiceModalTitle").textContent = "Edit Practice";
+    setModalTitle("practice", true);
     document.getElementById("pr-date").value = item.date;
     document.getElementById("pr-duration").value = item.duration || "60 min";
     document.querySelectorAll(".pr-shot").forEach(input => {
@@ -146,7 +236,7 @@ function openModal(type, id = "") {
   }
 
   if (type === "ice" && item) {
-    document.getElementById("iceModalTitle").textContent = "Edit Ice Notes";
+    setModalTitle("ice", true);
     document.getElementById("ice-date").value = item.date;
     document.getElementById("ice-rink").value = item.rink;
     document.getElementById("ice-curl").value = item.curl;
@@ -156,7 +246,7 @@ function openModal(type, id = "") {
   }
 
   if (type === "issue" && item) {
-    document.getElementById("issueModalTitle").textContent = "Edit Issue";
+    setModalTitle("issue", true);
     document.getElementById("is-component").value = item.component;
     document.getElementById("is-severity").value = item.severity;
     document.getElementById("is-description").value = item.description;
@@ -167,13 +257,19 @@ function openModal(type, id = "") {
 
   clearFieldErrors(modalId);
   overlay.classList.add("open");
+  bindModalDirtyTracking(modalId);
+  resetModalDirty(modalId);
   trapFocus(overlay);
   focusFirstField(modalId);
 }
 
 function closeModal(modalId) {
   const overlay = document.getElementById(modalId);
+  if (overlay && isDirtyTrackableModal(modalId) && modalDirtyState.modalId === modalId && modalDirtyState.dirty) {
+    if (!window.confirm("Discard unsaved changes?")) return;
+  }
   if (overlay) overlay.classList.remove("open");
+  resetModalDirty("");
   releaseFocusTrap();
 }
 
@@ -236,6 +332,7 @@ function saveEvent() {
   };
   selectedEventId = entry.id;
   upsertEntry("events", entry);
+  resetModalDirty("modal-event");
   closeModal("modal-event");
   setStatus("Event saved.", "success");
   showToast("Event saved");
@@ -257,7 +354,7 @@ function saveGame() {
   const shotPctRaw = asString(document.getElementById("gm-shotpct").value);
   const us = normalizeWholeNumber(usRaw);
   const them = normalizeWholeNumber(themRaw);
-  const shotPct = shotPctRaw === "" ? "" : Math.max(0, Math.min(100, Number(shotPctRaw)));
+  const shotPct = shotPctRaw === "" ? null : Math.max(0, Math.min(100, Number(shotPctRaw)));
   const entry = {
     id: modalState.game || createId(),
     date,
@@ -269,12 +366,26 @@ function saveGame() {
     rink: asString(document.getElementById("gm-rink").value),
     keyShot: asString(document.getElementById("gm-keyshot").value),
     notes: asString(document.getElementById("gm-notes").value),
-    shotPct: Number.isFinite(shotPct) ? shotPct : existing ? existing.shotPct : ""
+    shotPct: Number.isFinite(shotPct) ? shotPct : existing ? existing.shotPct : null
   };
   upsertEntry("games", entry);
+  resetModalDirty("modal-game");
   closeModal("modal-game");
   setStatus("Game saved.", "success");
-  showToast("Game saved");
+  if (plannerGamePrefillDate && plannerGamePrefillDate === entry.date) {
+    plannerGamePrefillDate = "";
+    plannerGameToastTargetId = entry.id;
+    showToast("Game logged", {
+      actionLabel: "View Game Log",
+      onAction: () => {
+        expandedGameId = plannerGameToastTargetId;
+        showView("games");
+        renderGames();
+      }
+    });
+  } else {
+    showToast("Game saved");
+  }
 }
 
 function savePractice() {
@@ -294,6 +405,7 @@ function savePractice() {
     notes: asString(document.getElementById("pr-notes").value)
   };
   upsertEntry("practice", entry);
+  resetModalDirty("modal-practice");
   closeModal("modal-practice");
   setStatus("Practice session saved.", "success");
   showToast("Practice saved");
@@ -316,6 +428,7 @@ function saveIce() {
     notes: asString(document.getElementById("ice-notes-text").value)
   };
   upsertEntry("ice", entry);
+  resetModalDirty("modal-ice");
   closeModal("modal-ice");
   setStatus("Ice notes saved.", "success");
   showToast("Ice notes saved");
@@ -337,6 +450,7 @@ function saveIssue() {
     proposedFix: asString(document.getElementById("is-fix").value)
   };
   upsertEntry("issues", entry);
+  resetModalDirty("modal-issue");
   closeModal("modal-issue");
   setStatus("Issue saved.", "success");
   showToast("Issue saved");
@@ -387,7 +501,57 @@ function deleteModal(type) {
   const id = modalState[type];
   if (!id) return;
   deleteEntry(type, id);
+  resetModalDirty(`modal-${type}`);
   closeModal(`modal-${type}`);
+}
+
+function findPlannerLinkedEvent(date, plannerEntry) {
+  const sameDate = state.events.filter((item) => item.date === date).slice().sort(compareDateTime);
+  if (!sameDate.length) return null;
+  const plannerOpponent = asString(plannerEntry?.opponent).toLowerCase();
+  const plannerRink = asString(plannerEntry?.rink).toLowerCase();
+  if (plannerOpponent || plannerRink) {
+    const exact = sameDate.find((item) => {
+      const opponentMatch = plannerOpponent && [item.opponent, item.title].map((value) => asString(value).toLowerCase()).includes(plannerOpponent);
+      const rinkMatch = plannerRink && asString(item.rink).toLowerCase() === plannerRink;
+      return opponentMatch || rinkMatch;
+    });
+    if (exact) return exact;
+  }
+  return sameDate[0];
+}
+
+function openGameModalFromPlanner(date = plannerDate) {
+  const plannerEntry = state.plannerEntries[date] || getPlannerDefaults(date);
+  const linkedEvent = findPlannerLinkedEvent(date, plannerEntry);
+  const opponent = asString(plannerEntry.opponent) || asString(linkedEvent?.opponent) || asString(linkedEvent?.title);
+  const existingGame = state.games.find((game) => {
+    if (game.date !== date) return false;
+    if (!opponent) return true;
+    return asString(game.opponent).toLowerCase() === opponent.toLowerCase();
+  });
+  if (existingGame) {
+    expandedGameId = existingGame.id;
+    showView("games");
+    renderGames();
+    setStatus("Game already logged for this date.", "success");
+    showToast("Game already logged", {
+      actionLabel: "View",
+      onAction: () => {
+        expandedGameId = existingGame.id;
+        showView("games");
+        renderGames();
+      }
+    });
+    return;
+  }
+  openModal("game");
+  document.getElementById("gm-date").value = date;
+  document.getElementById("gm-opponent").value = opponent;
+  document.getElementById("gm-rink").value = asString(plannerEntry.rink) || asString(linkedEvent?.rink);
+  document.getElementById("gm-position").value = plannerEntry.position || linkedEvent?.position || "";
+  resetModalDirty("modal-game");
+  plannerGamePrefillDate = date;
 }
 
 function exportData() {
@@ -398,6 +562,8 @@ function exportData() {
   link.download = "curlplan-data.json";
   link.click();
   URL.revokeObjectURL(url);
+  saveUiPrefs({ ...uiPrefs, lastExportAt: new Date().toISOString() });
+  renderExportButtonLabel();
   setStatus("Export ready.", "success");
   showToast("Export ready");
 }
@@ -408,7 +574,15 @@ function importData(file) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
-      const nextState = normalizeState(parsed, true);
+      const warnings = [];
+      let previewError = "";
+      let nextState;
+      try {
+        nextState = normalizeState(parsed, { strict: true, warnings });
+      } catch (error) {
+        previewError = error instanceof Error ? error.message : "This file may not be a valid CurlPlan export.";
+        nextState = normalizeState(parsed, { warnings });
+      }
       pendingImportState = {
         fileName: file.name || "import.json",
         nextState,
@@ -419,7 +593,9 @@ function importData(file) {
           ice: nextState.ice.length,
           issues: nextState.issues.length,
           plannerEntries: Object.keys(nextState.plannerEntries).length
-        }
+        },
+        warnings,
+        error: previewError
       };
       renderImportPreview();
       openModal("import-preview");
@@ -457,12 +633,31 @@ function resetDemoData() {
 
 function renderImportPreview() {
   const target = document.getElementById("importPreviewBody");
+  const confirmButton = document.getElementById("confirmImportBtn");
   if (!target) return;
   if (!pendingImportState) {
     target.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>No import is waiting for review.</div></div>';
+    if (confirmButton) {
+      confirmButton.classList.remove("btn-danger");
+      confirmButton.classList.add("btn-primary");
+    }
     return;
   }
+  const hasValidationRisk = Boolean(pendingImportState.error || pendingImportState.warnings?.length);
+  if (confirmButton) {
+    confirmButton.classList.toggle("btn-danger", hasValidationRisk);
+    confirmButton.classList.toggle("btn-primary", !hasValidationRisk);
+  }
   target.innerHTML = `
+    ${pendingImportState.error ? `
+      <div class="state-strip state-warning">
+        <div class="state-copy-block">
+          <div class="state-kicker">Validation warning</div>
+          <strong>This file may not be a valid CurlPlan export</strong>
+          <span>${escapeHtml(pendingImportState.error)}</span>
+        </div>
+      </div>
+    ` : ""}
     <div class="state-strip state-strip-inline">
       <div class="state-copy-block">
         <div class="state-kicker">Ready to import</div>
@@ -478,6 +673,14 @@ function renderImportPreview() {
       <div class="summary-row"><span class="summary-name">Issues</span><span class="summary-count">${pendingImportState.summary.issues}</span></div>
       <div class="summary-row"><span class="summary-name">Planner Entries</span><span class="summary-count">${pendingImportState.summary.plannerEntries}</span></div>
     </div>
+    ${pendingImportState.warnings?.length ? `
+      <div class="card-sm">
+        <div class="state-kicker">Validation notes</div>
+        <ul class="stack">
+          ${pendingImportState.warnings.map((warning) => `<li>⚠ ${escapeHtml(warning)}</li>`).join("")}
+        </ul>
+      </div>
+    ` : ""}
   `;
 }
 
@@ -522,4 +725,6 @@ function renderAll() {
     renderEventList();
   }
   renderSuggestedNext();
+  renderExportButtonLabel();
+  renderViewContext();
 }
