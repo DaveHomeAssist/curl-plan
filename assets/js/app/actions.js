@@ -636,7 +636,7 @@ function renderImportPreview() {
   const confirmButton = document.getElementById("confirmImportBtn");
   if (!target) return;
   if (!pendingImportState) {
-    target.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>No import is waiting for review.</div></div>';
+    target.innerHTML = renderEmpty("inbox", "No import is waiting for review.", null, "Import inbox is clear");
     if (confirmButton) {
       confirmButton.classList.remove("btn-danger");
       confirmButton.classList.add("btn-primary");

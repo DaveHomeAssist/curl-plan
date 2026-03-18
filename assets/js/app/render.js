@@ -11,7 +11,7 @@ function renderSeasonStats() {
   if (rangeLabel) rangeLabel.textContent = getRangeLabel(currentSeasonRange, games);
 
   if (!games.length) {
-    target.innerHTML = renderEmpty("📈", "Log your first game to unlock season insights.");
+    target.innerHTML = renderEmpty("chart", "Log your first game to unlock season insights.", null, "Season insights are waiting");
     return;
   }
 
@@ -148,8 +148,24 @@ function resultClass(result) {
   return result ? `result-${result.toLowerCase()}` : "result-d";
 }
 
-function renderEmpty(icon, text, cta) {
-  return `<div class="empty"><div class="empty-icon">${icon}</div><div>${escapeHtml(text)}</div>${cta ? `<button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="${cta.modal}">+ ${escapeHtml(cta.label)}</button>` : ""}</div>`;
+function renderIcon(name, label = "") {
+  const iconName = escapeHtml(name);
+  const attrs = label ? `role="img" aria-label="${escapeHtml(label)}"` : 'aria-hidden="true"';
+  return `<svg viewBox="0 0 24 24" ${attrs}><use href="#icon-${iconName}"></use></svg>`;
+}
+
+function renderEmpty(icon, text, cta, title) {
+  const heading = title || text;
+  return `
+    <div class="empty">
+      <div class="empty-icon">${renderIcon(icon)}</div>
+      <div class="empty-copy">
+        <strong>${escapeHtml(heading)}</strong>
+        <span>${escapeHtml(text)}</span>
+      </div>
+      ${cta ? `<div class="empty-actions"><button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="${cta.modal}">+ ${escapeHtml(cta.label)}</button></div>` : ""}
+    </div>
+  `;
 }
 
 function renderStateStrip(kind, title, copy, primary) {
@@ -275,7 +291,7 @@ function renderEventList() {
   const items = getFilteredEvents();
   if (!items.length) {
     if (selectedEventId && !state.events.find(item => item.id === selectedEventId)) selectedEventId = null;
-    target.innerHTML = renderEmpty("📅", "No events match the current filter.");
+    target.innerHTML = renderEmpty("calendar", "No events match the current filter.", null, "No events in view");
     renderSelectedEvent();
     renderViewContext();
     return;
@@ -293,7 +309,7 @@ function renderSelectedEvent() {
   const item = state.events.find(entry => entry.id === selectedEventId);
   if (!item) {
     target.className = "empty";
-    target.innerHTML = '<div class="empty-icon">📅</div><div>Select an event to inspect details.</div><button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="event">+ Add Event</button>';
+    target.innerHTML = renderEmpty("calendar", "Select an event to inspect details.", { modal: "event", label: "Add Event" }, "No event selected");
     return;
   }
   const linkedPlanner = state.plannerEntries[item.date];
@@ -356,7 +372,7 @@ function renderDashboard() {
 
   document.getElementById("dash-upcoming").innerHTML = upcoming.length
     ? upcoming.slice(0, 3).map(item => renderEventCard(item)).join("")
-    : renderEmpty("📅", "No upcoming events.", { modal: "event", label: "Add Event" });
+    : renderEmpty("calendar", "No upcoming events.", { modal: "event", label: "Add Event" }, "Calendar is open");
 
   const plannerKeys = Object.keys(state.plannerEntries).sort();
   const activePlannerKey = plannerKeys.find(key => key >= todayStr()) || plannerKeys[plannerKeys.length - 1];
@@ -374,7 +390,7 @@ function renderDashboard() {
         ${plannerEntry.checklist && plannerEntry.checklist.some(item => item.checked) ? `<div class="muted" style="margin-top:8px;">Checklist complete: ${escapeHtml(String(plannerEntry.checklist.filter(item => item.checked).length))}/${escapeHtml(String(plannerEntry.checklist.length))}</div>` : ""}
       </div>
     `
-    : renderEmpty("📝", "No planner entries saved yet.");
+    : renderEmpty("note", "No planner entries saved yet.", null, "No planner entries yet");
 
   document.getElementById("dash-games").innerHTML = state.games.length
     ? state.games.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3).map(item => `
@@ -392,7 +408,7 @@ function renderDashboard() {
         <div class="event-notes">${escapeHtml(item.notes || item.keyShot || "No notes saved.")}</div>
       </div>
     `).join("")
-    : renderEmpty("🥌", "No games logged yet.", { modal: "game", label: "Log Game" });
+    : renderEmpty("stone", "No games logged yet.", { modal: "game", label: "Log Game" }, "Game log is empty");
 
   const latestIce = state.ice.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
   document.getElementById("dash-ice").innerHTML = latestIce
@@ -411,7 +427,7 @@ function renderDashboard() {
         <div class="event-notes">${escapeHtml(latestIce.notes || "No note text saved.")}</div>
       </div>
     `
-    : renderEmpty("🧊", "No ice notes saved yet.", { modal: "ice", label: "Add Ice Notes" });
+    : renderEmpty("ice", "No ice notes saved yet.", { modal: "ice", label: "Add Ice Notes" }, "No ice notes yet");
 }
 
 function renderGames() {
@@ -542,7 +558,7 @@ function renderPractice() {
         <div class="summary-count">${count} session${count === 1 ? "" : "s"}</div>
       </div>
     `).join("")
-    : renderEmpty("🎯", "No drill patterns yet.");
+    : renderEmpty("broom", "No drill patterns yet.", null, "No practice pattern yet");
 }
 
 function renderIce() {
@@ -595,7 +611,7 @@ function renderIce() {
         <div class="summary-count">${count} note${count === 1 ? "" : "s"}</div>
       </div>
     `).join("")
-    : renderEmpty("🧊", "Start logging rink behavior to build memory.");
+    : renderEmpty("ice", "Start logging rink behavior to build memory.", null, "Rink memory starts here");
 }
 
 function severityClass(severity) {
@@ -658,7 +674,7 @@ function renderIssues() {
       ${deferred ? `<div class="summary-row"><span class="summary-name">Deferred</span><span class="type-chip">${deferred}</span></div>` : ""}
       ${resolved ? `<div class="summary-row"><span class="summary-name">Resolved</span><span class="type-chip">${resolved}</span></div>` : ""}
     `
-    : renderEmpty("🐛", "Add your first issue to start tracking.");
+    : renderEmpty("issue", "Add your first issue to start tracking.", null, "No issues tracked yet");
 }
 
 function renderPlannerEntries() {
@@ -682,7 +698,7 @@ function renderPlannerEntries() {
         ${entry.reflection ? `<div class="event-notes" style="margin-top:10px;">${escapeHtml(entry.reflection.slice(0, 120))}${entry.reflection.length > 120 ? "…" : ""}</div>` : ""}
       </div>
     `).join("")
-    : renderEmpty("📝", "No other planner entries saved yet.");
+    : renderEmpty("note", "No other planner entries saved yet.", null, "No archived planner notes");
 }
 
 function updatePlannerLabel() {

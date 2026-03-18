@@ -25,9 +25,18 @@
       --dur-med: 220ms;
       --dur-slow: 320ms;
       --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-      --font-serif: "Playfair Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --font-serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
       --font-sans: "DM Sans", "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: "DM Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      --surface-ghost: rgba(255, 255, 255, 0.52);
+      --surface-soft: rgba(255, 255, 255, 0.7);
+      --surface-solid: rgba(255, 255, 255, 0.84);
+      --surface-hero: rgba(255, 255, 255, 0.9);
+      --frost-ghost: blur(10px);
+      --frost-soft: blur(12px);
+      --frost-solid: blur(16px);
+      --house-sky: rgba(26, 111, 160, 0.14);
+      --house-granite: rgba(180, 74, 44, 0.12);
     }
 
     * {
@@ -151,6 +160,30 @@
       font-size: 0.95rem;
     }
 
+    .brand-proof {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--stone-mid);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .brand-proof::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--house-sky);
+      box-shadow:
+        0 0 0 4px rgba(255, 255, 255, 0.58),
+        0 0 0 6px var(--house-granite);
+      flex: 0 0 auto;
+    }
+
     .topbar-actions {
       display: flex;
       align-items: center;
@@ -168,12 +201,12 @@
       font-size: 0.82rem;
       font-weight: 500;
       letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
       box-shadow: var(--shadow-sm);
       transition: transform var(--dur-med) var(--ease-out), box-shadow var(--dur-med) var(--ease-out);
     }
 
     .today-chip:hover {
-      transform: translateY(-1px);
       box-shadow: var(--shadow);
     }
 
@@ -278,13 +311,15 @@
     .card,
     .card-sm,
     .modal-panel {
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--surface-soft);
       border: 1px solid var(--border-mid);
-      backdrop-filter: blur(12px);
+      backdrop-filter: var(--frost-soft);
       box-shadow: var(--shadow);
     }
 
     .nav-wrap {
+      background: var(--surface-ghost);
+      backdrop-filter: var(--frost-ghost);
       border-radius: 999px;
       padding: 6px;
       display: flex;
@@ -306,24 +341,40 @@
       border-radius: 999px;
       color: var(--stone-light);
       font-weight: 600;
+      letter-spacing: 0.01em;
+      position: relative;
       cursor: pointer;
       transition:
         background var(--dur-fast) ease,
         color var(--dur-fast) ease,
-        transform var(--dur-fast) ease,
         box-shadow var(--dur-fast) ease;
     }
 
     .nav-btn:hover {
       background: rgba(44, 62, 74, 0.06);
       color: var(--stone);
-      transform: translateY(-1px);
     }
 
     .nav-btn.active {
-      background: var(--stone);
-      color: var(--white);
-      box-shadow: var(--shadow-sm);
+      background: rgba(255, 255, 255, 0.68);
+      color: var(--stone);
+      box-shadow: inset 0 0 0 1px rgba(44, 62, 74, 0.08);
+      font-family: var(--font-serif);
+      font-weight: 700;
+      letter-spacing: 0;
+      padding-inline: 18px;
+    }
+
+    .nav-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 7px;
+      width: 18px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--granite), var(--sky));
+      transform: translateX(-50%);
     }
 
     .nav-btn:focus-visible {
@@ -345,9 +396,8 @@
     }
 
     .toolbar:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-focus);
-      border-color: rgba(26, 111, 160, 0.18);
+      box-shadow: var(--shadow);
+      border-color: rgba(26, 111, 160, 0.14);
     }
 
     .toolbar-group {
@@ -411,21 +461,29 @@
     }
 
     .card:hover,
-    .card-sm:hover,
     .stat-card:hover,
     .planner-entry-card:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-focus);
       border-color: rgba(26, 111, 160, 0.18);
-      background: rgba(255, 255, 255, 0.84);
+      background: var(--surface-solid);
+    }
+
+    .card-sm:hover {
+      box-shadow: var(--shadow-sm);
+      border-color: rgba(26, 111, 160, 0.14);
+      background: var(--surface-soft);
     }
 
     .card {
+      background: var(--surface-solid);
+      backdrop-filter: var(--frost-solid);
       border-radius: var(--r-lg);
       padding: 22px;
     }
 
     .card-sm {
+      background: var(--surface-soft);
       border-radius: var(--r);
       padding: 16px 18px;
       box-shadow: var(--shadow-sm);
@@ -464,7 +522,7 @@
     .stat-card {
       border-radius: var(--r-lg);
       padding: 18px;
-      background: rgba(255, 255, 255, 0.78);
+      background: var(--surface-hero);
       border: 1px solid var(--border-mid);
       box-shadow: var(--shadow-sm);
       display: flex;
@@ -523,6 +581,30 @@
       line-height: 1.1;
     }
 
+    .section-title,
+    .card-title,
+    .modal-title {
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .section-title::before,
+    .card-title::before,
+    .modal-title::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--house-sky);
+      box-shadow:
+        0 0 0 4px rgba(255, 255, 255, 0.5),
+        0 0 0 6px var(--house-granite);
+      transform: translateY(-50%);
+    }
+
     .card-copy,
     .muted {
       color: var(--stone-light);
@@ -576,13 +658,6 @@
       letter-spacing: 0.06em;
       white-space: nowrap;
       transition: transform var(--dur-fast) ease;
-    }
-
-    .badge:hover,
-    .type-chip:hover,
-    .result-badge:hover,
-    .position-badge:hover {
-      transform: translateY(-1px);
     }
 
     .type-chip {
@@ -659,14 +734,55 @@
       padding: 28px 20px;
       text-align: center;
       color: var(--pebble);
-      background: rgba(255, 255, 255, 0.45);
+      background: var(--surface-ghost);
       animation: section-rise var(--dur-med) var(--ease-out);
     }
 
     .empty-icon {
-      font-size: 2rem;
-      line-height: 1;
-      margin-bottom: 10px;
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 12px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(255, 255, 255, 0.7) 0 40%, transparent 41% 100%),
+        radial-gradient(circle, var(--house-sky) 0 68%, transparent 69% 100%),
+        radial-gradient(circle, var(--house-granite) 0 100%);
+      box-shadow: inset 0 0 0 1px rgba(44, 62, 74, 0.06);
+    }
+
+    .empty-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--stone);
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .empty-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .empty-copy strong {
+      color: var(--stone);
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .empty-copy span {
+      color: var(--stone-light);
+      font-size: 0.9rem;
+      max-width: 34ch;
+      margin: 0 auto;
+    }
+
+    .empty-actions {
+      margin-top: 12px;
     }
 
     .stack {
@@ -682,7 +798,7 @@
       align-items: flex-start;
       border-radius: var(--r);
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.74);
+      background: var(--surface-soft);
       padding: 15px 16px;
       box-shadow: var(--shadow-sm);
       transition:
@@ -708,10 +824,9 @@
 
     .event-item:hover,
     .feed-item:hover {
-      transform: translateY(-2px);
       border-color: rgba(26, 111, 160, 0.2);
-      box-shadow: var(--shadow-focus);
-      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow-sm);
+      background: var(--surface-solid);
     }
 
     .event-date-block {
@@ -726,7 +841,7 @@
     }
 
     .event-item:hover .event-date-block {
-      transform: translateY(-1px) scale(1.02);
+      transform: scale(1.02);
     }
 
     .event-day {
@@ -783,7 +898,7 @@
       overflow-x: auto;
       border-radius: var(--r);
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.7);
+      background: var(--surface-soft);
     }
 
     .log-table {
@@ -800,6 +915,7 @@
       text-transform: uppercase;
       color: var(--pebble);
       border-bottom: 1px solid var(--border-mid);
+      background: rgba(255, 255, 255, 0.72);
     }
 
     .log-table td {
@@ -854,16 +970,20 @@
       color: var(--stone);
       font-family: var(--font-mono);
       font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
       transition: transform var(--dur-fast) ease;
     }
 
     .score-pill:hover {
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.92);
     }
 
     .mono {
       font-family: var(--font-mono);
       font-size: 0.84rem;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
     }
 
     .summary-list {
@@ -894,7 +1014,8 @@
       color: var(--sky);
       font-family: var(--font-mono);
       font-size: 0.78rem;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.05em;
+      font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
 
@@ -912,7 +1033,7 @@
       padding: 14px;
       border-radius: 16px;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.58);
+      background: var(--surface-soft);
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -924,9 +1045,8 @@
     }
 
     .insight-card:hover {
-      transform: translateY(-1px);
       border-color: rgba(26, 111, 160, 0.18);
-      background: rgba(255, 255, 255, 0.86);
+      background: var(--surface-solid);
       box-shadow: var(--shadow-sm);
     }
 
@@ -1005,7 +1125,6 @@
     }
 
     .summary-row:hover {
-      transform: translateY(-1px);
       background: rgba(255, 255, 255, 0.82);
       border-color: rgba(26, 111, 160, 0.18);
     }
@@ -1205,7 +1324,6 @@
     }
 
     .drill-check:hover {
-      transform: translateY(-1px);
       border-color: rgba(26, 111, 160, 0.18);
       background: rgba(255, 255, 255, 0.86);
       box-shadow: var(--shadow-sm);
@@ -1259,7 +1377,6 @@
     }
 
     .checklist-item:hover {
-      transform: translateY(-1px);
       border-color: rgba(26, 111, 160, 0.18);
       background: rgba(255, 255, 255, 0.86);
       box-shadow: var(--shadow-sm);

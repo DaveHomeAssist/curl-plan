@@ -8,12 +8,56 @@
   <link rel="stylesheet" href="assets/css/app.css" />
 </head>
 <body>
+  <svg class="hidden" aria-hidden="true" focusable="false" width="0" height="0">
+    <symbol id="icon-calendar" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="16" rx="3"></rect>
+      <path d="M8 3v4M16 3v4M3 10h18"></path>
+    </symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24">
+      <path d="M4 19h16"></path>
+      <path d="M6 16l4-4 3 2 5-6"></path>
+      <circle cx="6" cy="16" r="1"></circle>
+      <circle cx="10" cy="12" r="1"></circle>
+      <circle cx="13" cy="14" r="1"></circle>
+      <circle cx="18" cy="8" r="1"></circle>
+    </symbol>
+    <symbol id="icon-stone" viewBox="0 0 24 24">
+      <path d="M8 8.5a4 4 0 0 1 8 0V10H8z"></path>
+      <path d="M6 10h12a3 3 0 0 1 3 3v1a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-1a3 3 0 0 1 3-3z"></path>
+    </symbol>
+    <symbol id="icon-broom" viewBox="0 0 24 24">
+      <path d="M15 4l5 5"></path>
+      <path d="M14 5l4 4"></path>
+      <path d="M6 14l5-5 4 4-5 5"></path>
+      <path d="M4 20h8"></path>
+      <path d="M5 17l2 3M8 17l2 3"></path>
+    </symbol>
+    <symbol id="icon-ice" viewBox="0 0 24 24">
+      <path d="M12 2v20M4.9 6l14.2 12M19.1 6L4.9 18M4 12h16"></path>
+      <circle cx="12" cy="12" r="2.5"></circle>
+    </symbol>
+    <symbol id="icon-note" viewBox="0 0 24 24">
+      <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+      <path d="M14 3v5h5"></path>
+      <path d="M9 13h6M9 17h5"></path>
+    </symbol>
+    <symbol id="icon-issue" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 8v5"></path>
+      <circle cx="12" cy="16.5" r="0.8" fill="currentColor" stroke="none"></circle>
+    </symbol>
+    <symbol id="icon-inbox" viewBox="0 0 24 24">
+      <path d="M4 6h16l-2 12H6z"></path>
+      <path d="M4 14h4l2 3h4l2-3h4"></path>
+    </symbol>
+  </svg>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
         <div class="brand-kicker">Personal Curling Command Center</div>
         <h1 class="brand-name">Curl<span>Plan</span></h1>
         <p class="brand-copy">Calendar, game prep, practice logging, and rink memory in one working file.</p>
+        <div class="brand-proof">Yours. Local. No cloud.</div>
       </div>
       <div class="topbar-actions">
         <div class="today-chip" id="todayChip">Loading...</div>
@@ -188,8 +232,11 @@
                 </div>
               </div>
               <div id="eventDetail" class="empty">
-                <div class="empty-icon">📅</div>
-                <div>Select an event to inspect details.</div>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-calendar"></use></svg></div>
+                <div class="empty-copy">
+                  <strong>No event selected</strong>
+                  <span>Select an event to inspect details.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -348,9 +395,14 @@
                 </table>
               </div>
               <div id="games-empty" class="empty hidden">
-                <div class="empty-icon">🥌</div>
-                <div>No games logged yet.</div>
-                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="game">+ Log Game</button>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-stone"></use></svg></div>
+                <div class="empty-copy">
+                  <strong>No games logged yet</strong>
+                  <span>Start your first result log and let the season record build itself.</span>
+                </div>
+                <div class="empty-actions">
+                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="game">+ Log Game</button>
+                </div>
               </div>
             </div>
 
@@ -394,9 +446,14 @@
               </div>
               <div class="stack" id="practice-list"></div>
               <div id="practice-empty" class="empty hidden">
-                <div class="empty-icon">🎯</div>
-                <div>No practice sessions logged yet.</div>
-                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="practice">+ Log Practice</button>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-broom"></use></svg></div>
+                <div class="empty-copy">
+                  <strong>No practice sessions logged yet</strong>
+                  <span>Capture drills, focus, and ice feel while the details are still fresh.</span>
+                </div>
+                <div class="empty-actions">
+                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="practice">+ Log Practice</button>
+                </div>
               </div>
             </div>
 
@@ -440,9 +497,14 @@
               </div>
               <div class="grid-auto" id="ice-list"></div>
               <div id="ice-empty" class="empty hidden">
-                <div class="empty-icon">🧊</div>
-                <div>No ice notes saved yet.</div>
-                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="ice">+ Add Ice Notes</button>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-ice"></use></svg></div>
+                <div class="empty-copy">
+                  <strong>No ice notes saved yet</strong>
+                  <span>Start building rink memory for speed, finish, and the odd sheet quirk.</span>
+                </div>
+                <div class="empty-actions">
+                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="ice">+ Add Ice Notes</button>
+                </div>
               </div>
             </div>
 
@@ -490,9 +552,14 @@
                 </table>
               </div>
               <div id="issues-empty" class="empty hidden">
-                <div class="empty-icon">🐛</div>
-                <div>No issues tracked yet.</div>
-                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="issue">+ Add Issue</button>
+                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-issue"></use></svg></div>
+                <div class="empty-copy">
+                  <strong>No issues tracked yet</strong>
+                  <span>Log the next friction point while the context is still visible.</span>
+                </div>
+                <div class="empty-actions">
+                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="issue">+ Add Issue</button>
+                </div>
               </div>
             </div>
 

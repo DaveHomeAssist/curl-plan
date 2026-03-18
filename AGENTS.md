@@ -33,4 +33,6 @@ CurlPlan is a local first curling operations tracker for planning games, logging
 [2026-03-18] [CurlPlan] [docs] Add AGENTS baseline
 [2026-03-18] [CurlPlan] [feat] Add dynamic issue tracker with full CRUD
 [2026-03-18] [CurlPlan] [refactor] Align issue schema to ecosystem standard (P1/P2/P3, open/in-progress/resolved/deferred, 3-digit IDs)
-
+[2026-03-18] [CurlPlan] [refactor] Elevate visual system with serif token, house ornament, and surface tiers
+[2026-03-18] [CurlPlan] [feat] Replace emoji empty states with inline SVG icon set
+[2026-03-18] [CurlPlan] [refactor] Reduce secondary hover lift and add local ownership brand line
