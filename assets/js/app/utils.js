@@ -165,6 +165,14 @@ function animateView(name) {
   pulseElement(document.getElementById(`view-${name}`), "view-enter", 320);
 }
 
+function debounce(fn, wait = 250) {
+  let timer = null;
+  return (...args) => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => fn(...args), wait);
+  };
+}
+
 function focusFirstField(modalId) {
   const overlay = document.getElementById(modalId);
   if (!overlay) return;
@@ -208,15 +216,37 @@ function setStatus(message = "", tone = "") {
   pulseElement(statusBar, "is-pulsing", 260);
 }
 
-function showToast(message) {
+let activeToast = null;
+
+function clearToast() {
+  if (!activeToast) return;
+  const toast = activeToast;
+  toast.classList.add("toast-out");
+  toast.addEventListener("animationend", () => toast.remove(), { once: true });
+  activeToast = null;
+}
+
+function showToast(message, options = {}) {
+  clearToast();
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.textContent = message;
+  toast.innerHTML = `
+    <span class="toast-copy">${escapeHtml(message)}</span>
+    ${options.actionLabel ? `<button type="button" class="toast-action">${escapeHtml(options.actionLabel)}</button>` : ""}
+  `;
   document.body.appendChild(toast);
-  window.setTimeout(() => {
-    toast.classList.add("toast-out");
-    toast.addEventListener("animationend", () => toast.remove(), { once: true });
-  }, 1800);
+  activeToast = toast;
+  if (options.actionLabel && typeof options.onAction === "function") {
+    toast.querySelector(".toast-action")?.addEventListener("click", () => {
+      options.onAction();
+      clearToast();
+    });
+  }
+  if (!options.persist) {
+    window.setTimeout(() => {
+      if (toast === activeToast) clearToast();
+    }, options.duration || 2600);
+  }
 }
 
 function buildSparkline(values, width = 220, height = 48, className = "sparkline-line") {
@@ -338,5 +368,3 @@ function calculateSeasonStats(items) {
     gameCount: games.length
   };
 }
-
-

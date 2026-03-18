@@ -22,6 +22,7 @@
         <label class="btn btn-ghost" for="importFile">Import</label>
         <input id="importFile" type="file" accept="application/json" class="hidden" />
         <button type="button" class="btn btn-danger" id="resetBtn">Reset Demo Data</button>
+        <button type="button" class="btn btn-ghost" id="shortcutHelpBtn" data-open-modal="shortcuts">? Shortcuts</button>
       </div>
     </header>
 
@@ -38,21 +39,36 @@
       <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
     </div>
 
+    <div class="state-strip-shell" id="suggestedNextStrip" aria-live="polite"></div>
+
     <main class="section-stack">
       <section class="view active" id="view-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
         <div class="section-stack">
           <div class="stats-grid">
-            <div class="stat-card sky">
+            <div class="stat-card sky stat-route-card" tabindex="0" role="button" data-view="games" aria-label="Open game log">
               <div class="stat-label">Games Logged</div>
               <div class="stat-num" id="stat-games">0</div>
             </div>
-            <div class="stat-card granite">
+            <div class="stat-card granite stat-route-card" tabindex="0" role="button" data-view="games" aria-label="Open game log from wins card">
               <div class="stat-label">Wins Logged</div>
               <div class="stat-num" id="stat-wins">0</div>
             </div>
-            <div class="stat-card leaf">
+            <div class="stat-card leaf stat-route-card" tabindex="0" role="button" data-view="calendar" aria-label="Open calendar queue">
               <div class="stat-label">Upcoming Events</div>
               <div class="stat-num" id="stat-upcoming">0</div>
+            </div>
+          </div>
+
+          <div class="toolbar quick-log-bar">
+            <div>
+              <h2 class="card-title">Quick Log</h2>
+              <p class="card-copy">Capture a result or jump back into the next likely task.</p>
+            </div>
+            <div class="toolbar-group">
+              <button type="button" class="btn btn-primary" data-open-modal="event">Add Event</button>
+              <button type="button" class="btn btn-ghost" data-open-modal="game">Log Game</button>
+              <button type="button" class="btn btn-ghost" data-open-modal="practice">Log Practice</button>
+              <button type="button" class="btn btn-ghost" data-open-modal="ice">Add Ice Notes</button>
             </div>
           </div>
 
@@ -194,6 +210,9 @@
             </div>
           </div>
 
+          <div id="gameDayBanner"></div>
+          <div id="plannerStateStrip"></div>
+
           <div class="grid-2">
             <div class="card">
               <div class="planner-card-kicker">Pre-Game</div>
@@ -300,6 +319,13 @@
                   <h3 class="card-title">Results Table</h3>
                   <p class="card-copy">Edit or delete any row from the action column.</p>
                 </div>
+                <div class="toolbar-group">
+                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, rink, notes..." />
+                  <select id="gameSortSelect" class="toolbar-input">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                  </select>
+                </div>
               </div>
               <div class="table-wrap">
                 <table class="log-table" id="game-table">
@@ -355,6 +381,13 @@
                   <h3 class="card-title">Sessions</h3>
                   <p class="card-copy">Structured drill tags with full notes preserved.</p>
                 </div>
+                <div class="toolbar-group">
+                  <input id="practiceSearchInput" class="toolbar-input" type="search" placeholder="Search shots, focus, notes..." />
+                  <select id="practiceSortSelect" class="toolbar-input">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                  </select>
+                </div>
               </div>
               <div class="stack" id="practice-list"></div>
               <div id="practice-empty" class="empty hidden">
@@ -393,6 +426,13 @@
                 <div>
                   <h3 class="card-title">Latest Notes</h3>
                   <p class="card-copy">Every entry stays editable and exportable.</p>
+                </div>
+                <div class="toolbar-group">
+                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search rink, curl, notes..." />
+                  <select id="iceSortSelect" class="toolbar-input">
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                  </select>
                 </div>
               </div>
               <div class="grid-auto" id="ice-list"></div>
@@ -756,6 +796,49 @@
   </div>
 
   <div class="print-report" id="printReport" aria-hidden="true"></div>
+
+  <div class="overlay" id="modal-import-preview">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title">Import Preview</h2>
+          <p class="modal-copy">Review the incoming data before it replaces your current workspace.</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Close import preview" data-close-modal="modal-import-preview">✕</button>
+      </div>
+      <div id="importPreviewBody" class="stack"></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modal-import-preview">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmImportBtn" data-action="confirm-import">Import Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modal-shortcuts">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title">Keyboard Shortcuts</h2>
+          <p class="modal-copy">Fast paths for navigation, logging, and save actions.</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Close shortcuts" data-close-modal="modal-shortcuts">✕</button>
+      </div>
+      <div class="shortcut-grid">
+        <div class="summary-row"><span class="summary-name">Dashboard</span><span class="badge mono">1</span></div>
+        <div class="summary-row"><span class="summary-name">Calendar</span><span class="badge mono">2</span></div>
+        <div class="summary-row"><span class="summary-name">Planner</span><span class="badge mono">3</span></div>
+        <div class="summary-row"><span class="summary-name">Game Log</span><span class="badge mono">4</span></div>
+        <div class="summary-row"><span class="summary-name">Practice</span><span class="badge mono">5</span></div>
+        <div class="summary-row"><span class="summary-name">Ice Notes</span><span class="badge mono">6</span></div>
+        <div class="summary-row"><span class="summary-name">Quick Add Event</span><span class="badge mono">N</span></div>
+        <div class="summary-row"><span class="summary-name">Log Game</span><span class="badge mono">G</span></div>
+        <div class="summary-row"><span class="summary-name">Log Practice</span><span class="badge mono">R</span></div>
+        <div class="summary-row"><span class="summary-name">Add Ice Notes</span><span class="badge mono">I</span></div>
+        <div class="summary-row"><span class="summary-name">Focus Search</span><span class="badge mono">/</span></div>
+        <div class="summary-row"><span class="summary-name">Save Open Modal</span><span class="badge mono">Ctrl/Cmd + Enter</span></div>
+      </div>
+    </div>
+  </div>
 
   <script src="assets/js/app/utils.js"></script>
   <script src="assets/js/app/core.js"></script>

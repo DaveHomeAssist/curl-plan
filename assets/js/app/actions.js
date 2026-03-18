@@ -3,6 +3,7 @@ function plannerNav(dir) {
   const date = new Date(`${plannerDate}T00:00:00`);
   date.setDate(date.getDate() + Number(dir));
   plannerDate = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+  saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate });
   updatePlannerLabel();
   loadPlanner();
   renderPlannerEntries();
@@ -18,6 +19,7 @@ function setSpeed(value) {
 
 function showView(name) {
   currentView = name;
+  saveUiPrefs({ ...uiPrefs, lastView: name });
   document.querySelectorAll(".view").forEach(view => {
     view.classList.toggle("active", view.id === `view-${name}`);
   });
@@ -34,6 +36,7 @@ function showView(name) {
     window.history.replaceState(null, "", `#${name}`);
   }
   animateView(name);
+  renderSuggestedNext();
 }
 
 function resetModal(type) {
@@ -99,6 +102,9 @@ function openModal(type, id = "") {
   const collectionName = type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
   const item = id ? state[collectionName].find(entry => entry.id === id) : null;
   modalState[type] = item ? item.id : null;
+  if (["event", "game", "practice", "ice"].includes(type)) {
+    saveUiPrefs({ ...uiPrefs, quickLogType: type });
+  }
 
   if (type === "event" && item) {
     document.getElementById("eventModalTitle").textContent = "Edit Event";
@@ -177,6 +183,10 @@ function upsertEntry(collectionName, entry) {
   else state[collectionName].push(entry);
   saveState();
   renderAll();
+}
+
+function collectionNameForType(type) {
+  return type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
 }
 
 function markFieldError(fieldId, message) {
@@ -332,8 +342,24 @@ function saveIssue() {
   showToast("Issue saved");
 }
 
-function deleteEntry(type, id) {
-  const collectionName = type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
+function restoreDeletedEntry(type, snapshot) {
+  const collectionName = collectionNameForType(type);
+  const nextItems = state[collectionName].slice();
+  nextItems.splice(snapshot.index, 0, snapshot.entry);
+  state[collectionName] = nextItems;
+  if (type === "event") {
+    selectedEventId = snapshot.entry.id;
+  }
+  saveState();
+  renderAll();
+  setStatus(`${type.charAt(0).toUpperCase() + type.slice(1)} restored.`, "success");
+}
+
+function deleteEntry(type, id, options = {}) {
+  const collectionName = collectionNameForType(type);
+  const index = state[collectionName].findIndex(item => item.id === id);
+  if (index < 0) return;
+  const entry = clone(state[collectionName][index]);
   state[collectionName] = state[collectionName].filter(item => item.id !== id);
   if (type === "event" && selectedEventId === id) {
     selectedEventId = state.events[0] ? state.events[0].id : null;
@@ -341,7 +367,12 @@ function deleteEntry(type, id) {
   saveState();
   renderAll();
   setStatus(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`, "success");
-  showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`);
+  if (options.toast !== false) {
+    showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`, {
+      actionLabel: "Undo",
+      onAction: () => restoreDeletedEntry(type, { index, entry })
+    });
+  }
 }
 
 function saveModal(type) {
@@ -355,7 +386,6 @@ function saveModal(type) {
 function deleteModal(type) {
   const id = modalState[type];
   if (!id) return;
-  if (!window.confirm("Delete this entry?")) return;
   deleteEntry(type, id);
   closeModal(`modal-${type}`);
 }
@@ -379,29 +409,98 @@ function importData(file) {
     try {
       const parsed = JSON.parse(reader.result);
       const nextState = normalizeState(parsed, true);
-      saveState(nextState);
-      selectedEventId = state.events[0] ? state.events[0].id : null;
-      plannerDate = todayStr();
-      renderAll();
-      setStatus("Import complete.", "success");
-      showToast("Import complete");
+      pendingImportState = {
+        fileName: file.name || "import.json",
+        nextState,
+        summary: {
+          events: nextState.events.length,
+          games: nextState.games.length,
+          practice: nextState.practice.length,
+          ice: nextState.ice.length,
+          issues: nextState.issues.length,
+          plannerEntries: Object.keys(nextState.plannerEntries).length
+        }
+      };
+      renderImportPreview();
+      openModal("import-preview");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Import failed.", "error");
+      showToast(error instanceof Error ? error.message : "Import failed");
     }
   };
   reader.readAsText(file);
 }
 
 function resetDemoData() {
-  if (!window.confirm("Replace current data with the demo dataset?")) return;
+  const previousState = clone(state);
+  const previousPrefs = clone(uiPrefs);
   localStorage.removeItem(CHECKLIST_DEFAULTS_KEY);
   saveState(clone(demoState()));
   selectedEventId = state.events[0] ? state.events[0].id : null;
   plannerDate = todayStr();
   plannerChecklist = cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
+  saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate, plannerTemplate: defaultUiPrefs().plannerTemplate });
   renderAll();
   setStatus("Demo data restored.", "success");
-  showToast("Demo data restored");
+  showToast("Demo data restored", {
+    actionLabel: "Undo",
+    onAction: () => {
+      saveState(previousState);
+      saveUiPrefs(previousPrefs);
+      selectedEventId = state.events[0] ? state.events[0].id : null;
+      plannerDate = previousPrefs.lastPlannerDate || todayStr();
+      renderAll();
+      setStatus("Previous workspace restored.", "success");
+    }
+  });
+}
+
+function renderImportPreview() {
+  const target = document.getElementById("importPreviewBody");
+  if (!target) return;
+  if (!pendingImportState) {
+    target.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div>No import is waiting for review.</div></div>';
+    return;
+  }
+  target.innerHTML = `
+    <div class="state-strip state-strip-inline">
+      <div class="state-copy-block">
+        <div class="state-kicker">Ready to import</div>
+        <strong>${escapeHtml(pendingImportState.fileName)}</strong>
+        <span>This will replace the current workspace. A restore action will stay available right after import.</span>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="summary-row"><span class="summary-name">Events</span><span class="summary-count">${pendingImportState.summary.events}</span></div>
+      <div class="summary-row"><span class="summary-name">Games</span><span class="summary-count">${pendingImportState.summary.games}</span></div>
+      <div class="summary-row"><span class="summary-name">Practice Sessions</span><span class="summary-count">${pendingImportState.summary.practice}</span></div>
+      <div class="summary-row"><span class="summary-name">Ice Notes</span><span class="summary-count">${pendingImportState.summary.ice}</span></div>
+      <div class="summary-row"><span class="summary-name">Issues</span><span class="summary-count">${pendingImportState.summary.issues}</span></div>
+      <div class="summary-row"><span class="summary-name">Planner Entries</span><span class="summary-count">${pendingImportState.summary.plannerEntries}</span></div>
+    </div>
+  `;
+}
+
+function confirmImportPreview() {
+  if (!pendingImportState) return;
+  const previousState = clone(state);
+  saveState(pendingImportState.nextState);
+  selectedEventId = state.events[0] ? state.events[0].id : null;
+  plannerDate = todayStr();
+  saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate });
+  renderAll();
+  closeModal("modal-import-preview");
+  setStatus("Import complete.", "success");
+  showToast("Import complete", {
+    actionLabel: "Undo",
+    onAction: () => {
+      saveState(previousState);
+      selectedEventId = state.events[0] ? state.events[0].id : null;
+      renderAll();
+      setStatus("Import undone.", "success");
+    }
+  });
+  pendingImportState = null;
 }
 
 function renderAll() {
@@ -422,5 +521,5 @@ function renderAll() {
     selectedEventId = state.events[0].id;
     renderEventList();
   }
+  renderSuggestedNext();
 }
-

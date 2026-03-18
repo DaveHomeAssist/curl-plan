@@ -2,6 +2,7 @@
 const STORAGE_KEY = "curlplan-v1";
 const SCHEMA_VERSION = 3;
 const CHECKLIST_DEFAULTS_KEY = "cp_checklist_defaults";
+const UI_PREFS_KEY = "cp_ui_prefs_v1";
 const PROTOTYPE_KEYS = {
   events: "cp_events",
   games: "cp_games",
@@ -189,14 +190,17 @@ const demoState = () => ({
 });
 
 let state = loadState();
-let currentView = "dashboard";
+let uiPrefs = loadUiPrefs();
+let currentView = uiPrefs.lastView || "dashboard";
 let currentFilter = "all";
 let selectedEventId = state.events[0] ? state.events[0].id : null;
-let plannerDate = todayStr();
+let plannerDate = uiPrefs.lastPlannerDate || todayStr();
 let currentSpeed = 0;
 let currentSeasonRange = "season";
 let plannerChecklist = [];
 let modalState = { event: null, game: null, practice: null, ice: null, issue: null };
+let expandedGameId = null;
+let pendingImportState = null;
 
 const searchInput = document.getElementById("searchInput");
 const filterType = document.getElementById("filterType");
@@ -395,6 +399,45 @@ function loadChecklistDefaults() {
   return normalized.length ? normalized : cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
 }
 
+function defaultUiPrefs() {
+  return {
+    lastView: "dashboard",
+    lastPlannerDate: todayStr(),
+    plannerTemplate: {
+      rink: "",
+      position: "",
+      opponent: ""
+    }
+  };
+}
+
+function loadUiPrefs() {
+  const defaults = defaultUiPrefs();
+  const stored = safeParseStorage(UI_PREFS_KEY);
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) return defaults;
+  return {
+    ...defaults,
+    ...stored,
+    plannerTemplate: {
+      ...defaults.plannerTemplate,
+      ...(stored.plannerTemplate && typeof stored.plannerTemplate === "object" ? stored.plannerTemplate : {})
+    }
+  };
+}
+
+function saveUiPrefs(nextPrefs = uiPrefs) {
+  const defaults = defaultUiPrefs();
+  uiPrefs = {
+    ...defaults,
+    ...nextPrefs,
+    plannerTemplate: {
+      ...defaults.plannerTemplate,
+      ...(nextPrefs.plannerTemplate && typeof nextPrefs.plannerTemplate === "object" ? nextPrefs.plannerTemplate : {})
+    }
+  };
+  localStorage.setItem(UI_PREFS_KEY, JSON.stringify(uiPrefs));
+}
+
 function saveChecklistDefaults(items) {
   const defaults = stripChecklistChecks(items);
   const safeDefaults = defaults.length ? defaults : cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
@@ -460,4 +503,3 @@ function saveState(nextState = state) {
   state = normalizeState(nextState);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
-

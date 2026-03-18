@@ -22,7 +22,7 @@ document.addEventListener("click", event => {
   }
 
   if (event.target.classList.contains("overlay")) {
-    event.target.classList.remove("open");
+    closeModal(event.target.id);
     return;
   }
 
@@ -66,14 +66,16 @@ document.addEventListener("click", event => {
     const action = actionButton.dataset.action;
     if (action === "select-event") {
       selectedEventId = actionButton.dataset.id || null;
+      if (currentView !== "calendar") showView("calendar");
       renderEventList();
     }
     if (action === "delete-entry") {
       const { type, id } = actionButton.dataset;
-      if (type && id && window.confirm("Delete this entry?")) deleteEntry(type, id);
+      if (type && id) deleteEntry(type, id);
     }
     if (action === "planner-jump") {
       plannerDate = actionButton.dataset.date;
+      saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate });
       updatePlannerLabel();
       loadPlanner();
       renderPlannerEntries();
@@ -84,6 +86,7 @@ document.addEventListener("click", event => {
       if (plannerChecklist[index]) {
         plannerChecklist[index].checked = Boolean(actionButton.checked);
         renderPlannerChecklist();
+        queuePlannerAutosave();
       }
     }
     if (action === "planner-check-move") {
@@ -96,6 +99,7 @@ document.addEventListener("click", event => {
         plannerChecklist = nextChecklist;
         saveChecklistDefaults(plannerChecklist);
         renderPlannerChecklist();
+        queuePlannerAutosave();
       }
     }
     if (action === "planner-check-remove") {
@@ -103,12 +107,14 @@ document.addEventListener("click", event => {
       plannerChecklist = plannerChecklist.filter((_, itemIndex) => itemIndex !== index);
       saveChecklistDefaults(plannerChecklist);
       renderPlannerChecklist();
+      queuePlannerAutosave();
     }
     if (action === "planner-check-reset") {
       plannerChecklist = cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
       saveChecklistDefaults(DEFAULT_PLANNER_CHECKLIST);
       renderPlannerChecklist();
       document.getElementById("plannerChecklistInput").value = "";
+      queuePlannerAutosave();
     }
     if (action === "planner-check-add") {
       const input = document.getElementById("plannerChecklistInput");
@@ -122,7 +128,15 @@ document.addEventListener("click", event => {
         input.value = "";
         input.focus();
         setStatus("Checklist item added.", "success");
+        queuePlannerAutosave();
       }
+    }
+    if (action === "toggle-game-expand") {
+      expandedGameId = expandedGameId === actionButton.dataset.id ? null : actionButton.dataset.id;
+      renderGames();
+    }
+    if (action === "confirm-import") {
+      confirmImportPreview();
     }
     if (action === "print-game-report") {
       printGameReport(actionButton.dataset.id);
@@ -144,7 +158,32 @@ document.addEventListener("click", event => {
   }
 });
 
+document.addEventListener("dblclick", event => {
+  const eventCard = event.target.closest("[data-event-id]");
+  if (eventCard?.dataset.eventId) {
+    openModal("event", eventCard.dataset.eventId);
+    return;
+  }
+  const gameRow = event.target.closest("[data-action='toggle-game-expand']");
+  if (gameRow?.dataset.id) {
+    openModal("game", gameRow.dataset.id);
+  }
+});
+
 searchInput.addEventListener("input", renderEventList);
+
+[
+  ["gameSearchInput", "input", renderGames],
+  ["gameSortSelect", "change", renderGames],
+  ["practiceSearchInput", "input", renderPractice],
+  ["practiceSortSelect", "change", renderPractice],
+  ["iceSearchInput", "input", renderIce],
+  ["iceSortSelect", "change", renderIce]
+].forEach(([id, eventName, handler]) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener(eventName, handler);
+});
 
 filterType.addEventListener("change", () => {
   pulseElement(filterType, "tap-pop", 180);
@@ -157,6 +196,13 @@ filterType.addEventListener("change", () => {
 
 document.getElementById("savePlannerBtn").addEventListener("click", event => {
   markWorking(event.currentTarget);
+  savePlanner();
+});
+
+document.addEventListener("click", event => {
+  const inlineSave = event.target.closest("[data-save-planner-inline]");
+  if (!inlineSave) return;
+  markWorking(inlineSave, 300);
   savePlanner();
 });
 
@@ -193,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const validViews = ["dashboard", "calendar", "planner", "games", "practice", "ice", "issues"];
   const hashView = window.location.hash.slice(1);
   if (validViews.includes(hashView)) showView(hashView);
+  else if (validViews.includes(currentView)) showView(currentView);
 });
 
 window.addEventListener("hashchange", () => {
@@ -202,9 +249,89 @@ window.addEventListener("hashchange", () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
   const openOverlay = document.querySelector(".overlay.open");
-  if (openOverlay) closeModal(openOverlay.id);
+  const activeElement = document.activeElement;
+  const isTyping = activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(activeElement.tagName);
+  const mod = event.metaKey || event.ctrlKey;
+
+  if (mod && event.key === "Enter" && openOverlay) {
+    event.preventDefault();
+    openOverlay.querySelector("[data-save-modal]")?.click();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (openOverlay) closeModal(openOverlay.id);
+    return;
+  }
+
+  if (event.key === "?" && !mod) {
+    event.preventDefault();
+    openModal("shortcuts");
+    return;
+  }
+
+  if (event.key === "/" && !mod && !isTyping) {
+    event.preventDefault();
+    const searchMap = {
+      calendar: "searchInput",
+      games: "gameSearchInput",
+      practice: "practiceSearchInput",
+      ice: "iceSearchInput"
+    };
+    const searchId = searchMap[currentView] || "searchInput";
+    document.getElementById(searchId)?.focus();
+    return;
+  }
+
+  if (isTyping && !mod) return;
+
+  const viewKeys = {
+    1: "dashboard",
+    2: "calendar",
+    3: "planner",
+    4: "games",
+    5: "practice",
+    6: "ice",
+    7: "issues"
+  };
+  if (viewKeys[event.key]) {
+    event.preventDefault();
+    showView(viewKeys[event.key]);
+    return;
+  }
+
+  if (!mod && event.key.toLowerCase() === "n") {
+    event.preventDefault();
+    openModal("event");
+    return;
+  }
+  if (!mod && event.key.toLowerCase() === "g") {
+    event.preventDefault();
+    openModal("game");
+    return;
+  }
+  if (!mod && event.key.toLowerCase() === "r") {
+    event.preventDefault();
+    openModal("practice");
+    return;
+  }
+  if (!mod && event.key.toLowerCase() === "i") {
+    event.preventDefault();
+    openModal("ice");
+    return;
+  }
+
+  if (event.key === "Enter" && activeElement?.matches("[data-event-id]")) {
+    event.preventDefault();
+    openModal("event", activeElement.dataset.eventId);
+    return;
+  }
+
+  if (event.key === "Enter" && activeElement?.matches("[data-action='toggle-game-expand']")) {
+    event.preventDefault();
+    openModal("game", activeElement.dataset.id);
+  }
 });
 
 document.getElementById("plannerChecklistInput").addEventListener("keydown", (event) => {
@@ -213,5 +340,29 @@ document.getElementById("plannerChecklistInput").addEventListener("keydown", (ev
   document.querySelector('[data-action="planner-check-add"]').click();
 });
 
-window.addEventListener("afterprint", clearPrintReport);
+const queuePlannerAutosave = debounce(() => {
+  if (currentView !== "planner") return;
+  savePlanner({ silent: true });
+}, 500);
 
+[
+  "pg-time",
+  "pg-rink",
+  "pg-opponent",
+  "pg-position",
+  "pg-goals",
+  "pg-score-us",
+  "pg-score-them",
+  "pg-ice",
+  "pg-reflection",
+  "pg-keyshot"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", queuePlannerAutosave);
+  document.getElementById(id)?.addEventListener("change", queuePlannerAutosave);
+});
+
+window.addEventListener("beforeunload", () => {
+  if (currentView === "planner") savePlanner({ silent: true });
+});
+
+window.addEventListener("afterprint", clearPrintReport);
