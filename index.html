@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CurlPlan</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg" />
   <style>
     :root {
       --ice: #e8f4f8;
@@ -858,6 +859,29 @@
       color: var(--stone-light);
     }
 
+    .form-label .req {
+      color: var(--granite);
+      margin-left: 2px;
+    }
+
+    .field-error {
+      font-size: 0.78rem;
+      color: var(--granite);
+      margin-top: 4px;
+      animation: section-rise var(--dur-med) var(--ease-out);
+    }
+
+    .form-row.has-error input,
+    .form-row.has-error select,
+    .form-row.has-error textarea {
+      border-color: var(--granite);
+      box-shadow: 0 0 0 3px rgba(180, 74, 44, 0.1);
+    }
+
+    .empty-cta {
+      margin-top: 12px;
+    }
+
     .planner-nav {
       display: flex;
       align-items: center;
@@ -1268,19 +1292,20 @@
     </header>
 
     <div class="nav-wrap">
-      <nav class="nav" id="navTabs">
-        <button type="button" class="nav-btn active" data-view="dashboard">Dashboard</button>
-        <button type="button" class="nav-btn" data-view="calendar">Calendar</button>
-        <button type="button" class="nav-btn" data-view="planner">Game Planner</button>
-        <button type="button" class="nav-btn" data-view="games">Game Log</button>
-        <button type="button" class="nav-btn" data-view="practice">Practice</button>
-        <button type="button" class="nav-btn" data-view="ice">Ice Notes</button>
+      <nav class="nav" id="navTabs" role="tablist" aria-label="App views">
+        <button type="button" class="nav-btn active" id="tab-dashboard" data-view="dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard">Dashboard</button>
+        <button type="button" class="nav-btn" id="tab-calendar" data-view="calendar" role="tab" aria-selected="false" aria-controls="view-calendar">Calendar</button>
+        <button type="button" class="nav-btn" id="tab-planner" data-view="planner" role="tab" aria-selected="false" aria-controls="view-planner">Game Planner</button>
+        <button type="button" class="nav-btn" id="tab-games" data-view="games" role="tab" aria-selected="false" aria-controls="view-games">Game Log</button>
+        <button type="button" class="nav-btn" id="tab-practice" data-view="practice" role="tab" aria-selected="false" aria-controls="view-practice">Practice</button>
+        <button type="button" class="nav-btn" id="tab-ice" data-view="ice" role="tab" aria-selected="false" aria-controls="view-ice">Ice Notes</button>
+        <button type="button" class="nav-btn" id="tab-issues" data-view="issues" role="tab" aria-selected="false" aria-controls="view-issues">UI Issues</button>
       </nav>
-      <div class="status-bar" id="statusBar" aria-live="polite"></div>
+      <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <main class="section-stack">
-      <section class="view active" id="view-dashboard">
+      <section class="view active" id="view-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
         <div class="section-stack">
           <div class="stats-grid">
             <div class="stat-card sky">
@@ -1345,7 +1370,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-calendar">
+      <section class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar">
         <div class="section-stack">
           <div class="section-header">
             <div>
@@ -1404,7 +1429,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-planner">
+      <section class="view" id="view-planner" role="tabpanel" aria-labelledby="tab-planner">
         <div class="section-stack">
           <div class="section-header">
             <div>
@@ -1491,7 +1516,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-games">
+      <section class="view" id="view-games" role="tabpanel" aria-labelledby="tab-games">
         <div class="section-stack">
           <div class="section-header">
             <div>
@@ -1528,6 +1553,7 @@
               <div id="games-empty" class="empty hidden">
                 <div class="empty-icon">🥌</div>
                 <div>No games logged yet.</div>
+                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="game">+ Log Game</button>
               </div>
             </div>
 
@@ -1544,7 +1570,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-practice">
+      <section class="view" id="view-practice" role="tabpanel" aria-labelledby="tab-practice">
         <div class="section-stack">
           <div class="section-header">
             <div>
@@ -1566,6 +1592,7 @@
               <div id="practice-empty" class="empty hidden">
                 <div class="empty-icon">🎯</div>
                 <div>No practice sessions logged yet.</div>
+                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="practice">+ Log Practice</button>
               </div>
             </div>
 
@@ -1582,7 +1609,7 @@
         </div>
       </section>
 
-      <section class="view" id="view-ice">
+      <section class="view" id="view-ice" role="tabpanel" aria-labelledby="tab-ice">
         <div class="section-stack">
           <div class="section-header">
             <div>
@@ -1604,6 +1631,7 @@
               <div id="ice-empty" class="empty hidden">
                 <div class="empty-icon">🧊</div>
                 <div>No ice notes saved yet.</div>
+                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="ice">+ Add Ice Notes</button>
               </div>
             </div>
 
@@ -1615,6 +1643,56 @@
                 </div>
               </div>
               <div class="summary-list" id="rinkSummary"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-issues" role="tabpanel" aria-labelledby="tab-issues">
+        <div class="section-stack">
+          <div class="section-header">
+            <h2 class="section-title">UI Issues</h2>
+            <button type="button" class="btn btn-primary" data-open-modal="issue">+ Add Issue</button>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h3 class="card-title">Issue Tracker</h3>
+                  <p class="card-copy">Known UI issues and proposed fixes for CurlPlan.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="log-table" id="issues-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Component</th>
+                      <th>Title</th>
+                      <th>Severity</th>
+                      <th>Status</th>
+                      <th>Proposed Fix</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="issues-tbody"></tbody>
+                </table>
+              </div>
+              <div id="issues-empty" class="empty hidden">
+                <div class="empty-icon">🐛</div>
+                <div>No issues tracked yet.</div>
+                <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="issue">+ Add Issue</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h3 class="card-title">Issue Summary</h3>
+                  <p class="card-copy">At-a-glance breakdown of open issues.</p>
+                </div>
+              </div>
+              <div class="summary-list" id="issueSummary"></div>
             </div>
           </div>
         </div>
@@ -1633,8 +1711,8 @@
       </div>
       <div class="form-grid-2">
         <div class="form-row">
-          <label class="form-label" for="ev-name">Name</label>
-          <input type="text" id="ev-name" placeholder="Tuesday League Night" />
+          <label class="form-label" for="ev-name">Name <span class="req">*</span></label>
+          <input type="text" id="ev-name" placeholder="Tuesday League Night" required aria-required="true" />
         </div>
         <div class="form-row">
           <label class="form-label" for="ev-type">Type</label>
@@ -1649,8 +1727,8 @@
       </div>
       <div class="form-grid-3">
         <div class="form-row">
-          <label class="form-label" for="ev-date">Date</label>
-          <input type="date" id="ev-date" />
+          <label class="form-label" for="ev-date">Date <span class="req">*</span></label>
+          <input type="date" id="ev-date" required aria-required="true" />
         </div>
         <div class="form-row">
           <label class="form-label" for="ev-time">Time</label>
@@ -1700,12 +1778,12 @@
       </div>
       <div class="form-grid-2">
         <div class="form-row">
-          <label class="form-label" for="gm-date">Date</label>
-          <input type="date" id="gm-date" />
+          <label class="form-label" for="gm-date">Date <span class="req">*</span></label>
+          <input type="date" id="gm-date" required aria-required="true" />
         </div>
         <div class="form-row">
-          <label class="form-label" for="gm-opponent">Opponent</label>
-          <input type="text" id="gm-opponent" placeholder="Opponent or team name" />
+          <label class="form-label" for="gm-opponent">Opponent <span class="req">*</span></label>
+          <input type="text" id="gm-opponent" placeholder="Opponent or team name" required aria-required="true" />
         </div>
       </div>
       <div class="form-grid-3">
@@ -1759,8 +1837,8 @@
       </div>
       <div class="form-grid-2">
         <div class="form-row">
-          <label class="form-label" for="pr-date">Date</label>
-          <input type="date" id="pr-date" />
+          <label class="form-label" for="pr-date">Date <span class="req">*</span></label>
+          <input type="date" id="pr-date" required aria-required="true" />
         </div>
         <div class="form-row">
           <label class="form-label" for="pr-duration">Duration</label>
@@ -1812,8 +1890,8 @@
       </div>
       <div class="form-grid-2">
         <div class="form-row">
-          <label class="form-label" for="ice-date">Date</label>
-          <input type="date" id="ice-date" />
+          <label class="form-label" for="ice-date">Date <span class="req">*</span></label>
+          <input type="date" id="ice-date" required aria-required="true" />
         </div>
         <div class="form-row">
           <label class="form-label" for="ice-rink">Rink</label>
@@ -1853,6 +1931,56 @@
     </div>
   </div>
 
+  <div class="overlay" id="modal-issue">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <div>
+          <h2 class="modal-title" id="issueModalTitle">Add Issue</h2>
+          <p class="modal-copy">Track a UI issue with severity, status, and proposed fix.</p>
+        </div>
+        <button type="button" class="modal-close" aria-label="Close issue modal" data-close-modal="modal-issue">✕</button>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="is-component">Component</label>
+          <input type="text" id="is-component" placeholder="Service Worker, Form UI, etc." />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="is-severity">Severity</label>
+          <select id="is-severity">
+            <option value="P1">P1 — Blocks usage or deploy</option>
+            <option value="P2" selected>P2 — Degrades core function</option>
+            <option value="P3">P3 — Polish or edge case</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="is-description">Issue Description</label>
+        <textarea id="is-description" placeholder="Describe the issue."></textarea>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="is-status">Status</label>
+          <select id="is-status">
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="deferred">Deferred</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="is-fix">Proposed Fix</label>
+        <textarea id="is-fix" placeholder="How should this be fixed?"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal="modal-issue">Cancel</button>
+        <button type="button" class="btn btn-danger hidden" id="issueDeleteBtn" data-delete-modal="issue">Delete</button>
+        <button type="button" class="btn btn-primary" id="issueSaveBtn" data-save-modal="issue">Save Issue</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = "curlplan-v1";
     const SCHEMA_VERSION = 2;
@@ -1861,6 +1989,7 @@
       games: "cp_games",
       practice: "cp_practice",
       ice: "cp_ice",
+      issues: "cp_issues",
       planner: "cp_planner"
     };
 
@@ -1870,6 +1999,7 @@
       games: [],
       practice: [],
       ice: [],
+      issues: [],
       plannerEntries: {}
     });
 
@@ -1878,91 +2008,154 @@
       events: [
         {
           id: createId(),
-          title: "Wednesday League Night",
+          title: "Team Night",
           type: "league",
-          date: "2026-03-18",
+          date: "2026-03-19",
           time: "19:00",
-          rink: "Philadelphia Curling Club",
-          team: "Hammer Time",
-          opponent: "Stone Cold",
-          position: "Second",
-          sheet: "B",
-          notes: "Arrive 45 min early for warmup."
+          rink: "Main Rink",
+          team: "",
+          opponent: "",
+          position: "Third",
+          sheet: "3",
+          notes: "Arrive early"
         },
         {
           id: createId(),
-          title: "Draw Weight Practice",
-          type: "practice",
-          date: "2026-03-20",
-          time: "18:00",
-          rink: "Philadelphia Curling Club",
+          title: "Spring Tournament",
+          type: "bonspiel",
+          date: "2026-03-21",
+          time: "09:00",
+          rink: "City Arena",
           team: "",
           opponent: "",
           position: "Skip",
-          sheet: "C",
-          notes: "Focus on tee line control."
+          sheet: "1",
+          notes: "Round robin format"
         },
         {
           id: createId(),
-          title: "Spring Bonspiel",
-          type: "bonspiel",
-          date: "2026-04-04",
-          time: "09:00",
-          rink: "Bucks County Curling Club",
-          team: "Sweep Dreams",
+          title: "Morning Session",
+          type: "practice",
+          date: "2026-03-22",
+          time: "06:30",
+          rink: "Main Rink",
+          team: "",
           opponent: "",
-          position: "Third",
-          sheet: "TBD",
-          notes: "Bring team jackets and snacks."
+          position: "Lead",
+          sheet: "2",
+          notes: "Focus on basics"
         }
       ],
       games: [
         {
           id: createId(),
-          date: "2026-03-10",
-          opponent: "House Rocks",
+          date: "2026-03-12",
+          opponent: "Team A",
           us: 7,
-          them: 5,
+          them: 3,
           result: "W",
+          position: "Third",
+          rink: "Main Rink",
+          keyShot: "Draw to button",
+          notes: "Strong hammer game",
+          shotPct: 0
+        },
+        {
+          id: createId(),
+          date: "2026-03-05",
+          opponent: "Team B",
+          us: 4,
+          them: 6,
+          result: "L",
+          position: "Lead",
+          rink: "City Arena",
+          keyShot: "Guard held 3 ends",
+          notes: "Lost hammer in 4th",
+          shotPct: 0
+        },
+        {
+          id: createId(),
+          date: "2026-02-26",
+          opponent: "Team C",
+          us: 5,
+          them: 5,
+          result: "D",
           position: "Second",
-          rink: "Philadelphia Curling Club",
-          keyShot: "Hit and roll in the 8th",
-          notes: "Ice was straighter than usual.",
-          shotPct: 74
+          rink: "Main Rink",
+          keyShot: "Freeze on shot rock",
+          notes: "Extra end, came up light",
+          shotPct: 0
         }
       ],
       practice: [
         {
           id: createId(),
-          date: "2026-03-12",
-          duration: "75 min",
+          date: "2026-03-15",
+          duration: "60 min",
           shots: ["Draw", "Guard"],
-          focus: "Outturn draw improved late in the session.",
-          notes: "Spend another session on middle-weight guards."
+          focus: "Release",
+          notes: "Working on flat release"
+        },
+        {
+          id: createId(),
+          date: "2026-03-08",
+          duration: "90 min",
+          shots: ["Takeout", "Hit & Roll"],
+          focus: "Weight control",
+          notes: "Rolls landing off target"
+        },
+        {
+          id: createId(),
+          date: "2026-03-01",
+          duration: "45 min",
+          shots: ["Broom Work"],
+          focus: "Communication",
+          notes: "Louder verbal cues needed"
         }
       ],
       ice: [
         {
           id: createId(),
-          date: "2026-03-10",
-          rink: "Philadelphia Curling Club",
+          date: "2026-03-19",
+          rink: "Main Rink",
           speed: 4,
           curl: "Moderate",
-          notes: "Near boards stayed a touch straighter."
+          notes: "Sheet 3 curls late. Rocks 4 and 7 run light."
+        },
+        {
+          id: createId(),
+          date: "2026-03-12",
+          rink: "Main Rink",
+          speed: 3,
+          curl: "Big Finish",
+          notes: "Fresh pebble, draw weight longer than usual"
+        },
+        {
+          id: createId(),
+          date: "2026-03-05",
+          rink: "City Arena",
+          speed: 3,
+          curl: "Straight",
+          notes: "Consistent ice, nearly no curl on sheet 1"
         }
       ],
+      issues: [
+        { id: "001", component: "Service Worker", description: "Offline cache not updating on curlplan_v_1 edits.", severity: "P1", status: "open", proposedFix: "Version-string the cache name in sw.js." },
+        { id: "002", component: "Form UI", description: "is-working button class triggers but doesn't clear.", severity: "P2", status: "deferred", proposedFix: "Add setTimeout clear to markWorking() function." },
+        { id: "003", component: "Local Storage", description: "importData fails on legacy schema versions.", severity: "P1", status: "open", proposedFix: "Implement a data-migration switch-case in DataManager." }
+      ],
       plannerEntries: {
-        "2026-03-18": {
+        "2026-03-19": {
           time: "19:00",
-          rink: "Philadelphia Curling Club",
-          opponent: "Stone Cold",
-          position: "Second",
-          goals: "Cleaner communication. Better broom placement. Commit to sweep calls.",
-          scoreUs: "",
-          scoreThem: "",
-          ice: "Watch late curl on the inturn draw.",
-          reflection: "",
-          keyShot: ""
+          rink: "Main Rink",
+          opponent: "Team B",
+          position: "Third",
+          goals: "Control early ends",
+          scoreUs: "6",
+          scoreThem: "4",
+          ice: "Medium speed, slight curl left",
+          reflection: "Consistent weight, adjust guard calls next game",
+          keyShot: "Draw in 6th end"
         }
       }
     });
@@ -1973,7 +2166,7 @@
     let selectedEventId = state.events[0] ? state.events[0].id : null;
     let plannerDate = todayStr();
     let currentSpeed = 0;
-    let modalState = { event: null, game: null, practice: null, ice: null };
+    let modalState = { event: null, game: null, practice: null, ice: null, issue: null };
 
     const searchInput = document.getElementById("searchInput");
     const filterType = document.getElementById("filterType");
@@ -2159,6 +2352,44 @@
       };
     }
 
+    function normalizeIssueSeverity(value) {
+      const s = asString(value);
+      if (["P1", "P2", "P3"].includes(s)) return s;
+      if (s === "High") return "P1";
+      if (s === "Med") return "P2";
+      if (s === "Low") return "P3";
+      return "P2";
+    }
+
+    function normalizeIssueStatus(value) {
+      const s = asString(value).toLowerCase();
+      if (["open", "in-progress", "resolved", "deferred"].includes(s)) return s;
+      if (s === "active") return "open";
+      if (s === "draft") return "deferred";
+      return "open";
+    }
+
+    function nextIssueId() {
+      const nums = state.issues.map(i => {
+        const m = i.id.match(/^(\d+)$/);
+        return m ? Number(m[1]) : 0;
+      });
+      const max = nums.length ? Math.max(...nums) : 0;
+      return String(max + 1).padStart(3, "0");
+    }
+
+    function normalizeIssue(item) {
+      const candidate = item && typeof item === "object" ? item : {};
+      return {
+        id: asString(candidate.id) || String(Date.now()).slice(-3),
+        component: asString(candidate.component),
+        description: asString(candidate.description),
+        severity: normalizeIssueSeverity(candidate.severity),
+        status: normalizeIssueStatus(candidate.status),
+        proposedFix: asString(candidate.proposedFix)
+      };
+    }
+
     function normalizePlannerEntries(entries) {
       const output = {};
       if (!entries || typeof entries !== "object" || Array.isArray(entries)) return output;
@@ -2187,7 +2418,7 @@
         return base;
       }
 
-      const recognized = ["events", "games", "practice", "notes", "ice", "planner", "plannerEntries", "version"]
+      const recognized = ["events", "games", "practice", "notes", "ice", "issues", "planner", "plannerEntries", "version"]
         .some(key => Object.prototype.hasOwnProperty.call(raw, key));
       if (strict && !recognized) {
         throw new Error("Imported JSON does not match a CurlPlan export.");
@@ -2198,6 +2429,7 @@
       const practice = Array.isArray(raw.practice) ? raw.practice.map(normalizePractice) : [];
       const iceSource = Array.isArray(raw.ice) ? raw.ice : Array.isArray(raw.notes) ? raw.notes : [];
       const ice = iceSource.map(normalizeIce);
+      const issues = Array.isArray(raw.issues) ? raw.issues.map(normalizeIssue) : [];
 
       let plannerEntries = normalizePlannerEntries(raw.plannerEntries);
       const legacyPlanner = raw.planner;
@@ -2225,6 +2457,7 @@
         games,
         practice,
         ice,
+        issues,
         plannerEntries
       };
     }
@@ -2308,6 +2541,34 @@
       }, 50);
     }
 
+    let activeFocusTrap = null;
+
+    function trapFocus(overlay) {
+      releaseFocusTrap();
+      const handler = (event) => {
+        if (event.key !== "Tab") return;
+        const focusable = overlay.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      overlay.addEventListener("keydown", handler);
+      activeFocusTrap = { overlay, handler };
+    }
+
+    function releaseFocusTrap() {
+      if (!activeFocusTrap) return;
+      activeFocusTrap.overlay.removeEventListener("keydown", activeFocusTrap.handler);
+      activeFocusTrap = null;
+    }
+
     function setStatus(message = "", tone = "") {
       statusBar.textContent = message;
       statusBar.className = `status-bar${tone ? ` ${tone}` : ""}`;
@@ -2353,8 +2614,8 @@
       return result ? `result-${result.toLowerCase()}` : "result-d";
     }
 
-    function renderEmpty(icon, text) {
-      return `<div class="empty"><div class="empty-icon">${icon}</div><div>${escapeHtml(text)}</div></div>`;
+    function renderEmpty(icon, text, cta) {
+      return `<div class="empty"><div class="empty-icon">${icon}</div><div>${escapeHtml(text)}</div>${cta ? `<button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="${cta.modal}">+ ${escapeHtml(cta.label)}</button>` : ""}</div>`;
     }
 
     function renderEventCard(item, selected = false) {
@@ -2445,7 +2706,7 @@
 
       document.getElementById("dash-upcoming").innerHTML = upcoming.length
         ? upcoming.slice(0, 3).map(item => renderEventCard(item)).join("")
-        : renderEmpty("📅", "No upcoming events.");
+        : renderEmpty("📅", "No upcoming events.", { modal: "event", label: "Add Event" });
 
       const plannerKeys = Object.keys(state.plannerEntries).sort();
       const activePlannerKey = plannerKeys.find(key => key >= todayStr()) || plannerKeys[plannerKeys.length - 1];
@@ -2480,7 +2741,7 @@
             <div class="event-notes">${escapeHtml(item.notes || item.keyShot || "No notes saved.")}</div>
           </div>
         `).join("")
-        : renderEmpty("🥌", "No games logged yet.");
+        : renderEmpty("🥌", "No games logged yet.", { modal: "game", label: "Log Game" });
 
       const latestIce = state.ice.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
       document.getElementById("dash-ice").innerHTML = latestIce
@@ -2499,7 +2760,7 @@
             <div class="event-notes">${escapeHtml(latestIce.notes || "No note text saved.")}</div>
           </div>
         `
-        : renderEmpty("🧊", "No ice notes saved yet.");
+        : renderEmpty("🧊", "No ice notes saved yet.", { modal: "ice", label: "Add Ice Notes" });
     }
 
     function renderGames() {
@@ -2629,6 +2890,69 @@
         : renderEmpty("🧊", "Start logging rink behavior to build memory.");
     }
 
+    function severityClass(severity) {
+      if (severity === "P1") return "result-l";
+      if (severity === "P3") return "result-w";
+      return "result-d";
+    }
+
+    function statusChipClass(status) {
+      if (status === "resolved") return "type-practice";
+      if (status === "deferred") return "type-other";
+      if (status === "in-progress") return "type-bonspiel";
+      return "type-chip";
+    }
+
+    function renderIssues() {
+      const tbody = document.getElementById("issues-tbody");
+      const empty = document.getElementById("issues-empty");
+      const severityOrder = { P1: 0, P2: 1, P3: 2 };
+      const items = state.issues.slice().sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
+      if (!items.length) {
+        tbody.innerHTML = "";
+        empty.classList.remove("hidden");
+      } else {
+        empty.classList.add("hidden");
+        tbody.innerHTML = items.map(item => `
+          <tr>
+            <td class="mono">${escapeHtml(item.id)}</td>
+            <td class="summary-name">${escapeHtml(item.component)}</td>
+            <td class="event-notes">${escapeHtml(item.description)}</td>
+            <td><span class="badge ${severityClass(item.severity)}">${escapeHtml(item.severity)}</span></td>
+            <td><span class="${statusChipClass(item.status)}">${escapeHtml(item.status)}</span></td>
+            <td class="event-notes">${escapeHtml(item.proposedFix)}</td>
+            <td>
+              <div class="inline-actions">
+                <button type="button" class="btn btn-ghost btn-sm" data-open-modal="issue" data-id="${escapeHtml(item.id)}">Edit</button>
+                <button type="button" class="btn btn-danger btn-sm" data-action="delete-entry" data-type="issue" data-id="${escapeHtml(item.id)}">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      const total = items.length;
+      const p1 = items.filter(i => i.severity === "P1").length;
+      const p2 = items.filter(i => i.severity === "P2").length;
+      const p3 = items.filter(i => i.severity === "P3").length;
+      const open = items.filter(i => i.status === "open").length;
+      const inProgress = items.filter(i => i.status === "in-progress").length;
+      const resolved = items.filter(i => i.status === "resolved").length;
+      const deferred = items.filter(i => i.status === "deferred").length;
+      document.getElementById("issueSummary").innerHTML = total
+        ? `
+          <div class="summary-row"><span class="summary-name">Total Issues</span><span class="badge result-d">${total}</span></div>
+          ${p1 ? `<div class="summary-row"><span class="summary-name">P1 — Blocker</span><span class="badge result-l">${p1}</span></div>` : ""}
+          ${p2 ? `<div class="summary-row"><span class="summary-name">P2 — Degraded</span><span class="badge result-d">${p2}</span></div>` : ""}
+          ${p3 ? `<div class="summary-row"><span class="summary-name">P3 — Polish</span><span class="badge result-w">${p3}</span></div>` : ""}
+          ${open ? `<div class="summary-row"><span class="summary-name">Open</span><span class="type-chip">${open}</span></div>` : ""}
+          ${inProgress ? `<div class="summary-row"><span class="summary-name">In Progress</span><span class="type-chip">${inProgress}</span></div>` : ""}
+          ${deferred ? `<div class="summary-row"><span class="summary-name">Deferred</span><span class="type-chip">${deferred}</span></div>` : ""}
+          ${resolved ? `<div class="summary-row"><span class="summary-name">Resolved</span><span class="type-chip">${resolved}</span></div>` : ""}
+        `
+        : renderEmpty("🐛", "Add your first issue to start tracking.");
+    }
+
     function renderPlannerEntries() {
       const target = document.getElementById("planner-entries");
       const entries = Object.entries(state.plannerEntries)
@@ -2712,11 +3036,16 @@
         view.classList.toggle("active", view.id === `view-${name}`);
       });
       document.querySelectorAll(".nav-btn").forEach(button => {
-        button.classList.toggle("active", button.dataset.view === name);
+        const isActive = button.dataset.view === name;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", isActive ? "true" : "false");
       });
       if (name === "planner") {
         updatePlannerLabel();
         loadPlanner();
+      }
+      if (window.location.hash !== `#${name}`) {
+        window.history.replaceState(null, "", `#${name}`);
       }
       animateView(name);
     }
@@ -2765,13 +3094,22 @@
         document.getElementById("iceDeleteBtn").classList.add("hidden");
         setSpeed(0);
       }
+      if (type === "issue") {
+        document.getElementById("issueModalTitle").textContent = "Add Issue";
+        document.getElementById("is-component").value = "";
+        document.getElementById("is-severity").value = "P2";
+        document.getElementById("is-description").value = "";
+        document.getElementById("is-status").value = "open";
+        document.getElementById("is-fix").value = "";
+        document.getElementById("issueDeleteBtn").classList.add("hidden");
+      }
     }
 
     function openModal(type, id = "") {
       resetModal(type);
       const modalId = `modal-${type}`;
       const overlay = document.getElementById(modalId);
-      const collectionName = type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
+      const collectionName = type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
       const item = id ? state[collectionName].find(entry => entry.id === id) : null;
       modalState[type] = item ? item.id : null;
 
@@ -2823,13 +3161,26 @@
         setSpeed(item.speed);
       }
 
+      if (type === "issue" && item) {
+        document.getElementById("issueModalTitle").textContent = "Edit Issue";
+        document.getElementById("is-component").value = item.component;
+        document.getElementById("is-severity").value = item.severity;
+        document.getElementById("is-description").value = item.description;
+        document.getElementById("is-status").value = item.status;
+        document.getElementById("is-fix").value = item.proposedFix;
+        document.getElementById("issueDeleteBtn").classList.remove("hidden");
+      }
+
+      clearFieldErrors(modalId);
       overlay.classList.add("open");
+      trapFocus(overlay);
       focusFirstField(modalId);
     }
 
     function closeModal(modalId) {
       const overlay = document.getElementById(modalId);
       if (overlay) overlay.classList.remove("open");
+      releaseFocusTrap();
     }
 
     function upsertEntry(collectionName, entry) {
@@ -2840,10 +3191,34 @@
       renderAll();
     }
 
+    function markFieldError(fieldId, message) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      const row = field.closest(".form-row");
+      if (!row) return;
+      row.classList.add("has-error");
+      const existing = row.querySelector(".field-error");
+      if (existing) existing.remove();
+      const hint = document.createElement("div");
+      hint.className = "field-error";
+      hint.textContent = message;
+      row.appendChild(hint);
+    }
+
+    function clearFieldErrors(modalId) {
+      const overlay = document.getElementById(modalId);
+      if (!overlay) return;
+      overlay.querySelectorAll(".has-error").forEach(row => row.classList.remove("has-error"));
+      overlay.querySelectorAll(".field-error").forEach(el => el.remove());
+    }
+
     function saveEvent() {
+      clearFieldErrors("modal-event");
       const title = asString(document.getElementById("ev-name").value);
       const date = asString(document.getElementById("ev-date").value);
       if (!title || !date) {
+        if (!title) markFieldError("ev-name", "Name is required");
+        if (!date) markFieldError("ev-date", "Date is required");
         setStatus("Event name and date are required.", "error");
         return;
       }
@@ -2869,9 +3244,12 @@
     }
 
     function saveGame() {
+      clearFieldErrors("modal-game");
       const date = asString(document.getElementById("gm-date").value);
       const opponent = asString(document.getElementById("gm-opponent").value);
       if (!date || !opponent) {
+        if (!date) markFieldError("gm-date", "Date is required");
+        if (!opponent) markFieldError("gm-opponent", "Opponent is required");
         setStatus("Game date and opponent are required.", "error");
         return;
       }
@@ -2900,8 +3278,10 @@
     }
 
     function savePractice() {
+      clearFieldErrors("modal-practice");
       const date = asString(document.getElementById("pr-date").value);
       if (!date) {
+        markFieldError("pr-date", "Date is required");
         setStatus("Practice date is required.", "error");
         return;
       }
@@ -2920,8 +3300,10 @@
     }
 
     function saveIce() {
+      clearFieldErrors("modal-ice");
       const date = asString(document.getElementById("ice-date").value);
       if (!date) {
+        markFieldError("ice-date", "Date is required");
         setStatus("Ice note date is required.", "error");
         return;
       }
@@ -2939,8 +3321,29 @@
       showToast("Ice notes saved");
     }
 
+    function saveIssue() {
+      const component = asString(document.getElementById("is-component").value);
+      const description = asString(document.getElementById("is-description").value);
+      if (!component || !description) {
+        setStatus("Component and description are required.", "error");
+        return;
+      }
+      const entry = {
+        id: modalState.issue || nextIssueId(),
+        component,
+        description,
+        severity: normalizeIssueSeverity(document.getElementById("is-severity").value),
+        status: normalizeIssueStatus(document.getElementById("is-status").value),
+        proposedFix: asString(document.getElementById("is-fix").value)
+      };
+      upsertEntry("issues", entry);
+      closeModal("modal-issue");
+      setStatus("Issue saved.", "success");
+      showToast("Issue saved");
+    }
+
     function deleteEntry(type, id) {
-      const collectionName = type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
+      const collectionName = type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
       state[collectionName] = state[collectionName].filter(item => item.id !== id);
       if (type === "event" && selectedEventId === id) {
         selectedEventId = state.events[0] ? state.events[0].id : null;
@@ -2956,6 +3359,7 @@
       if (type === "game") saveGame();
       if (type === "practice") savePractice();
       if (type === "ice") saveIce();
+      if (type === "issue") saveIssue();
     }
 
     function deleteModal(type) {
@@ -3014,6 +3418,7 @@
       renderGames();
       renderPractice();
       renderIce();
+      renderIssues();
       updatePlannerLabel();
       loadPlanner();
       renderPlannerEntries();
@@ -3161,6 +3566,22 @@
       renderAll();
       setStatus("Ready.");
       document.querySelectorAll(".overlay").forEach(el => el.dataset.ready = "");
+
+      const validViews = ["dashboard", "calendar", "planner", "games", "practice", "ice", "issues"];
+      const hashView = window.location.hash.slice(1);
+      if (validViews.includes(hashView)) showView(hashView);
+    });
+
+    window.addEventListener("hashchange", () => {
+      const validViews = ["dashboard", "calendar", "planner", "games", "practice", "ice", "issues"];
+      const hashView = window.location.hash.slice(1);
+      if (validViews.includes(hashView) && hashView !== currentView) showView(hashView);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const openOverlay = document.querySelector(".overlay.open");
+      if (openOverlay) closeModal(openOverlay.id);
     });
   </script>
 </body>
