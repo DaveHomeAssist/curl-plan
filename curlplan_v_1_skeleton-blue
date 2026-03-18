@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CurlPlan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════ */
+:root {
+  /* Surface palette — icy editorial light */
+  --ice:         #e8f4f8;
+  --ice-dark:    #c9e4ef;
+  --ice-mid:     #daeef6;
+  --white:       #fafcfd;
+  --surface:     rgba(255,255,255,0.82);
+  --surface-dim: rgba(255,255,255,0.55);
+
+  /* Ink palette */
+  --stone:       #2c3e4a;
+  --stone-mid:   #3d5464;
+  --stone-light: #5a7a8a;
+  --pebble:      #8ba8b5;
+
+  /* Accent palette */
+  --sky:         #1a6fa0;
+  --leaf:        #3a7d5c;
+  --granite:     #b44a2c;
+  --gold:        #c9882a;
+
+  /* Borders & shadows */
+  --border:      rgba(44,62,74,0.10);
+  --border-mid:  rgba(44,62,74,0.18);
+  --shadow-xs:   0 1px 3px rgba(44,62,74,0.06);
+  --shadow-sm:   0 2px 8px rgba(44,62,74,0.08);
+  --shadow:      0 4px 20px rgba(44,62,74,0.10);
+  --shadow-lg:   0 12px 40px rgba(44,62,74,0.14);
+
+  /* Radii */
+  --r:           12px;
+  --r-lg:        20px;
+  --r-pill:      999px;
+
+  /* Type */
+  --font-sans:   'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif:  'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono:   'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background: var(--ice);
+  color: var(--stone);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(26,111,160,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(58,125,92,0.04) 0%, transparent 55%),
+    var(--ice);
+}
+
+
+/* ═══════════════════════════════════════════
+   SHELL
+   ═══════════════════════════════════════════ */
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+   ═══════════════════════════════════════════ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-name {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: var(--stone);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.brand-name span { color: var(--sky); }
+
+.brand-tag {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--pebble);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.today-chip {
+  background: var(--stone);
+  color: var(--ice);
+  border-radius: var(--r-pill);
+  padding: 7px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: var(--font-mono);
+}
+
+.accent-line {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--sky), var(--leaf));
+}
+
+
+/* ═══════════════════════════════════════════
+   NAV
+   ═══════════════════════════════════════════ */
+.nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-pill);
+  padding: 5px;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-xs);
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--stone-light);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  color: var(--stone);
+  background: rgba(44,62,74,0.06);
+}
+
+.nav-btn.active {
+  background: var(--stone);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* ═══════════════════════════════════════════
+   VIEW SWITCHING
+   ═══════════════════════════════════════════ */
+.view { display: none; }
+.view.active { display: block; }
+
+
+/* ═══════════════════════════════════════════
+   SECTION HEADER
+   ═══════════════════════════════════════════ */
+.sec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sec-title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--stone);
+  letter-spacing: -0.02em;
+}
+
+
+/* ═══════════════════════════════════════════
+   CARD SYSTEM
+   ═══════════════════════════════════════════ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.card-sm {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-xs);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--stone);
+}
+
+
+/* ═══════════════════════════════════════════
+   GRID LAYOUTS
+   ═══════════════════════════════════════════ */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+
+
+/* ═══════════════════════════════════════════
+   STAT CARDS
+   ═══════════════════════════════════════════ */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-num {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.stat-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pebble);
+}
+
+.stat-blue  .stat-num { color: var(--sky); }
+.stat-red   .stat-num { color: var(--granite); }
+.stat-green .stat-num { color: var(--leaf); }
+.stat-gold  .stat-num { color: var(--gold); }
+
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--r);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--stone);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  background: var(--stone-mid);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-sky { background: var(--sky); color: #fff; }
+.btn-sky:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+.btn-red { background: var(--granite); color: #fff; }
+.btn-red:hover { filter: brightness(1.1); }
+
+.btn-ghost {
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  color: var(--stone);
+}
+.btn-ghost:hover { background: #fff; }
+
+.btn-sm { padding: 7px 13px; font-size: 0.8rem; border-radius: 8px; }
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pebble);
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.btn-icon:hover { color: var(--granite); background: rgba(180,74,44,0.08); }
+
+
+/* ═══════════════════════════════════════════
+   FORMS
+   ═══════════════════════════════════════════ */
+.form-row { margin-bottom: 16px; }
+.form-row:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stone-light);
+  margin-bottom: 6px;
+}
+
+/* Override label styling inside drill-check */
+.drill-check .form-label,
+.drill-check label {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--stone);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r);
+  background: rgba(255,255,255,0.92);
+  color: var(--stone);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px rgba(26,111,160,0.1);
+}
+
+textarea { resize: vertical; min-height: 80px; }
+
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+
+/* ═══════════════════════════════════════════
+   BADGES & CHIPS
+   ═══════════════════════════════════════════ */
+.pos-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pos-skip   { background: rgba(180,74,44,0.12); color: var(--granite); }
+.pos-third  { background: rgba(201,136,42,0.12); color: var(--gold); }
+.pos-second { background: rgba(26,111,160,0.12); color: var(--sky); }
+.pos-lead   { background: rgba(58,125,92,0.12); color: var(--leaf); }
+
+.result-w { background: rgba(58,125,92,0.12); color: var(--leaf); }
+.result-l { background: rgba(180,74,44,0.12); color: var(--granite); }
+.result-d { background: rgba(139,168,181,0.15); color: var(--pebble); }
+
+.type-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+}
+
+.type-league   { background: rgba(26,111,160,0.10); color: var(--sky); }
+.type-bonspiel { background: rgba(180,74,44,0.10); color: var(--granite); }
+.type-practice { background: rgba(58,125,92,0.10); color: var(--leaf); }
+.type-other    { background: rgba(139,168,181,0.15); color: var(--pebble); }
+
+.score-pill {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: var(--ice-dark);
+  border-radius: 6px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+
+/* ═══════════════════════════════════════════
+   EVENT ITEMS
+   ═══════════════════════════════════════════ */
+.event-item {
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.event-item:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.event-date-block {
+  min-width: 48px;
+  text-align: center;
+  background: var(--stone);
+  color: var(--ice);
+  border-radius: 10px;
+  padding: 8px 6px;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+
+.event-day {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-serif);
+}
+
+.event-mon {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.event-info { flex: 1; min-width: 0; }
+
+.event-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.event-meta {
+  font-size: 0.8rem;
+  color: var(--stone-light);
+  margin-top: 4px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.event-notes {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--stone-light);
+}
+
+
+/* ═══════════════════════════════════════════
+   EMPTY STATES
+   ═══════════════════════════════════════════ */
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--pebble);
+}
+
+.empty-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.empty-text { font-size: 0.92rem; }
+
+
+/* ═══════════════════════════════════════════
+   GAME LOG TABLE
+   ═══════════════════════════════════════════ */
+.log-table { width: 100%; border-collapse: collapse; }
+
+.log-table th {
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pebble);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border-mid);
+}
+
+.log-table td {
+  padding: 12px 10px;
+  font-size: 0.87rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tr:hover td { background: rgba(26,111,160,0.03); }
+
+.log-table .col-date { font-family: var(--font-mono); font-size: 0.83rem; }
+.log-table .col-notes { max-width: 200px; font-size: 0.82rem; color: var(--stone-light); }
+
+
+/* ═══════════════════════════════════════════
+   FILTER BAR
+   ═══════════════════════════════════════════ */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-bar .btn.active-filter {
+  background: var(--stone);
+  color: var(--white);
+  border-color: var(--stone);
+}
+
+
+/* ═══════════════════════════════════════════
+   PLANNER
+   ═══════════════════════════════════════════ */
+.planner-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--stone);
+  transition: background 0.15s;
+}
+
+.date-nav-btn:hover { background: #fff; }
+
+.planner-date-label {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 200px;
+  text-align: center;
+}
+
+.planner-section-label {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: var(--stone);
+}
+
+
+/* ═══════════════════════════════════════════
+   PRACTICE DRILLS
+   ═══════════════════════════════════════════ */
+.drill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.drill-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border-mid);
+  background: var(--surface-dim);
+  cursor: pointer;
+  transition: background 0.12s;
+  user-select: none;
+}
+
+.drill-check:hover { background: var(--surface); }
+
+.drill-check input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sky);
+  flex-shrink: 0;
+}
+
+
+/* ═══════════════════════════════════════════
+   ICE SPEED DOTS
+   ═══════════════════════════════════════════ */
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.speed-row-label {
+  font-size: 0.8rem;
+  color: var(--pebble);
+}
+
+.speed-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.speed-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.speed-dot.active {
+  border-color: var(--sky);
+  background: var(--sky);
+}
+
+
+/* ═══════════════════════════════════════════
+   MODALS
+   ═══════════════════════════════════════════ */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(44,62,74,0.4);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn 0.22s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--stone);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--pebble);
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover { color: var(--stone); background: var(--ice-dark); }
+
+.modal-body { padding: 0 24px 24px; }
+
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════ */
+.hidden { display: none !important; }
+.muted { color: var(--pebble); }
+.text-sm { font-size: 0.82rem; }
+.text-mono { font-family: var(--font-mono); }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 16px; }
+
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .shell { padding: 16px 14px 60px; gap: 18px; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+  .drill-grid { grid-template-columns: 1fr; }
+  .card { padding: 18px; }
+  .nav { justify-content: center; }
+  .topbar { justify-content: center; text-align: center; }
+  .sec-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .planner-date-label { min-width: auto; }
+  .log-table th, .log-table td { padding: 8px 6px; font-size: 0.8rem; }
+}
+
+@media (max-width: 480px) {
+  .brand-name { font-size: 1.5rem; }
+  .stat-num { font-size: 1.8rem; }
+  .nav-btn { padding: 7px 12px; font-size: 0.8rem; }
+  .form-grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══════════════════════════════════════
+       TOP BAR
+       ══════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-name">Curl<span>Plan</span></div>
+      <div class="brand-tag">Your curling planner</div>
+    </div>
+    <div class="today-chip" id="todayChip">Loading...</div>
+  </header>
+
+  <div class="accent-line"></div>
+
+  <!-- ══════════════════════════════════════
+       NAV
+       ══════════════════════════════════════ -->
+  <nav class="nav" id="main-nav">
+    <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+    <button class="nav-btn" data-view="calendar">Calendar</button>
+    <button class="nav-btn" data-view="planner">Game Planner</button>
+    <button class="nav-btn" data-view="games">Game Log</button>
+    <button class="nav-btn" data-view="practice">Practice</button>
+    <button class="nav-btn" data-view="ice">Ice Notes</button>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════
+       DASHBOARD
+       ══════════════════════════════════════ -->
+  <section id="view-dashboard" class="view active">
+
+    <!-- Stats row -->
+    <div class="grid-3">
+      <div class="stat-card stat-blue">
+        <div class="stat-num" id="stat-games">0</div>
+        <div class="stat-label">Games Played</div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-num" id="stat-wins">0</div>
+        <div class="stat-label">Wins</div>
+      </div>
+      <div class="stat-card stat-gold">
+        <div class="stat-num" id="stat-upcoming">0</div>
+        <div class="stat-label">Upcoming Events</div>
+      </div>
+    </div>
+
+    <!-- Two-column feature cards -->
+    <div class="grid-2 mt-md">
+      <!-- Upcoming events -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Upcoming</div>
+          <button class="btn btn-ghost btn-sm" data-view-jump="calendar">See All</button>
+        </div>
+        <div id="dash-upcoming">
+          <div class="empty">
+            <div class="empty-icon">📅</div>
+            <div class="empty-text">No upcoming events.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent games -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Recent Games</div>
+          <button class="btn btn-ghost btn-sm" data-view-jump="games">See All</button>
+        </div>
+        <div id="dash-games">
+          <div class="empty">
+            <div class="empty-icon">🥌</div>
+            <div class="empty-text">No games logged yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ice notes preview -->
+    <div class="card mt-md">
+      <div class="card-head">
+        <div class="card-title">Latest Ice Notes</div>
+        <button class="btn btn-ghost btn-sm" data-view-jump="ice">See All</button>
+      </div>
+      <div id="dash-ice">
+        <div class="empty">
+          <div class="empty-icon">🧊</div>
+          <div class="empty-text">No ice notes yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       CALENDAR
+       ══════════════════════════════════════ -->
+  <section id="view-calendar" class="view">
+
+    <div class="sec-header">
+      <div class="sec-title">Calendar</div>
+      <button class="btn btn-primary" data-open-modal="modal-event">+ Add Event</button>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="card" style="padding: 14px 18px; margin-bottom: 16px;">
+      <div class="filter-bar" id="filter-bar">
+        <button class="btn btn-ghost btn-sm active-filter" data-filter="all">All</button>
+        <button class="btn btn-ghost btn-sm" data-filter="league">League</button>
+        <button class="btn btn-ghost btn-sm" data-filter="bonspiel">Bonspiel</button>
+        <button class="btn btn-ghost btn-sm" data-filter="practice">Practice</button>
+        <button class="btn btn-ghost btn-sm" data-filter="other">Other</button>
+      </div>
+    </div>
+
+    <!-- Event list (JS-rendered) -->
+    <div id="event-list" class="stack"></div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       GAME PLANNER
+       ══════════════════════════════════════ -->
+  <section id="view-planner" class="view">
+
+    <div class="sec-header">
+      <div class="planner-date-nav">
+        <button class="date-nav-btn" data-planner-dir="-1">&#8592;</button>
+        <div class="planner-date-label" id="planner-label">Today</div>
+        <button class="date-nav-btn" data-planner-dir="1">&#8594;</button>
+      </div>
+      <button class="btn btn-primary" id="save-planner-btn">Save Notes</button>
+    </div>
+
+    <div class="grid-2">
+      <!-- Pre-game -->
+      <div class="card">
+        <div class="planner-section-label">Pre-Game</div>
+
+        <div class="form-grid-2">
+          <div class="form-row">
+            <label class="form-label" for="pg-time">Game Time</label>
+            <input type="time" id="pg-time"/>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="pg-rink">Rink</label>
+            <input type="text" id="pg-rink" placeholder="Rink name"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-opponent">Opponent</label>
+          <input type="text" id="pg-opponent" placeholder="Team name"/>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-position">My Position</label>
+          <select id="pg-position">
+            <option value="">Select...</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-goals">Goals for This Game</label>
+          <textarea id="pg-goals" placeholder="What do I want to focus on today?"></textarea>
+        </div>
+      </div>
+
+      <!-- Post-game -->
+      <div class="card">
+        <div class="planner-section-label">Post-Game Reflection</div>
+
+        <div class="form-grid-2">
+          <div class="form-row">
+            <label class="form-label" for="pg-score-us">Our Score</label>
+            <input type="number" id="pg-score-us" placeholder="0" min="0"/>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="pg-score-them">Their Score</label>
+            <input type="number" id="pg-score-them" placeholder="0" min="0"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-ice">Ice Conditions</label>
+          <textarea id="pg-ice" placeholder="Ice speed, curl amount, anything unusual..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-reflection">Reflection</label>
+          <textarea id="pg-reflection" placeholder="What went well? What to work on next time?"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="pg-keyshot">Key Shot of the Game</label>
+          <input type="text" id="pg-keyshot" placeholder="Describe your best or most important shot"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Planner history -->
+    <div id="planner-entries" class="stack mt-md"></div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       GAME LOG
+       ══════════════════════════════════════ -->
+  <section id="view-games" class="view">
+
+    <div class="sec-header">
+      <div class="sec-title">Game Log</div>
+      <button class="btn btn-primary" data-open-modal="modal-game">+ Log Game</button>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+      <table class="log-table" id="game-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Score</th>
+            <th>Result</th>
+            <th>Position</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="game-tbody"></tbody>
+      </table>
+      <div id="games-empty" class="empty hidden">
+        <div class="empty-icon">🥌</div>
+        <div class="empty-text">No games logged yet. Add your first game!</div>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       PRACTICE
+       ══════════════════════════════════════ -->
+  <section id="view-practice" class="view">
+
+    <div class="sec-header">
+      <div class="sec-title">Practice Log</div>
+      <button class="btn btn-primary" data-open-modal="modal-practice">+ Log Practice</button>
+    </div>
+
+    <div id="practice-list" class="stack"></div>
+    <div id="practice-empty" class="empty hidden">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-text">No practice sessions logged yet.</div>
+    </div>
+
+  </section>
+
+
+  <!-- ══════════════════════════════════════
+       ICE NOTES
+       ══════════════════════════════════════ -->
+  <section id="view-ice" class="view">
+
+    <div class="sec-header">
+      <div class="sec-title">Ice Notes</div>
+      <button class="btn btn-primary" data-open-modal="modal-ice">+ Add Ice Notes</button>
+    </div>
+
+    <div id="ice-list" class="grid-auto"></div>
+    <div id="ice-empty" class="empty hidden">
+      <div class="empty-icon">🧊</div>
+      <div class="empty-text">No ice notes yet. Start tracking rink conditions!</div>
+    </div>
+
+  </section>
+
+</div><!-- /.shell -->
+
+
+<!-- ══════════════════════════════════════════
+     MODALS
+     ══════════════════════════════════════════ -->
+
+<!-- Add Event -->
+<div class="overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Event</div>
+      <button class="modal-close" data-close-modal="modal-event">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label" for="ev-name">Event Name</label>
+        <input type="text" id="ev-name" placeholder="e.g. Tuesday League Night"/>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="ev-date">Date</label>
+          <input type="date" id="ev-date"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-time">Time</label>
+          <input type="time" id="ev-time"/>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="ev-type">Type</label>
+          <select id="ev-type">
+            <option value="league">League</option>
+            <option value="bonspiel">Bonspiel</option>
+            <option value="practice">Practice</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-position">Position</label>
+          <select id="ev-position">
+            <option value="">Not set</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="ev-location">Rink / Location</label>
+        <input type="text" id="ev-location" placeholder="Rink name or address"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="ev-sheet">Sheet #</label>
+        <input type="text" id="ev-sheet" placeholder="e.g. Sheet 4"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="ev-notes">Notes</label>
+        <textarea id="ev-notes" placeholder="Any prep notes..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close-modal="modal-event">Cancel</button>
+        <button class="btn btn-primary" id="save-event-btn">Save Event</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Log Game -->
+<div class="overlay" id="modal-game">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log a Game</div>
+      <button class="modal-close" data-close-modal="modal-game">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="gm-date">Date</label>
+          <input type="date" id="gm-date"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="gm-opponent">Opponent</label>
+          <input type="text" id="gm-opponent" placeholder="Team name"/>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row">
+          <label class="form-label" for="gm-us">Our Score</label>
+          <input type="number" id="gm-us" placeholder="0" min="0"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="gm-them">Their Score</label>
+          <input type="number" id="gm-them" placeholder="0" min="0"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="gm-position">Position</label>
+          <select id="gm-position">
+            <option value="">N/A</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="gm-rink">Rink</label>
+        <input type="text" id="gm-rink" placeholder="Rink name"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="gm-keyshot">Key Shot</label>
+        <input type="text" id="gm-keyshot" placeholder="Best or most memorable shot..."/>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="gm-notes">Notes</label>
+        <textarea id="gm-notes" placeholder="Anything else to remember..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close-modal="modal-game">Cancel</button>
+        <button class="btn btn-primary" id="save-game-btn">Save Game</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Practice -->
+<div class="overlay" id="modal-practice">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Practice Session</div>
+      <button class="modal-close" data-close-modal="modal-practice">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="pr-date">Date</label>
+          <input type="date" id="pr-date"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="pr-duration">Duration</label>
+          <select id="pr-duration">
+            <option>30 min</option>
+            <option>45 min</option>
+            <option selected>1 hour</option>
+            <option>1.5 hours</option>
+            <option>2 hours</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Shot Types Practiced</label>
+        <div class="drill-grid">
+          <label class="drill-check"><input type="checkbox" value="Draw" class="pr-shot"/> Draw</label>
+          <label class="drill-check"><input type="checkbox" value="Takeout" class="pr-shot"/> Takeout</label>
+          <label class="drill-check"><input type="checkbox" value="Guard" class="pr-shot"/> Guard</label>
+          <label class="drill-check"><input type="checkbox" value="Raise" class="pr-shot"/> Raise</label>
+          <label class="drill-check"><input type="checkbox" value="Peel" class="pr-shot"/> Peel</label>
+          <label class="drill-check"><input type="checkbox" value="Hit &amp; Roll" class="pr-shot"/> Hit &amp; Roll</label>
+          <label class="drill-check"><input type="checkbox" value="Double" class="pr-shot"/> Double</label>
+          <label class="drill-check"><input type="checkbox" value="Freeze" class="pr-shot"/> Freeze</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="pr-focus">Focus / Goals</label>
+        <textarea id="pr-focus" placeholder="What did I work on?"></textarea>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="pr-notes">Notes &amp; Observations</label>
+        <textarea id="pr-notes" placeholder="What did I notice? What improved?"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close-modal="modal-practice">Cancel</button>
+        <button class="btn btn-primary" id="save-practice-btn">Save Session</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ice Notes -->
+<div class="overlay" id="modal-ice">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Ice Notes</div>
+      <button class="modal-close" data-close-modal="modal-ice">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="ice-date">Date</label>
+          <input type="date" id="ice-date"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ice-rink">Rink</label>
+          <input type="text" id="ice-rink" placeholder="Rink name"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Ice Speed</label>
+        <div class="speed-row">
+          <span class="speed-row-label">Slow</span>
+          <div class="speed-dots" id="speed-dots">
+            <div class="speed-dot" data-speed="1"></div>
+            <div class="speed-dot" data-speed="2"></div>
+            <div class="speed-dot" data-speed="3"></div>
+            <div class="speed-dot" data-speed="4"></div>
+            <div class="speed-dot" data-speed="5"></div>
+          </div>
+          <span class="speed-row-label">Fast</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="ice-curl">Curl Amount</label>
+        <select id="ice-curl">
+          <option value="">Not noted</option>
+          <option>Very straight</option>
+          <option>Straight</option>
+          <option>Average</option>
+          <option>Good curl</option>
+          <option>Heavy curl</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="ice-notes-text">Notes</label>
+        <textarea id="ice-notes-text" placeholder="Pebble condition, problem areas, anything unusual..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close-modal="modal-ice">Cancel</button>
+        <button class="btn btn-primary" id="save-ice-btn">Save Notes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPT — wire behavior here
+     See HOOK-MAP.md for binding reference.
+     ══════════════════════════════════════════ -->
+<script>
+  // Minimal bootstrap — todayChip
+  document.addEventListener('DOMContentLoaded', () => {
+    const d = new Date();
+    const chip = document.getElementById('todayChip');
+    if (chip) {
+      chip.textContent = d.toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
