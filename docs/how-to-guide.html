@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CurlPlan How To Guide</title>
+  <style>
+    :root {
+      --ice: #e8f4f8;
+      --stone: #2c3e4a;
+      --stone-light: #5a7a8a;
+      --sky: #1a6fa0;
+      --leaf: #3a7d5c;
+      --gold: #c9882a;
+      --granite: #b44a2c;
+      --white: #fafcfd;
+      --border: rgba(44, 62, 74, 0.12);
+      --shadow: 0 6px 24px rgba(44, 62, 74, 0.10);
+      --r: 12px;
+      --font-serif: "Playfair Display", Georgia, serif;
+      --font-sans: "DM Sans", "Segoe UI", -apple-system, sans-serif;
+      --font-mono: "DM Mono", Menlo, Monaco, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      background: var(--ice);
+      color: var(--stone);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    body { padding: 32px 20px 64px; }
+    .guide-shell { max-width: 820px; margin: 0 auto; }
+    .brand-kicker {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone-light);
+      font-weight: 700;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin: 6px 0 12px;
+    }
+    h1 span { color: var(--sky); }
+    .subtitle { color: var(--stone-light); font-size: 0.95rem; margin-bottom: 32px; }
+    h2 {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 24px 0 8px;
+      color: var(--sky);
+    }
+    p { margin-bottom: 12px; }
+    ul, ol { margin: 0 0 16px 20px; }
+    li { margin-bottom: 6px; }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px 24px;
+      margin: 16px 0;
+      box-shadow: var(--shadow);
+    }
+    .tip-card {
+      background: rgba(58, 125, 92, 0.07);
+      border-left: 4px solid var(--leaf);
+    }
+    .warn-card {
+      background: rgba(180, 74, 44, 0.06);
+      border-left: 4px solid var(--granite);
+    }
+    .tip-label, .warn-label {
+      font-weight: 700;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .tip-label { color: var(--leaf); }
+    .warn-label { color: var(--granite); }
+    code {
+      font-family: var(--font-mono);
+      background: rgba(26, 111, 160, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.88em;
+    }
+    kbd {
+      font-family: var(--font-mono);
+      background: var(--stone);
+      color: var(--white);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.82em;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--sky);
+      color: var(--white);
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.82rem;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+    .step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .step-content { flex: 1; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-win { background: rgba(58, 125, 92, 0.15); color: var(--leaf); }
+    .badge-loss { background: rgba(180, 74, 44, 0.12); color: var(--granite); }
+    .badge-draw { background: rgba(44, 62, 74, 0.10); color: var(--stone-light); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--stone-light);
+    }
+    .toc { list-style: none; margin-left: 0; padding: 0; }
+    .toc li { margin-bottom: 4px; }
+    .toc a { color: var(--sky); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+    @media (max-width: 640px) {
+      body { padding: 16px 12px 48px; }
+      h2 { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="guide-shell">
+    <div class="brand-kicker">Personal Curling Command Center</div>
+    <h1>Curl<span>Plan</span> How To Guide</h1>
+    <p class="subtitle">Everything you need to get started, stay organized, and get the most out of CurlPlan.</p>
+
+    <div class="card">
+      <strong>Quick Navigation</strong>
+      <ul class="toc">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#tools-needed">Tools Needed</a></li>
+        <li><a href="#step-by-step">Step by Step Instructions</a></li>
+        <li><a href="#tips">Tips</a></li>
+        <li><a href="#common-mistakes">Common Mistakes</a></li>
+      </ul>
+    </div>
+
+    <!-- ============================== -->
+    <h2 id="overview">Overview</h2>
+
+    <p>CurlPlan is a local first personal curling app that puts your calendar, game prep, practice logs, and rink memory in one place. There is no account to create, no server to connect to, and no subscription. Open the page, and you are ready to go.</p>
+
+    <p>Your data lives in your browser's local storage. That means it stays on your device, loads instantly, and works offline once the page is cached. You can export everything as a JSON file at any time for backup or transfer.</p>
+
+    <h3>What CurlPlan Does</h3>
+    <ul>
+      <li><strong>Calendar Queue:</strong> Track upcoming league nights, bonspiels, practices, and games. Filter by type and search by keyword.</li>
+      <li><strong>Game Planner:</strong> Build a per date prep sheet with pre game goals, post game reflection, scores, and a customizable checklist that carries forward.</li>
+      <li><strong>Game Log:</strong> Record scores, shot percentages, opponents, key shots, and position. Results auto compute from scores.</li>
+      <li><strong>Practice Log:</strong> Track drill mix, session length, focus, and notes. A running summary shows which shots you practice most.</li>
+      <li><strong>Ice Notes:</strong> Log speed, curl, and rink specific observations. Build a rink memory over time so you know what to expect at each club.</li>
+      <li><strong>Season Stats Dashboard:</strong> Six auto computed insight cards (record, best position, score differential, streak, rink split, shot trend) with sparkline charts and configurable time ranges.</li>
+      <li><strong>Print Reports:</strong> Generate a printable game report that pulls in planner goals, reflection, checklist state, and matching ice notes for any game date.</li>
+      <li><strong>UI Issue Tracker:</strong> Log and manage internal bugs and feature requests using P1/P2/P3 severity with status tracking.</li>
+    </ul>
+
+    <h3>Views at a Glance</h3>
+    <table>
+      <thead>
+        <tr><th>View</th><th>What It Shows</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dashboard</td><td>Stats, upcoming events, planner snapshot, recent results, latest ice read</td></tr>
+        <tr><td>Calendar</td><td>Filterable event feed with detail panel</td></tr>
+        <tr><td>Game Planner</td><td>Per date pre game and post game fields with checklist</td></tr>
+        <tr><td>Game Log</td><td>Sortable results table with performance snapshot</td></tr>
+        <tr><td>Practice</td><td>Session cards with drill summary</td></tr>
+        <tr><td>Ice Notes</td><td>Rink cards with speed, curl, and rink memory tally</td></tr>
+        <tr><td>UI Issues</td><td>Issue table with severity and status tracking</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================== -->
+    <h2 id="tools-needed">Tools Needed</h2>
+
+    <p>CurlPlan runs entirely in your browser. Here is what you need:</p>
+
+    <ul>
+      <li><strong>A modern browser.</strong> Chrome, Firefox, Safari, or Edge. Anything released in the last few years will work.</li>
+      <li><strong>The CurlPlan page.</strong> Open <code>index.html</code> directly from disk, or serve it through GitHub Pages or any static host.</li>
+      <li><strong>That's it.</strong> No install, no dependencies, no internet connection after the first load.</li>
+    </ul>
+
+    <div class="card tip-card">
+      <div class="tip-label">Good to Know</div>
+      <p>Your data stays in the browser that created it. If you switch browsers or clear site data, you will lose your entries unless you export first. The Export button is your backup.</p>
+    </div>
+
+    <!-- ============================== -->
+    <h2 id="step-by-step">Step by Step Instructions</h2>
+
+    <h3>Getting Started</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Open CurlPlan.</strong>
+        Load <code>index.html</code> in your browser. The app starts on the Dashboard with demo data already loaded so you can explore every feature immediately.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Explore the demo data.</strong>
+        Click through the tabs: Dashboard, Calendar, Game Planner, Game Log, Practice, Ice Notes, UI Issues. The demo set includes sample events, games, practice sessions, ice readings, and planner entries so every view has something to show.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>Clear the demo when ready.</strong>
+        When you want to start fresh, click <strong>Reset Demo Data</strong> in the top bar (this restores the demo), or export your real data first, then import it into a clean session.
+      </div>
+    </div>
+
+    <h3>Adding an Event</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Click "+ Quick Add Event" or navigate to Calendar and click "+ Add Event."</strong>
+        The event modal opens.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Fill in the name and date.</strong>
+        These two fields are required. Everything else (time, type, position, location, sheet, notes) is optional but helpful.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>Pick a type.</strong>
+        Choose League, Game, Practice, Bonspiel, or Other. This controls how the event appears in the Calendar filter.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">4</span>
+      <div class="step-content">
+        <strong>Click "Save Event."</strong>
+        The event appears in your Calendar and shows up on the Dashboard if it is upcoming. A status message and toast confirm the save.
+      </div>
+    </div>
+
+    <h3>Logging a Game</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Open the Game Log tab and click "+ Log Game."</strong>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Enter date and opponent.</strong> These are required. Then fill in scores (Our Score and Their Score). CurlPlan auto computes the result: higher score wins, equal scores draw.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>Add shot percentage if you tracked it.</strong>
+        This is optional, but logging it for at least two games unlocks the shot trend sparkline on the Dashboard and Game Log.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">4</span>
+      <div class="step-content">
+        <strong>Record position, rink, key shot, and notes.</strong>
+        Position and rink feed into the Season Stats Dashboard (best position, top rink). Key shot and notes appear in the game row and in the printable report.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">5</span>
+      <div class="step-content">
+        <strong>Click "Save Game."</strong>
+        The game appears in the results table and the Dashboard updates immediately.
+      </div>
+    </div>
+
+    <h3>Using the Game Planner</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Open the Game Planner tab.</strong>
+        The planner shows today's date by default. Use the Previous/Next buttons to navigate to any date.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Fill in the Pre Game section.</strong>
+        Start time, rink, opponent, position, goals, and ice notes. The checklist at the bottom is your operational prep list (equipment, warmup, communication).
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>Customize your checklist.</strong>
+        Add items with the text input and "Add Item" button. Reorder with arrow buttons. Remove items you do not need. Click "Reset Defaults" to go back to the original three items. Your custom list carries forward to new dates.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">4</span>
+      <div class="step-content">
+        <strong>After the game, fill in the Post Game section.</strong>
+        Scores, key shot, and reflection. This is where you capture what worked, what missed, and what to keep next time.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">5</span>
+      <div class="step-content">
+        <strong>Click "Save Notes."</strong>
+        The planner entry is stored for that date. Jump to other dates using the Recent Planner Entries cards at the bottom without losing your saved work.
+      </div>
+    </div>
+
+    <h3>Logging Practice and Ice Notes</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Practice:</strong> Open the Practice tab, click "+ Log Practice." Pick a date, duration, check the drills you worked (Draw, Guard, Takeout, Freeze, Hit &amp; Roll, Broom Work), and write your focus and notes. Save.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Ice Notes:</strong> Open the Ice Notes tab, click "+ Add Ice Notes." Pick a date, name the rink, tap the speed dots (1 to 5), choose a curl type (Very Straight through Big Finish), and describe the ice. Save. The Rink Memory panel on the right builds over time.
+      </div>
+    </div>
+
+    <h3>Printing a Game Report</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Go to Game Log.</strong> Find the game you want and click "Print" in the Actions column.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>CurlPlan generates a full report.</strong>
+        It pulls in the game score, key shot, and notes. It also includes the planner entry for that date (goals, reflection, checklist state) and any matching ice notes. Your browser's print dialog opens automatically.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>Print or save as PDF.</strong>
+        The report is formatted for letter size. After printing, the report overlay clears automatically.
+      </div>
+    </div>
+
+    <h3>Exporting and Importing Data</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>Export:</strong> Click the "Export" button in the top bar. A file named <code>curlplan-data.json</code> downloads to your device. This contains all your events, games, practice, ice notes, issues, and planner entries.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Import:</strong> Click "Import," select a CurlPlan JSON file, and the app loads it. This replaces all current data, so export first if you want to keep what you have.
+      </div>
+    </div>
+
+    <h3>Using Season Stats</h3>
+
+    <div class="step-row">
+      <span class="step-num">1</span>
+      <div class="step-content">
+        <strong>The Season Stats Dashboard is on the main Dashboard view.</strong>
+        It computes six insight cards from your game log: Record, Best Position, Average Score Differential, Longest Win Streak, Top Rink Split, and Shot % Trend.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">2</span>
+      <div class="step-content">
+        <strong>Change the time range.</strong>
+        Click "This Season" (current calendar year), "All Time" (every game), or "Last 10" (most recent 10 games). The cards and sparkline charts update instantly.
+      </div>
+    </div>
+
+    <div class="step-row">
+      <span class="step-num">3</span>
+      <div class="step-content">
+        <strong>The more games you log, the richer the stats.</strong>
+        Position data requires logging your position on games. Shot trend requires at least two games with shot percentage recorded.
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <h2 id="tips">Tips</h2>
+
+    <div class="card tip-card">
+      <div class="tip-label">Export Often</div>
+      <p>Your data lives in browser storage. If you clear your browser data, switch devices, or use a different browser, your entries will not be there. Click Export after every session to keep a backup file. It takes one second.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Use the Planner Before and After</div>
+      <p>Fill in your pre game goals and checklist before you leave for the rink. After the game, come back and fill in scores, key shot, and reflection while the details are still fresh. The printable report ties both halves together.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Log Position and Rink on Games</div>
+      <p>The Season Stats Dashboard computes win percentage by position and by rink. These insights only work if you include position and rink when you log games. The extra five seconds per entry pays off across a full season.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Track Shot Percentage</div>
+      <p>Shot percentage is optional, but logging it for at least two games unlocks the shot trend sparkline on both the Dashboard and the Game Log performance panel. If your club tracks individual stats, enter yours here.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Use Hash URLs to Jump Straight to a View</div>
+      <p>Bookmark <code>index.html#planner</code> or <code>index.html#games</code> to open CurlPlan directly on the view you use most. Valid hashes: <code>#dashboard</code>, <code>#calendar</code>, <code>#planner</code>, <code>#games</code>, <code>#practice</code>, <code>#ice</code>, <code>#issues</code>.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Customize the Planner Checklist Once</div>
+      <p>The default checklist has three items: Equipment check, Warm up routine, Team communication reminders. Customize it once with your actual prep steps (brooms, shoes, stopwatch, water, team text). Your custom list carries forward to all future dates automatically.</p>
+    </div>
+
+    <div class="card tip-card">
+      <div class="tip-label">Use Keyboard Shortcuts</div>
+      <p>Press <kbd>Esc</kbd> to close any open modal without saving. Press <kbd>Enter</kbd> in the checklist input to add an item without clicking the button. Click outside a modal to dismiss it.</p>
+    </div>
+
+    <!-- ============================== -->
+    <h2 id="common-mistakes">Common Mistakes</h2>
+
+    <div class="card warn-card">
+      <div class="warn-label">Not Exporting Before Clearing Browser Data</div>
+      <p>CurlPlan stores everything in browser local storage. Clearing site data, resetting the browser, or switching to a new device means your entries are gone unless you exported them. Make export part of your routine.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Forgetting to Click "Save Notes" in the Planner</div>
+      <p>The planner does not auto save. If you fill in fields and then navigate to another date or tab without clicking "Save Notes," your entries for that date are lost. Always save before navigating away.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Importing Without Exporting First</div>
+      <p>Import replaces all current data with the contents of the imported file. If you have unsaved work or entries you want to keep, export your current data before importing anything.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Leaving Scores Blank and Expecting a Result</div>
+      <p>The W/L/D result badge auto computes from the Our Score and Their Score fields. If you leave both blank, no result appears. Enter both scores and the result populates automatically.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Skipping Position and Rink on Game Entries</div>
+      <p>The Season Stats Dashboard breaks down win rate by position and by rink. If you skip these fields, those insight cards show "Unknown" or have no data to compute. Fill them in consistently for the best analytics.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Expecting Data to Sync Across Devices</div>
+      <p>CurlPlan is local first. There is no cloud sync. To move data between devices, export on one device and import on the other. The JSON file is the bridge.</p>
+    </div>
+
+    <div class="card warn-card">
+      <div class="warn-label">Clicking "Reset Demo Data" By Accident</div>
+      <p>This replaces your current data with the demo set. A confirmation dialog appears first, but if you click through it too fast, your entries are overwritten. If this happens and you have an export file, import it to restore.</p>
+    </div>
+
+    <div style="margin-top: 48px; padding-top: 24px; border-top: 2px solid var(--border); color: var(--stone-light); font-size: 0.85rem;">
+      CurlPlan How To Guide. Built for curlers who want to get better, one sheet at a time.
+    </div>
+  </div>
+</body>
+</html>

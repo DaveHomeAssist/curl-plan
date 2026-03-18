@@ -56,6 +56,7 @@ function countMatches(source, pattern) {
 }
 
 assert(html.includes('href="assets/css/app.css"'), "Missing app.css stylesheet include.");
+assert(html.includes('href="assets/icons/favicon/favicon.svg"'), "Missing favicon asset include.");
 
 const scriptMatches = Array.from(html.matchAll(/<script src="([^"]+)"><\/script>/g)).map(match => match[1]);
 assert(
@@ -70,12 +71,7 @@ requiredIds.forEach((id) => {
 
 const stateSource = fs.readFileSync(path.join(root, "assets/js/app/core.js"), "utf8");
 assert(/const SCHEMA_VERSION = 3;/.test(stateSource), "SCHEMA_VERSION must remain 3 in core.js.");
-
-const rollbackSource = fs.readFileSync(path.join(root, "assets/js/app.original.js"), "utf8");
-assert(
-  rollbackSource.startsWith("// Rollback-only monolith snapshot"),
-  "app.original.js must be marked as rollback-only."
-);
+assert(fs.existsSync(path.join(root, "assets/icons/favicon/favicon.svg")), "favicon.svg must exist.");
 
 const combined = expectedScripts
   .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
