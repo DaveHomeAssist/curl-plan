@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CurlPlan Scenario Stress Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #f0f5f7; color: #2c3e4a; padding: 20px; line-height: 1.5; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { font-size: .8rem; color: #5a7a8a; margin-bottom: 16px; }
+  .suite { background: #fff; border: 1px solid #d0dce0; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+  .suite-head { padding: 10px 14px; font-weight: 600; font-size: .85rem; border-bottom: 1px solid #e8eff2; display: flex; justify-content: space-between; }
+  .row { padding: 6px 14px; font-size: .78rem; display: flex; justify-content: space-between; border-bottom: 1px solid #f0f5f7; }
+  .row:last-child { border-bottom: none; }
+  .pass { color: #2d6a4f; } .pass::before { content: "✓ "; }
+  .fail { color: #c44; font-weight: 600; } .fail::before { content: "✗ "; }
+  .skip { color: #8a8a8a; } .skip::before { content: "— "; }
+  .summary { padding: 16px; font-size: .9rem; font-weight: 600; border-radius: 8px; margin-top: 12px; }
+  .summary.all-pass { background: #e6f4ec; color: #2d6a4f; border: 1px solid #b0dfc0; }
+  .summary.has-fail { background: #fde8e8; color: #c44; border: 1px solid #f0b0b0; }
+  .dur { font-size: .7rem; color: #8a8a8a; }
+</style>
+</head>
+<body>
+<h1>CurlPlan — Scenario Stress Test</h1>
+<div class="meta">Headless test of core.js state engine: normalization, persistence, migration, validation, edge cases</div>
+<div id="results"></div>
+<div id="summary"></div>
+
+<!-- Load only the modules we need, in order -->
+<script>
+// Provide stubs for DOM dependencies that core.js and utils.js expect
+document.body.insertAdjacentHTML('beforeend', '<div id="searchInput"></div><div id="filterType"></div><div id="statusBar"></div><div id="plannerSnapshot"></div><div id="speedLabel"></div>');
+</script>
+<script src="../assets/js/app/utils.js"></script>
+<script src="../assets/js/app/core.js"></script>
+<script>
+const results = [];
+let totalPass = 0, totalFail = 0, totalSkip = 0;
+const t0 = performance.now();
+
+function suite(name, fn) {
+  const cases = [];
+  const assert = (label, condition) => {
+    if (condition) { cases.push({ label, status: 'pass' }); totalPass++; }
+    else { cases.push({ label, status: 'fail' }); totalFail++; }
+  };
+  const skip = (label) => { cases.push({ label, status: 'skip' }); totalSkip++; };
+  try { fn(assert, skip); } catch (e) {
+    cases.push({ label: `SUITE THREW: ${e.message}`, status: 'fail' }); totalFail++;
+  }
+  results.push({ name, cases });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 1: Normalization — Events
+// ═══════════════════════════════════════════════════════════════
+suite('Event Normalization', (assert) => {
+  // Valid event
+  const e1 = normalizeEvent({ id: 'e1', title: 'League Night', type: 'league', date: '2026-03-19' });
+  assert('Valid event preserves all fields', e1.title === 'League Night' && e1.type === 'league' && e1.date === '2026-03-19');
+
+  // Missing title falls back
+  const e2 = normalizeEvent({ date: '2026-01-01' });
+  assert('Missing title defaults to "Untitled Event"', e2.title === 'Untitled Event');
+
+  // Legacy "name" field migrates to title
+  const e3 = normalizeEvent({ name: 'Old Name', date: '2025-01-01' });
+  assert('Legacy name field migrates to title', e3.title === 'Old Name');
+
+  // Invalid type normalizes
+  const e4 = normalizeEvent({ title: 'X', type: 'invalid_type', date: '2026-01-01' });
+  assert('Invalid type normalizes to "other"', e4.type === 'other');
+
+  // Null input
+  const e5 = normalizeEvent(null);
+  assert('Null input produces valid event with defaults', e5.id && e5.title === 'Untitled Event' && e5.date);
+
+  // String input
+  const e6 = normalizeEvent('not an object');
+  assert('String input produces valid event', e6.id && e6.title === 'Untitled Event');
+
+  // XSS in title
+  const e7 = normalizeEvent({ title: '<script>alert("xss")</script>', date: '2026-01-01' });
+  assert('XSS in title stored as raw string (not executed)', e7.title.includes('<script>'));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 2: Normalization — Games
+// ═══════════════════════════════════════════════════════════════
+suite('Game Normalization', (assert) => {
+  // Valid game with scores
+  const g1 = normalizeGame({ date: '2026-03-18', opponent: 'Granite CC', us: 7, them: 3 });
+  assert('Valid game computes result W', g1.result === 'W' && g1.us === 7 && g1.them === 3);
+
+  // Loss
+  const g2 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: 2, them: 8 });
+  assert('Loss computes result L', g2.result === 'L');
+
+  // Draw
+  const g3 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: 5, them: 5 });
+  assert('Draw computes result D', g3.result === 'D');
+
+  // Empty scores
+  const g4 = normalizeGame({ date: '2026-03-18', opponent: 'X' });
+  assert('Empty scores produce null us/them', g4.us === null && g4.them === null);
+
+  // Partial score (us only)
+  const g5 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: 7, them: '' });
+  assert('Partial score: us filled, them empty → result empty', g5.us === 7 && g5.them === null);
+
+  // Legacy result string "W 7-3"
+  const g6 = normalizeGame({ date: '2026-03-18', opponent: 'X', result: 'W 7-3' });
+  assert('Legacy "W 7-3" parses into us=7 them=3 result=W', g6.us === 7 && g6.them === 3 && g6.result === 'W');
+
+  // Shot percentage
+  const g7 = normalizeGame({ date: '2026-03-18', opponent: 'X', shotPct: 85 });
+  assert('Shot pct preserved as number', g7.shotPct === 85);
+
+  // Non-numeric shot percentage
+  const g8 = normalizeGame({ date: '2026-03-18', opponent: 'X', shotPct: 'high' });
+  assert('Non-numeric shot pct becomes null', g8.shotPct === null);
+
+  // Negative scores
+  const g9 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: -3, them: 5 });
+  assert('Negative score stored as number (no floor enforcement)', g9.us === -3);
+
+  // Zero-zero
+  const g10 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: 0, them: 0 });
+  assert('0-0 is a valid draw', g10.us === 0 && g10.them === 0 && g10.result === 'D');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 3: Normalization — Practice
+// ═══════════════════════════════════════════════════════════════
+suite('Practice Normalization', (assert) => {
+  // Valid practice
+  const p1 = normalizePractice({ date: '2026-03-18', shots: ['Draw', 'Guard'], duration: '60 min' });
+  assert('Valid practice preserves shots array', p1.shots.length === 2 && p1.shots[0] === 'Draw');
+
+  // Legacy comma-separated focus
+  const p2 = normalizePractice({ date: '2026-03-18', focus: 'Draw, Guard, Takeout' });
+  assert('Comma-separated focus splits into shots array', p2.shots.length === 3);
+
+  // Empty shots
+  const p3 = normalizePractice({ date: '2026-03-18' });
+  assert('Missing shots defaults to empty array', Array.isArray(p3.shots) && p3.shots.length === 0);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 4: Normalization — Ice Notes
+// ═══════════════════════════════════════════════════════════════
+suite('Ice Note Normalization', (assert) => {
+  const i1 = normalizeIce({ date: '2026-03-18', rink: 'Main', speed: 3, curl: 'Moderate' });
+  assert('Valid ice note preserves fields', i1.speed === 3 && i1.curl === 'Moderate');
+
+  const i2 = normalizeIce({ date: '2026-03-18', speed: 'fast' });
+  assert('Non-numeric speed normalizes to 0', i2.speed === 0);
+
+  const i3 = normalizeIce({ date: '2026-03-18', speed: 6 });
+  assert('Speed > 5 normalizes to 5', i3.speed === 5);
+
+  const i4 = normalizeIce({ date: '2026-03-18', speed: -1 });
+  assert('Negative speed normalizes to 0', i4.speed === 0);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 5: Normalization — Issues
+// ═══════════════════════════════════════════════════════════════
+suite('Issue Normalization', (assert) => {
+  const is1 = normalizeIssue({ component: 'Storage', description: 'Bug', severity: 'P1', status: 'open' });
+  assert('Valid issue preserves fields', is1.severity === 'P1' && is1.status === 'open');
+
+  // Legacy severity
+  const is2 = normalizeIssue({ component: 'X', description: 'Y', severity: 'High' });
+  assert('Legacy "High" maps to P1', is2.severity === 'P1');
+
+  const is3 = normalizeIssue({ component: 'X', description: 'Y', severity: 'Med' });
+  assert('Legacy "Med" maps to P2', is3.severity === 'P2');
+
+  const is4 = normalizeIssue({ component: 'X', description: 'Y', severity: 'Low' });
+  assert('Legacy "Low" maps to P3', is4.severity === 'P3');
+
+  // Unknown severity
+  const is5 = normalizeIssue({ component: 'X', description: 'Y', severity: 'Critical' });
+  assert('Unknown severity defaults to P2', is5.severity === 'P2');
+
+  // Legacy status
+  const is6 = normalizeIssue({ component: 'X', description: 'Y', status: 'active' });
+  assert('Legacy "active" maps to "open"', is6.status === 'open');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 6: Planner Entry Normalization
+// ═══════════════════════════════════════════════════════════════
+suite('Planner Entry Normalization', (assert) => {
+  const p1 = normalizePlannerEntries({
+    '2026-03-18': { time: '19:00', rink: 'Main', opponent: 'Granite CC', position: 'Skip', goals: 'Win', checklist: [{ text: 'Warm up', checked: true }] }
+  });
+  assert('Valid planner entry preserves date key', p1['2026-03-18'] && p1['2026-03-18'].rink === 'Main');
+  assert('Checklist items preserved', p1['2026-03-18'].checklist.length === 1 && p1['2026-03-18'].checklist[0].checked === true);
+
+  // Invalid date key rejected
+  const p2 = normalizePlannerEntries({ 'not-a-date': { time: '19:00' } });
+  assert('Invalid date key rejected', !p2['not-a-date']);
+
+  // Empty entries object
+  const p3 = normalizePlannerEntries({});
+  assert('Empty entries object returns empty', Object.keys(p3).length === 0);
+
+  // Null input
+  const p4 = normalizePlannerEntries(null);
+  assert('Null input returns empty object', Object.keys(p4).length === 0);
+
+  // Array input (wrong type)
+  const p5 = normalizePlannerEntries([1, 2, 3]);
+  assert('Array input returns empty object', Object.keys(p5).length === 0);
+
+  // Legacy field names
+  const p6 = normalizePlannerEntries({ '2026-01-01': { gameTime: '18:00', iceNotes: 'Fast' } });
+  assert('Legacy gameTime maps to time', p6['2026-01-01'].time === '18:00');
+  assert('Legacy iceNotes maps to ice', p6['2026-01-01'].ice === 'Fast');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 7: normalizeState — Full State
+// ═══════════════════════════════════════════════════════════════
+suite('Full State Normalization', (assert) => {
+  // Empty state
+  const s1 = normalizeState({});
+  assert('Empty object produces valid state with version', s1.version === SCHEMA_VERSION);
+
+  // Null
+  const s2 = normalizeState(null);
+  assert('Null produces empty state', s2.events.length === 0 && s2.games.length === 0);
+
+  // Array (wrong type)
+  const s3 = normalizeState([1, 2, 3]);
+  assert('Array input produces empty state', s3.events.length === 0);
+
+  // Valid state round-trips
+  const demo = demoState();
+  const s4 = normalizeState(JSON.parse(JSON.stringify(demo)));
+  assert('Demo state round-trips through normalization', s4.events.length === demo.events.length && s4.games.length === demo.games.length);
+
+  // Strict mode rejects non-CurlPlan object
+  let threw = false;
+  try { normalizeState({ randomKey: true }, { strict: true }); } catch (e) { threw = true; }
+  assert('Strict mode throws on non-CurlPlan object', threw);
+
+  // Strict mode accepts valid CurlPlan
+  let threwValid = false;
+  try { normalizeState({ version: 3, events: [] }, { strict: true }); } catch (e) { threwValid = true; }
+  assert('Strict mode accepts object with recognized keys', !threwValid);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 8: Validation Warnings
+// ═══════════════════════════════════════════════════════════════
+suite('Validation Warnings', (assert) => {
+  // Missing required fields
+  const warnings = [];
+  collectEventWarnings([{ title: '', date: '' }, { title: 'OK', date: '2026-01-01' }], warnings);
+  assert('Missing title flagged', warnings.some(w => w.includes('missing title')));
+  assert('Missing date flagged', warnings.some(w => w.includes('missing date')));
+
+  // Unknown keys
+  const w2 = [];
+  warnAboutUnknownKeys('Event', { title: 'X', date: 'Y', bogusField: 'Z' }, ['title', 'date'], w2);
+  assert('Unknown key flagged in warnings', w2.some(w => w.includes('bogusField')));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 9: Scale Stress — Large Data Sets
+// ═══════════════════════════════════════════════════════════════
+suite('Scale Stress', (assert) => {
+  // 500 events
+  const bigEvents = Array.from({ length: 500 }, (_, i) => ({
+    id: 'e' + i, title: 'Event ' + i, type: 'league', date: '2026-01-01'
+  }));
+  const t1 = performance.now();
+  const s1 = normalizeState({ events: bigEvents });
+  const d1 = performance.now() - t1;
+  assert('500 events normalize in < 100ms (' + Math.round(d1) + 'ms)', d1 < 100);
+  assert('500 events all preserved', s1.events.length === 500);
+
+  // 200 games
+  const bigGames = Array.from({ length: 200 }, (_, i) => ({
+    id: 'g' + i, date: '2026-01-01', opponent: 'Team ' + i, us: Math.floor(Math.random() * 10), them: Math.floor(Math.random() * 10)
+  }));
+  const t2 = performance.now();
+  const s2 = normalizeState({ games: bigGames });
+  const d2 = performance.now() - t2;
+  assert('200 games normalize in < 100ms (' + Math.round(d2) + 'ms)', d2 < 100);
+  assert('200 games all preserved', s2.games.length === 200);
+
+  // 365 planner entries (1 year)
+  const bigPlanner = {};
+  for (let d = 0; d < 365; d++) {
+    const date = new Date(2026, 0, 1 + d);
+    const key = date.toISOString().slice(0, 10);
+    bigPlanner[key] = { time: '19:00', rink: 'Rink ' + (d % 3), opponent: 'Team ' + d, checklist: [{ text: 'Item', checked: d % 2 === 0 }] };
+  }
+  const t3 = performance.now();
+  const p3 = normalizePlannerEntries(bigPlanner);
+  const d3 = performance.now() - t3;
+  assert('365 planner entries normalize in < 200ms (' + Math.round(d3) + 'ms)', d3 < 200);
+  assert('365 planner entries all preserved', Object.keys(p3).length === 365);
+
+  // JSON size check
+  const fullState = normalizeState({ events: bigEvents, games: bigGames, plannerEntries: bigPlanner });
+  const json = JSON.stringify(fullState);
+  const kb = Math.round(json.length / 1024);
+  assert('Full 500+200+365 state serializes to < 500KB (' + kb + 'KB)', json.length < 500 * 1024);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 10: Persistence Round-Trip
+// ═══════════════════════════════════════════════════════════════
+suite('Persistence Round-Trip', (assert) => {
+  // Save and reload
+  const original = demoState();
+  const key = 'curlplan-stress-test-' + Date.now();
+  try {
+    localStorage.setItem(key, JSON.stringify(original));
+    const loaded = JSON.parse(localStorage.getItem(key));
+    const normalized = normalizeState(loaded);
+    assert('Demo state survives save → parse → normalize', normalized.events.length === original.events.length);
+    assert('Games survive round-trip', normalized.games.length === original.games.length);
+    assert('Planner entries survive round-trip', Object.keys(normalized.plannerEntries).length === Object.keys(original.plannerEntries).length);
+    localStorage.removeItem(key);
+  } catch (e) {
+    assert('localStorage round-trip failed: ' + e.message, false);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 11: Edge Cases — Prototype Pollution & Injection
+// ═══════════════════════════════════════════════════════════════
+suite('Security Edge Cases', (assert) => {
+  // Prototype pollution attempt
+  const evil = JSON.parse('{"__proto__": {"polluted": true}, "events": []}');
+  const s1 = normalizeState(evil);
+  assert('__proto__ key does not pollute Object.prototype', !({}).polluted);
+  assert('State still normalizes', Array.isArray(s1.events));
+
+  // Constructor pollution
+  const evil2 = JSON.parse('{"constructor": {"prototype": {"polluted": true}}, "events": []}');
+  const s2 = normalizeState(evil2);
+  assert('constructor key does not pollute', !({}).polluted);
+
+  // Very long string in title
+  const longTitle = 'A'.repeat(10000);
+  const e1 = normalizeEvent({ title: longTitle, date: '2026-01-01' });
+  assert('10K char title stored without crash', e1.title.length === 10000);
+
+  // Unicode in all fields
+  const e2 = normalizeEvent({ title: '🥌 Émojí Tëst 日本語', date: '2026-01-01', notes: 'Ñoño café' });
+  assert('Unicode preserved in event fields', e2.title.includes('🥌') && e2.notes.includes('café'));
+
+  // Deeply nested object as field value
+  const e3 = normalizeEvent({ title: { nested: { deep: true } }, date: '2026-01-01' });
+  assert('Object in title field coerced to string', typeof e3.title === 'string');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 12: Season Stats Calculation
+// ═══════════════════════════════════════════════════════════════
+suite('Season Stats Edge Cases', (assert, skip) => {
+  if (typeof calculateSeasonStats !== 'function') {
+    skip('calculateSeasonStats not in scope (lives in utils.js — check if loaded)');
+    return;
+  }
+  // Empty games
+  const s1 = calculateSeasonStats([], 'season');
+  assert('Empty games returns zero record', s1.wins === 0 && s1.losses === 0 && s1.draws === 0);
+
+  // All wins
+  const allWins = Array.from({ length: 10 }, (_, i) => normalizeGame({ date: '2026-03-' + String(i + 1).padStart(2, '0'), opponent: 'X', us: 7, them: 3 }));
+  const s2 = calculateSeasonStats(allWins, 'all');
+  assert('10 wins: streak = 10', s2.winStreak === 10);
+
+  // Mixed results
+  const mixed = [
+    normalizeGame({ date: '2026-03-01', opponent: 'A', us: 7, them: 3 }),
+    normalizeGame({ date: '2026-03-02', opponent: 'B', us: 3, them: 7 }),
+    normalizeGame({ date: '2026-03-03', opponent: 'C', us: 5, them: 5 }),
+  ];
+  const s3 = calculateSeasonStats(mixed, 'all');
+  assert('Mixed: 1W 1L 1D', s3.wins === 1 && s3.losses === 1 && s3.draws === 1);
+
+  // Games with no scores (unscored)
+  const unscored = [normalizeGame({ date: '2026-03-01', opponent: 'X' })];
+  const s4 = calculateSeasonStats(unscored, 'all');
+  assert('Unscored game excluded from W/L/D', s4.wins === 0 && s4.losses === 0);
+
+  // Shot percentage trend
+  const withShots = Array.from({ length: 15 }, (_, i) => normalizeGame({
+    date: '2026-03-' + String(i + 1).padStart(2, '0'), opponent: 'X', us: 7, them: 3, shotPct: 70 + i
+  }));
+  const s5 = calculateSeasonStats(withShots, 'all');
+  assert('Shot trend computed from games with shotPct', s5.shotTrend && s5.shotTrend.length > 0);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SUITE 13: Import Scenarios
+// ═══════════════════════════════════════════════════════════════
+suite('Import Scenarios', (assert) => {
+  // Valid CurlPlan v3 export
+  const v3 = { version: 3, events: [{ id: 'e1', title: 'X', type: 'league', date: '2026-01-01' }], games: [], practice: [], ice: [], issues: [], plannerEntries: {} };
+  const s1 = normalizeState(v3, { strict: true });
+  assert('Valid v3 export normalizes in strict mode', s1.events.length === 1);
+
+  // Legacy v1 export (no version field, "notes" instead of "ice")
+  const legacy = { events: [{ name: 'Old', date: '2025-01-01' }], games: [], practice: [], notes: [{ date: '2025-01-01', rink: 'X', speed: 3 }] };
+  const s2 = normalizeState(legacy);
+  assert('Legacy "notes" collection migrates to "ice"', s2.ice.length === 1);
+  assert('Legacy "name" field migrates to "title"', s2.events[0].title === 'Old');
+
+  // Completely alien JSON
+  let threw = false;
+  try { normalizeState({ foo: 'bar', baz: [1, 2, 3] }, { strict: true }); } catch (e) { threw = true; }
+  assert('Alien JSON throws in strict mode', threw);
+
+  // Non-strict alien JSON
+  const s3 = normalizeState({ foo: 'bar', baz: [1, 2, 3] });
+  assert('Alien JSON returns empty state in non-strict mode', s3.events.length === 0);
+
+  // Array of events (wrong top-level shape)
+  let threw2 = false;
+  try { normalizeState([{ title: 'X', date: '2026-01-01' }], { strict: true }); } catch (e) { threw2 = true; }
+  assert('Array input throws in strict mode', threw2);
+
+  // Warnings collection
+  const warnings = [];
+  normalizeState({ events: [{ date: '' }], games: [{ date: '2026-01-01' }] }, { warnings });
+  assert('Warnings collected for missing event title', warnings.some(w => w.includes('missing title')));
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════════════════════════════════════
+const elapsed = Math.round(performance.now() - t0);
+const el = document.getElementById('results');
+results.forEach(s => {
+  const passCount = s.cases.filter(c => c.status === 'pass').length;
+  const total = s.cases.length;
+  el.innerHTML += `<div class="suite"><div class="suite-head"><span>${s.name}</span><span>${passCount}/${total}</span></div>` +
+    s.cases.map(c => `<div class="row"><span class="${c.status}">${c.label}</span></div>`).join('') +
+    '</div>';
+});
+document.getElementById('summary').innerHTML = `<div class="summary ${totalFail > 0 ? 'has-fail' : 'all-pass'}">${totalPass} passed · ${totalFail} failed · ${totalSkip} skipped · ${elapsed}ms</div>`;
+</script>
+</body>
+</html>
