@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CurlPlan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ice:        #e8f4f8;
+  --ice-dark:   #c9e4ef;
+  --ice-mid:    #daeef6;
+  --stone:      #2c3e4a;
+  --stone-mid:  #3d5464;
+  --stone-light:#5a7a8a;
+  --pebble:     #8ba8b5;
+  --granite:    #b44a2c;
+  --gold:       #c9882a;
+  --leaf:       #3a7d5c;
+  --sky:        #1a6fa0;
+  --white:      #fafcfd;
+  --border:     rgba(44,62,74,0.12);
+  --border-mid: rgba(44,62,74,0.2);
+  --shadow-sm:  0 2px 8px rgba(44,62,74,0.08);
+  --shadow:     0 4px 20px rgba(44,62,74,0.12);
+  --shadow-lg:  0 12px 40px rgba(44,62,74,0.16);
+  --r:          12px;
+  --r-lg:       20px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+html,body{
+  min-height:100vh;
+  background: var(--ice);
+  color: var(--stone);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(26,111,160,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(58,125,92,0.05) 0%, transparent 60%),
+    var(--ice);
+}
+
+/* LAYOUT */
+.shell {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--stone);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.brand-name span {
+  color: var(--sky);
+}
+
+.brand-tag {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--pebble);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.today-chip {
+  background: var(--stone);
+  color: var(--ice);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: 'DM Mono', monospace;
+}
+
+/* NAV */
+.nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border-mid);
+  border-radius: 999px;
+  padding: 5px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--stone-light);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  color: var(--stone);
+  background: rgba(44,62,74,0.06);
+}
+
+.nav-btn.active {
+  background: var(--stone);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
+/* VIEWS */
+.view { display: none; }
+.view.active { display: block; }
+
+/* SECTION HEADER */
+.sec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.sec-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--stone);
+  letter-spacing: -0.02em;
+}
+
+/* CARDS */
+.card {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(4px);
+}
+
+.card-sm {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* GRID LAYOUTS */
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; }
+
+/* STATS ROW */
+.stat-card {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pebble);
+}
+
+.stat-blue  .stat-num { color: var(--sky); }
+.stat-red   .stat-num { color: var(--granite); }
+.stat-green .stat-num { color: var(--leaf); }
+.stat-gold  .stat-num { color: var(--gold); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--r);
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--stone);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover { background: var(--stone-mid); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+.btn-sky { background: var(--sky); color: #fff; }
+.btn-sky:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+.btn-red { background: var(--granite); color: #fff; }
+.btn-ghost {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border-mid);
+  color: var(--stone);
+}
+.btn-ghost:hover { background: #fff; }
+
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; }
+
+/* FORM ELEMENTS */
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stone-light);
+  margin-bottom: 5px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r);
+  background: rgba(255,255,255,0.9);
+  color: var(--stone);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px rgba(26,111,160,0.1);
+}
+
+textarea { resize: vertical; min-height: 80px; }
+
+.form-row { margin-bottom: 14px; }
+
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* POSITION BADGE */
+.pos-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pos-skip   { background: rgba(180,74,44,0.12); color: var(--granite); }
+.pos-third  { background: rgba(201,136,42,0.12); color: var(--gold); }
+.pos-second { background: rgba(26,111,160,0.12); color: var(--sky); }
+.pos-lead   { background: rgba(58,125,92,0.12); color: var(--leaf); }
+
+/* RESULT BADGE */
+.result-w { background: rgba(58,125,92,0.12); color: var(--leaf); }
+.result-l { background: rgba(180,74,44,0.12); color: var(--granite); }
+.result-d { background: rgba(139,168,181,0.15); color: var(--pebble); }
+
+/* EVENT ITEMS */
+.event-item {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, transform 0.15s;
+  cursor: default;
+}
+
+.event-item:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+.event-date-block {
+  min-width: 48px;
+  text-align: center;
+  background: var(--stone);
+  color: var(--ice);
+  border-radius: 10px;
+  padding: 8px 6px;
+  line-height: 1.1;
+}
+
+.event-day { font-size: 1.5rem; font-weight: 700; font-family: 'Playfair Display', serif; }
+.event-mon { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+
+.event-info { flex: 1; }
+.event-title { font-weight: 600; font-size: 0.95rem; }
+.event-meta { font-size: 0.8rem; color: var(--stone-light); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+.event-type-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.type-league    { background: rgba(26,111,160,0.1); color: var(--sky); }
+.type-bonspiel  { background: rgba(180,74,44,0.1); color: var(--granite); }
+.type-practice  { background: rgba(58,125,92,0.1); color: var(--leaf); }
+.type-other     { background: rgba(139,168,181,0.15); color: var(--pebble); }
+
+/* EMPTY STATE */
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--pebble);
+}
+
+.empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-text { font-size: 0.92rem; }
+
+/* MODAL */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(44,62,74,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 0;
+  margin-bottom: 18px;
+}
+
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--stone);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--pebble);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-close:hover { color: var(--stone); background: var(--ice-dark); }
+
+.modal-body { padding: 0 24px 24px; }
+
+/* SEPARATOR */
+.sep { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ICE NOTES */
+.rink-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.speed-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.speed-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.speed-dot.active { border-color: var(--sky); background: var(--sky); }
+
+/* GAME LOG TABLE */
+.log-table { width: 100%; border-collapse: collapse; }
+.log-table th {
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pebble);
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-mid);
+}
+.log-table td {
+  padding: 11px 10px;
+  font-size: 0.87rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tr:hover td { background: rgba(26,111,160,0.03); }
+
+/* PILL SCORE */
+.score-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: var(--ice-dark);
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* DELETE BTN */
+.del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pebble);
+  font-size: 1rem;
+  transition: color 0.15s;
+  padding: 3px;
+  border-radius: 5px;
+}
+.del-btn:hover { color: var(--granite); background: rgba(180,74,44,0.08); }
+
+/* QUICK LOG */
+.quicklog-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+/* PLANNER */
+.planner-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.date-nav-btn {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--stone);
+  transition: background 0.15s;
+}
+
+.date-nav-btn:hover { background: #fff; }
+
+.planner-date-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 180px;
+  text-align: center;
+}
+
+/* RESPONSIVE */
+@media (max-width: 640px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr 1fr; }
+  .nav { justify-content: center; }
+  .topbar { justify-content: center; text-align: center; }
+}
+
+/* PRACTICE */
+.drill-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border-mid);
+  background: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background 0.12s;
+  user-select: none;
+}
+.drill-check:hover { background: rgba(255,255,255,0.9); }
+.drill-check input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--sky); flex-shrink: 0; }
+.drill-check label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.88rem; font-weight: 500; color: var(--stone); cursor: pointer; }
+
+/* ACCENT LINE */
+.accent-line {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--sky), var(--leaf));
+  margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name">Curl<span>Plan</span></div>
+      <div class="brand-tag">🥌 Your curling planner</div>
+    </div>
+    <div class="today-chip" id="todayChip">Loading...</div>
+  </div>
+
+  <div class="accent-line"></div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showView('calendar')">Calendar</button>
+    <button class="nav-btn" onclick="showView('planner')">Game Planner</button>
+    <button class="nav-btn" onclick="showView('games')">Game Log</button>
+    <button class="nav-btn" onclick="showView('practice')">Practice</button>
+    <button class="nav-btn" onclick="showView('ice')">Ice Notes</button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════ DASHBOARD ══ -->
+  <div id="view-dashboard" class="view active">
+
+    <!-- Stats -->
+    <div class="grid-3" style="margin-bottom:18px;">
+      <div class="stat-card stat-blue">
+        <div class="stat-num" id="stat-games">0</div>
+        <div class="stat-label">Games Played</div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-num" id="stat-wins">0</div>
+        <div class="stat-label">Wins</div>
+      </div>
+      <div class="stat-card stat-gold">
+        <div class="stat-num" id="stat-upcoming">0</div>
+        <div class="stat-label">Upcoming Events</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- Upcoming -->
+      <div class="card">
+        <div class="sec-header">
+          <div class="sec-title">Upcoming</div>
+          <button class="btn btn-ghost btn-sm" onclick="showView('calendar')">See All</button>
+        </div>
+        <div id="dash-upcoming"></div>
+      </div>
+
+      <!-- Recent Games -->
+      <div class="card">
+        <div class="sec-header">
+          <div class="sec-title">Recent Games</div>
+          <button class="btn btn-ghost btn-sm" onclick="showView('games')">See All</button>
+        </div>
+        <div id="dash-games"></div>
+      </div>
+
+    </div>
+
+    <!-- Ice Notes Preview -->
+    <div class="card" style="margin-top:14px;">
+      <div class="sec-header">
+        <div class="sec-title">Last Ice Notes</div>
+        <button class="btn btn-ghost btn-sm" onclick="showView('ice')">See All</button>
+      </div>
+      <div id="dash-ice"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ CALENDAR ══ -->
+  <div id="view-calendar" class="view">
+    <div class="sec-header">
+      <div class="sec-title">Calendar</div>
+      <button class="btn btn-primary" onclick="openModal('modal-event')">+ Add Event</button>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div id="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm active-filter" onclick="filterEvents('all',this)">All</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterEvents('league',this)">League</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterEvents('bonspiel',this)">Bonspiel</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterEvents('practice',this)">Practice</button>
+        <button class="btn btn-ghost btn-sm" onclick="filterEvents('other',this)">Other</button>
+      </div>
+    </div>
+
+    <div id="event-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ PLANNER ══ -->
+  <div id="view-planner" class="view">
+    <div class="sec-header">
+      <div class="planner-date-nav">
+        <button class="date-nav-btn" onclick="plannerNav(-1)">&#8592;</button>
+        <div class="planner-date-label" id="planner-label">Today</div>
+        <button class="date-nav-btn" onclick="plannerNav(1)">&#8594;</button>
+      </div>
+      <button class="btn btn-primary" onclick="savePlanner()">Save Notes</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;margin-bottom:16px;">Pre-Game</div>
+
+        <div class="form-grid-2" style="margin-bottom:14px;">
+          <div class="form-row">
+            <label>Game Time</label>
+            <input type="time" id="pg-time"/>
+          </div>
+          <div class="form-row">
+            <label>Rink</label>
+            <input type="text" id="pg-rink" placeholder="Rink name"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Opponent</label>
+          <input type="text" id="pg-opponent" placeholder="Team name"/>
+        </div>
+
+        <div class="form-row">
+          <label>My Position</label>
+          <select id="pg-position">
+            <option value="">Select...</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Goals for this game</label>
+          <textarea id="pg-goals" placeholder="What do I want to focus on today?"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;margin-bottom:16px;">Post-Game Reflection</div>
+
+        <div class="form-grid-2" style="margin-bottom:14px;">
+          <div class="form-row">
+            <label>Our Score</label>
+            <input type="number" id="pg-score-us" placeholder="0" min="0"/>
+          </div>
+          <div class="form-row">
+            <label>Their Score</label>
+            <input type="number" id="pg-score-them" placeholder="0" min="0"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Ice Conditions</label>
+          <textarea id="pg-ice" placeholder="Ice speed, curl amount, anything unusual..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Reflection</label>
+          <textarea id="pg-reflection" placeholder="What went well? What to work on next time?"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Key Shot of the Game</label>
+          <input type="text" id="pg-keyshot" placeholder="Describe your best or most important shot"/>
+        </div>
+      </div>
+    </div>
+
+    <div id="planner-entries" style="margin-top:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ GAME LOG ══ -->
+  <div id="view-games" class="view">
+    <div class="sec-header">
+      <div class="sec-title">Game Log</div>
+      <button class="btn btn-primary" onclick="openModal('modal-game')">+ Log Game</button>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+      <table class="log-table" id="game-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Opponent</th>
+            <th>Score</th>
+            <th>Result</th>
+            <th>Position</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="game-tbody"></tbody>
+      </table>
+      <div id="games-empty" class="empty" style="display:none;">
+        <div class="empty-icon">🥌</div>
+        <div class="empty-text">No games logged yet. Add your first game!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ PRACTICE ══ -->
+  <div id="view-practice" class="view">
+    <div class="sec-header">
+      <div class="sec-title">Practice Log</div>
+      <button class="btn btn-primary" onclick="openModal('modal-practice')">+ Log Practice</button>
+    </div>
+
+    <div id="practice-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="practice-empty" class="empty" style="display:none;">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-text">No practice sessions logged yet.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ ICE NOTES ══ -->
+  <div id="view-ice" class="view">
+    <div class="sec-header">
+      <div class="sec-title">Ice Notes</div>
+      <button class="btn btn-primary" onclick="openModal('modal-ice')">+ Add Ice Notes</button>
+    </div>
+
+    <div id="ice-list" class="grid-auto"></div>
+    <div id="ice-empty" class="empty" style="display:none;">
+      <div class="empty-icon">🧊</div>
+      <div class="empty-text">No ice notes yet. Start tracking rink conditions!</div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+
+<!-- ═══════════════════════════════════════════════ MODALS ══ -->
+
+<!-- Add Event Modal -->
+<div class="overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Event</div>
+      <button class="modal-close" onclick="closeModal('modal-event')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Event Name</label>
+        <input type="text" id="ev-name" placeholder="e.g. Tuesday League Night"/>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="ev-date"/>
+        </div>
+        <div class="form-row">
+          <label>Time</label>
+          <input type="time" id="ev-time"/>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Type</label>
+          <select id="ev-type">
+            <option value="league">League</option>
+            <option value="bonspiel">Bonspiel</option>
+            <option value="practice">Practice</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Position</label>
+          <select id="ev-position">
+            <option value="">Not set</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Rink / Location</label>
+        <input type="text" id="ev-location" placeholder="Rink name or address"/>
+      </div>
+      <div class="form-row">
+        <label>Sheet #</label>
+        <input type="text" id="ev-sheet" placeholder="e.g. Sheet 4"/>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea id="ev-notes" placeholder="Any prep notes..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-event')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Log Game Modal -->
+<div class="overlay" id="modal-game">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log a Game</div>
+      <button class="modal-close" onclick="closeModal('modal-game')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="gm-date"/>
+        </div>
+        <div class="form-row">
+          <label>Opponent</label>
+          <input type="text" id="gm-opponent" placeholder="Team name"/>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row">
+          <label>Our Score</label>
+          <input type="number" id="gm-us" placeholder="0" min="0"/>
+        </div>
+        <div class="form-row">
+          <label>Their Score</label>
+          <input type="number" id="gm-them" placeholder="0" min="0"/>
+        </div>
+        <div class="form-row">
+          <label>Position</label>
+          <select id="gm-position">
+            <option value="">N/A</option>
+            <option>Lead</option>
+            <option>Second</option>
+            <option>Third</option>
+            <option>Skip</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Rink</label>
+        <input type="text" id="gm-rink" placeholder="Rink name"/>
+      </div>
+      <div class="form-row">
+        <label>Key Shot</label>
+        <input type="text" id="gm-keyshot" placeholder="Best or most memorable shot..."/>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea id="gm-notes" placeholder="Anything else to remember..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-game')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveGame()">Save Game</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Practice Modal -->
+<div class="overlay" id="modal-practice">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Practice Session</div>
+      <button class="modal-close" onclick="closeModal('modal-practice')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="pr-date"/>
+        </div>
+        <div class="form-row">
+          <label>Duration</label>
+          <select id="pr-duration">
+            <option>30 min</option>
+            <option>45 min</option>
+            <option selected>1 hour</option>
+            <option>1.5 hours</option>
+            <option>2 hours</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Shot Types Practiced</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+          <label class="drill-check"><input type="checkbox" value="Draw" class="pr-shot"/> Draw</label>
+          <label class="drill-check"><input type="checkbox" value="Takeout" class="pr-shot"/> Takeout</label>
+          <label class="drill-check"><input type="checkbox" value="Guard" class="pr-shot"/> Guard</label>
+          <label class="drill-check"><input type="checkbox" value="Raise" class="pr-shot"/> Raise</label>
+          <label class="drill-check"><input type="checkbox" value="Peel" class="pr-shot"/> Peel</label>
+          <label class="drill-check"><input type="checkbox" value="Hit & Roll" class="pr-shot"/> Hit &amp; Roll</label>
+          <label class="drill-check"><input type="checkbox" value="Double" class="pr-shot"/> Double</label>
+          <label class="drill-check"><input type="checkbox" value="Freeze" class="pr-shot"/> Freeze</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Focus / Goals</label>
+        <textarea id="pr-focus" placeholder="What did I work on?"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Notes & Observations</label>
+        <textarea id="pr-notes" placeholder="What did I notice? What improved?"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-practice')">Cancel</button>
+        <button class="btn btn-primary" onclick="savePractice()">Save Session</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ice Notes Modal -->
+<div class="overlay" id="modal-ice">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Ice Notes</div>
+      <button class="modal-close" onclick="closeModal('modal-ice')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Date</label>
+          <input type="date" id="ice-date"/>
+        </div>
+        <div class="form-row">
+          <label>Rink</label>
+          <input type="text" id="ice-rink" placeholder="Rink name"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Ice Speed</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+          <span style="font-size:0.8rem;color:var(--pebble);">Slow</span>
+          <div style="display:flex;gap:5px;" id="speed-dots">
+            <div class="speed-dot" onclick="setSpeed(1)"></div>
+            <div class="speed-dot" onclick="setSpeed(2)"></div>
+            <div class="speed-dot" onclick="setSpeed(3)"></div>
+            <div class="speed-dot" onclick="setSpeed(4)"></div>
+            <div class="speed-dot" onclick="setSpeed(5)"></div>
+          </div>
+          <span style="font-size:0.8rem;color:var(--pebble);">Fast</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Curl Amount</label>
+        <select id="ice-curl">
+          <option value="">Not noted</option>
+          <option>Very straight</option>
+          <option>Straight</option>
+          <option>Average</option>
+          <option>Good curl</option>
+          <option>Heavy curl</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea id="ice-notes-text" placeholder="Pebble condition, problem areas, anything unusual..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-ice')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveIce()">Save Notes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════ STATE ═══════════════════
+const KEYS = {
+  events:'cp_events', games:'cp_games',
+  practice:'cp_practice', ice:'cp_ice', planner:'cp_planner'
+};
+
+function load(k){ try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
+function save(k,d){ localStorage.setItem(k, JSON.stringify(d)); }
+function loadObj(k){ try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; } }
+function saveObj(k,d){ localStorage.setItem(k, JSON.stringify(d)); }
+
+let events   = load(KEYS.events);
+let games    = load(KEYS.games);
+let practice = load(KEYS.practice);
+let ice      = load(KEYS.ice);
+let planner  = loadObj(KEYS.planner);
+
+let currentFilter = 'all';
+let plannerDate   = todayStr();
+let iceSpeed      = 0;
+
+// ═══════════════════ DATE HELPERS ═══════════════════
+function todayStr(){
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function fmtDate(str){
+  if(!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+}
+
+function fmtDateShort(str){
+  if(!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  return { day: d.getDate(), mon: d.toLocaleDateString('en-US',{month:'short'}) };
+}
+
+function fmtTime(t){
+  if(!t) return '';
+  const [h,m] = t.split(':');
+  const hr = parseInt(h);
+  const ampm = hr >= 12 ? 'PM' : 'AM';
+  const h12 = hr % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+}
+
+// ═══════════════════ INIT ═══════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('todayChip').textContent =
+    d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+
+  setDefaultDates();
+  renderAll();
+});
+
+function setDefaultDates(){
+  const t = todayStr();
+  ['ev-date','gm-date','pr-date','ice-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = t;
+  });
+}
+
+// ═══════════════════ NAV ═══════════════════
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  btns.forEach(b => { if(b.getAttribute('onclick').includes(name)) b.classList.add('active'); });
+  renderAll();
+}
+
+// ═══════════════════ MODALS ═══════════════════
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('overlay')) e.target.classList.remove('open');
+});
+
+// ═══════════════════ EVENTS ═══════════════════
+function saveEvent(){
+  const name = document.getElementById('ev-name').value.trim();
+  const date = document.getElementById('ev-date').value;
+  if(!name || !date){ alert('Name and date are required.'); return; }
+
+  events.push({
+    id: Date.now(), name, date,
+    time: document.getElementById('ev-time').value,
+    type: document.getElementById('ev-type').value,
+    position: document.getElementById('ev-position').value,
+    location: document.getElementById('ev-location').value,
+    sheet: document.getElementById('ev-sheet').value,
+    notes: document.getElementById('ev-notes').value,
+  });
+
+  save(KEYS.events, events);
+  closeModal('modal-event');
+  clearForm(['ev-name','ev-time','ev-location','ev-sheet','ev-notes']);
+  document.getElementById('ev-date').value = todayStr();
+  renderAll();
+}
+
+function deleteEvent(id){
+  events = events.filter(e => e.id !== id);
+  save(KEYS.events, events);
+  renderAll();
+}
+
+function filterEvents(type, btn){
+  currentFilter = type;
+  document.querySelectorAll('#filter-bar .btn').forEach(b => b.classList.remove('active-filter'));
+  btn.classList.add('active-filter');
+  renderEvents();
+}
+
+function renderEvents(){
+  const list = document.getElementById('event-list');
+  const filtered = currentFilter === 'all'
+    ? [...events].sort((a,b) => a.date.localeCompare(b.date))
+    : events.filter(e => e.type === currentFilter).sort((a,b) => a.date.localeCompare(b.date));
+
+  if(!filtered.length){
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No events yet. Add one above!</div></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(ev => {
+    const {day,mon} = fmtDateShort(ev.date);
+    const posClass = ev.position ? 'pos-' + ev.position.toLowerCase() : '';
+    return `<div class="event-item">
+      <div class="event-date-block">
+        <div class="event-day">${day}</div>
+        <div class="event-mon">${mon}</div>
+      </div>
+      <div class="event-info">
+        <div class="event-title">${ev.name}</div>
+        <div class="event-meta">
+          <span class="event-type-chip type-${ev.type}">${ev.type}</span>
+          ${ev.time ? `<span>⏱ ${fmtTime(ev.time)}</span>` : ''}
+          ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+          ${ev.sheet ? `<span>Sheet ${ev.sheet}</span>` : ''}
+          ${ev.position ? `<span class="pos-badge ${posClass}">${ev.position}</span>` : ''}
+        </div>
+        ${ev.notes ? `<div style="margin-top:6px;font-size:0.8rem;color:var(--stone-light);">${ev.notes}</div>` : ''}
+      </div>
+      <button class="del-btn" onclick="deleteEvent(${ev.id})" title="Delete">&#128465;</button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════ GAMES ═══════════════════
+function saveGame(){
+  const date = document.getElementById('gm-date').value;
+  const opponent = document.getElementById('gm-opponent').value.trim();
+  if(!date || !opponent){ alert('Date and opponent are required.'); return; }
+
+  const us   = parseInt(document.getElementById('gm-us').value) || 0;
+  const them = parseInt(document.getElementById('gm-them').value) || 0;
+  const result = us > them ? 'W' : them > us ? 'L' : 'D';
+
+  games.push({
+    id: Date.now(), date, opponent, us, them, result,
+    position: document.getElementById('gm-position').value,
+    rink: document.getElementById('gm-rink').value,
+    keyshot: document.getElementById('gm-keyshot').value,
+    notes: document.getElementById('gm-notes').value,
+  });
+
+  save(KEYS.games, games);
+  closeModal('modal-game');
+  clearForm(['gm-opponent','gm-us','gm-them','gm-rink','gm-keyshot','gm-notes']);
+  document.getElementById('gm-date').value = todayStr();
+  renderAll();
+}
+
+function deleteGame(id){
+  games = games.filter(g => g.id !== id);
+  save(KEYS.games, games);
+  renderAll();
+}
+
+function renderGames(){
+  const tbody = document.getElementById('game-tbody');
+  const empty = document.getElementById('games-empty');
+  const sorted = [...games].sort((a,b) => b.date.localeCompare(a.date));
+
+  if(!sorted.length){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const posClass = p => p ? 'pos-' + p.toLowerCase() : '';
+  tbody.innerHTML = sorted.map(g => `
+    <tr>
+      <td><span style="font-family:'DM Mono',monospace;font-size:0.83rem;">${fmtDate(g.date)}</span></td>
+      <td><strong>${g.opponent}</strong></td>
+      <td><span class="score-pill">${g.us}–${g.them}</span></td>
+      <td><span class="pos-badge result-${g.result.toLowerCase()}">${g.result}</span></td>
+      <td>${g.position ? `<span class="pos-badge ${posClass(g.position)}">${g.position}</span>` : '<span style="color:var(--pebble)">—</span>'}</td>
+      <td style="max-width:200px;font-size:0.82rem;color:var(--stone-light);">${g.notes || g.keyshot || '—'}</td>
+      <td><button class="del-btn" onclick="deleteGame(${g.id})">&#128465;</button></td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════ PRACTICE ═══════════════════
+function savePractice(){
+  const date = document.getElementById('pr-date').value;
+  if(!date){ alert('Date is required.'); return; }
+
+  const shots = [...document.querySelectorAll('.pr-shot:checked')].map(c => c.value);
+
+  practice.push({
+    id: Date.now(), date,
+    duration: document.getElementById('pr-duration').value,
+    shots, focus: document.getElementById('pr-focus').value,
+    notes: document.getElementById('pr-notes').value,
+  });
+
+  save(KEYS.practice, practice);
+  closeModal('modal-practice');
+  document.querySelectorAll('.pr-shot').forEach(c => c.checked = false);
+  clearForm(['pr-focus','pr-notes']);
+  document.getElementById('pr-date').value = todayStr();
+  renderAll();
+}
+
+function deletePractice(id){
+  practice = practice.filter(p => p.id !== id);
+  save(KEYS.practice, practice);
+  renderAll();
+}
+
+function renderPractice(){
+  const list = document.getElementById('practice-list');
+  const empty = document.getElementById('practice-empty');
+  const sorted = [...practice].sort((a,b) => b.date.localeCompare(a.date));
+
+  if(!sorted.length){ list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  list.innerHTML = sorted.map(p => `
+    <div class="card-sm" style="display:flex;gap:14px;align-items:flex-start;">
+      <div style="min-width:48px;text-align:center;background:var(--leaf);color:#fff;border-radius:10px;padding:8px 6px;line-height:1.1;">
+        <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;">${new Date(p.date+'T00:00:00').getDate()}</div>
+        <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;opacity:0.8;">${new Date(p.date+'T00:00:00').toLocaleDateString('en-US',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;">Practice Session &mdash; ${p.duration}</div>
+        ${p.shots.length ? `<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">${p.shots.map(s=>`<span class="event-type-chip type-practice">${s}</span>`).join('')}</div>` : ''}
+        ${p.focus ? `<div style="margin-top:6px;font-size:0.82rem;color:var(--stone-light);">${p.focus}</div>` : ''}
+        ${p.notes ? `<div style="margin-top:4px;font-size:0.8rem;color:var(--pebble);">${p.notes}</div>` : ''}
+      </div>
+      <button class="del-btn" onclick="deletePractice(${p.id})">&#128465;</button>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════ ICE NOTES ═══════════════════
+function setSpeed(n){
+  iceSpeed = n;
+  document.querySelectorAll('.speed-dot').forEach((d,i) => {
+    d.classList.toggle('active', i < n);
+  });
+}
+
+function saveIce(){
+  const date = document.getElementById('ice-date').value;
+  const rink = document.getElementById('ice-rink').value.trim();
+  if(!date){ alert('Date is required.'); return; }
+
+  ice.push({
+    id: Date.now(), date, rink,
+    speed: iceSpeed,
+    curl: document.getElementById('ice-curl').value,
+    notes: document.getElementById('ice-notes-text').value,
+  });
+
+  save(KEYS.ice, ice);
+  closeModal('modal-ice');
+  iceSpeed = 0;
+  document.querySelectorAll('.speed-dot').forEach(d => d.classList.remove('active'));
+  clearForm(['ice-rink','ice-notes-text']);
+  document.getElementById('ice-date').value = todayStr();
+  renderAll();
+}
+
+function deleteIce(id){
+  ice = ice.filter(n => n.id !== id);
+  save(KEYS.ice, ice);
+  renderAll();
+}
+
+const speedLabel = s => ['—','Very Slow','Slow','Medium','Fast','Very Fast'][s] || '—';
+
+function renderIce(){
+  const list = document.getElementById('ice-list');
+  const empty = document.getElementById('ice-empty');
+  const sorted = [...ice].sort((a,b) => b.date.localeCompare(a.date));
+
+  if(!sorted.length){ list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  list.innerHTML = sorted.map(n => `
+    <div class="card-sm" style="position:relative;">
+      <button class="del-btn" onclick="deleteIce(${n.id})" style="position:absolute;top:10px;right:10px;">&#128465;</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;">${n.rink || 'Unknown Rink'}</div>
+      <div style="font-size:0.8rem;color:var(--pebble);font-family:'DM Mono',monospace;margin-bottom:10px;">${fmtDate(n.date)}</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--pebble);">Speed</div>
+          <div style="font-weight:600;color:var(--sky);">${speedLabel(n.speed)}</div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--pebble);">Curl</div>
+          <div style="font-weight:600;">${n.curl || '—'}</div>
+        </div>
+      </div>
+      ${n.notes ? `<div style="margin-top:10px;font-size:0.83rem;color:var(--stone-light);border-top:1px solid var(--border);padding-top:10px;">${n.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════ PLANNER ═══════════════════
+function plannerNav(dir){
+  const d = new Date(plannerDate + 'T00:00:00');
+  d.setDate(d.getDate() + dir);
+  plannerDate = d.toISOString().split('T')[0];
+  loadPlanner();
+  renderPlannerEntries();
+  updatePlannerLabel();
+}
+
+function updatePlannerLabel(){
+  document.getElementById('planner-label').textContent =
+    fmtDate(plannerDate);
+}
+
+function loadPlanner(){
+  const entry = planner[plannerDate] || {};
+  document.getElementById('pg-time').value       = entry.time       || '';
+  document.getElementById('pg-rink').value       = entry.rink       || '';
+  document.getElementById('pg-opponent').value   = entry.opponent   || '';
+  document.getElementById('pg-position').value   = entry.position   || '';
+  document.getElementById('pg-goals').value      = entry.goals      || '';
+  document.getElementById('pg-score-us').value   = entry.scoreUs    || '';
+  document.getElementById('pg-score-them').value = entry.scoreThem  || '';
+  document.getElementById('pg-ice').value        = entry.ice        || '';
+  document.getElementById('pg-reflection').value = entry.reflection || '';
+  document.getElementById('pg-keyshot').value    = entry.keyshot    || '';
+}
+
+function savePlanner(){
+  planner[plannerDate] = {
+    time:       document.getElementById('pg-time').value,
+    rink:       document.getElementById('pg-rink').value,
+    opponent:   document.getElementById('pg-opponent').value,
+    position:   document.getElementById('pg-position').value,
+    goals:      document.getElementById('pg-goals').value,
+    scoreUs:    document.getElementById('pg-score-us').value,
+    scoreThem:  document.getElementById('pg-score-them').value,
+    ice:        document.getElementById('pg-ice').value,
+    reflection: document.getElementById('pg-reflection').value,
+    keyshot:    document.getElementById('pg-keyshot').value,
+  };
+  saveObj(KEYS.planner, planner);
+  showToast('Notes saved!');
+}
+
+function renderPlannerEntries(){
+  // shown below the form: a list of other days that have entries
+  const container = document.getElementById('planner-entries');
+  const otherDays = Object.keys(planner)
+    .filter(d => d !== plannerDate && Object.values(planner[d]).some(v => v))
+    .sort((a,b) => b.localeCompare(a))
+    .slice(0, 5);
+
+  if(!otherDays.length){ container.innerHTML = ''; return; }
+
+  container.innerHTML = `
+    <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;margin-bottom:10px;color:var(--stone-light);">Other Game Notes</div>
+    ${otherDays.map(d => {
+      const e = planner[d];
+      return `<div class="card-sm" style="cursor:pointer;" onclick="plannerJump('${d}')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>${fmtDate(d)}</strong>
+          ${e.opponent ? `<span style="font-size:0.82rem;color:var(--pebble);">vs ${e.opponent}</span>` : ''}
+        </div>
+        ${e.scoreUs !== '' && e.scoreThem !== '' ? `<div style="margin-top:4px;font-size:0.82rem;"><span class="score-pill">${e.scoreUs}–${e.scoreThem}</span></div>` : ''}
+        ${e.reflection ? `<div style="margin-top:6px;font-size:0.8rem;color:var(--stone-light);">${e.reflection.slice(0,100)}${e.reflection.length>100?'…':''}</div>` : ''}
+      </div>`;
+    }).join('')}`;
+}
+
+function plannerJump(d){
+  plannerDate = d;
+  loadPlanner();
+  renderPlannerEntries();
+  updatePlannerLabel();
+}
+
+// ═══════════════════ DASHBOARD ═══════════════════
+function renderDashboard(){
+  // Stats
+  const wins = games.filter(g => g.result === 'W').length;
+  const upcoming = events.filter(e => e.date >= todayStr()).length;
+  document.getElementById('stat-games').textContent  = games.length;
+  document.getElementById('stat-wins').textContent   = wins;
+  document.getElementById('stat-upcoming').textContent = upcoming;
+
+  // Upcoming events (next 3)
+  const upEl = document.getElementById('dash-upcoming');
+  const upList = events.filter(e => e.date >= todayStr())
+    .sort((a,b) => a.date.localeCompare(b.date)).slice(0,3);
+
+  if(!upList.length){
+    upEl.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No upcoming events.</div></div>';
+  } else {
+    upEl.innerHTML = upList.map(ev => {
+      const {day,mon} = fmtDateShort(ev.date);
+      return `<div class="event-item" style="margin-bottom:8px;">
+        <div class="event-date-block">
+          <div class="event-day">${day}</div>
+          <div class="event-mon">${mon}</div>
+        </div>
+        <div class="event-info">
+          <div class="event-title">${ev.name}</div>
+          <div class="event-meta">
+            <span class="event-type-chip type-${ev.type}">${ev.type}</span>
+            ${ev.time ? `<span>${fmtTime(ev.time)}</span>` : ''}
+            ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Recent games (last 3)
+  const gmEl = document.getElementById('dash-games');
+  const gmList = [...games].sort((a,b) => b.date.localeCompare(a.date)).slice(0,3);
+  if(!gmList.length){
+    gmEl.innerHTML = '<div class="empty"><div class="empty-icon">🥌</div><div class="empty-text">No games logged yet.</div></div>';
+  } else {
+    gmEl.innerHTML = gmList.map(g => `
+      <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:600;">vs ${g.opponent}</div>
+          <div style="font-size:0.78rem;color:var(--pebble);font-family:'DM Mono',monospace;">${fmtDate(g.date)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="score-pill">${g.us}–${g.them}</span>
+          <span class="pos-badge result-${g.result.toLowerCase()}">${g.result}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Ice notes preview
+  const iceEl = document.getElementById('dash-ice');
+  const last = [...ice].sort((a,b) => b.date.localeCompare(a.date))[0];
+  if(!last){
+    iceEl.innerHTML = '<div class="empty"><div class="empty-icon">🧊</div><div class="empty-text">No ice notes yet.</div></div>';
+  } else {
+    iceEl.innerHTML = `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <div>
+          <div style="font-weight:700;font-size:1rem;">${last.rink || 'Unknown Rink'}</div>
+          <div style="font-size:0.78rem;color:var(--pebble);font-family:'DM Mono',monospace;">${fmtDate(last.date)}</div>
+        </div>
+        <div style="display:flex;gap:18px;">
+          <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;color:var(--pebble);">Speed</div><div style="font-weight:600;color:var(--sky);">${speedLabel(last.speed)}</div></div>
+          <div><div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;color:var(--pebble);">Curl</div><div style="font-weight:600;">${last.curl||'—'}</div></div>
+        </div>
+        ${last.notes ? `<div style="font-size:0.83rem;color:var(--stone-light);flex:1;">${last.notes}</div>` : ''}
+      </div>
+    `;
+  }
+}
+
+// ═══════════════════ RENDER ALL ═══════════════════
+function renderAll(){
+  renderDashboard();
+  renderEvents();
+  renderGames();
+  renderPractice();
+  renderIce();
+  loadPlanner();
+  updatePlannerLabel();
+  renderPlannerEntries();
+}
+
+// ═══════════════════ HELPERS ═══════════════════
+function clearForm(ids){
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+    background:'var(--stone)', color:'var(--ice)', padding:'10px 22px',
+    borderRadius:'999px', fontWeight:'600', fontSize:'0.86rem',
+    boxShadow:'var(--shadow-lg)', zIndex:'999', animation:'fadeInUp 0.2s ease',
+    fontFamily:"'DM Sans',sans-serif"
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+</script>
+</body>
+</html>

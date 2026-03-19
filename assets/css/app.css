@@ -210,6 +210,11 @@
       box-shadow: var(--shadow);
     }
 
+    .today-chip:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -469,6 +474,11 @@
       background: var(--surface-solid);
     }
 
+    .planner-entry-card:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
+    }
+
     .card-sm:hover {
       box-shadow: var(--shadow-sm);
       border-color: rgba(26, 111, 160, 0.14);
@@ -631,6 +641,11 @@
       cursor: pointer;
       text-decoration: underline;
       text-underline-offset: 2px;
+    }
+
+    .view-context-link:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
     }
 
     .view-context-sep {
@@ -1050,6 +1065,11 @@
       box-shadow: var(--shadow-sm);
     }
 
+    .insight-card:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
+    }
+
     .insight-kicker {
       font-size: 0.72rem;
       text-transform: uppercase;
@@ -1293,8 +1313,81 @@
       margin-bottom: 10px;
     }
 
+    #plannerRinkProfile {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rink-profile-card {
+      border-color: rgba(26, 111, 160, 0.16);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .rink-profile-card .summary-list {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .rink-timeline-card {
+      gap: 8px;
+    }
+
     .planner-entry-card {
       cursor: pointer;
+    }
+
+    .lineup-card {
+      gap: 14px;
+    }
+
+    .lineup-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .lineup-toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .lineup-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .lineup-grid-support {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .lineup-summary-list {
+      margin-top: 0;
+    }
+
+    .bonspiel-fields-card,
+    .bonspiel-detail-card {
+      gap: 14px;
+    }
+
+    .bonspiel-draw-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .bonspiel-draw-card {
+      cursor: pointer;
+    }
+
+    .bonspiel-draw-card:hover {
+      border-color: rgba(26, 111, 160, 0.18);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
     }
 
     .drill-grid {
@@ -1327,6 +1420,11 @@
       border-color: rgba(26, 111, 160, 0.18);
       background: rgba(255, 255, 255, 0.86);
       box-shadow: var(--shadow-sm);
+    }
+
+    .drill-check:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
     }
 
     .drill-check:has(input:checked) {
@@ -1380,6 +1478,11 @@
       border-color: rgba(26, 111, 160, 0.18);
       background: rgba(255, 255, 255, 0.86);
       box-shadow: var(--shadow-sm);
+    }
+
+    .checklist-item:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
     }
 
     .checklist-item.is-checked {
@@ -1684,6 +1787,11 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
+    .toast-action:focus-visible {
+      outline: 2px solid var(--sky);
+      outline-offset: 2px;
+    }
+
     .tap-pop {
       animation: tap-pop var(--dur-fast) ease;
     }
@@ -1816,7 +1924,10 @@
       .grid-2,
       .form-grid-3,
       .form-grid-2,
-      .drill-grid {
+      .drill-grid,
+      .lineup-grid,
+      .lineup-grid-support,
+      .bonspiel-draw-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1824,6 +1935,7 @@
         min-width: 0;
       }
 
+      .lineup-toolbar,
       .checklist-add-row,
       .report-grid,
       .shortcut-grid {

@@ -135,6 +135,23 @@ document.addEventListener("click", event => {
     if (action === "planner-log-game") {
       openGameModalFromPlanner(actionButton.dataset.date || plannerDate);
     }
+    if (action === "jump-to-parent") {
+      selectedEventId = actionButton.dataset.id || null;
+      showView("calendar");
+      renderEventList();
+    }
+    if (action === "save-lineup") {
+      saveLineup();
+    }
+    if (action === "load-lineup-preset") {
+      loadLineupPresetIntoForm(document.getElementById("lineupPresetSelect")?.value || "");
+    }
+    if (action === "save-lineup-preset") {
+      saveLineupPreset();
+    }
+    if (action === "clear-lineup") {
+      clearLineupDraft();
+    }
     if (action === "toggle-game-expand") {
       expandedGameId = expandedGameId === actionButton.dataset.id ? null : actionButton.dataset.id;
       renderGames();
@@ -237,8 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
     month: "long",
     day: "numeric"
   });
-  if (!state.plannerEntries[plannerDate]) {
-    const firstPlannerDate = Object.keys(state.plannerEntries).sort()[0];
+  if (!getPlannerEntryForDate(plannerDate)) {
+    const firstPlannerDate = getPlannerEntriesList().map((item) => item.date).sort()[0];
     if (firstPlannerDate) plannerDate = firstPlannerDate;
   }
   currentFilter = uiPrefs.calendarFilter || "all";
@@ -355,6 +372,22 @@ document.getElementById("plannerChecklistInput").addEventListener("keydown", (ev
   document.querySelector('[data-action="planner-check-add"]').click();
 });
 
+document.getElementById("ev-type")?.addEventListener("change", () => {
+  const isBonspiel = document.getElementById("ev-type").value === "bonspiel";
+  if (isBonspiel) {
+    document.getElementById("ev-bonspiel-parent").value = "";
+  }
+  markModalDirty("modal-event");
+});
+
+document.getElementById("ev-date")?.addEventListener("change", () => {
+  const endDate = document.getElementById("ev-bonspiel-end");
+  if (endDate && !endDate.value) {
+    endDate.value = document.getElementById("ev-date").value;
+  }
+  markModalDirty("modal-event");
+});
+
 const queuePlannerAutosave = debounce(() => {
   if (currentView !== "planner") return;
   savePlanner({ silent: true });
@@ -365,11 +398,19 @@ const queuePlannerAutosave = debounce(() => {
   "pg-rink",
   "pg-opponent",
   "pg-position",
-  "pg-goals",
+  "pg-goal-1",
+  "pg-goal-2",
+  "pg-goal-3",
   "pg-score-us",
   "pg-score-them",
   "pg-ice",
-  "pg-reflection",
+  "pg-rating-draw",
+  "pg-rating-takeout",
+  "pg-rating-communication",
+  "pg-rating-sweeping",
+  "pg-rating-mental",
+  "pg-takeaways",
+  "pg-next-focus",
   "pg-keyshot"
 ].forEach(id => {
   document.getElementById(id)?.addEventListener("input", queuePlannerAutosave);
@@ -381,3 +422,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 window.addEventListener("afterprint", clearPrintReport);
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}

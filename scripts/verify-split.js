@@ -70,7 +70,7 @@ requiredIds.forEach((id) => {
 });
 
 const stateSource = fs.readFileSync(path.join(root, "assets/js/app/core.js"), "utf8");
-assert(/const SCHEMA_VERSION = 3;/.test(stateSource), "SCHEMA_VERSION must remain 3 in core.js.");
+assert(/const SCHEMA_VERSION = 4;/.test(stateSource), "SCHEMA_VERSION must remain 4 in core.js.");
 assert(fs.existsSync(path.join(root, "assets/icons/favicon/favicon.svg")), "favicon.svg must exist.");
 
 const combined = expectedScripts

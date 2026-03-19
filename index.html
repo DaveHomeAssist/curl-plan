@@ -60,10 +60,10 @@
         <div class="brand-proof">Yours. Local. No cloud.</div>
       </div>
       <div class="topbar-actions">
-        <div class="today-chip" id="todayChip">Loading...</div>
+        <div class="today-chip" id="todayChip" role="status">Loading...</div>
         <button type="button" class="btn btn-primary" id="quickAddBtn" data-open-modal="event">+ Quick Add Event</button>
         <button type="button" class="btn btn-ghost" id="exportBtn">Export</button>
-        <label class="btn btn-ghost" for="importFile">Import</label>
+        <label class="btn btn-ghost" for="importFile" tabindex="0" role="button" aria-label="Import data from JSON file">Import</label>
         <input id="importFile" type="file" accept="application/json" class="hidden" />
         <button type="button" class="btn btn-danger" id="resetBtn">Reset Demo Data</button>
         <button type="button" class="btn btn-ghost" id="shortcutHelpBtn" data-open-modal="shortcuts">? Shortcuts</button>
@@ -248,7 +248,7 @@
           <div class="section-header">
             <div>
               <h2 class="section-title">Game Planner</h2>
-              <p class="section-copy">Planner entries now live per date so pre-game prep and post-game reflections stay tied to the same sheet.</p>
+              <p class="section-copy">Planner entries now follow the event workflow so prep, rink memory, and review stay in one place.</p>
             </div>
             <div class="planner-nav">
               <button type="button" class="btn btn-ghost btn-sm" data-planner-dir="-1">Previous</button>
@@ -261,6 +261,7 @@
 
           <div id="gameDayBanner"></div>
           <div id="plannerStateStrip"></div>
+          <div id="plannerRinkProfile"></div>
 
           <div class="grid-2">
             <div class="card">
@@ -290,13 +291,31 @@
                 <input type="text" id="pg-opponent" placeholder="Team or opponent name" />
               </div>
               <div class="form-row">
-                <label class="form-label" for="pg-goals">Goals</label>
-                <textarea id="pg-goals" placeholder="What matters tonight?"></textarea>
+                <div class="card-head" style="margin-bottom:0;">
+                  <div>
+                    <label class="form-label">Shot Goals</label>
+                    <p class="card-copy">Set one to three specific goals so your review has a clear target.</p>
+                  </div>
+                </div>
+                <div class="form-grid-3 planner-goals-grid">
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-goal-1">Goal 1</label>
+                    <input type="text" id="pg-goal-1" placeholder="First focus" />
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-goal-2">Goal 2</label>
+                    <input type="text" id="pg-goal-2" placeholder="Second focus" />
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-goal-3">Goal 3</label>
+                    <input type="text" id="pg-goal-3" placeholder="Third focus" />
+                  </div>
+                </div>
               </div>
               <div class="form-row">
                 <div class="card-head" style="margin-bottom:0;">
                   <div>
-                    <label class="form-label" for="plannerChecklistInput">Pre-Game Checklist</label>
+                    <label class="form-label">Pre-Game Checklist</label>
                     <p class="card-copy">Operational prep that carries forward across future dates.</p>
                   </div>
                 </div>
@@ -334,8 +353,77 @@
                 <input type="text" id="pg-keyshot" placeholder="Best, toughest, or most important shot" />
               </div>
               <div class="form-row">
-                <label class="form-label" for="pg-reflection">Reflection</label>
-                <textarea id="pg-reflection" placeholder="What worked, what missed, and what to keep next time."></textarea>
+                <div class="card-head" style="margin-bottom:0;">
+                  <div>
+                    <label class="form-label">Execution Ratings</label>
+                    <p class="card-copy">Use quick ratings so the review stays fast on mobile and useful later.</p>
+                  </div>
+                </div>
+                <div class="form-grid-3 review-rating-grid">
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-rating-draw">Draw Weight</label>
+                    <select id="pg-rating-draw">
+                      <option value="">Rate</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-rating-takeout">Takeouts</label>
+                    <select id="pg-rating-takeout">
+                      <option value="">Rate</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-rating-communication">Communication</label>
+                    <select id="pg-rating-communication">
+                      <option value="">Rate</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-rating-sweeping">Sweeping</label>
+                    <select id="pg-rating-sweeping">
+                      <option value="">Rate</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                  <div class="form-row" style="margin-bottom:0;">
+                    <label class="form-label" for="pg-rating-mental">Mental Game</label>
+                    <select id="pg-rating-mental">
+                      <option value="">Rate</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label class="form-label" for="pg-takeaways">Key Takeaways</label>
+                <textarea id="pg-takeaways" placeholder="What held up, what slipped, and what needs to stay in the routine."></textarea>
+              </div>
+              <div class="form-row">
+                <label class="form-label" for="pg-next-focus">Next Focus</label>
+                <textarea id="pg-next-focus" placeholder="What should carry forward into the next game or practice."></textarea>
               </div>
             </div>
           </div>
@@ -637,6 +725,47 @@
         <label class="form-label" for="ev-notes">Notes</label>
         <textarea id="ev-notes" placeholder="Arrival time, prep notes, team reminders, and anything else."></textarea>
       </div>
+      <div class="card bonspiel-fields-card">
+        <div class="planner-card-kicker">Bonspiel Mode</div>
+        <div class="form-grid-2">
+          <div class="form-row">
+            <label class="form-label" for="ev-bonspiel-parent">Parent Bonspiel</label>
+            <select id="ev-bonspiel-parent">
+              <option value="">Standalone event</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="ev-bonspiel-end">End Date</label>
+            <input type="date" id="ev-bonspiel-end" />
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-row">
+            <label class="form-label" for="ev-bonspiel-hotel">Hotel</label>
+            <input type="text" id="ev-bonspiel-hotel" placeholder="Hotel, host house, or stay note" />
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="ev-bonspiel-budget">Budget</label>
+            <input type="text" id="ev-bonspiel-budget" placeholder="Entry fee, hotel split, fuel, food" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-bonspiel-teammates">Team Roster</label>
+          <textarea id="ev-bonspiel-teammates" placeholder="Skip, vice, second, lead, spare, driver, or any roster note."></textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-bonspiel-stage">Bracket Stage</label>
+          <input type="text" id="ev-bonspiel-stage" placeholder="Pool play, A event, semifinal, final" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-bonspiel-travel">Travel Plan</label>
+          <textarea id="ev-bonspiel-travel" placeholder="Drive split, arrival plan, meals, check in, and between draw timing."></textarea>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ev-bonspiel-packing">Packing Checklist</label>
+          <textarea id="ev-bonspiel-packing" placeholder="Shoes, sliders, stopwatches, snacks, team gear, warm layer, and extras."></textarea>
+        </div>
+      </div>
       <div class="form-actions">
         <button type="button" class="btn btn-ghost" data-close-modal="modal-event">Cancel</button>
         <button type="button" class="btn btn-danger hidden" id="eventDeleteBtn" data-delete-modal="event">Delete</button>
@@ -782,6 +911,23 @@
           <input type="text" id="ice-rink" placeholder="Club or rink name" />
         </div>
       </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="ice-sheet">Sheet</label>
+          <input type="text" id="ice-sheet" placeholder="A, B, 4, or practice lane" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ice-confidence">Confidence</label>
+          <select id="ice-confidence">
+            <option value="">Not set</option>
+            <option value="1">1 Low</option>
+            <option value="2">2</option>
+            <option value="3">3 Medium</option>
+            <option value="4">4</option>
+            <option value="5">5 High</option>
+          </select>
+        </div>
+      </div>
       <div class="form-row">
         <label class="form-label">Ice Speed</label>
         <div class="speed-row" id="speedControl" role="radiogroup" aria-label="Ice speed">
@@ -802,6 +948,39 @@
           <option value="Moderate">Moderate</option>
           <option value="Big Finish">Big Finish</option>
         </select>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row">
+          <label class="form-label" for="ice-frost">Frost</label>
+          <select id="ice-frost">
+            <option value="">Not set</option>
+            <option value="none">None</option>
+            <option value="light">Light</option>
+            <option value="patchy">Patchy</option>
+            <option value="heavy">Heavy</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ice-pebble">Pebble Feel</label>
+          <select id="ice-pebble">
+            <option value="">Not set</option>
+            <option value="fresh">Fresh</option>
+            <option value="settled">Settled</option>
+            <option value="worn">Worn</option>
+            <option value="sharp">Sharp</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ice-hack">Hack Condition</label>
+          <select id="ice-hack">
+            <option value="">Not set</option>
+            <option value="clean">Clean</option>
+            <option value="firm">Firm</option>
+            <option value="slick">Slick</option>
+            <option value="snowy">Snowy</option>
+            <option value="uneven">Uneven</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <label class="form-label" for="ice-notes-text">Notes</label>

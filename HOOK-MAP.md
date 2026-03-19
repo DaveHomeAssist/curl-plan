@@ -57,6 +57,7 @@ The redesigned markup **removes all inline `onclick` handlers**. Instead, it use
 | ---------------- | ------- | ---------------------------------------------- |
 | `filter-bar`     | `div`   | Contains filter buttons with `data-filter`     |
 | `event-list`     | `div`   | JS renders `.event-item` elements here         |
+| `eventDetail`    | `div`   | JS renders selected event, lineup, and profile |
 
 ### CSS classes for rendered event items
 
@@ -68,6 +69,33 @@ The redesigned markup **removes all inline `onclick` handlers**. Instead, it use
 - `.pos-badge` + `.pos-lead` / `.pos-second` / `.pos-third` / `.pos-skip`
 - `.btn-icon` — delete button
 
+### Event detail lineup controls
+
+| ID                | Element    | Notes                        |
+| ----------------- | ---------- | ---------------------------- |
+| `lineupPresetSelect` | `select` | current preset for event     |
+| `lineup-lead`     | `input`    | lead assignment              |
+| `lineup-second`   | `input`    | second assignment            |
+| `lineup-vice`     | `input`    | vice assignment              |
+| `lineup-skip`     | `input`    | skip assignment              |
+| `lineup-alternate`| `input`    | alternate assignment         |
+| `lineup-spare`    | `input`    | spare assignment             |
+| `lineup-opponents`| `textarea` | opponent roster notes        |
+| `lineup-notes`    | `textarea` | lineup notes                 |
+
+### Bonspiel controls
+
+| ID                | Element    | Notes                        |
+| ----------------- | ---------- | ---------------------------- |
+| `ev-bonspiel-parent` | `select` | parent bonspiel for child draw |
+| `ev-bonspiel-end` | `input`    | end date for bonspiel parent |
+| `ev-bonspiel-hotel` | `input`  | stay details                 |
+| `ev-bonspiel-budget` | `input` | budget details               |
+| `ev-bonspiel-teammates` | `textarea` | roster notes         |
+| `ev-bonspiel-stage` | `input`  | bracket stage                |
+| `ev-bonspiel-travel` | `textarea` | travel plan              |
+| `ev-bonspiel-packing` | `textarea` | packing list            |
+
 ---
 
 ## Planner
@@ -75,15 +103,24 @@ The redesigned markup **removes all inline `onclick` handlers**. Instead, it use
 | ID                | Element    | Notes                        |
 | ----------------- | ---------- | ---------------------------- |
 | `planner-label`   | `div`      | Shows formatted planner date |
+| `plannerRinkProfile` | `div`    | JS renders compact rink profile card |
 | `pg-time`         | `input`    | time                         |
 | `pg-rink`         | `input`    | text                         |
 | `pg-opponent`     | `input`    | text                         |
 | `pg-position`     | `select`   |                              |
-| `pg-goals`        | `textarea` |                              |
+| `pg-goal-1`       | `input`    | first prep goal              |
+| `pg-goal-2`       | `input`    | second prep goal             |
+| `pg-goal-3`       | `input`    | third prep goal              |
 | `pg-score-us`     | `input`    | number                       |
 | `pg-score-them`   | `input`    | number                       |
 | `pg-ice`          | `textarea` |                              |
-| `pg-reflection`   | `textarea` |                              |
+| `pg-rating-draw`  | `select`   | draw weight rating           |
+| `pg-rating-takeout` | `select` | takeout rating               |
+| `pg-rating-communication` | `select` | communication rating |
+| `pg-rating-sweeping` | `select` | sweeping rating             |
+| `pg-rating-mental` | `select`  | mental game rating           |
+| `pg-takeaways`    | `textarea` | post game review             |
+| `pg-next-focus`   | `textarea` | carry forward note           |
 | `pg-keyshot`      | `input`    | text                         |
 | `planner-entries` | `div`      | JS renders history cards     |
 | `save-planner-btn`| `button`   | Triggers `savePlanner()`     |
@@ -154,6 +191,16 @@ The redesigned markup **removes all inline `onclick` handlers**. Instead, it use
 | `.pr-shot`   | Practice modal    | Checkbox inputs for shot types     |
 | `.speed-dot` | Ice notes modal   | Dots with `data-speed="1"` thru 5  |
 | `speed-dots` | Ice notes modal   | Container div (also has `id`)      |
+
+### Ice modal additional fields
+
+| ID               | Element | Notes                      |
+| ---------------- | ------- | -------------------------- |
+| `ice-sheet`      | `input` | Optional sheet label       |
+| `ice-confidence` | `select`| Confidence 1 through 5     |
+| `ice-frost`      | `select`| Frost severity             |
+| `ice-pebble`     | `select`| Pebble feel                |
+| `ice-hack`       | `select`| Hack condition             |
 
 ---
 

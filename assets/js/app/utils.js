@@ -61,6 +61,20 @@ function asString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+const LINEUP_PRIMARY_SLOTS = [
+  { key: "lead", label: "Lead" },
+  { key: "second", label: "Second" },
+  { key: "vice", label: "Vice" },
+  { key: "skip", label: "Skip" }
+];
+
+const LINEUP_SUPPORT_SLOTS = [
+  { key: "alternate", label: "Alternate" },
+  { key: "spare", label: "Spare" }
+];
+
+const LINEUP_ALL_SLOTS = LINEUP_PRIMARY_SLOTS.concat(LINEUP_SUPPORT_SLOTS);
+
 function normalizeType(value) {
   const type = asString(value).toLowerCase();
   return ["league", "game", "practice", "bonspiel", "other"].includes(type) ? type : "other";
@@ -383,5 +397,221 @@ function calculateSeasonStats(items) {
     diffSpark: diffs,
     shotTrendGames: games.filter(item => Number(item.shotPct) > 0).slice(-10),
     gameCount: games.length
+  };
+}
+
+function getEventById(eventId) {
+  return state.events.find((item) => item.id === eventId) || null;
+}
+
+function getRinkById(rinkId) {
+  return state.rinks.find((item) => item.id === rinkId) || null;
+}
+
+function getSheetById(sheetId) {
+  return state.sheets.find((item) => item.id === sheetId) || null;
+}
+
+function getPlannerEntriesList() {
+  return Array.isArray(state.plannerEntries) ? state.plannerEntries : [];
+}
+
+function getPlannerEntryByEventId(eventId) {
+  if (!eventId) return null;
+  return getPlannerEntriesList().find((item) => item.eventId === eventId) || null;
+}
+
+function getPlannerEntryForDate(date) {
+  if (!date) return null;
+  const exactDate = getPlannerEntriesList()
+    .filter((item) => item.date === date)
+    .slice()
+    .sort((a, b) => (b.eventId ? 1 : 0) - (a.eventId ? 1 : 0));
+  return exactDate[0] || null;
+}
+
+function getPlannerLinkedEvent(date, plannerEntry) {
+  const linkedById = plannerEntry?.eventId ? getEventById(plannerEntry.eventId) : null;
+  if (linkedById) return linkedById;
+  const sameDate = state.events.filter((item) => item.date === date).slice().sort(compareDateTime);
+  if (!sameDate.length) return null;
+  const plannerOpponent = asString(plannerEntry?.opponent).toLowerCase();
+  const plannerRink = asString(plannerEntry?.rink).toLowerCase();
+  const plannerSheet = asString(plannerEntry?.sheet).toLowerCase();
+  const exact = sameDate.find((item) => {
+    const oppMatch = plannerOpponent && [item.opponent, item.title].map((value) => asString(value).toLowerCase()).includes(plannerOpponent);
+    const rinkMatch = plannerRink && asString(item.rink).toLowerCase() === plannerRink;
+    const sheetMatch = plannerSheet && asString(item.sheet).toLowerCase() === plannerSheet;
+    return (oppMatch && rinkMatch) || (oppMatch && sheetMatch) || oppMatch || rinkMatch;
+  });
+  return exact || sameDate[0];
+}
+
+function getPlannerGoals(entry) {
+  if (!entry || typeof entry !== "object") return [];
+  const structuredGoals = [entry.goalOne, entry.goalTwo, entry.goalThree].map((item) => asString(item)).filter(Boolean);
+  if (structuredGoals.length) return structuredGoals;
+  return asString(entry.goals)
+    .split(/\r?\n|•|;/)
+    .map((item) => item.replace(/^[\s\u2022*-]+/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
+function hasPlannerReviewContent(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  const reviewFields = [
+    entry.drawRating,
+    entry.takeoutRating,
+    entry.communicationRating,
+    entry.sweepingRating,
+    entry.mentalRating,
+    entry.keyTakeaways,
+    entry.nextFocus,
+    entry.reflection,
+    entry.keyShot,
+    entry.scoreUs,
+    entry.scoreThem
+  ];
+  return reviewFields.some((value) => asString(value));
+}
+
+function getPlannerReviewStatus(entry) {
+  if (!entry || typeof entry !== "object" || !hasPlannerReviewContent(entry)) return "none";
+  const ratingCount = [
+    entry.drawRating,
+    entry.takeoutRating,
+    entry.communicationRating,
+    entry.sweepingRating,
+    entry.mentalRating
+  ].filter((value) => Number.isFinite(Number(value))).length;
+  const textCount = [entry.keyTakeaways || entry.reflection, entry.nextFocus, entry.keyShot].filter((value) => asString(value)).length;
+  if (entry.reviewCompletedAt || (ratingCount >= 3 && textCount >= 1)) return "complete";
+  return "partial";
+}
+
+function upsertPlannerEntryForDate(date, entry) {
+  const existing = getPlannerEntryForDate(date);
+  const mergedEntry = {
+    ...(existing || {}),
+    ...entry,
+    id: existing?.id || entry.id || createId(),
+    date
+  };
+  const nextEntry = normalizePlannerRecord(mergedEntry, date);
+  if (existing) {
+    state.plannerEntries = getPlannerEntriesList().map((item) => item.id === existing.id ? nextEntry : item);
+  } else {
+    state.plannerEntries = getPlannerEntriesList().concat(nextEntry);
+  }
+  return nextEntry;
+}
+
+function removePlannerEntryForDate(date) {
+  const existing = getPlannerEntryForDate(date);
+  if (!existing) return;
+  state.plannerEntries = getPlannerEntriesList().filter((item) => item.id !== existing.id);
+}
+
+function getGamesByEventId(eventId) {
+  if (!eventId) return [];
+  return state.games.filter((item) => item.eventId === eventId);
+}
+
+function getPracticeByEventId(eventId) {
+  if (!eventId) return [];
+  return state.practice.filter((item) => item.eventId === eventId);
+}
+
+function getRinkConditionHistory(rinkId, sheetId = "") {
+  return (state.rinkConditionEntries || [])
+    .filter((item) => item.rinkId === rinkId && (!sheetId || item.sheetId === sheetId))
+    .slice()
+    .sort((a, b) => `${b.recordedAt}`.localeCompare(`${a.recordedAt}`));
+}
+
+function getAverageCurlLast3(rinkId, sheetId = "") {
+  const values = getRinkConditionHistory(rinkId, sheetId)
+    .slice(0, 3)
+    .map((item) => Number(item.curlOutTurns ?? item.curlInTurns))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!values.length) return null;
+  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
+}
+
+function getMostCommonIceNote(rinkId, sheetId = "") {
+  const counts = {};
+  getRinkConditionHistory(rinkId, sheetId).forEach((item) => {
+    const note = asString(item.notes);
+    if (!note) return;
+    counts[note] = (counts[note] || 0) + 1;
+  });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return top ? top[0] : "";
+}
+
+function getLatestRinkProfile(rinkId, sheetId = "") {
+  if (!rinkId) return null;
+  const history = getRinkConditionHistory(rinkId, sheetId);
+  const latest = history[0];
+  if (!latest) return null;
+  return {
+    latest,
+    history,
+    averageCurlLast3: getAverageCurlLast3(rinkId, sheetId),
+    mostCommonIceNote: getMostCommonIceNote(rinkId, sheetId)
+  };
+}
+
+function getLineupByEventId(eventId) {
+  if (!eventId) return null;
+  return (state.lineups || []).find((item) => item.eventId === eventId) || null;
+}
+
+function getLineupPresetsList() {
+  return Array.isArray(state.lineupPresets) ? state.lineupPresets : [];
+}
+
+function getLineupPresetById(presetId) {
+  if (!presetId) return null;
+  return getLineupPresetsList().find((item) => item.id === presetId) || null;
+}
+
+function getLineupFilledSlots(lineup) {
+  if (!lineup || typeof lineup !== "object") return 0;
+  return LINEUP_ALL_SLOTS.filter(({ key }) => asString(lineup.assignments?.[key])).length;
+}
+
+function getLineupSummary(lineup) {
+  if (!lineup || typeof lineup !== "object") return "No lineup saved";
+  const primaryFilled = LINEUP_PRIMARY_SLOTS.filter(({ key }) => asString(lineup.assignments?.[key])).length;
+  const supportFilled = LINEUP_SUPPORT_SLOTS.filter(({ key }) => asString(lineup.assignments?.[key])).length;
+  if (!primaryFilled && !supportFilled) return "No lineup saved";
+  return `${primaryFilled}/4 positions set${supportFilled ? ` • ${supportFilled} support` : ""}`;
+}
+
+function getBonspielById(bonspielId) {
+  if (!bonspielId) return null;
+  return (state.bonspiels || []).find((item) => item.id === bonspielId) || null;
+}
+
+function getBonspielDraws(bonspielId) {
+  if (!bonspielId) return [];
+  return state.events.filter((item) => item.bonspielId === bonspielId).slice().sort(compareDateTime);
+}
+
+function getSeasonDashboardStats() {
+  const games = getGamesForRange(currentSeasonRange);
+  const eventsThisMonth = state.events.filter((item) => item.date.slice(0, 7) === todayStr().slice(0, 7)).length;
+  const mostPlayedRink = calculateSeasonStats(games).rinkSummary[0] || null;
+  const reviewComplete = getPlannerEntriesList().filter((item) => getPlannerReviewStatus(item) === "complete").length;
+  const reviewPartial = getPlannerEntriesList().filter((item) => getPlannerReviewStatus(item) === "partial").length;
+  return {
+    eventsThisMonth,
+    gamesCount: games.length,
+    practiceCount: state.practice.length,
+    mostPlayedRink,
+    reviewComplete,
+    reviewPartial
   };
 }
