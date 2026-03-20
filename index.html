@@ -7,8 +7,28 @@
   <title>CurlPlan</title>
   <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg" />
   <link rel="stylesheet" href="assets/css/app.css" />
+  <style>
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      padding: 8px 16px;
+      z-index: 10000;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #2c3e4a;
+      color: #fafcfd;
+    }
+    .skip-link:focus {
+      left: 10px;
+      top: 10px;
+      outline: 2px solid currentColor;
+    }
+  </style>
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to content</a>
   <svg class="is-hidden" aria-hidden="true" focusable="false" width="0" height="0">
     <symbol id="icon-calendar" viewBox="0 0 24 24">
       <rect x="3" y="5" width="18" height="16" rx="3"></rect>
@@ -87,22 +107,22 @@
     <div class="view-context is-hidden" id="viewContext" aria-live="polite"></div>
     <div class="state-strip-shell" id="suggestedNextStrip" aria-live="polite"></div>
 
-    <main class="section-stack">
+    <main class="section-stack" id="main">
       <section class="view is-active" id="view-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
         <div class="section-stack">
           <div class="stats-grid">
-            <div class="stat-card sky stat-route-card" tabindex="0" role="button" data-view="games" aria-label="Open game log">
+            <button type="button" class="stat-card sky stat-route-card" data-view="games" aria-label="Open game log">
               <div class="stat-label">Games Logged</div>
               <div class="stat-num" id="stat-games">0</div>
-            </div>
-            <div class="stat-card granite stat-route-card" tabindex="0" role="button" data-view="games" aria-label="Open game log from wins card">
+            </button>
+            <button type="button" class="stat-card granite stat-route-card" data-view="games" aria-label="Open game log from wins card">
               <div class="stat-label">Wins Logged</div>
               <div class="stat-num" id="stat-wins">0</div>
-            </div>
-            <div class="stat-card leaf stat-route-card" tabindex="0" role="button" data-view="calendar" aria-label="Open calendar queue">
+            </button>
+            <button type="button" class="stat-card leaf stat-route-card" data-view="calendar" aria-label="Open calendar queue">
               <div class="stat-label">Upcoming Events</div>
               <div class="stat-num" id="stat-upcoming">0</div>
-            </div>
+            </button>
           </div>
 
           <div class="toolbar quick-log-bar">
