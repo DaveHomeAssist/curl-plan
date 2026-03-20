@@ -562,7 +562,9 @@ function renderEventList() {
     return;
   }
   if (!selectedEventId || !state.events.find(item => item.id === selectedEventId)) {
-    selectedEventId = items[0].id;
+    const today = todayStr();
+    const nextUpcoming = items.find(item => item.date >= today);
+    selectedEventId = nextUpcoming ? nextUpcoming.id : items[0].id;
   }
   target.innerHTML = items.map(item => renderEventCard(item, item.id === selectedEventId)).join("");
   renderSelectedEvent();

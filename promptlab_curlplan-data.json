@@ -1,0 +1,151 @@
+{
+  "version": 2,
+  "events": [
+    {
+      "id": "evt-team-night",
+      "title": "Team Night",
+      "type": "league",
+      "date": "2026-03-19",
+      "time": "19:00",
+      "rink": "Main Rink",
+      "team": "",
+      "opponent": "",
+      "position": "Third",
+      "sheet": "3",
+      "notes": "Arrive early"
+    },
+    {
+      "id": "evt-spring-tournament",
+      "title": "Spring Tournament",
+      "type": "bonspiel",
+      "date": "2026-03-21",
+      "time": "09:00",
+      "rink": "City Arena",
+      "team": "",
+      "opponent": "",
+      "position": "Skip",
+      "sheet": "1",
+      "notes": "Round robin format"
+    },
+    {
+      "id": "evt-morning-session",
+      "title": "Morning Session",
+      "type": "practice",
+      "date": "2026-03-22",
+      "time": "06:30",
+      "rink": "Main Rink",
+      "team": "",
+      "opponent": "",
+      "position": "Lead",
+      "sheet": "2",
+      "notes": "Focus on basics"
+    }
+  ],
+  "games": [
+    {
+      "id": "gm-2026-03-12",
+      "date": "2026-03-12",
+      "opponent": "Team A",
+      "us": 7,
+      "them": 3,
+      "result": "W",
+      "position": "Third",
+      "rink": "Main Rink",
+      "keyShot": "Draw to button",
+      "notes": "Strong hammer game",
+      "shotPct": 0
+    },
+    {
+      "id": "gm-2026-03-05",
+      "date": "2026-03-05",
+      "opponent": "Team B",
+      "us": 4,
+      "them": 6,
+      "result": "L",
+      "position": "Lead",
+      "rink": "City Arena",
+      "keyShot": "Guard held 3 ends",
+      "notes": "Lost hammer in 4th",
+      "shotPct": 0
+    },
+    {
+      "id": "gm-2026-02-26",
+      "date": "2026-02-26",
+      "opponent": "Team C",
+      "us": 5,
+      "them": 5,
+      "result": "D",
+      "position": "Second",
+      "rink": "Main Rink",
+      "keyShot": "Freeze on shot rock",
+      "notes": "Extra end, came up light",
+      "shotPct": 0
+    }
+  ],
+  "practice": [
+    {
+      "id": "pr-2026-03-15",
+      "date": "2026-03-15",
+      "duration": "60 min",
+      "shots": ["Draw", "Guard"],
+      "focus": "Release",
+      "notes": "Working on flat release"
+    },
+    {
+      "id": "pr-2026-03-08",
+      "date": "2026-03-08",
+      "duration": "90 min",
+      "shots": ["Takeout", "Hit & Roll"],
+      "focus": "Weight control",
+      "notes": "Rolls landing off target"
+    },
+    {
+      "id": "pr-2026-03-01",
+      "date": "2026-03-01",
+      "duration": "45 min",
+      "shots": ["Broom Work"],
+      "focus": "Communication",
+      "notes": "Louder verbal cues needed"
+    }
+  ],
+  "ice": [
+    {
+      "id": "ice-2026-03-19",
+      "date": "2026-03-19",
+      "rink": "Main Rink",
+      "speed": 4,
+      "curl": "Moderate",
+      "notes": "Sheet 3 curls late. Rocks 4 and 7 run light."
+    },
+    {
+      "id": "ice-2026-03-12",
+      "date": "2026-03-12",
+      "rink": "Main Rink",
+      "speed": 3,
+      "curl": "Big Finish",
+      "notes": "Fresh pebble, draw weight longer than usual"
+    },
+    {
+      "id": "ice-2026-03-05",
+      "date": "2026-03-05",
+      "rink": "City Arena",
+      "speed": 3,
+      "curl": "Straight",
+      "notes": "Consistent ice, nearly no curl on sheet 1"
+    }
+  ],
+  "plannerEntries": {
+    "2026-03-19": {
+      "time": "19:00",
+      "rink": "Main Rink",
+      "opponent": "Team B",
+      "position": "Third",
+      "goals": "Control early ends",
+      "scoreUs": "6",
+      "scoreThem": "4",
+      "ice": "Medium speed, slight curl left",
+      "reflection": "Consistent weight, adjust guard calls next game",
+      "keyShot": "Draw in 6th end"
+    }
+  }
+}

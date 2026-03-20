@@ -174,8 +174,23 @@ document.addEventListener("click", event => {
 
   const deleteButton = event.target.closest("[data-delete-modal]");
   if (deleteButton) {
-    pulseElement(deleteButton);
-    deleteModal(deleteButton.dataset.deleteModal);
+    if (deleteButton.dataset.confirmDelete === "armed") {
+      deleteButton.dataset.confirmDelete = "";
+      deleteButton.textContent = "Delete";
+      deleteButton.classList.remove("btn-delete-confirm");
+      deleteModal(deleteButton.dataset.deleteModal);
+    } else {
+      deleteButton.dataset.confirmDelete = "armed";
+      deleteButton.textContent = "Confirm Delete";
+      deleteButton.classList.add("btn-delete-confirm");
+      setTimeout(() => {
+        if (deleteButton.dataset.confirmDelete === "armed") {
+          deleteButton.dataset.confirmDelete = "";
+          deleteButton.textContent = "Delete";
+          deleteButton.classList.remove("btn-delete-confirm");
+        }
+      }, 3000);
+    }
   }
 });
 
@@ -247,6 +262,31 @@ document.getElementById("importFile").addEventListener("change", event => {
   importData(event.target.files[0]);
   event.target.value = "";
 });
+
+// Settings dropdown toggle
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsDropdown = document.getElementById("settingsDropdown");
+if (settingsBtn && settingsDropdown) {
+  settingsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = settingsDropdown.classList.toggle("is-open");
+    settingsBtn.setAttribute("aria-expanded", isOpen);
+  });
+  document.addEventListener("click", (e) => {
+    if (!settingsDropdown.contains(e.target)) {
+      settingsDropdown.classList.remove("is-open");
+      settingsBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+  const issuesNavBtn = document.getElementById("issuesNavBtn");
+  if (issuesNavBtn) {
+    issuesNavBtn.addEventListener("click", () => {
+      settingsDropdown.classList.remove("is-open");
+      settingsBtn.setAttribute("aria-expanded", "false");
+      showView("issues");
+    });
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("todayChip").textContent = new Date().toLocaleDateString(undefined, {

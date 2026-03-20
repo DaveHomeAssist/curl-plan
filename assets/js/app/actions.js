@@ -91,9 +91,11 @@ function plannerNav(dir) {
 
 function setSpeed(value) {
   currentSpeed = Number(value);
-  document.querySelectorAll(".speed-dot").forEach(dot => {
-    dot.classList.toggle("is-active", Number(dot.dataset.speed) <= currentSpeed);
-    dot.setAttribute("aria-checked", Number(dot.dataset.speed) === currentSpeed ? "true" : "false");
+  document.querySelectorAll(".speed-dot, .speed-seg").forEach(dot => {
+    const isMatch = Number(dot.dataset.speed) === currentSpeed;
+    const isFill = Number(dot.dataset.speed) <= currentSpeed;
+    dot.classList.toggle("is-active", dot.classList.contains("speed-seg") ? isMatch : isFill);
+    dot.setAttribute("aria-checked", isMatch ? "true" : "false");
   });
   speedLabel.textContent = speedText(currentSpeed);
   markModalDirty("modal-ice");

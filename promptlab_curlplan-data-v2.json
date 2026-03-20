@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "events": [
+    {
+      "id": "4aacd2b9-d005-4a67-9817-fc3c69ff8ac1",
+      "title": "Wednesday League Night",
+      "type": "league",
+      "date": "2026-03-18",
+      "time": "19:00",
+      "rink": "Philadelphia Curling Club",
+      "team": "Hammer Time",
+      "opponent": "Stone Cold",
+      "position": "Second",
+      "sheet": "B",
+      "notes": "Arrive 45 min early for warmup."
+    },
+    {
+      "id": "23f8e6ae-e54a-4ae1-852d-6573773215c5",
+      "title": "Draw Weight Practice",
+      "type": "practice",
+      "date": "2026-03-20",
+      "time": "18:00",
+      "rink": "Philadelphia Curling Club",
+      "team": "",
+      "opponent": "",
+      "position": "Skip",
+      "sheet": "C",
+      "notes": "Focus on tee line control."
+    },
+    {
+      "id": "bb12857e-725d-4fb1-85e8-8c6658b3a966",
+      "title": "Spring Bonspiel",
+      "type": "bonspiel",
+      "date": "2026-04-04",
+      "time": "09:00",
+      "rink": "Bucks County Curling Club",
+      "team": "Sweep Dreams",
+      "opponent": "",
+      "position": "Third",
+      "sheet": "TBD",
+      "notes": "Bring team jackets and snacks."
+    }
+  ],
+  "games": [
+    {
+      "id": "47c1dec8-e917-45df-8bf9-19bb6766e9aa",
+      "date": "2026-03-10",
+      "opponent": "House Rocks",
+      "us": 7,
+      "them": 5,
+      "result": "W",
+      "position": "Second",
+      "rink": "Philadelphia Curling Club",
+      "keyShot": "Hit and roll in the 8th",
+      "notes": "Ice was straighter than usual.",
+      "shotPct": 74
+    }
+  ],
+  "practice": [
+    {
+      "id": "b4dbfa04-89ca-426b-9efa-9d57a3e4242a",
+      "date": "2026-03-12",
+      "duration": "75 min",
+      "shots": [
+        "Draw",
+        "Guard"
+      ],
+      "focus": "Outturn draw improved late in the session.",
+      "notes": "Spend another session on middle-weight guards."
+    }
+  ],
+  "ice": [
+    {
+      "id": "1d1d0bd4-ea5a-44ba-9a43-a7c9bf52c99a",
+      "date": "2026-03-10",
+      "rink": "Philadelphia Curling Club",
+      "speed": 4,
+      "curl": "Moderate",
+      "notes": "Near boards stayed a touch straighter."
+    }
+  ],
+  "plannerEntries": {
+    "2026-03-18": {
+      "time": "19:00",
+      "rink": "Philadelphia Curling Club",
+      "opponent": "Stone Cold",
+      "position": "Second",
+      "goals": "Cleaner communication. Better broom placement. Commit to sweep calls.",
+      "scoreUs": "",
+      "scoreThem": "",
+      "ice": "Watch late curl on the inturn draw.",
+      "reflection": "",
+      "keyShot": ""
+    }
+  }
+}

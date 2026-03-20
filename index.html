@@ -77,17 +77,23 @@
       <div class="brand">
         <div class="brand-kicker">Personal Curling Command Center</div>
         <h1 class="brand-name">Curl<span>Plan</span></h1>
-        <p class="brand-copy">Calendar, game prep, practice logging, and rink memory in one working file.</p>
-        <div class="brand-proof">Yours. Local. No cloud.</div>
+        <p class="brand-copy">Calendar, game prep, practice logging, and rink memory in one working file. <span class="brand-proof-inline">Yours. Local. No cloud.</span></p>
       </div>
       <div class="topbar-actions">
         <div class="today-chip" id="todayChip" role="status">Loading...</div>
-        <button type="button" class="btn btn-primary" id="quickAddBtn" data-open-modal="event">+ Quick Add Event</button>
-        <button type="button" class="btn btn-ghost" id="exportBtn">Export</button>
-        <label class="btn btn-ghost" for="importFile" tabindex="0" role="button" aria-label="Import data from JSON file">Import</label>
-        <input id="importFile" type="file" accept="application/json" class="is-hidden" />
-        <button type="button" class="btn btn-danger" id="resetBtn">Reset Demo Data</button>
-        <button type="button" class="btn btn-ghost" id="shortcutHelpBtn" data-open-modal="shortcuts">? Shortcuts</button>
+        <button type="button" class="btn btn-primary" id="quickAddBtn" data-open-modal="event">+ Quick Add</button>
+        <div class="settings-dropdown" id="settingsDropdown">
+          <button type="button" class="btn btn-ghost settings-trigger" id="settingsBtn" aria-expanded="false" aria-haspopup="true" aria-label="Settings and tools">&#9881;</button>
+          <div class="settings-menu" id="settingsMenu" role="menu">
+            <button type="button" class="settings-item" id="exportBtn" role="menuitem">Export JSON</button>
+            <label class="settings-item" for="importFile" tabindex="0" role="menuitem">Import JSON</label>
+            <input id="importFile" type="file" accept="application/json" class="is-hidden" />
+            <button type="button" class="settings-item" id="shortcutHelpBtn" data-open-modal="shortcuts" role="menuitem">Keyboard Shortcuts</button>
+            <button type="button" class="settings-item" id="issuesNavBtn" data-view="issues" role="menuitem">UI Issues</button>
+            <hr class="settings-divider" />
+            <button type="button" class="settings-item settings-danger" id="resetBtn" role="menuitem">Reset Demo Data</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -99,7 +105,6 @@
         <button type="button" class="nav-btn" id="tab-games" data-view="games" role="tab" aria-selected="false" aria-controls="view-games">Game Log</button>
         <button type="button" class="nav-btn" id="tab-practice" data-view="practice" role="tab" aria-selected="false" aria-controls="view-practice">Practice</button>
         <button type="button" class="nav-btn" id="tab-ice" data-view="ice" role="tab" aria-selected="false" aria-controls="view-ice">Ice Notes</button>
-        <button type="button" class="nav-btn" id="tab-issues" data-view="issues" role="tab" aria-selected="false" aria-controls="view-issues">UI Issues</button>
       </nav>
       <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
     </div>
@@ -222,7 +227,7 @@
               <button type="button" class="btn btn-ghost btn-sm" data-filter="other">Other</button>
             </div>
             <div class="toolbar-group">
-              <select id="filterType" class="toolbar-input">
+              <select id="filterType" class="toolbar-input" aria-label="Filter by event type">
                 <option value="all">All event types</option>
                 <option value="league">League</option>
                 <option value="game">Game</option>
@@ -230,7 +235,7 @@
                 <option value="bonspiel">Bonspiel</option>
                 <option value="other">Other</option>
               </select>
-              <input id="searchInput" class="toolbar-input" type="search" placeholder="Search team, rink, notes..." />
+              <input id="searchInput" class="toolbar-input" type="search" placeholder="Search team, rink, notes..." aria-label="Search events" />
             </div>
           </div>
 
@@ -311,14 +316,9 @@
                 <label class="form-label" for="pg-opponent">Opponent</label>
                 <input type="text" id="pg-opponent" placeholder="Team or opponent name" />
               </div>
-              <div class="form-row">
-                <div class="card-head" style="margin-bottom:0;">
-                  <div>
-                    <label class="form-label">Shot Goals</label>
-                    <p class="card-copy">Set one to three specific goals so your review has a clear target.</p>
-                  </div>
-                </div>
-                <div class="form-grid-3 planner-goals-grid">
+              <details class="planner-collapsible">
+                <summary class="planner-toggle">Shot Goals <span class="planner-toggle-hint">3 targets for your review</span></summary>
+                <div class="form-grid-3 planner-goals-grid" style="margin-top:10px;">
                   <div class="form-row" style="margin-bottom:0;">
                     <label class="form-label" for="pg-goal-1">Goal 1</label>
                     <input type="text" id="pg-goal-1" placeholder="First focus" />
@@ -332,24 +332,21 @@
                     <input type="text" id="pg-goal-3" placeholder="Third focus" />
                   </div>
                 </div>
-              </div>
-              <div class="form-row">
-                <div class="card-head" style="margin-bottom:0;">
-                  <div>
-                    <label class="form-label">Pre-Game Checklist</label>
-                    <p class="card-copy">Operational prep that carries forward across future dates.</p>
+              </details>
+              <details class="planner-collapsible">
+                <summary class="planner-toggle">Pre-Game Checklist <span class="planner-toggle-hint">gear, prep, touchpoints</span></summary>
+                <div style="margin-top:10px;">
+                  <div class="checklist-stack" id="plannerChecklist"></div>
+                  <div class="checklist-add-row">
+                    <div class="form-row" style="margin-bottom:0;">
+                      <label class="form-label" for="plannerChecklistInput">Add Item</label>
+                      <input type="text" id="plannerChecklistInput" placeholder="Brooms, shoes, stopwatch, team touchpoint..." />
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" data-action="planner-check-reset">Reset Defaults</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-action="planner-check-add">Add Item</button>
                   </div>
                 </div>
-                <div class="checklist-stack" id="plannerChecklist"></div>
-              </div>
-              <div class="checklist-add-row">
-                <div class="form-row" style="margin-bottom:0;">
-                  <label class="form-label" for="plannerChecklistInput">Add Item</label>
-                  <input type="text" id="plannerChecklistInput" placeholder="Brooms, shoes, stopwatch, team touchpoint..." />
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-action="planner-check-reset">Reset Defaults</button>
-                <button type="button" class="btn btn-primary btn-sm" data-action="planner-check-add">Add Item</button>
-              </div>
+              </details>
               <div class="form-row">
                 <label class="form-label" for="pg-ice">Ice Notes</label>
                 <textarea id="pg-ice" placeholder="Speed, curl, release reminders, and anything unusual."></textarea>
@@ -373,13 +370,9 @@
                 <label class="form-label" for="pg-keyshot">Key Shot</label>
                 <input type="text" id="pg-keyshot" placeholder="Best, toughest, or most important shot" />
               </div>
-              <div class="form-row">
-                <div class="card-head" style="margin-bottom:0;">
-                  <div>
-                    <label class="form-label">Execution Ratings</label>
-                    <p class="card-copy">Use quick ratings so the review stays fast on mobile and useful later.</p>
-                  </div>
-                </div>
+              <details class="planner-collapsible">
+                <summary class="planner-toggle">Execution Ratings <span class="planner-toggle-hint">1&ndash;5 quick ratings</span></summary>
+                <div style="margin-top:10px;">
                 <div class="form-grid-3 review-rating-grid">
                   <div class="form-row" style="margin-bottom:0;">
                     <label class="form-label" for="pg-rating-draw">Draw Weight</label>
@@ -437,7 +430,8 @@
                     </select>
                   </div>
                 </div>
-              </div>
+                </div>
+              </details>
               <div class="form-row">
                 <label class="form-label" for="pg-takeaways">Key Takeaways</label>
                 <textarea id="pg-takeaways" placeholder="What held up, what slipped, and what needs to stay in the routine."></textarea>
@@ -479,8 +473,8 @@
                   <p class="card-copy">Edit or delete any row from the action column.</p>
                 </div>
                 <div class="toolbar-group">
-                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, rink, notes..." />
-                  <select id="gameSortSelect" class="toolbar-input">
+                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, rink, notes..." aria-label="Search games" />
+                  <select id="gameSortSelect" class="toolbar-input" aria-label="Sort games">
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
                   </select>
@@ -546,8 +540,8 @@
                   <p class="card-copy">Structured drill tags with full notes preserved.</p>
                 </div>
                 <div class="toolbar-group">
-                  <input id="practiceSearchInput" class="toolbar-input" type="search" placeholder="Search shots, focus, notes..." />
-                  <select id="practiceSortSelect" class="toolbar-input">
+                  <input id="practiceSearchInput" class="toolbar-input" type="search" placeholder="Search shots, focus, notes..." aria-label="Search practice sessions" />
+                  <select id="practiceSortSelect" class="toolbar-input" aria-label="Sort practice sessions">
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
                   </select>
@@ -597,8 +591,8 @@
                   <p class="card-copy">Every entry stays editable and exportable.</p>
                 </div>
                 <div class="toolbar-group">
-                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search rink, curl, notes..." />
-                  <select id="iceSortSelect" class="toolbar-input">
+                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search rink, curl, notes..." aria-label="Search ice notes" />
+                  <select id="iceSortSelect" class="toolbar-input" aria-label="Sort ice notes">
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
                   </select>
@@ -951,12 +945,12 @@
       </div>
       <div class="form-row">
         <label class="form-label">Ice Speed</label>
-        <div class="speed-row" id="speedControl" role="radiogroup" aria-label="Ice speed">
-          <button type="button" class="speed-dot" data-speed="1" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 1 of 5"></button>
-          <button type="button" class="speed-dot" data-speed="2" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 2 of 5"></button>
-          <button type="button" class="speed-dot" data-speed="3" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 3 of 5"></button>
-          <button type="button" class="speed-dot" data-speed="4" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 4 of 5"></button>
-          <button type="button" class="speed-dot" data-speed="5" role="radio" tabindex="0" aria-checked="false" aria-label="Speed 5 of 5"></button>
+        <div class="speed-row speed-segmented" id="speedControl" role="radiogroup" aria-label="Ice speed">
+          <button type="button" class="speed-seg" data-speed="1" role="radio" tabindex="0" aria-checked="false">V.Slow</button>
+          <button type="button" class="speed-seg" data-speed="2" role="radio" tabindex="0" aria-checked="false">Slow</button>
+          <button type="button" class="speed-seg" data-speed="3" role="radio" tabindex="0" aria-checked="false">Normal</button>
+          <button type="button" class="speed-seg" data-speed="4" role="radio" tabindex="0" aria-checked="false">Fast</button>
+          <button type="button" class="speed-seg" data-speed="5" role="radio" tabindex="0" aria-checked="false">V.Fast</button>
           <span class="mono" id="speedLabel">No speed selected</span>
         </div>
       </div>
