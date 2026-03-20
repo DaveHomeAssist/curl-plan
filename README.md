@@ -1,6 +1,6 @@
 # CurlPlan
 
-Personal curling calendar, planner, game log, and ice notes.
+> Personal curling calendar, planner, game log, and ice notes.
 
 ## Features
 
@@ -11,22 +11,35 @@ Personal curling calendar, planner, game log, and ice notes.
 - **Daily Planner** — pre-game goals and post-game reflections
 - **Import/Export** — back up and restore all data as JSON
 
-## Usage
+## Quick Start
 
-Open [index.html](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/index.html) in a browser, or serve the repo from any static host.
+Open `index.html` in a browser, or serve the repo from any static host.
 
 Data is stored in localStorage and persists across sessions.
 
 ## Structure
 
-- Static entrypoint: [index.html](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/index.html)
-- Styles: [assets/css/app.css](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/css/app.css)
-- App scripts:
-  - [utils.js](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/js/app/utils.js)
-  - [core.js](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/js/app/core.js)
-  - [render.js](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/js/app/render.js)
-  - [actions.js](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/js/app/actions.js)
-  - [bootstrap.js](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/assets/js/app/bootstrap.js)
+```
+curl-plan/
+├── index.html                  # Static entrypoint
+├── assets/
+│   ├── css/app.css             # Styles
+│   └── js/app/
+│       ├── utils.js            # Shared utilities
+│       ├── core.js             # State management and data model
+│       ├── render.js           # UI rendering
+│       ├── actions.js          # Event handlers and CRUD
+│       └── bootstrap.js        # App initialization
+├── docs/
+│   ├── how-to-guide.html       # End-user walkthrough
+│   ├── BRAND_BIBLE.md          # Brand positioning and tokens
+│   └── IMPLEMENTATION_PLAN_*.md # UX task batches
+├── scripts/
+│   └── verify-split.js         # Split verification harness
+├── AGENTS.md                   # Agent instructions and issue tracker
+├── CLAUDE.md                   # Architecture constraints
+└── README.md                   # This file
+```
 
 ## Verification
 
@@ -38,13 +51,10 @@ node scripts/verify-split.js
 
 This checks required IDs, script load order, `SCHEMA_VERSION`, and combined JS parseability.
 
-## Guide
+## Deployment
 
-See [docs/how-to-guide.html](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/docs/how-to-guide.html) for the end-user walkthrough.
-
-## Next Pass
-
-See [NEXT_PASS_UX_FEATURES.md](/Users/daverobertson/Desktop/Code/10-active-projects/curl-plan/NEXT_PASS_UX_FEATURES.md) for the next planned UX/features pass.
+- **Host:** GitHub Pages
+- **Build step:** None (static)
 
 ## Tech
 
@@ -52,3 +62,12 @@ See [NEXT_PASS_UX_FEATURES.md](/Users/daverobertson/Desktop/Code/10-active-proje
 - No dependencies
 - localStorage persistence
 - Responsive layout (desktop + mobile)
+
+## Links
+
+- Guide: `docs/how-to-guide.html`
+- Next pass: `NEXT_PASS_UX_FEATURES.md`
+
+## Conventions
+
+This project follows the shared naming conventions in `30-shared-resources/shared-standards/NAMING_CONVENTIONS.md`.

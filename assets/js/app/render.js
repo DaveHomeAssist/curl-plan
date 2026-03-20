@@ -6,7 +6,7 @@ function renderSeasonStats() {
   const games = getGamesForRange(currentSeasonRange);
   const rangeLabel = document.getElementById("seasonRangeLabel");
   document.querySelectorAll("[data-season-range]").forEach(button => {
-    button.classList.toggle("active", button.dataset.seasonRange === currentSeasonRange);
+    button.classList.toggle("is-active", button.dataset.seasonRange === currentSeasonRange);
   });
   if (rangeLabel) rangeLabel.textContent = getRangeLabel(currentSeasonRange, games);
 
@@ -520,14 +520,14 @@ function renderViewContext() {
     }
   }
   target.innerHTML = html;
-  target.classList.toggle("hidden", !html);
+  target.classList.toggle("is-hidden", !html);
 }
 
 function renderEventCard(item, selected = false) {
   const shortDate = fmtDateShort(item.date);
   const parentBonspiel = item.bonspielId ? getEventById(item.bonspielId) : null;
   return `
-    <div class="event-item${selected ? " selected" : ""}" data-event-id="${escapeHtml(item.id)}" data-action="select-event" data-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-pressed="${selected ? "true" : "false"}">
+    <div class="event-item${selected ? " is-selected" : ""}" data-event-id="${escapeHtml(item.id)}" data-action="select-event" data-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-pressed="${selected ? "true" : "false"}">
       <div class="event-date-block">
         <div class="event-day">${shortDate.day}</div>
         <div class="event-mon">${escapeHtml(shortDate.mon)}</div>
@@ -744,9 +744,9 @@ function renderGames() {
     .sort((a, b) => gameSort === "oldest" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   if (!items.length) {
     tbody.innerHTML = "";
-    empty.classList.remove("hidden");
+    empty.classList.remove("is-hidden");
   } else {
-    empty.classList.add("hidden");
+    empty.classList.add("is-hidden");
     tbody.innerHTML = items.map(item => `
       <tr class="log-row${expandedGameId === item.id ? " is-expanded" : ""}" tabindex="0" role="button" data-action="toggle-game-expand" data-id="${escapeHtml(item.id)}" aria-expanded="${expandedGameId === item.id ? "true" : "false"}">
         <td class="mono">${escapeHtml(fmtDate(item.date))}</td>
@@ -814,9 +814,9 @@ function renderPractice() {
     .sort((a, b) => practiceSort === "oldest" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   if (!items.length) {
     list.innerHTML = "";
-    empty.classList.remove("hidden");
+    empty.classList.remove("is-hidden");
   } else {
-    empty.classList.add("hidden");
+    empty.classList.add("is-hidden");
     list.innerHTML = items.map(item => `
       <div class="card-sm">
         <div class="card-head">
@@ -864,9 +864,9 @@ function renderIce() {
     .sort((a, b) => iceSort === "oldest" ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   if (!items.length) {
     list.innerHTML = "";
-    empty.classList.remove("hidden");
+    empty.classList.remove("is-hidden");
   } else {
-    empty.classList.add("hidden");
+    empty.classList.add("is-hidden");
     list.innerHTML = items.map(item => `
       <div class="card-sm">
         <div class="card-head">
@@ -947,9 +947,9 @@ function renderIssues() {
   const items = state.issues.slice().sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
   if (!items.length) {
     tbody.innerHTML = "";
-    empty.classList.remove("hidden");
+    empty.classList.remove("is-hidden");
   } else {
-    empty.classList.add("hidden");
+    empty.classList.add("is-hidden");
     tbody.innerHTML = items.map(item => `
       <tr>
         <td class="mono">${escapeHtml(item.id)}</td>

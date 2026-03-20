@@ -92,7 +92,7 @@ function plannerNav(dir) {
 function setSpeed(value) {
   currentSpeed = Number(value);
   document.querySelectorAll(".speed-dot").forEach(dot => {
-    dot.classList.toggle("active", Number(dot.dataset.speed) <= currentSpeed);
+    dot.classList.toggle("is-active", Number(dot.dataset.speed) <= currentSpeed);
     dot.setAttribute("aria-checked", Number(dot.dataset.speed) === currentSpeed ? "true" : "false");
   });
   speedLabel.textContent = speedText(currentSpeed);
@@ -139,11 +139,11 @@ function showView(name) {
   currentView = name;
   saveUiPrefs({ ...uiPrefs, lastView: name });
   document.querySelectorAll(".view").forEach(view => {
-    view.classList.toggle("active", view.id === `view-${name}`);
+    view.classList.toggle("is-active", view.id === `view-${name}`);
   });
   document.querySelectorAll(".nav-btn").forEach(button => {
     const isActive = button.dataset.view === name;
-    button.classList.toggle("active", isActive);
+    button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-selected", isActive ? "true" : "false");
   });
   if (name === "planner") {
@@ -186,7 +186,7 @@ function resetModal(type) {
     document.getElementById("ev-bonspiel-stage").value = "";
     document.getElementById("ev-bonspiel-travel").value = "";
     document.getElementById("ev-bonspiel-packing").value = "";
-    document.getElementById("eventDeleteBtn").classList.add("hidden");
+    document.getElementById("eventDeleteBtn").classList.add("is-hidden");
   }
   if (type === "game") {
     setModalTitle("game", false);
@@ -199,7 +199,7 @@ function resetModal(type) {
     document.getElementById("gm-rink").value = "";
     document.getElementById("gm-keyshot").value = "";
     document.getElementById("gm-notes").value = "";
-    document.getElementById("gameDeleteBtn").classList.add("hidden");
+    document.getElementById("gameDeleteBtn").classList.add("is-hidden");
   }
   if (type === "practice") {
     setModalTitle("practice", false);
@@ -208,7 +208,7 @@ function resetModal(type) {
     document.querySelectorAll(".pr-shot").forEach(input => input.checked = false);
     document.getElementById("pr-focus").value = "";
     document.getElementById("pr-notes").value = "";
-    document.getElementById("practiceDeleteBtn").classList.add("hidden");
+    document.getElementById("practiceDeleteBtn").classList.add("is-hidden");
   }
   if (type === "ice") {
     setModalTitle("ice", false);
@@ -221,7 +221,7 @@ function resetModal(type) {
     document.getElementById("ice-pebble").value = "";
     document.getElementById("ice-hack").value = "";
     document.getElementById("ice-notes-text").value = "";
-    document.getElementById("iceDeleteBtn").classList.add("hidden");
+    document.getElementById("iceDeleteBtn").classList.add("is-hidden");
     setSpeed(0);
   }
   if (type === "issue") {
@@ -231,7 +231,7 @@ function resetModal(type) {
     document.getElementById("is-description").value = "";
     document.getElementById("is-status").value = "open";
     document.getElementById("is-fix").value = "";
-    document.getElementById("issueDeleteBtn").classList.add("hidden");
+    document.getElementById("issueDeleteBtn").classList.add("is-hidden");
   }
 }
 
@@ -266,7 +266,7 @@ function openModal(type, id = "") {
     document.getElementById("ev-bonspiel-stage").value = bonspiel?.bracketStage || "";
     document.getElementById("ev-bonspiel-travel").value = bonspiel?.travel || "";
     document.getElementById("ev-bonspiel-packing").value = bonspiel?.packing || "";
-    document.getElementById("eventDeleteBtn").classList.remove("hidden");
+    document.getElementById("eventDeleteBtn").classList.remove("is-hidden");
   }
 
   if (type === "game" && item) {
@@ -280,7 +280,7 @@ function openModal(type, id = "") {
     document.getElementById("gm-rink").value = item.rink;
     document.getElementById("gm-keyshot").value = item.keyShot;
     document.getElementById("gm-notes").value = item.notes;
-    document.getElementById("gameDeleteBtn").classList.remove("hidden");
+    document.getElementById("gameDeleteBtn").classList.remove("is-hidden");
   }
 
   if (type === "practice" && item) {
@@ -292,7 +292,7 @@ function openModal(type, id = "") {
     });
     document.getElementById("pr-focus").value = item.focus;
     document.getElementById("pr-notes").value = item.notes;
-    document.getElementById("practiceDeleteBtn").classList.remove("hidden");
+    document.getElementById("practiceDeleteBtn").classList.remove("is-hidden");
   }
 
   if (type === "ice" && item) {
@@ -306,7 +306,7 @@ function openModal(type, id = "") {
     document.getElementById("ice-pebble").value = item.pebbleFeel || "";
     document.getElementById("ice-hack").value = item.hackCondition || "";
     document.getElementById("ice-notes-text").value = item.notes;
-    document.getElementById("iceDeleteBtn").classList.remove("hidden");
+    document.getElementById("iceDeleteBtn").classList.remove("is-hidden");
     setSpeed(item.speed);
   }
 
@@ -317,11 +317,11 @@ function openModal(type, id = "") {
     document.getElementById("is-description").value = item.description;
     document.getElementById("is-status").value = item.status;
     document.getElementById("is-fix").value = item.proposedFix;
-    document.getElementById("issueDeleteBtn").classList.remove("hidden");
+    document.getElementById("issueDeleteBtn").classList.remove("is-hidden");
   }
 
   clearFieldErrors(modalId);
-  overlay.classList.add("open");
+  overlay.classList.add("is-open");
   bindModalDirtyTracking(modalId);
   resetModalDirty(modalId);
   trapFocus(overlay);
@@ -333,7 +333,7 @@ function closeModal(modalId) {
   if (overlay && isDirtyTrackableModal(modalId) && modalDirtyState.modalId === modalId && modalDirtyState.dirty) {
     if (!window.confirm("Discard unsaved changes?")) return;
   }
-  if (overlay) overlay.classList.remove("open");
+  if (overlay) overlay.classList.remove("is-open");
   resetModalDirty("");
   releaseFocusTrap();
 }

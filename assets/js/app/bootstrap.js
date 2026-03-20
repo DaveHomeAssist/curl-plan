@@ -281,7 +281,7 @@ window.addEventListener("hashchange", () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  const openOverlay = document.querySelector(".overlay.open");
+  const openOverlay = document.querySelector(".overlay.is-open");
   const activeElement = document.activeElement;
   const isTyping = activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(activeElement.tagName);
   const mod = event.metaKey || event.ctrlKey;
