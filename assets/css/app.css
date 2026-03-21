@@ -1,42 +1,74 @@
     :root {
-      --ice: #e8f4f8;
-      --ice-dark: #c9e4ef;
-      --ice-mid: #daeef6;
-      --stone: #2c3e4a;
-      --stone-mid: #3d5464;
-      --stone-light: #5a7a8a;
-      --pebble: #8ba8b5;
-      --granite: #b44a2c;
-      --gold: #c9882a;
-      --leaf: #3a7d5c;
-      --sky: #1a6fa0;
-      --sky-soft: rgba(26, 111, 160, 0.12);
-      --white: #fafcfd;
-      --border: rgba(44, 62, 74, 0.12);
-      --border-mid: rgba(44, 62, 74, 0.2);
-      --shadow-sm: 0 2px 8px rgba(44, 62, 74, 0.08);
-      --shadow: 0 6px 24px rgba(44, 62, 74, 0.12);
-      --shadow-lg: 0 16px 50px rgba(44, 62, 74, 0.16);
+      /* Bridge: CurlPlan vars → theme.css tokens */
+      --ice:          var(--bg);
+      --stone:        var(--text);
+      --stone-mid:    var(--text-muted);
+      --pebble:       var(--text-faint);
+      --sky:          var(--primary);
+      --granite:      var(--error);
+      --leaf:         var(--success);
+      --gold:         var(--warning);
+      --white:        var(--surface);
+      --shadow-sm:    var(--shadow-sm);
+      --shadow:       var(--shadow-md);
+      --shadow-lg:    var(--shadow-lg);
+      --r:            var(--r-lg);
+      --r-lg:         var(--r-xl);
+
+      /* CurlPlan-specific (no theme.css equivalent) */
+      --stone-light:  #5a7a8a;
+      --ice-dark:     #c9e4ef;
+      --ice-mid:      #daeef6;
+      --sky-soft:     rgba(26, 111, 160, 0.12);
       --shadow-focus: 0 10px 30px rgba(26, 111, 160, 0.14);
-      --r: 12px;
-      --r-lg: 20px;
-      --gap: 16px;
-      --dur-fast: 140ms;
-      --dur-med: 220ms;
-      --dur-slow: 320ms;
-      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-      --font-serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-      --font-sans: "DM Sans", "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: "DM Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
-      --surface-ghost: rgba(255, 255, 255, 0.52);
+      --gap:          16px;
+      --cp-border:    var(--border-subtle);
+      --cp-border-mid:var(--border);
+      --surface-ghost:rgba(255, 255, 255, 0.52);
       --surface-soft: rgba(255, 255, 255, 0.7);
-      --surface-solid: rgba(255, 255, 255, 0.84);
+      --surface-solid:rgba(255, 255, 255, 0.84);
       --surface-hero: rgba(255, 255, 255, 0.9);
-      --frost-ghost: blur(10px);
-      --frost-soft: blur(12px);
-      --frost-solid: blur(16px);
-      --house-sky: rgba(26, 111, 160, 0.14);
-      --house-granite: rgba(180, 74, 44, 0.12);
+      --frost-ghost:  blur(10px);
+      --frost-soft:   blur(12px);
+      --frost-solid:  blur(16px);
+      --house-sky:    rgba(26, 111, 160, 0.14);
+      --house-granite:rgba(180, 74, 44, 0.12);
+
+      /* Keep CurlPlan fonts — override theme.css */
+      --font-serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --font-sans:  "DM Sans", "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:  "DM Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      --font-display: var(--font-sans);
+    }
+
+    /* Dark mode: CurlPlan-specific overrides */
+    [data-theme="dark"] {
+      --stone-light:  #8BA8C0;
+      --ice-dark:     #1A2438;
+      --ice-mid:      #172035;
+      --sky-soft:     rgba(0, 231, 255, 0.12);
+      --shadow-focus: 0 10px 30px rgba(0, 231, 255, 0.14);
+      --surface-ghost:rgba(18, 26, 43, 0.52);
+      --surface-soft: rgba(18, 26, 43, 0.7);
+      --surface-solid:rgba(18, 26, 43, 0.84);
+      --surface-hero: rgba(18, 26, 43, 0.9);
+      --house-sky:    rgba(0, 231, 255, 0.14);
+      --house-granite:rgba(255, 77, 87, 0.12);
+    }
+
+    [data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top left, rgba(0, 231, 255, 0.06), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(76, 175, 80, 0.05), transparent 36%),
+        var(--bg);
+    }
+
+    [data-theme="dark"] .overlay {
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    @media print {
+      :root { color-scheme: light; }
     }
 
     * {
@@ -80,7 +112,7 @@
       width: 100%;
       padding: 12px 14px;
       border-radius: var(--r);
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       background: rgba(255, 255, 255, 0.92);
       color: var(--stone);
       outline: none;
@@ -225,6 +257,7 @@
       border-radius: var(--r);
       border: 1px solid transparent;
       cursor: pointer;
+      font-family: inherit;
       font-weight: 600;
       position: relative;
       overflow: hidden;
@@ -296,7 +329,7 @@
     .btn-ghost {
       background: rgba(255, 255, 255, 0.74);
       color: var(--stone);
-      border-color: var(--border-mid);
+      border-color: var(--cp-border-mid);
       box-shadow: var(--shadow-sm);
     }
 
@@ -317,7 +350,7 @@
     .card-sm,
     .modal-panel {
       background: var(--surface-soft);
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       backdrop-filter: var(--frost-soft);
       box-shadow: var(--shadow);
     }
@@ -533,7 +566,7 @@
       border-radius: var(--r-lg);
       padding: 18px;
       background: var(--surface-hero);
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       box-shadow: var(--shadow-sm);
       display: flex;
       flex-direction: column;
@@ -760,7 +793,7 @@
     }
 
     .empty {
-      border: 1px dashed var(--border-mid);
+      border: 1px dashed var(--cp-border-mid);
       border-radius: var(--r);
       padding: 28px 20px;
       text-align: center;
@@ -828,7 +861,7 @@
       gap: 14px;
       align-items: flex-start;
       border-radius: var(--r);
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       background: var(--surface-soft);
       padding: 15px 16px;
       box-shadow: var(--shadow-sm);
@@ -928,7 +961,7 @@
     .table-wrap {
       overflow-x: auto;
       border-radius: var(--r);
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       background: var(--surface-soft);
     }
 
@@ -945,13 +978,13 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--pebble);
-      border-bottom: 1px solid var(--border-mid);
+      border-bottom: 1px solid var(--cp-border-mid);
       background: rgba(255, 255, 255, 0.72);
     }
 
     .log-table td {
       padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--cp-border);
       vertical-align: top;
     }
 
@@ -1063,7 +1096,7 @@
     .insight-card {
       padding: 14px;
       border-radius: 16px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       background: var(--surface-soft);
       display: flex;
       flex-direction: column;
@@ -1153,7 +1186,7 @@
       padding: 10px 12px;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.56);
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       transition:
         transform var(--dur-fast) ease,
         border-color var(--dur-fast) ease,
@@ -1172,7 +1205,7 @@
       gap: 14px;
       padding: 14px 16px;
       border-radius: var(--r-lg);
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       background: rgba(255, 255, 255, 0.76);
       box-shadow: var(--shadow-sm);
     }
@@ -1418,7 +1451,7 @@
       gap: 10px;
       padding: 10px 12px;
       border-radius: var(--r);
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       background: rgba(255, 255, 255, 0.62);
       transition:
         transform var(--dur-fast) ease,
@@ -1481,7 +1514,7 @@
       gap: 10px;
       padding: 10px 12px;
       border-radius: var(--r);
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       background: rgba(255, 255, 255, 0.62);
       transition:
         transform var(--dur-fast) ease,
@@ -1545,7 +1578,7 @@
     .planner-checklist-empty {
       padding: 12px;
       border-radius: 12px;
-      border: 1px dashed var(--border-mid);
+      border: 1px dashed var(--cp-border-mid);
       color: var(--stone-light);
       background: rgba(255, 255, 255, 0.42);
       font-size: 0.9rem;
@@ -1638,7 +1671,7 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      border: 2px solid var(--border-mid);
+      border: 2px solid var(--cp-border-mid);
       background: rgba(255, 255, 255, 0.8);
       cursor: pointer;
       transition:
@@ -2020,7 +2053,7 @@
       right: 0;
       min-width: 200px;
       background: var(--surface-hero);
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       border-radius: var(--r);
       box-shadow: var(--shadow-lg);
       z-index: 200;
@@ -2067,13 +2100,13 @@
 
     .settings-divider {
       border: none;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid var(--cp-border);
       margin: 4px 0;
     }
 
     /* ── Planner Progressive Disclosure ── */
     .planner-collapsible {
-      border: 1px solid var(--border);
+      border: 1px solid var(--cp-border);
       border-radius: var(--r);
       padding: 0;
       margin-bottom: 8px;
@@ -2127,7 +2160,7 @@
     .speed-segmented {
       display: flex;
       gap: 0;
-      border: 1px solid var(--border-mid);
+      border: 1px solid var(--cp-border-mid);
       border-radius: var(--r);
       overflow: hidden;
     }
@@ -2136,7 +2169,7 @@
       flex: 1;
       padding: 8px 4px;
       border: none;
-      border-right: 1px solid var(--border);
+      border-right: 1px solid var(--cp-border);
       background: var(--surface-ghost);
       color: var(--stone-light);
       font-family: var(--font-mono);

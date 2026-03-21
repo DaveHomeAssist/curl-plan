@@ -286,9 +286,18 @@ if (settingsBtn && settingsDropdown) {
       showView("issues");
     });
   }
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      toggleTheme();
+      settingsDropdown.classList.remove("is-open");
+      settingsBtn.setAttribute("aria-expanded", "false");
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   document.getElementById("todayChip").textContent = new Date().toLocaleDateString(undefined, {
     weekday: "long",
     month: "long",

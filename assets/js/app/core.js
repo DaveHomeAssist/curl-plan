@@ -850,8 +850,37 @@ function defaultUiPrefs() {
       rink: "",
       position: "",
       opponent: ""
-    }
+    },
+    theme: "light"
   };
+}
+
+/* ── Theme ────────────────────────────────────────────────── */
+function initTheme() {
+  const saved = uiPrefs.theme;
+  if (saved === "dark" || saved === "light") {
+    applyTheme(saved);
+  } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    applyTheme("dark");
+  } else {
+    applyTheme("light");
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  uiPrefs.theme = theme;
+  const btn = document.getElementById("themeToggleBtn");
+  if (btn) {
+    btn.textContent = theme === "dark" ? "\u2600 Broadcast" : "\u263D Arena Night";
+    btn.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  }
+}
+
+function toggleTheme() {
+  const next = uiPrefs.theme === "dark" ? "light" : "dark";
+  applyTheme(next);
+  saveUiPrefs(uiPrefs);
 }
 
 function loadUiPrefs() {
