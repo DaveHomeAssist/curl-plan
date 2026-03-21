@@ -367,6 +367,9 @@
       flex-wrap: wrap;
     }
 
+    .nav-back{font-size:.7rem;opacity:.6;text-decoration:none;color:var(--text);margin-right:auto;transition:opacity .15s;padding:10px 0 10px 4px;flex-shrink:0}
+    .nav-back:hover{opacity:1}
+
     .nav {
       display: flex;
       gap: 4px;
