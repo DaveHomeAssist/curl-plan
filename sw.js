@@ -1,11 +1,12 @@
 // CurlPlan Service Worker
 // Cache name is version-stamped so edits to assets invalidate the old cache.
-const CACHE_NAME = "curlplan-sw-v4";
+const CACHE_NAME = "curlplan-sw-v5";
 
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./assets/css/app.css",
+  "./assets/css/theme.css",
   "./assets/js/app/utils.js",
   "./assets/js/app/core.js",
   "./assets/js/app/render.js",
