@@ -1,3 +1,5 @@
+> **DEPRECATED** — This file is superseded by `CLAUDE.md`. Issues, session log, and project metadata now live in CLAUDE.md. This file is retained as a historical archive only.
+
 # AGENTS.md
 
 Inherits root rules from `/Users/daverobertson/Desktop/Code/AGENTS.md`.
