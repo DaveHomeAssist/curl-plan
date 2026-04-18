@@ -994,5 +994,13 @@ function loadState() {
 
 function saveState(nextState = state) {
   state = normalizeState(nextState);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    if (typeof showToast === "function") {
+      showToast("Storage full — some changes may not be saved.", { type: "error" });
+    } else {
+      console.warn("CurlPlan: save failed", err);
+    }
+  }
 }
