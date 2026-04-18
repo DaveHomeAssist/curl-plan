@@ -897,6 +897,20 @@ function loadUiPrefs() {
   };
 }
 
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (typeof showToast === "function") {
+      showToast("Storage full — some changes may not be saved.", { type: "error" });
+    } else {
+      console.warn("CurlPlan: save failed", err);
+    }
+    return false;
+  }
+}
+
 function saveUiPrefs(nextPrefs = uiPrefs) {
   const defaults = defaultUiPrefs();
   uiPrefs = {
@@ -907,13 +921,13 @@ function saveUiPrefs(nextPrefs = uiPrefs) {
       ...(nextPrefs.plannerTemplate && typeof nextPrefs.plannerTemplate === "object" ? nextPrefs.plannerTemplate : {})
     }
   };
-  localStorage.setItem(UI_PREFS_KEY, JSON.stringify(uiPrefs));
+  safeSetItem(UI_PREFS_KEY, JSON.stringify(uiPrefs));
 }
 
 function saveChecklistDefaults(items) {
   const defaults = stripChecklistChecks(items);
   const safeDefaults = defaults.length ? defaults : cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
-  localStorage.setItem(CHECKLIST_DEFAULTS_KEY, JSON.stringify(safeDefaults));
+  safeSetItem(CHECKLIST_DEFAULTS_KEY, JSON.stringify(safeDefaults));
 }
 
 function checklistMatchesDefaults(items) {
@@ -986,7 +1000,7 @@ function loadState() {
   }
   const migratedPrototype = loadPrototypeState();
   if (migratedPrototype) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedPrototype));
+    safeSetItem(STORAGE_KEY, JSON.stringify(migratedPrototype));
     return migratedPrototype;
   }
   return clone(demoState());
