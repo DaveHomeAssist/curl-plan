@@ -1,0 +1,299 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000000000000000000000011 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* Components.swift */; };
+		000000000000000000000013 /* CurlPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* CurlPlanApp.swift */; };
+		000000000000000000000015 /* CurlerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* CurlerProfileView.swift */; };
+		000000000000000000000017 /* LockerRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* LockerRoomView.swift */; };
+		000000000000000000000019 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* Models.swift */; };
+		00000000000000000000001B /* PassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* PassportView.swift */; };
+		00000000000000000000001D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* RootView.swift */; };
+		00000000000000000000001F /* RosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* RosterView.swift */; };
+		000000000000000000000021 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* SettingsSheet.swift */; };
+		000000000000000000000023 /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* SpielsView.swift */; };
+		000000000000000000000025 /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* StopDetailView.swift */; };
+		000000000000000000000027 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* Theme.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000006 /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000010 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
+		000000000000000000000012 /* CurlPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanApp.swift"; sourceTree = "<group>"; };
+		000000000000000000000014 /* CurlerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlerProfileView.swift"; sourceTree = "<group>"; };
+		000000000000000000000016 /* LockerRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LockerRoomView.swift"; sourceTree = "<group>"; };
+		000000000000000000000018 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
+		00000000000000000000001A /* PassportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PassportView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001E /* RosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RosterView.swift"; sourceTree = "<group>"; };
+		000000000000000000000020 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsSheet.swift"; sourceTree = "<group>"; };
+		000000000000000000000022 /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
+		000000000000000000000024 /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
+		000000000000000000000026 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000003 = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000004 /* CurlPlan */,
+				000000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000004 /* CurlPlan */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000010 /* Components.swift */,
+				000000000000000000000012 /* CurlPlanApp.swift */,
+				000000000000000000000014 /* CurlerProfileView.swift */,
+				000000000000000000000016 /* LockerRoomView.swift */,
+				000000000000000000000018 /* Models.swift */,
+				00000000000000000000001A /* PassportView.swift */,
+				00000000000000000000001C /* RootView.swift */,
+				00000000000000000000001E /* RosterView.swift */,
+				000000000000000000000020 /* SettingsSheet.swift */,
+				000000000000000000000022 /* SpielsView.swift */,
+				000000000000000000000024 /* StopDetailView.swift */,
+				000000000000000000000026 /* Theme.swift */,
+			);
+			path = CurlPlan;
+			sourceTree = "<group>";
+		};
+		000000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000006 /* CurlPlan.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000000000002 /* CurlPlan */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000000B /* Build configuration list for PBXNativeTarget "CurlPlan" */;
+			buildPhases = (
+				000000000000000000000007 /* Sources */,
+				000000000000000000000008 /* Frameworks */,
+				000000000000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CurlPlan;
+			productName = CurlPlan;
+			productReference = 000000000000000000000006 /* CurlPlan.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					000000000000000000000002 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = 00000000000000000000000A /* Build configuration list for PBXProject "CurlPlan" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 000000000000000000000003;
+			productRefGroup = 000000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000000000002 /* CurlPlan */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000011 /* Components.swift in Sources */,
+				000000000000000000000013 /* CurlPlanApp.swift in Sources */,
+				000000000000000000000015 /* CurlerProfileView.swift in Sources */,
+				000000000000000000000017 /* LockerRoomView.swift in Sources */,
+				000000000000000000000019 /* Models.swift in Sources */,
+				00000000000000000000001B /* PassportView.swift in Sources */,
+				00000000000000000000001D /* RootView.swift in Sources */,
+				00000000000000000000001F /* RosterView.swift in Sources */,
+				000000000000000000000021 /* SettingsSheet.swift in Sources */,
+				000000000000000000000023 /* SpielsView.swift in Sources */,
+				000000000000000000000025 /* StopDetailView.swift in Sources */,
+				000000000000000000000027 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		00000000000000000000000C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		00000000000000000000000D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		00000000000000000000000E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlan;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		00000000000000000000000F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlan;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00000000000000000000000A /* Build configuration list for PBXProject "CurlPlan" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000000C /* Debug */,
+				00000000000000000000000D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000000B /* Build configuration list for PBXNativeTarget "CurlPlan" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000000E /* Debug */,
+				00000000000000000000000F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000001 /* Project object */;
+}

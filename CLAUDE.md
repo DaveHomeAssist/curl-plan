@@ -122,3 +122,4 @@ All collections share one localStorage key as a single JSON blob.
 [2026-06-21] [CurlPlan] [test] Add verify-app.js for root app; retarget verify-split.js at classic/; CI runs both
 [2026-06-21] [CurlPlan] [fix] SWs whitelist each other's cache (origin-wide CacheStorage); rename classic cache to curlplan-classic-v6
 [2026-06-21] [CurlPlan] [fix] Repath tests/ stress harness to classic/assets; retarget how-to-guide and BRAND_BIBLE doc paths to classic/
+[2026-06-21] [CurlPlan] [feat] Add native SwiftUI port under ios/ (Xcode project, 6 screens, house-ring system, Ice/Arena theming)

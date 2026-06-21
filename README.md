@@ -38,12 +38,21 @@ The original planner — Calendar, Game Log, Practice Tracker, Ice Notes, Daily
 Planner — with split CSS/JS assets, localStorage persistence, and offline support.
 Still live at `classic/index.html`. See [`classic/`](classic/) for its assets.
 
+## Native iOS app (`ios/`)
+
+A SwiftUI port of the Hi-Fi concept — same six screens, house-ring system, Ice/Arena
+theming, tab navigation, and push-to-detail flows. Open `ios/CurlPlan.xcodeproj` in
+Xcode 15.4+ (iOS 17+), no dependencies. See [`ios/README.md`](ios/README.md).
+
 ## Structure
 
 ```
 curl-plan/
-├── index.html              # Hi-Fi app (self-contained single file)
+├── index.html              # Hi-Fi web app (self-contained single file)
 ├── sw.js                   # Service worker (network-first; purges legacy cache)
+├── ios/                    # Native SwiftUI port (Xcode project)
+│   ├── CurlPlan.xcodeproj
+│   └── CurlPlan/*.swift
 ├── classic/                # Original multi-view planner (archived, still working)
 │   ├── index.html
 │   ├── sw.js
