@@ -296,15 +296,18 @@ This is non-negotiable. The app must be fully functional with zero motion.
 
 ## File Reference
 
+> This bible describes the **classic** planner, now archived under `classic/`
+> (the repo root is the Hi-Fi app). Paths below are relative to `classic/`.
+
 | File | Purpose |
 |------|---------|
-| `assets/css/app.css` | All tokens, layout, and component styles |
-| `index.html` | Single-page app shell |
-| `assets/js/app/core.js` | State, persistence, normalization |
-| `assets/js/app/render.js` | All DOM rendering |
-| `assets/js/app/actions.js` | Event handlers, CRUD operations |
-| `assets/js/app/bootstrap.js` | Init, wiring, demo data |
-| `assets/js/app/utils.js` | Shared utilities, escapeHtml |
+| `classic/assets/css/app.css` | All tokens, layout, and component styles |
+| `classic/index.html` | Single-page app shell |
+| `classic/assets/js/app/core.js` | State, persistence, normalization |
+| `classic/assets/js/app/render.js` | All DOM rendering |
+| `classic/assets/js/app/actions.js` | Event handlers, CRUD operations |
+| `classic/assets/js/app/bootstrap.js` | Init, wiring, demo data |
+| `classic/assets/js/app/utils.js` | Shared utilities, escapeHtml |
 
 ---
 

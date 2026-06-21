@@ -1,50 +1,60 @@
-// CurlPlan Service Worker
-// Cache name is version-stamped so edits to assets invalidate the old cache.
-const CACHE_NAME = "curlplan-sw-v5";
+// CurlPlan Service Worker (Hi-Fi app)
+// Self-contained single-file app. Network-first for navigations so the HTML is
+// always fresh; cache-first for other same-origin GETs. On activate we delete every
+// origin cache except those in KEEP — this purges the legacy "curlplan-sw-v5" cache
+// (the pre-promote root app) while preserving the archived classic app's own cache.
+// NOTE: CacheStorage is per-origin, not per-SW-scope, so the classic worker
+// (scope /classic/) shares this keyspace; KEEP must list its cache too, and the
+// classic worker reciprocally keeps "curlplan-hifi-v1".
+const CACHE_NAME = "curlplan-hifi-v1";
+const KEEP = [CACHE_NAME, "curlplan-classic-v6"];
 
-const PRECACHE_URLS = [
-  "./",
-  "./index.html",
-  "./assets/css/app.css",
-  "./assets/css/theme.css",
-  "./assets/js/app/utils.js",
-  "./assets/js/app/core.js",
-  "./assets/js/app/render.js",
-  "./assets/js/app/actions.js",
-  "./assets/js/app/bootstrap.js",
-  "./assets/icons/favicon/favicon.svg",
-];
+const PRECACHE_URLS = ["./", "./index.html"];
 
 self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)));
   self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      )
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => !KEEP.includes(key)).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Cache-first for precached assets, network-first for everything else.
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  // Navigations (the app shell): network-first, fall back to cache when offline.
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          // Normalize to one canonical shell entry so query-stringed deep links
+          // (?theme=…&accent=…) don't accumulate per-URL copies. The runtime reads
+          // theme/accent from location.search, so the shell HTML is query-agnostic.
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put("./index.html", clone));
+          return res;
+        })
+        .catch(() => caches.match("./index.html").then(m => m || caches.match(req)))
+    );
+    return;
+  }
+
+  // Everything else (same-origin static): cache-first, then network.
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    caches.match(req).then(cached => {
       if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      return fetch(req).then(res => {
+        if (res.ok && new URL(req.url).origin === self.location.origin) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
         }
-        return response;
+        return res;
       });
     })
   );

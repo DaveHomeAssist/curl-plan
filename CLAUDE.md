@@ -4,15 +4,33 @@
 
 ## Project Overview
 
-Personal curling calendar, game logger, practice tracker, ice condition notes, and daily game planner. Six view types in a single-file app with offline support via service worker.
+Two coexisting apps in one repo:
+
+- **Root (`index.html`) — Hi-Fi app.** The promoted "Passport + Locker Room"
+  concept: a mobile-first, self-contained single file. Screens: Passport (home),
+  Locker Room (feed), Stop detail, Curler profile, Spiels, Roster. Tab + push/back
+  navigation, follow/unfollow, Ice/Arena theming, deep links, offline shell.
+- **Classic (`classic/`) — original planner.** Personal curling calendar, game
+  logger, practice tracker, ice condition notes, and daily game planner. Six views,
+  split CSS/JS assets, offline via its own service worker. Archived but still live.
 
 ## Stack
 
-- Single-file HTML app (`index.html`)
+### Root Hi-Fi app
+- Self-contained single-file HTML (`index.html`) — no build, no dependencies, web fonts only
+- Appearance prefs persisted to localStorage under `curlplan-hifi-prefs-v1`
+- Service worker (`sw.js`, cache `curlplan-hifi-v1`): network-first navigations, purges legacy caches
+- Inline SVG favicon (house ring); seed data drives all screens
+- XSS safety via `esc()` on all rendered content
+- Verified by `scripts/verify-app.js`
+
+### Classic app (`classic/`)
+- Single HTML entry (`classic/index.html`) + split assets under `classic/assets/`
 - No build step, no external dependencies
 - localStorage persistence (single JSON blob under `curlplan-v1`)
-- Service worker (`sw.js`) for offline support
+- Service worker (`classic/sw.js`) for offline support
 - Schema migration via `migrateRaw()` switch
+- Verified by `scripts/verify-split.js`
 
 ## Key Decisions
 
@@ -28,7 +46,10 @@ Personal curling calendar, game logger, practice tracker, ice condition notes, a
 
 ## Architecture
 
-- Single-file HTML app (`index.html`)
+Root = self-contained Hi-Fi app. The sections below (Views, Key data collections)
+describe the **classic** app under `classic/`.
+
+- Single-file HTML app (`classic/index.html`)
 - No build step, no dependencies
 - localStorage for persistence
 - Export/import via JSON
@@ -95,3 +116,9 @@ All collections share one localStorage key as a single JSON blob.
 [2026-03-18] [CurlPlan] [refactor] Carry lineup links into game saves and printed reports
 [2026-03-19] [CurlPlan] [feat] Add bonspiel parent records with travel roster and budget fields
 [2026-03-19] [CurlPlan] [feat] Render grouped bonspiel dashboards and linked draw context in calendar
+[2026-06-21] [CurlPlan] [feat] Implement Hi-Fi "Passport + Locker Room" concept as a navigable single-file app
+[2026-06-21] [CurlPlan] [refactor] Promote Hi-Fi app to root; archive original planner to classic/ (history preserved)
+[2026-06-21] [CurlPlan] [feat] Network-first sw.js (curlplan-hifi-v1) purges legacy v5 cache on activate
+[2026-06-21] [CurlPlan] [test] Add verify-app.js for root app; retarget verify-split.js at classic/; CI runs both
+[2026-06-21] [CurlPlan] [fix] SWs whitelist each other's cache (origin-wide CacheStorage); rename classic cache to curlplan-classic-v6
+[2026-06-21] [CurlPlan] [fix] Repath tests/ stress harness to classic/assets; retarget how-to-guide and BRAND_BIBLE doc paths to classic/

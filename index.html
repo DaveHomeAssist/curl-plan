@@ -1,1126 +1,938 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Personal curling calendar, planner, game log, and ice notes. Track games, practices, bonspiels, and league nights.">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="CurlPlan">
-  <meta property="og:description" content="Personal curling calendar, planner, game log, and ice notes. Track games, practices, bonspiels, and league nights.">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CurlPlan">
-  <meta name="twitter:description" content="Personal curling calendar, planner, game log, and ice notes. Track games, practices, bonspiels, and league nights.">
-  <title>CurlPlan</title>
-  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/theme.css" />
-  <link rel="stylesheet" href="assets/css/app.css" />
-  <script>
-    (function(){try{var p=JSON.parse(localStorage.getItem("cp_ui_prefs_v1"));if(p&&p.theme==="dark"){document.documentElement.setAttribute("data-theme","dark")}else if(!p||!p.theme){if(window.matchMedia("(prefers-color-scheme: dark)").matches){document.documentElement.setAttribute("data-theme","dark")}}}catch(e){}})();
-  </script>
-  <style>
-    .skip-link {
-      position: absolute;
-      left: -9999px;
-      top: auto;
-      padding: 8px 16px;
-      z-index: 10000;
-      text-decoration: none;
-      border-radius: 4px;
-      font-size: 14px;
-      background: var(--text);
-      color: var(--surface);
-    }
-    .skip-link:focus {
-      left: 10px;
-      top: 10px;
-      outline: 2px solid currentColor;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1316">
+<meta name="description" content="CurlPlan — your season, your circle. A curling-native app: map your season, stay close to your circle.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CurlPlan">
+<meta property="og:description" content="Your season, your circle. Map your curling season and stay close to your circle.">
+<title>CurlPlan</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='13.6' fill='%232f6f93'/%3E%3Ccircle cx='16' cy='16' r='11.2' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='8.4' fill='%23c0402c'/%3E%3Ccircle cx='16' cy='16' r='5.6' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='2.9' fill='%23c0402c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CurlPlan — Hi-Fi Concept implementation
+   Single file, no build, no dependencies. Faithful to the
+   "Passport + Locker Room" design concept; made navigable.
+   ============================================================ */
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:'Hanken Grotesk',system-ui,sans-serif;
+  background:radial-gradient(120% 80% at 20% -10%, #19222a 0%, #0e1316 60%);
+  color:#e7edf1;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100dvh;
+}
+
+/* ---------- theme tokens (Ice = light, Arena = dark) ---------- */
+:root{
+  --accent:#c0402c;
+  --accent-ink:#ffffff;
+  --house-red:#c0402c;
+  --house-blue:#2f6f93;
+  --ink:#1b2227;
+  --muted:#6a747b;
+  --line:#dde4e8;
+  --screen:#eceff1;
+  --card:#ffffff;
+  --panel:#e6eef2;
+  --pebble-o:0.6;
+}
+[data-theme="arena"]{
+  --ink:#eef3f6;
+  --muted:#8a949b;
+  --line:rgba(255,255,255,0.09);
+  --screen:#13181b;
+  --card:#1b2228;
+  --panel:#222a31;
+}
+
+/* ---------- device frame ---------- */
+.phone{
+  background:#0a0d0f;
+  border-radius:52px;
+  padding:11px;
+  box-shadow:0 2px 4px rgba(0,0,0,.5), 0 40px 70px -24px rgba(0,0,0,.8), inset 0 0 0 2px #2a3137;
+}
+.screen{
+  position:relative;
+  width:384px;
+  height:812px;
+  max-height:calc(100dvh - 22px);
+  border-radius:42px;
+  overflow:hidden;
+  background:var(--screen);
+  display:flex;
+  flex-direction:column;
+}
+.notch{
+  position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:104px; height:30px; background:#0a0d0f; border-radius:99px; z-index:40;
+  pointer-events:none;
+}
+/* full-bleed on real phones */
+@media (max-width:479px){
+  body{ align-items:stretch; }
+  .phone{ padding:0; border-radius:0; box-shadow:none; width:100%; }
+  .screen{ width:100%; height:100dvh; max-height:none; border-radius:0; }
+  .notch{ display:none; }
+}
+
+/* ---------- status bar ---------- */
+.statusbar{
+  height:50px; flex:none; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 28px 7px; font:600 14px 'Hanken Grotesk'; color:var(--ink); z-index:5;
+}
+.statusbar.on-dark{ color:#fff; }
+.statusbar .sig{ display:flex; gap:6px; align-items:center; font-size:12px; letter-spacing:.04em; }
+.batt{ margin-left:2px; display:inline-block; width:22px; height:11px; border:1.5px solid currentColor; border-radius:3px; position:relative; }
+.batt::after{ content:""; position:absolute; inset:1.5px; right:6px; background:currentColor; border-radius:1px; }
+
+/* ---------- house ring (signature element) ---------- */
+.ring{
+  display:inline-block; border-radius:99px; flex:none;
+  background:radial-gradient(circle, #fff 0 9%, var(--house-red) 9% 35%, #fff 35% 61%, var(--house-blue) 61% 86%, #fff 86% 100%);
+}
+.ring.tight{
+  background:radial-gradient(circle, #fff 0 12%, var(--house-red) 12% 40%, #fff 40% 66%, var(--house-blue) 66% 92%, #fff 92%);
+}
+
+/* ---------- generic content scroller ---------- */
+.scroll{
+  flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+  display:flex; flex-direction:column; gap:16px; padding:4px 20px 20px;
+}
+.scroll::-webkit-scrollbar{ width:0; }
+
+/* ---------- app bar ---------- */
+.appbar{
+  flex:none; display:flex; align-items:center; justify-content:space-between; padding:6px 20px 12px;
+}
+.brand{ display:flex; align-items:center; gap:9px; }
+.brand .ring{ width:22px; height:22px; box-shadow:0 1px 3px rgba(10,15,18,.3); }
+.brand b{ font:700 19px 'Hanken Grotesk'; letter-spacing:-.01em; color:var(--ink); }
+.avatar{
+  border-radius:99px; flex:none; background:linear-gradient(145deg,#3a444b,#222a30);
+  display:flex; align-items:center; justify-content:center; color:#eef3f6;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.08); font-family:'Hanken Grotesk'; font-weight:700;
+  border:0; cursor:pointer;
+}
+
+/* ---------- type helpers ---------- */
+.eyebrow{ font:500 11px 'DM Mono',monospace; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.mono{ font-family:'DM Mono',monospace; }
+.serif{ font-family:'Instrument Serif',serif; font-weight:400; }
+.accent{ color:var(--accent); }
+.ital{ font-style:italic; }
+
+/* ---------- cards & primitives ---------- */
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 8px 24px -18px rgba(15,20,24,.3);
+}
+.row{ display:flex; align-items:center; gap:12px; }
+.pill-btn{
+  font:700 12px 'Hanken Grotesk'; border-radius:10px; padding:8px 14px; border:0; cursor:pointer;
+  background:var(--accent); color:#fff;
+}
+.pill-btn.ghost{ background:transparent; border:1.5px solid var(--ink); color:var(--ink); padding:6.5px 14px; }
+.tag{
+  display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:99px;
+  padding:6px 11px 6px 7px; font:600 12px 'Hanken Grotesk'; color:var(--ink);
+}
+
+/* avatar stack (met-people) */
+.stack{ display:flex; }
+.stack > span{ box-shadow:inset 0 0 0 1.5px var(--card); }
+.stack > span + span{ margin-left:-7px; }
+
+/* ---------- telemetry strip ---------- */
+.telemetry{ display:flex; align-items:stretch; padding:13px 4px; }
+.telemetry .cell{ flex:1; text-align:center; }
+.telemetry .num{ font:400 26px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
+.telemetry .lab{ font:500 9px 'DM Mono'; letter-spacing:.12em; color:var(--muted); margin-top:4px; }
+.vline{ width:1px; background:var(--line); }
+
+/* ---------- map ---------- */
+.map{ position:relative; height:212px; border-radius:18px; overflow:hidden; background:var(--panel); border:1px solid var(--line); }
+.map svg{ position:absolute; inset:0; width:100%; height:100%; }
+.pebble-tex{ position:absolute; inset:0; background-image:radial-gradient(rgba(110,130,140,.35) .8px, transparent 1px); background-size:9px 9px; opacity:var(--pebble-o); pointer-events:none; }
+.map-pin{
+  position:absolute; transform:translate(-50%,-50%); border-radius:99px; cursor:pointer; border:0; padding:0;
+  background:radial-gradient(circle, #fff 0 9%, var(--house-red) 9% 35%, #fff 35% 61%, var(--house-blue) 61% 86%, #fff 86% 100%);
+  box-shadow:0 1px 3px rgba(10,15,18,.4);
+}
+.map-pin.here{ box-shadow:0 0 0 3px rgba(255,255,255,.8), 0 3px 8px rgba(10,15,18,.45); }
+.map-chip{
+  position:absolute; left:14px; top:13px; display:flex; align-items:center; gap:7px;
+  background:var(--card); border-radius:99px; padding:5px 11px 5px 7px; box-shadow:0 4px 12px -4px rgba(15,20,24,.35);
+}
+.map-chip .dot{ width:7px; height:7px; border-radius:99px; background:var(--accent); }
+.map-chip span{ font:600 11px 'Hanken Grotesk'; color:var(--ink); }
+.map-meta{ position:absolute; right:13px; bottom:12px; font:500 10px 'DM Mono'; letter-spacing:.1em; color:var(--ink); background:var(--card); border-radius:8px; padding:5px 9px; opacity:.92; }
+
+/* ---------- section header ---------- */
+.sec-head{ display:flex; align-items:center; justify-content:space-between; }
+.sec-head .lab{ font:500 11px 'DM Mono'; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent); cursor:pointer; }
+
+/* ---------- list row (stops / games / people) ---------- */
+.tile{ padding:12px; cursor:pointer; }
+.tile .code{
+  width:42px; height:42px; border-radius:12px; flex:none; background:var(--panel);
+  display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent);
+}
+.tile .title{ font:700 15px 'Hanken Grotesk'; color:var(--ink); }
+.tile .sub{ font:500 11px 'DM Mono'; color:var(--muted); margin-top:2px; }
+.score{ font:400 17px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
+.plus-badge{
+  width:20px; height:20px; border-radius:99px; background:var(--accent);
+  display:flex; align-items:center; justify-content:center; font:700 8px 'Hanken Grotesk'; color:#fff;
+}
+
+/* ---------- tab bar ---------- */
+.tabbar{
+  flex:none; border-top:1px solid var(--line); background:var(--card);
+  display:flex; justify-content:space-around; padding:11px 8px max(26px, env(safe-area-inset-bottom));
+  z-index:20;
+}
+.tab{ display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:0; cursor:pointer; opacity:.5; }
+.tab.active{ opacity:1; }
+.tab .glyph{ font-size:18px; line-height:.9; color:var(--ink); }
+.tab.active .glyph{ color:var(--accent); }
+.tab .ring{ width:21px; height:21px; }
+.tab.active .lab{ font:600 10px 'Hanken Grotesk'; color:var(--accent); }
+.tab .lab{ font:500 10px 'Hanken Grotesk'; color:var(--ink); }
+
+/* ---------- FAB ---------- */
+.fab{
+  position:absolute; right:18px; bottom:104px; width:54px; height:54px; border-radius:99px;
+  background:var(--accent); border:0; cursor:pointer; color:#fff; font:300 30px 'Hanken Grotesk';
+  display:flex; align-items:center; justify-content:center; box-shadow:0 12px 26px -8px rgba(192,64,44,.6); z-index:30;
+}
+
+/* ---------- feed ---------- */
+.post{ padding:14px; }
+.post .head{ display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+.post .name{ font:700 14px 'Hanken Grotesk'; color:var(--ink); }
+.post .meta{ font:500 11px 'DM Mono'; color:var(--muted); }
+.post .body{ font:400 15px/1.4 'Hanken Grotesk'; color:var(--ink); margin-bottom:11px; }
+.scorebar{ display:flex; align-items:center; gap:11px; background:var(--panel); border-radius:12px; padding:10px 13px; }
+.scorebar .big{ font:400 28px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
+.win-chip{ font:700 9px 'DM Mono'; letter-spacing:.12em; background:var(--accent); color:#fff; border-radius:6px; padding:4px 8px; }
+.post .actions{ display:flex; gap:20px; margin-top:11px; font:600 13px 'Hanken Grotesk'; color:var(--muted); }
+.post .actions span{ cursor:pointer; }
+.spiel{ border:1.5px solid var(--accent) !important; box-shadow:0 10px 26px -16px rgba(192,64,44,.45) !important; }
+
+/* ---------- back button ---------- */
+.backbtn{
+  width:36px; height:36px; border-radius:99px; border:1.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:19px; color:var(--ink);
+  background:var(--card); cursor:pointer;
+}
+.hero-back{
+  position:absolute; top:56px; left:18px; width:36px; height:36px; border-radius:99px;
+  background:rgba(255,255,255,.16); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border:0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; z-index:6;
+}
+
+/* ---------- stop hero ---------- */
+.stop-hero{ position:relative; height:228px; flex:none; background:linear-gradient(160deg,#2f6b8f 0%, #1f2d36 100%); overflow:hidden; }
+.stop-hero .tex{ position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,.18) .9px, transparent 1px); background-size:10px 10px; opacity:var(--pebble-o); }
+.stop-hero .arc{ position:absolute; right:-50px; top:-50px; width:200px; height:200px; border-radius:99px; opacity:.5;
+  background:radial-gradient(circle, transparent 0 24%, var(--house-red) 24% 30%, transparent 30% 52%, #fff 52% 58%, transparent 58% 80%, var(--house-blue) 80% 86%, transparent 86%); }
+.stop-hero .cap{ position:absolute; left:22px; bottom:20px; right:22px; }
+.stop-hero .cap .loc{ font:500 10px 'DM Mono'; letter-spacing:.18em; color:rgba(255,255,255,.82); }
+.stop-hero .cap h2{ font:400 34px/1.02 'Instrument Serif'; color:#fff; margin:5px 0 0; }
+
+/* ice read */
+.iceread{ display:flex; gap:9px; }
+.iceread .cell{ flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:11px 12px; }
+.iceread .v{ font:400 22px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
+.iceread .v small{ font-size:13px; color:var(--muted); }
+.iceread .l{ font:500 9px 'DM Mono'; letter-spacing:.1em; color:var(--muted); margin-top:5px; }
+
+/* games-here list */
+.glist{ overflow:hidden; }
+.gline{ display:flex; align-items:center; gap:10px; padding:10px 13px; }
+.gline + .gline, .glist .ghead + .gline, .gline:not(:last-child){ border-bottom:1px solid var(--line); }
+.ghead{ display:flex; align-items:center; justify-content:space-between; padding:11px 13px; border-bottom:1px solid var(--line); }
+.ghead .t{ font:600 12px 'Hanken Grotesk'; color:var(--ink); }
+.ghead .n{ font:500 10px 'DM Mono'; color:var(--muted); }
+.gline .nm{ font:600 13px 'Hanken Grotesk'; color:var(--ink); flex:1; }
+.gline .res{ font:700 9px 'DM Mono'; letter-spacing:.1em; }
+.statusdot{ width:7px; height:7px; border-radius:99px; flex:none; }
+
+/* people row */
+.prow{ display:flex; align-items:center; gap:11px; }
+.prow .av{ width:40px; height:40px; font:700 13px 'Hanken Grotesk'; }
+.prow .nm{ font:700 14px 'Hanken Grotesk'; color:var(--ink); }
+.prow .ro{ font:500 10px 'DM Mono'; color:var(--muted); }
+
+/* ---------- curler profile ---------- */
+.identity{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:9px; }
+.identity .halo{
+  width:88px; height:88px; border-radius:99px; padding:5px; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle, var(--house-red) 0 18%, var(--screen) 18% 30%, var(--house-blue) 30% 44%, var(--screen) 44%);
+}
+.identity .halo .av{ width:100%; height:100%; font:700 28px 'Hanken Grotesk'; }
+.identity h2{ font:400 30px 'Instrument Serif'; color:var(--ink); line-height:1.05; margin:0; }
+.identity .meta{ font:500 11px 'DM Mono'; letter-spacing:.08em; color:var(--muted); margin-top:5px; }
+.metpill{ display:inline-flex; align-items:center; gap:7px; background:var(--panel); border-radius:99px; padding:5px 12px; font:600 11px 'Hanken Grotesk'; color:var(--accent); }
+.metpill .d{ width:6px; height:6px; border-radius:99px; background:var(--accent); }
+.actions2{ display:flex; gap:10px; }
+.actions2 .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
+.actions2 .b.solid{ background:var(--accent); color:#fff; }
+.actions2 .b.outline{ border:1.5px solid var(--ink); color:var(--ink); background:transparent; padding:11.5px; }
+
+/* empty state */
+.empty{ text-align:center; padding:40px 20px; color:var(--muted); }
+.empty .ring{ width:46px; height:46px; margin:0 auto 14px; opacity:.85; }
+.empty h3{ font:400 22px 'Instrument Serif'; color:var(--ink); margin:0 0 6px; }
+.empty p{ font:400 14px/1.5 'Hanken Grotesk'; margin:0 auto; max-width:240px; }
+
+/* ---------- settings sheet ---------- */
+.sheet-scrim{ position:absolute; inset:0; background:rgba(8,12,15,.55); z-index:50; display:none; }
+.sheet-scrim.open{ display:block; }
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; background:var(--card); border-radius:26px 26px 0 0;
+  padding:18px 22px max(26px, env(safe-area-inset-bottom)); z-index:51; transform:translateY(100%);
+  transition:transform .26s cubic-bezier(.2,.8,.2,1); box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);
+}
+.sheet.open{ transform:translateY(0); }
+.sheet .grab{ width:38px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 14px; }
+.sheet h3{ font:400 24px 'Instrument Serif'; color:var(--ink); margin:0 0 2px; }
+.sheet .sub{ font:400 13px 'Hanken Grotesk'; color:var(--muted); margin:0 0 18px; }
+.set-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-top:1px solid var(--line); }
+.set-row .k{ font:600 14px 'Hanken Grotesk'; color:var(--ink); }
+.set-row .k small{ display:block; font:400 11px 'DM Mono'; color:var(--muted); margin-top:2px; letter-spacing:.04em; }
+.seg{ display:flex; gap:6px; }
+.seg button{
+  font:600 12px 'Hanken Grotesk'; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  border-radius:9px; padding:7px 12px; cursor:pointer;
+}
+.seg button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.swatch{ width:26px; height:26px; border-radius:8px; border:2px solid transparent; cursor:pointer; padding:0; }
+.swatch.on{ border-color:var(--ink); }
+.toggle{ width:46px; height:28px; border-radius:99px; background:var(--line); border:0; cursor:pointer; position:relative; transition:background .2s; }
+.toggle.on{ background:var(--accent); }
+.toggle::after{ content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:99px; background:#fff; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+.toggle.on::after{ transform:translateX(18px); }
+
+/* toast */
+.toast{
+  position:absolute; left:50%; bottom:120px; transform:translateX(-50%) translateY(12px);
+  background:var(--ink); color:var(--screen); font:600 12px 'Hanken Grotesk'; padding:10px 16px; border-radius:99px;
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:60; white-space:nowrap;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
-  <a href="#main" class="skip-link">Skip to content</a>
-  <svg class="is-hidden" aria-hidden="true" focusable="false" width="0" height="0">
-    <symbol id="icon-calendar" viewBox="0 0 24 24">
-      <rect x="3" y="5" width="18" height="16" rx="3"></rect>
-      <path d="M8 3v4M16 3v4M3 10h18"></path>
-    </symbol>
-    <symbol id="icon-chart" viewBox="0 0 24 24">
-      <path d="M4 19h16"></path>
-      <path d="M6 16l4-4 3 2 5-6"></path>
-      <circle cx="6" cy="16" r="1"></circle>
-      <circle cx="10" cy="12" r="1"></circle>
-      <circle cx="13" cy="14" r="1"></circle>
-      <circle cx="18" cy="8" r="1"></circle>
-    </symbol>
-    <symbol id="icon-stone" viewBox="0 0 24 24">
-      <path d="M8 8.5a4 4 0 0 1 8 0V10H8z"></path>
-      <path d="M6 10h12a3 3 0 0 1 3 3v1a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-1a3 3 0 0 1 3-3z"></path>
-    </symbol>
-    <symbol id="icon-broom" viewBox="0 0 24 24">
-      <path d="M15 4l5 5"></path>
-      <path d="M14 5l4 4"></path>
-      <path d="M6 14l5-5 4 4-5 5"></path>
-      <path d="M4 20h8"></path>
-      <path d="M5 17l2 3M8 17l2 3"></path>
-    </symbol>
-    <symbol id="icon-ice" viewBox="0 0 24 24">
-      <path d="M12 2v20M4.9 6l14.2 12M19.1 6L4.9 18M4 12h16"></path>
-      <circle cx="12" cy="12" r="2.5"></circle>
-    </symbol>
-    <symbol id="icon-note" viewBox="0 0 24 24">
-      <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
-      <path d="M14 3v5h5"></path>
-      <path d="M9 13h6M9 17h5"></path>
-    </symbol>
-    <symbol id="icon-issue" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M12 8v5"></path>
-      <circle cx="12" cy="16.5" r="0.8" fill="currentColor" stroke="none"></circle>
-    </symbol>
-    <symbol id="icon-inbox" viewBox="0 0 24 24">
-      <path d="M4 6h16l-2 12H6z"></path>
-      <path d="M4 14h4l2 3h4l2-3h4"></path>
-    </symbol>
-  </svg>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-kicker">Personal Curling Command Center</div>
-        <h1 class="brand-name">Curl<span>Plan</span></h1>
-        <p class="brand-copy">Calendar, game prep, practice logging, and rink memory in one working file. <span class="brand-proof-inline">Yours. Local. No cloud.</span></p>
-      </div>
-      <div class="topbar-actions">
-        <div class="today-chip" id="todayChip" role="status">Loading...</div>
-        <button type="button" class="btn btn-primary" id="quickAddBtn" data-open-modal="event">+ Quick Add</button>
-        <div class="settings-dropdown" id="settingsDropdown">
-          <button type="button" class="btn btn-ghost settings-trigger" id="settingsBtn" aria-expanded="false" aria-haspopup="true" aria-label="Settings and tools">&#9881;</button>
-          <div class="settings-menu" id="settingsMenu" role="menu">
-            <button type="button" class="settings-item" id="exportBtn" role="menuitem">Export JSON</button>
-            <label class="settings-item" for="importFile" tabindex="0" role="menuitem">Import JSON</label>
-            <input id="importFile" type="file" accept="application/json" class="is-hidden" />
-            <button type="button" class="settings-item" id="shortcutHelpBtn" data-open-modal="shortcuts" role="menuitem">Keyboard Shortcuts</button>
-            <button type="button" class="settings-item" id="issuesNavBtn" data-view="issues" role="menuitem">UI Issues</button>
-            <hr class="settings-divider" />
-            <button type="button" class="settings-item" id="themeToggleBtn" role="menuitem">&#9789; Arena Night</button>
-            <hr class="settings-divider" />
-            <button type="button" class="settings-item settings-danger" id="resetBtn" role="menuitem">Reset Demo Data</button>
-          </div>
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="notch"></div>
+    <!-- view content injected here -->
+    <div id="view" style="display:flex; flex-direction:column; flex:1; min-height:0;"></div>
+
+    <!-- settings sheet -->
+    <div class="sheet-scrim" id="scrim" data-action="close-settings"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-label="Appearance">
+      <div class="grab"></div>
+      <h3>Appearance</h3>
+      <p class="sub">Same season, your circle — tune the ice.</p>
+      <div class="set-row">
+        <div class="k">Theme<small>ICE / ARENA</small></div>
+        <div class="seg" id="seg-theme">
+          <button type="button" data-theme-val="ice">Ice</button>
+          <button type="button" data-theme-val="arena">Arena</button>
         </div>
       </div>
-    </header>
-
-    <div class="nav-wrap">
-      <a href="https://davehomeassist.github.io/" class="nav-back">&larr; All Projects</a>
-      <nav class="nav" id="navTabs" role="tablist" aria-label="App views">
-        <button type="button" class="nav-btn is-active" id="tab-dashboard" data-view="dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard">Dashboard</button>
-        <button type="button" class="nav-btn" id="tab-calendar" data-view="calendar" role="tab" aria-selected="false" aria-controls="view-calendar">Calendar</button>
-        <button type="button" class="nav-btn" id="tab-planner" data-view="planner" role="tab" aria-selected="false" aria-controls="view-planner">Game Planner</button>
-        <button type="button" class="nav-btn" id="tab-games" data-view="games" role="tab" aria-selected="false" aria-controls="view-games">Game Log</button>
-        <button type="button" class="nav-btn" id="tab-practice" data-view="practice" role="tab" aria-selected="false" aria-controls="view-practice">Practice</button>
-        <button type="button" class="nav-btn" id="tab-ice" data-view="ice" role="tab" aria-selected="false" aria-controls="view-ice">Ice Notes</button>
-      </nav>
-      <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
+      <div class="set-row">
+        <div class="k">Accent<small>HOUSE COLOUR</small></div>
+        <div class="seg" id="seg-accent"></div>
+      </div>
+      <div class="set-row">
+        <div class="k">Pebble texture<small>ICE GRAIN OVERLAY</small></div>
+        <button type="button" class="toggle" id="toggle-pebble" aria-label="Toggle pebble texture"></button>
+      </div>
     </div>
 
-    <div class="view-context is-hidden" id="viewContext" aria-live="polite"></div>
-    <div class="state-strip-shell" id="suggestedNextStrip" aria-live="polite"></div>
-
-    <main class="section-stack" id="main">
-      <section class="view is-active" id="view-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
-        <div class="section-stack">
-          <div class="stats-grid">
-            <button type="button" class="stat-card sky stat-route-card" data-view="games" aria-label="Open game log">
-              <div class="stat-label">Games Logged</div>
-              <div class="stat-num" id="stat-games">0</div>
-            </button>
-            <button type="button" class="stat-card granite stat-route-card" data-view="games" aria-label="Open game log from wins card">
-              <div class="stat-label">Wins Logged</div>
-              <div class="stat-num" id="stat-wins">0</div>
-            </button>
-            <button type="button" class="stat-card leaf stat-route-card" data-view="calendar" aria-label="Open calendar queue">
-              <div class="stat-label">Upcoming Events</div>
-              <div class="stat-num" id="stat-upcoming">0</div>
-            </button>
-          </div>
-
-          <div class="toolbar quick-log-bar">
-            <div>
-              <h2 class="card-title">Quick Log</h2>
-              <p class="card-copy">Capture a result or jump back into the next likely task.</p>
-            </div>
-            <div class="toolbar-group">
-              <button type="button" class="btn btn-primary" data-open-modal="event">Add Event</button>
-              <button type="button" class="btn btn-ghost" data-open-modal="game">Log Game</button>
-              <button type="button" class="btn btn-ghost" data-open-modal="practice">Log Practice</button>
-              <button type="button" class="btn btn-ghost" data-open-modal="ice">Add Ice Notes</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2 class="card-title">Season Stats Dashboard</h2>
-                <p class="card-copy">Computed from your game log with no extra data entry.</p>
-              </div>
-              <div class="season-controls" id="seasonRangeControls">
-                <button type="button" class="btn btn-ghost btn-sm season-range-btn is-active" data-season-range="season">This Season</button>
-                <button type="button" class="btn btn-ghost btn-sm season-range-btn" data-season-range="all">All Time</button>
-                <button type="button" class="btn btn-ghost btn-sm season-range-btn" data-season-range="last10">Last 10</button>
-                <div class="season-range-chip" id="seasonRangeLabel">Current calendar year</div>
-              </div>
-            </div>
-            <div class="insight-grid" id="seasonStatsGrid"></div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2 class="card-title">Upcoming Sheet</h2>
-                  <p class="card-copy">Next events pulled from your calendar queue.</p>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-view="calendar">See All</button>
-              </div>
-              <div class="stack" id="dash-upcoming"></div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2 class="card-title">Planner Snapshot</h2>
-                  <p class="card-copy">Current or next planner entry at a glance.</p>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-view="planner">Open Planner</button>
-              </div>
-              <div class="stack" id="plannerSnapshot"></div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2 class="card-title">Recent Results</h2>
-                  <p class="card-copy">Last logged games with scores and outcomes.</p>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-view="games">See All</button>
-              </div>
-              <div class="stack" id="dash-games"></div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2 class="card-title">Latest Ice Read</h2>
-                  <p class="card-copy">Your newest note on speed, curl, and quirks.</p>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm" data-view="ice">See All</button>
-              </div>
-              <div class="stack" id="dash-ice"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar">
-        <div class="section-stack">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Calendar Queue</h2>
-              <p class="section-copy">Filter upcoming league nights, games, practices, and bonspiels without losing the event detail workflow.</p>
-            </div>
-            <button type="button" class="btn btn-primary" id="addEventBtn" data-open-modal="event">+ Add Event</button>
-          </div>
-
-          <div class="toolbar">
-            <div class="toolbar-group" id="filter-bar">
-              <button type="button" class="btn btn-ghost btn-sm active-filter" data-filter="all">All</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-filter="league">League</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-filter="game">Game</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-filter="practice">Practice</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-filter="bonspiel">Bonspiel</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-filter="other">Other</button>
-            </div>
-            <div class="toolbar-group">
-              <select id="filterType" class="toolbar-input" aria-label="Filter by event type">
-                <option value="all">All event types</option>
-                <option value="league">League</option>
-                <option value="game">Game</option>
-                <option value="practice">Practice</option>
-                <option value="bonspiel">Bonspiel</option>
-                <option value="other">Other</option>
-              </select>
-              <input id="searchInput" class="toolbar-input" type="search" placeholder="Search team, rink, notes..." aria-label="Search events" />
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Event Feed</h3>
-                  <p class="card-copy">Select an item to inspect or edit it.</p>
-                </div>
-              </div>
-              <div class="stack" id="event-list"></div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Selected Event</h3>
-                  <p class="card-copy">Detail view for prep notes and metadata.</p>
-                </div>
-              </div>
-              <div id="eventDetail" class="empty">
-                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-calendar"></use></svg></div>
-                <div class="empty-copy">
-                  <strong>No event selected</strong>
-                  <span>Select an event to inspect details.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-planner" role="tabpanel" aria-labelledby="tab-planner">
-        <div class="section-stack">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Game Planner</h2>
-              <p class="section-copy">Planner entries now follow the event workflow so prep, rink memory, and review stay in one place.</p>
-            </div>
-            <div class="planner-nav">
-              <button type="button" class="btn btn-ghost btn-sm" data-planner-dir="-1">Previous</button>
-              <div class="planner-label" id="planner-label">Today</div>
-              <button type="button" class="btn btn-ghost btn-sm" data-planner-dir="1">Next</button>
-              <button type="button" class="btn btn-primary" id="savePlannerBtn">Save Notes</button>
-              <span class="planner-save-status" id="plannerSaveStatus" aria-live="polite"></span>
-            </div>
-          </div>
-
-          <div id="gameDayBanner"></div>
-          <div id="plannerStateStrip"></div>
-          <div id="plannerRinkProfile"></div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="planner-card-kicker">Pre-Game</div>
-              <div class="form-row">
-                <label class="form-label" for="pg-time">Start Time</label>
-                <input type="time" id="pg-time" />
-              </div>
-              <div class="form-grid-2">
-                <div class="form-row">
-                  <label class="form-label" for="pg-rink">Rink</label>
-                  <input type="text" id="pg-rink" placeholder="Club or rink name" />
-                </div>
-                <div class="form-row">
-                  <label class="form-label" for="pg-position">Position</label>
-                  <select id="pg-position">
-                    <option value="">Select position</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Second">Second</option>
-                    <option value="Third">Third</option>
-                    <option value="Skip">Skip</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <label class="form-label" for="pg-opponent">Opponent</label>
-                <input type="text" id="pg-opponent" placeholder="Team or opponent name" />
-              </div>
-              <details class="planner-collapsible">
-                <summary class="planner-toggle">Shot Goals <span class="planner-toggle-hint">3 targets for your review</span></summary>
-                <div class="form-grid-3 planner-goals-grid" style="margin-top:10px;">
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-goal-1">Goal 1</label>
-                    <input type="text" id="pg-goal-1" placeholder="First focus" />
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-goal-2">Goal 2</label>
-                    <input type="text" id="pg-goal-2" placeholder="Second focus" />
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-goal-3">Goal 3</label>
-                    <input type="text" id="pg-goal-3" placeholder="Third focus" />
-                  </div>
-                </div>
-              </details>
-              <details class="planner-collapsible">
-                <summary class="planner-toggle">Pre-Game Checklist <span class="planner-toggle-hint">gear, prep, touchpoints</span></summary>
-                <div style="margin-top:10px;">
-                  <div class="checklist-stack" id="plannerChecklist"></div>
-                  <div class="checklist-add-row">
-                    <div class="form-row" style="margin-bottom:0;">
-                      <label class="form-label" for="plannerChecklistInput">Add Item</label>
-                      <input type="text" id="plannerChecklistInput" placeholder="Brooms, shoes, stopwatch, team touchpoint..." />
-                    </div>
-                    <button type="button" class="btn btn-ghost btn-sm" data-action="planner-check-reset">Reset Defaults</button>
-                    <button type="button" class="btn btn-primary btn-sm" data-action="planner-check-add">Add Item</button>
-                  </div>
-                </div>
-              </details>
-              <div class="form-row">
-                <label class="form-label" for="pg-ice">Ice Notes</label>
-                <textarea id="pg-ice" placeholder="Speed, curl, release reminders, and anything unusual."></textarea>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="planner-card-kicker">Post-Game</div>
-              <div id="plannerGameBridge"></div>
-              <div class="form-grid-2">
-                <div class="form-row">
-                  <label class="form-label" for="pg-score-us">Our Score</label>
-                  <input type="number" id="pg-score-us" min="0" placeholder="0" />
-                </div>
-                <div class="form-row">
-                  <label class="form-label" for="pg-score-them">Their Score</label>
-                  <input type="number" id="pg-score-them" min="0" placeholder="0" />
-                </div>
-              </div>
-              <div class="form-row">
-                <label class="form-label" for="pg-keyshot">Key Shot</label>
-                <input type="text" id="pg-keyshot" placeholder="Best, toughest, or most important shot" />
-              </div>
-              <details class="planner-collapsible">
-                <summary class="planner-toggle">Execution Ratings <span class="planner-toggle-hint">1&ndash;5 quick ratings</span></summary>
-                <div style="margin-top:10px;">
-                <div class="form-grid-3 review-rating-grid">
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-rating-draw">Draw Weight</label>
-                    <select id="pg-rating-draw">
-                      <option value="">Rate</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-rating-takeout">Takeouts</label>
-                    <select id="pg-rating-takeout">
-                      <option value="">Rate</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-rating-communication">Communication</label>
-                    <select id="pg-rating-communication">
-                      <option value="">Rate</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-rating-sweeping">Sweeping</label>
-                    <select id="pg-rating-sweeping">
-                      <option value="">Rate</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                  <div class="form-row" style="margin-bottom:0;">
-                    <label class="form-label" for="pg-rating-mental">Mental Game</label>
-                    <select id="pg-rating-mental">
-                      <option value="">Rate</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                </div>
-                </div>
-              </details>
-              <div class="form-row">
-                <label class="form-label" for="pg-takeaways">Key Takeaways</label>
-                <textarea id="pg-takeaways" placeholder="What held up, what slipped, and what needs to stay in the routine."></textarea>
-              </div>
-              <div class="form-row">
-                <label class="form-label" for="pg-next-focus">Next Focus</label>
-                <textarea id="pg-next-focus" placeholder="What should carry forward into the next game or practice."></textarea>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h3 class="card-title">Recent Planner Entries</h3>
-                <p class="card-copy">Jump to another date without losing the current planner workflow.</p>
-              </div>
-            </div>
-            <div class="grid-auto" id="planner-entries"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-games" role="tabpanel" aria-labelledby="tab-games">
-        <div class="section-stack">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Game Log</h2>
-              <p class="section-copy">Structured scores, result badges, and edit support without losing note history.</p>
-            </div>
-            <button type="button" class="btn btn-primary" id="addGameBtn" data-open-modal="game">+ Log Game</button>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Results Table</h3>
-                  <p class="card-copy">Edit or delete any row from the action column.</p>
-                </div>
-                <div class="toolbar-group">
-                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, rink, notes..." aria-label="Search games" />
-                  <select id="gameSortSelect" class="toolbar-input" aria-label="Sort games">
-                    <option value="newest">Newest</option>
-                    <option value="oldest">Oldest</option>
-                  </select>
-                </div>
-              </div>
-              <div class="table-wrap">
-                <table class="log-table" id="game-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Opponent</th>
-                      <th>Score</th>
-                      <th>Shot %</th>
-                      <th>Result</th>
-                      <th>Position</th>
-                      <th>Notes</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="game-tbody"></tbody>
-                </table>
-              </div>
-              <div id="games-empty" class="empty is-hidden">
-                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-stone"></use></svg></div>
-                <div class="empty-copy">
-                  <strong>No games logged yet</strong>
-                  <span>Start your first result log and let the season record build itself.</span>
-                </div>
-                <div class="empty-actions">
-                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="game">+ Log Game</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Performance Snapshot</h3>
-                  <p class="card-copy">Lightweight summaries pulled from the log.</p>
-                </div>
-              </div>
-              <div class="stack" id="gameStats"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-practice" role="tabpanel" aria-labelledby="tab-practice">
-        <div class="section-stack">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Practice Log</h2>
-              <p class="section-copy">Track session length, drill mix, focus, and what changed on the ice.</p>
-            </div>
-            <button type="button" class="btn btn-primary" id="addPracticeBtn" data-open-modal="practice">+ Log Practice</button>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Sessions</h3>
-                  <p class="card-copy">Structured drill tags with full notes preserved.</p>
-                </div>
-                <div class="toolbar-group">
-                  <input id="practiceSearchInput" class="toolbar-input" type="search" placeholder="Search shots, focus, notes..." aria-label="Search practice sessions" />
-                  <select id="practiceSortSelect" class="toolbar-input" aria-label="Sort practice sessions">
-                    <option value="newest">Newest</option>
-                    <option value="oldest">Oldest</option>
-                  </select>
-                </div>
-              </div>
-              <div class="stack" id="practice-list"></div>
-              <div id="practice-empty" class="empty is-hidden">
-                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-broom"></use></svg></div>
-                <div class="empty-copy">
-                  <strong>No practice sessions logged yet</strong>
-                  <span>Capture drills, focus, and ice feel while the details are still fresh.</span>
-                </div>
-                <div class="empty-actions">
-                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="practice">+ Log Practice</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Drill Summary</h3>
-                  <p class="card-copy">See which shot types show up most often in your sessions.</p>
-                </div>
-              </div>
-              <div class="summary-list" id="practiceSummary"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-ice" role="tabpanel" aria-labelledby="tab-ice">
-        <div class="section-stack">
-          <div class="section-header">
-            <div>
-              <h2 class="section-title">Ice Notes</h2>
-              <p class="section-copy">Capture speed, curl, and rink-specific memory without losing edit and export support.</p>
-            </div>
-            <button type="button" class="btn btn-primary" id="addNoteBtn" data-open-modal="ice">+ Add Ice Notes</button>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Latest Notes</h3>
-                  <p class="card-copy">Every entry stays editable and exportable.</p>
-                </div>
-                <div class="toolbar-group">
-                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search rink, curl, notes..." aria-label="Search ice notes" />
-                  <select id="iceSortSelect" class="toolbar-input" aria-label="Sort ice notes">
-                    <option value="newest">Newest</option>
-                    <option value="oldest">Oldest</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid-auto" id="ice-list"></div>
-              <div id="ice-empty" class="empty is-hidden">
-                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-ice"></use></svg></div>
-                <div class="empty-copy">
-                  <strong>No ice notes saved yet</strong>
-                  <span>Start building rink memory for speed, finish, and the odd sheet quirk.</span>
-                </div>
-                <div class="empty-actions">
-                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="ice">+ Add Ice Notes</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Rink Memory</h3>
-                  <p class="card-copy">Quick tally of which clubs you have notes on most often.</p>
-                </div>
-              </div>
-              <div class="summary-list" id="rinkSummary"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="view" id="view-issues" role="tabpanel" aria-labelledby="tab-issues">
-        <div class="section-stack">
-          <div class="section-header">
-            <h2 class="section-title">UI Issues</h2>
-            <button type="button" class="btn btn-primary" data-open-modal="issue">+ Add Issue</button>
-          </div>
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Issue Tracker</h3>
-                  <p class="card-copy">Known UI issues and proposed fixes for CurlPlan.</p>
-                </div>
-              </div>
-              <div class="table-wrap">
-                <table class="log-table" id="issues-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Component</th>
-                      <th>Title</th>
-                      <th>Severity</th>
-                      <th>Status</th>
-                      <th>Proposed Fix</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="issues-tbody"></tbody>
-                </table>
-              </div>
-              <div id="issues-empty" class="empty is-hidden">
-                <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-issue"></use></svg></div>
-                <div class="empty-copy">
-                  <strong>No issues tracked yet</strong>
-                  <span>Log the next friction point while the context is still visible.</span>
-                </div>
-                <div class="empty-actions">
-                  <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="issue">+ Add Issue</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h3 class="card-title">Issue Summary</h3>
-                  <p class="card-copy">At-a-glance breakdown of open issues.</p>
-                </div>
-              </div>
-              <div class="summary-list" id="issueSummary"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div class="toast" id="toast"></div>
   </div>
+</div>
 
-  <div class="overlay" id="modal-event">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="eventModalTitle">Add Event</h2>
-          <p class="modal-copy">League night, bonspiel, practice block, or other calendar item.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close event modal" data-close-modal="modal-event">✕</button>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="ev-name">Name <span class="req">*</span></label>
-          <input type="text" id="ev-name" placeholder="Tuesday League Night" required aria-required="true" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-type">Type</label>
-          <select id="ev-type">
-            <option value="league">League</option>
-            <option value="game">Game</option>
-            <option value="practice">Practice</option>
-            <option value="bonspiel">Bonspiel</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-grid-3">
-        <div class="form-row">
-          <label class="form-label" for="ev-date">Date <span class="req">*</span></label>
-          <input type="date" id="ev-date" required aria-required="true" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-time">Time</label>
-          <input type="time" id="ev-time" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-position">Position</label>
-          <select id="ev-position">
-            <option value="">Not set</option>
-            <option value="Lead">Lead</option>
-            <option value="Second">Second</option>
-            <option value="Third">Third</option>
-            <option value="Skip">Skip</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="ev-location">Location</label>
-          <input type="text" id="ev-location" placeholder="Club or rink name" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-sheet">Sheet</label>
-          <input type="text" id="ev-sheet" placeholder="A, B, 4, TBD..." />
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="ev-notes">Notes</label>
-        <textarea id="ev-notes" placeholder="Arrival time, prep notes, team reminders, and anything else."></textarea>
-      </div>
-      <div class="card bonspiel-fields-card">
-        <div class="planner-card-kicker">Bonspiel Mode</div>
-        <div class="form-grid-2">
-          <div class="form-row">
-            <label class="form-label" for="ev-bonspiel-parent">Parent Bonspiel</label>
-            <select id="ev-bonspiel-parent">
-              <option value="">Standalone event</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label class="form-label" for="ev-bonspiel-end">End Date</label>
-            <input type="date" id="ev-bonspiel-end" />
-          </div>
-        </div>
-        <div class="form-grid-2">
-          <div class="form-row">
-            <label class="form-label" for="ev-bonspiel-hotel">Hotel</label>
-            <input type="text" id="ev-bonspiel-hotel" placeholder="Hotel, host house, or stay note" />
-          </div>
-          <div class="form-row">
-            <label class="form-label" for="ev-bonspiel-budget">Budget</label>
-            <input type="text" id="ev-bonspiel-budget" placeholder="Entry fee, hotel split, fuel, food" />
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-bonspiel-teammates">Team Roster</label>
-          <textarea id="ev-bonspiel-teammates" placeholder="Skip, vice, second, lead, spare, driver, or any roster note."></textarea>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-bonspiel-stage">Bracket Stage</label>
-          <input type="text" id="ev-bonspiel-stage" placeholder="Pool play, A event, semifinal, final" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-bonspiel-travel">Travel Plan</label>
-          <textarea id="ev-bonspiel-travel" placeholder="Drive split, arrival plan, meals, check in, and between draw timing."></textarea>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ev-bonspiel-packing">Packing Checklist</label>
-          <textarea id="ev-bonspiel-packing" placeholder="Shoes, sliders, stopwatches, snacks, team gear, warm layer, and extras."></textarea>
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-event">Cancel</button>
-        <button type="button" class="btn btn-danger is-hidden" id="eventDeleteBtn" data-delete-modal="event">Delete</button>
-        <button type="button" class="btn btn-primary" id="eventSaveBtn" data-save-modal="event">Save Event</button>
-      </div>
-    </div>
-  </div>
+<script>
+"use strict";
+/* ============================================================
+   Utilities
+   ============================================================ */
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function el(id){ return document.getElementById(id); }
 
-  <div class="overlay" id="modal-game">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="gameModalTitle">Log Game</h2>
-          <p class="modal-copy">Structured scores with notes, position, and key-shot memory.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close game modal" data-close-modal="modal-game">✕</button>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="gm-date">Date <span class="req">*</span></label>
-          <input type="date" id="gm-date" required aria-required="true" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="gm-opponent">Opponent <span class="req">*</span></label>
-          <input type="text" id="gm-opponent" placeholder="Opponent or team name" required aria-required="true" />
-        </div>
-      </div>
-      <div class="form-grid-3">
-        <div class="form-row">
-          <label class="form-label" for="gm-us">Our Score</label>
-          <input type="number" id="gm-us" min="0" placeholder="0" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="gm-them">Their Score</label>
-          <input type="number" id="gm-them" min="0" placeholder="0" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="gm-shotpct">Shot %</label>
-          <input type="number" id="gm-shotpct" min="0" max="100" step="1" placeholder="78" />
-        </div>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="gm-position">Position</label>
-          <select id="gm-position">
-            <option value="">Not set</option>
-            <option value="Lead">Lead</option>
-            <option value="Second">Second</option>
-            <option value="Third">Third</option>
-            <option value="Skip">Skip</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="gm-rink">Rink</label>
-        <input type="text" id="gm-rink" placeholder="Club or rink name" />
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="gm-keyshot">Key Shot</label>
-        <input type="text" id="gm-keyshot" placeholder="Most important, best, or toughest shot" />
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="gm-notes">Notes</label>
-        <textarea id="gm-notes" placeholder="Team notes, ice notes, strategy notes, anything worth keeping."></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-game">Cancel</button>
-        <button type="button" class="btn btn-danger is-hidden" id="gameDeleteBtn" data-delete-modal="game">Delete</button>
-        <button type="button" class="btn btn-primary" id="gameSaveBtn" data-save-modal="game">Save Game</button>
-      </div>
-    </div>
-  </div>
+/* ============================================================
+   Appearance prefs (the concept's props made real & persisted)
+   ============================================================ */
+var ACCENTS = [
+  { key:"House red",  val:"#c0402c" },
+  { key:"House blue", val:"#2f6f93" },
+  { key:"Granite",    val:"#41505a" }
+];
+var PREFS_KEY = "curlplan-hifi-prefs-v1";
+var prefs = loadPrefs();
 
-  <div class="overlay" id="modal-practice">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="practiceModalTitle">Log Practice</h2>
-          <p class="modal-copy">Session length, shot mix, focus, and what improved.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close practice modal" data-close-modal="modal-practice">✕</button>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="pr-date">Date <span class="req">*</span></label>
-          <input type="date" id="pr-date" required aria-required="true" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="pr-duration">Duration</label>
-          <select id="pr-duration">
-            <option value="30 min">30 min</option>
-            <option value="45 min">45 min</option>
-            <option value="60 min" selected>60 min</option>
-            <option value="75 min">75 min</option>
-            <option value="90 min">90 min</option>
-            <option value="120 min">120 min</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Drills</label>
-        <div class="drill-grid">
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Draw" />Draw</label>
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Guard" />Guard</label>
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Takeout" />Takeout</label>
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Freeze" />Freeze</label>
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Hit & Roll" />Hit &amp; Roll</label>
-          <label class="drill-check"><input class="pr-shot" type="checkbox" value="Broom Work" />Broom Work</label>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="pr-focus">Focus</label>
-        <textarea id="pr-focus" placeholder="What did you work on and what changed as the session went on?"></textarea>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="pr-notes">Notes</label>
-        <textarea id="pr-notes" placeholder="What improved, what stayed inconsistent, and what to repeat next time."></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-practice">Cancel</button>
-        <button type="button" class="btn btn-danger is-hidden" id="practiceDeleteBtn" data-delete-modal="practice">Delete</button>
-        <button type="button" class="btn btn-primary" id="practiceSaveBtn" data-save-modal="practice">Save Session</button>
-      </div>
-    </div>
-  </div>
+function loadPrefs(){
+  var def = { theme:"ice", accent:"House red", pebble:true };
+  try{
+    var raw = JSON.parse(localStorage.getItem(PREFS_KEY));
+    if(raw && typeof raw === "object"){
+      return {
+        theme:  raw.theme === "arena" ? "arena" : "ice",
+        accent: ACCENTS.some(function(a){return a.key===raw.accent;}) ? raw.accent : "House red",
+        pebble: raw.pebble !== false
+      };
+    }
+  }catch(e){}
+  return def;
+}
+function savePrefs(){ try{ localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }catch(e){} }
+function applyQueryOverrides(){
+  // optional deep-link overrides, e.g. ?theme=arena&accent=House%20blue&pebble=0 (not persisted)
+  try{
+    var q = new URLSearchParams(location.search);
+    if(q.get("theme")) prefs.theme = q.get("theme") === "arena" ? "arena" : "ice";
+    if(q.get("accent") && ACCENTS.some(function(a){return a.key===q.get("accent");})) prefs.accent = q.get("accent");
+    if(q.get("pebble")) prefs.pebble = !(q.get("pebble") === "0" || q.get("pebble") === "false");
+  }catch(e){}
+}
+function accentVal(){ var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0]; return a ? a.val : "#c0402c"; }
 
-  <div class="overlay" id="modal-ice">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="iceModalTitle">Add Ice Notes</h2>
-          <p class="modal-copy">Record speed, curl, and rink behavior without sacrificing later edits.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close ice modal" data-close-modal="modal-ice">✕</button>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="ice-date">Date <span class="req">*</span></label>
-          <input type="date" id="ice-date" required aria-required="true" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ice-rink">Rink</label>
-          <input type="text" id="ice-rink" placeholder="Club or rink name" />
-        </div>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="ice-sheet">Sheet</label>
-          <input type="text" id="ice-sheet" placeholder="A, B, 4, or practice lane" />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ice-confidence">Confidence</label>
-          <select id="ice-confidence">
-            <option value="">Not set</option>
-            <option value="1">1 Low</option>
-            <option value="2">2</option>
-            <option value="3">3 Medium</option>
-            <option value="4">4</option>
-            <option value="5">5 High</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label">Ice Speed</label>
-        <div class="speed-row speed-segmented" id="speedControl" role="radiogroup" aria-label="Ice speed">
-          <button type="button" class="speed-seg" data-speed="1" role="radio" tabindex="0" aria-checked="false">V.Slow</button>
-          <button type="button" class="speed-seg" data-speed="2" role="radio" tabindex="0" aria-checked="false">Slow</button>
-          <button type="button" class="speed-seg" data-speed="3" role="radio" tabindex="0" aria-checked="false">Normal</button>
-          <button type="button" class="speed-seg" data-speed="4" role="radio" tabindex="0" aria-checked="false">Fast</button>
-          <button type="button" class="speed-seg" data-speed="5" role="radio" tabindex="0" aria-checked="false">V.Fast</button>
-          <span class="mono" id="speedLabel">No speed selected</span>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="ice-curl">Curl</label>
-        <select id="ice-curl">
-          <option value="">Not set</option>
-          <option value="Very Straight">Very Straight</option>
-          <option value="Straight">Straight</option>
-          <option value="Moderate">Moderate</option>
-          <option value="Big Finish">Big Finish</option>
-        </select>
-      </div>
-      <div class="form-grid-3">
-        <div class="form-row">
-          <label class="form-label" for="ice-frost">Frost</label>
-          <select id="ice-frost">
-            <option value="">Not set</option>
-            <option value="none">None</option>
-            <option value="light">Light</option>
-            <option value="patchy">Patchy</option>
-            <option value="heavy">Heavy</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ice-pebble">Pebble Feel</label>
-          <select id="ice-pebble">
-            <option value="">Not set</option>
-            <option value="fresh">Fresh</option>
-            <option value="settled">Settled</option>
-            <option value="worn">Worn</option>
-            <option value="sharp">Sharp</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="ice-hack">Hack Condition</label>
-          <select id="ice-hack">
-            <option value="">Not set</option>
-            <option value="clean">Clean</option>
-            <option value="firm">Firm</option>
-            <option value="slick">Slick</option>
-            <option value="snowy">Snowy</option>
-            <option value="uneven">Uneven</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="ice-notes-text">Notes</label>
-        <textarea id="ice-notes-text" placeholder="Pebble feel, tricky lines, board behavior, or draw/takeout notes."></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-ice">Cancel</button>
-        <button type="button" class="btn btn-danger is-hidden" id="iceDeleteBtn" data-delete-modal="ice">Delete</button>
-        <button type="button" class="btn btn-primary" id="iceSaveBtn" data-save-modal="ice">Save Notes</button>
-      </div>
-    </div>
-  </div>
+function applyPrefs(){
+  var root = document.documentElement;
+  root.setAttribute("data-theme", prefs.theme === "arena" ? "arena" : "ice");
+  root.style.setProperty("--accent", accentVal());
+  root.style.setProperty("--pebble-o", prefs.pebble ? "0.6" : "0");
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", prefs.theme === "arena" ? "#13181b" : "#eceff1");
+}
 
-  <div class="overlay" id="modal-issue">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="issueModalTitle">Add Issue</h2>
-          <p class="modal-copy">Track a UI issue with severity, status, and proposed fix.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close issue modal" data-close-modal="modal-issue">✕</button>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="is-component">Component</label>
-          <input type="text" id="is-component" placeholder="Service Worker, Form UI, etc." />
-        </div>
-        <div class="form-row">
-          <label class="form-label" for="is-severity">Severity</label>
-          <select id="is-severity">
-            <option value="P1">P1 — Blocks usage or deploy</option>
-            <option value="P2" selected>P2 — Degrades core function</option>
-            <option value="P3">P3 — Polish or edge case</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="is-description">Issue Description</label>
-        <textarea id="is-description" placeholder="Describe the issue."></textarea>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-row">
-          <label class="form-label" for="is-status">Status</label>
-          <select id="is-status">
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="deferred">Deferred</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="form-label" for="is-fix">Proposed Fix</label>
-        <textarea id="is-fix" placeholder="How should this be fixed?"></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-issue">Cancel</button>
-        <button type="button" class="btn btn-danger is-hidden" id="issueDeleteBtn" data-delete-modal="issue">Delete</button>
-        <button type="button" class="btn btn-primary" id="issueSaveBtn" data-save-modal="issue">Save Issue</button>
-      </div>
-    </div>
-  </div>
+/* ============================================================
+   Seed data — a coherent curling season
+   ============================================================ */
+var me = { name:"Dana Mercer", initials:"DM", role:"Skip", club:"Kamloops CC", prov:"BC",
+           season:"Season 2025–26 · in progress",
+           stats:{ rinks:12, prov:4, games:38, win:68 } };
 
-  <div class="print-report" id="printReport" aria-hidden="true"></div>
+// curlers in your circle
+var curlers = [
+  { id:"sam",  initials:"SR", name:"Sam Reid", role:"Skip",  club:"Vernon CC",   prov:"BC",
+    metAt:"Kelowna · Jan 2026", following:false,
+    stats:{ record:"21–9", win:"70%", rinks:9, mutual:3 },
+    rinks:["Kelowna","Vernon","+4 more"],
+    form:[ {label:"A-final · Kelowna", score:"8–5", res:"W"}, {label:"Semi · Kelowna", score:"7–6", res:"W"} ] },
+  { id:"jo",   initials:"JM", name:"Jo Mara", role:"Lead · Spare", club:"In roster", prov:"BC",
+    metAt:"Kelowna · Jan 2026", following:true,
+    stats:{ record:"15–11", win:"58%", rinks:7, mutual:5 },
+    rinks:["Kelowna","Kamloops","+2 more"],
+    form:[ {label:"Pool · Kelowna", score:"6–4", res:"W"}, {label:"Tie-break · Vernon", score:"5–7", res:"L"} ] },
+  { id:"dee",  initials:"DT", name:"Dee Tan", role:"Lead", club:"Glenmore CC", prov:"BC",
+    metAt:"Kelowna · Jan 2026", following:false,
+    stats:{ record:"12–10", win:"55%", rinks:6, mutual:2 },
+    rinks:["Kelowna","Glenmore","+1 more"],
+    form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Pool · Kelowna", score:"4–8", res:"L"} ] },
+  { id:"carter", initials:"BC", name:"Bryn Carter", role:"Skip", club:"Sage Valley CC", prov:"AB",
+    metAt:"Kelowna · Jan 2026", following:false,
+    stats:{ record:"18–12", win:"60%", rinks:8, mutual:1 },
+    rinks:["Kelowna","Calgary","+3 more"],
+    form:[ {label:"Pool · Kelowna", score:"4–8", res:"L"}, {label:"Final · Calgary", score:"9–7", res:"W"} ] },
+  { id:"lind", initials:"EL", name:"Erik Lindqvist", role:"Third", club:"Granite City CC", prov:"MB",
+    metAt:"Kelowna · Jan 2026", following:true,
+    stats:{ record:"24–8", win:"75%", rinks:11, mutual:2 },
+    rinks:["Kelowna","Winnipeg","+5 more"],
+    form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Final · Winnipeg", score:"6–5", res:"W"} ] }
+];
+function curler(id){ return curlers.filter(function(c){return c.id===id;})[0]; }
 
-  <div class="overlay" id="modal-import-preview">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title">Import Preview</h2>
-          <p class="modal-copy">Review the incoming data before it replaces your current workspace.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close import preview" data-close-modal="modal-import-preview">✕</button>
-      </div>
-      <div id="importPreviewBody" class="stack"></div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-ghost" data-close-modal="modal-import-preview">Cancel</button>
-        <button type="button" class="btn btn-primary" id="confirmImportBtn" data-action="confirm-import">Import Now</button>
-      </div>
-    </div>
-  </div>
+// stops on the season map — x/y are % positions on the hero map
+var stops = [
+  { id:"kamloops", code:"KAM", name:"Kamloops Cashspiel", club:"Kamloops Curling Club", prov:"BC",
+    dates:"HERE NOW", record:"—", here:true, x:86, y:54, big:true,
+    ice:{ speed:"Fast", speedSec:"23.6s", curl:"4–5", rec:"—" },
+    games:[], met:[] },
+  { id:"kelowna", code:"KEL", name:"Kelowna Bonspiel", club:"Kelowna Curling Club", prov:"BC",
+    dates:"JAN 9–11", record:"3–1", x:70, y:32, plus:"+3",
+    ice:{ speed:"Fast", speedSec:"24.1s", curl:"5–6", rec:"3–1" },
+    games:[ {opp:"vs Carter", score:"8–4", res:"W"}, {opp:"vs Lindqvist", score:"5–7", res:"L"} ],
+    met:["sam","jo","dee"] },
+  { id:"vernon", code:"VER", name:"Vernon Cashspiel", club:"Vernon Curling Club", prov:"BC",
+    dates:"DEC 2", record:"2–1", x:50, y:68, plus:"+2",
+    ice:{ speed:"Medium", speedSec:"25.0s", curl:"4–5", rec:"2–1" },
+    games:[ {opp:"vs Reid", score:"6–8", res:"L"}, {opp:"vs Mara", score:"7–5", res:"W"} ],
+    met:["sam","jo"] },
+  { id:"calgary", code:"CAL", name:"Sage Valley Open", club:"Sage Valley CC", prov:"AB",
+    dates:"NOV 14–16", record:"2–2", x:30, y:39,
+    ice:{ speed:"Keen", speedSec:"23.2s", curl:"6–7", rec:"2–2" },
+    games:[ {opp:"vs Carter", score:"9–7", res:"W"}, {opp:"vs Park", score:"4–9", res:"L"} ],
+    met:["carter"] },
+  { id:"winnipeg", code:"WPG", name:"Granite City Classic", club:"Granite City CC", prov:"MB",
+    dates:"OCT 24–26", record:"3–0", x:14, y:64,
+    ice:{ speed:"Fast", speedSec:"24.4s", curl:"5–6", rec:"3–0" },
+    games:[ {opp:"vs Lindqvist", score:"6–5", res:"W"}, {opp:"vs Olsen", score:"8–3", res:"W"} ],
+    met:["lind"] }
+];
+function stop(id){ return stops.filter(function(s){return s.id===id;})[0]; }
+var recentStops = ["kelowna","vernon"]; // newest season results
 
-  <div class="overlay" id="modal-shortcuts">
-    <div class="modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title">Keyboard Shortcuts</h2>
-          <p class="modal-copy">Fast paths for navigation, logging, and save actions.</p>
-        </div>
-        <button type="button" class="modal-close" aria-label="Close shortcuts" data-close-modal="modal-shortcuts">✕</button>
-      </div>
-      <div class="shortcut-grid">
-        <div class="summary-row"><span class="summary-name">Dashboard</span><span class="badge mono">1</span></div>
-        <div class="summary-row"><span class="summary-name">Calendar</span><span class="badge mono">2</span></div>
-        <div class="summary-row"><span class="summary-name">Planner</span><span class="badge mono">3</span></div>
-        <div class="summary-row"><span class="summary-name">Game Log</span><span class="badge mono">4</span></div>
-        <div class="summary-row"><span class="summary-name">Practice</span><span class="badge mono">5</span></div>
-        <div class="summary-row"><span class="summary-name">Ice Notes</span><span class="badge mono">6</span></div>
-        <div class="summary-row"><span class="summary-name">Quick Add Event</span><span class="badge mono">N</span></div>
-        <div class="summary-row"><span class="summary-name">Log Game</span><span class="badge mono">G</span></div>
-        <div class="summary-row"><span class="summary-name">Log Practice</span><span class="badge mono">R</span></div>
-        <div class="summary-row"><span class="summary-name">Add Ice Notes</span><span class="badge mono">I</span></div>
-        <div class="summary-row"><span class="summary-name">Focus Search</span><span class="badge mono">/</span></div>
-        <div class="summary-row"><span class="summary-name">Save Open Modal</span><span class="badge mono">Ctrl/Cmd + Enter</span></div>
-      </div>
-    </div>
-  </div>
+// locker-room feed
+var feed = [
+  { type:"result", author:"sam", time:"2H", body:"Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
+    score:{ for:8, ag:5, res:"WIN", vs:"vs Northern" }, likes:24, comments:6 },
+  { type:"spiel", title:"5 curlers you follow are headed to", spiel:"Brier Patch Open",
+    where:"KAMLOOPS", when:"FEB 14–16", who:["sam","jo","lind"] },
+  { type:"review", author:"jo", time:"5H", rink:"Granite City CC", stars:4, note:"fast, 5–6 ft of curl" }
+];
 
-  <script src="assets/js/app/utils.js"></script>
-  <script src="assets/js/app/core.js"></script>
-  <script src="assets/js/app/render.js"></script>
-  <script src="assets/js/app/actions.js"></script>
-  <script src="assets/js/app/bootstrap.js"></script>
+// spiels (season schedule)
+var spiels = [
+  { id:"sp1", name:"Brier Patch Open", where:"Kamloops, BC", when:"FEB 14–16", status:"You're in", going:["sam","jo","lind"] },
+  { id:"sp2", name:"Okanagan Classic", where:"Kelowna, BC", when:"MAR 6–8", status:"Watching", going:["dee","carter"] },
+  { id:"sp3", name:"Prairie Cashspiel", where:"Winnipeg, MB", when:"MAR 27–29", status:"Invite", going:["lind"] }
+];
+
+/* ============================================================
+   Shared render helpers
+   ============================================================ */
+function statusbar(onDark){
+  return '<div class="statusbar' + (onDark ? ' on-dark' : '') + '">' +
+    '<span>9:41</span>' +
+    '<span class="sig">●●●<span style="opacity:.4;">●</span><span class="batt"></span></span>' +
+    '</div>';
+}
+function avatar(initials, size, cls){
+  var s = size || 34;
+  return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="width:' + s + 'px;height:' + s + 'px;' +
+    'font-size:' + Math.round(s*0.36) + 'px;">' + esc(initials) + '</span>';
+}
+function avatarStack(ids){
+  return '<div class="stack">' + ids.map(function(id){
+    var c = curler(id);
+    return '<span class="avatar" style="width:28px;height:28px;font-size:10px;">' + esc(c ? c.initials : "?") + '</span>';
+  }).join("") + '</div>';
+}
+function resColor(res){ return res === "W" ? "var(--accent)" : "var(--muted)"; }
+
+function tabbar(active){
+  var tabs = [
+    { id:"passport", lab:"Passport", ring:true },
+    { id:"locker",   lab:"Locker",   glyph:"≋" },
+    { id:"spiels",   lab:"Spiels",   glyph:"◇" },
+    { id:"roster",   lab:"Roster",   glyph:"☺" }
+  ];
+  return '<div class="tabbar">' + tabs.map(function(t){
+    var on = t.id === active;
+    var icon = t.ring
+      ? '<span class="ring"' + (on ? '' : ' style="filter:grayscale(.2);"') + '></span>'
+      : '<span class="glyph">' + t.glyph + '</span>';
+    return '<button class="tab' + (on ? ' active' : '') + '" data-action="tab" data-tab="' + t.id + '">' +
+      icon + '<span class="lab">' + t.lab + '</span></button>';
+  }).join("") + '</div>';
+}
+
+/* ============================================================
+   Views
+   ============================================================ */
+function viewPassport(){
+  var s = me.stats;
+  var pins = stops.map(function(st){
+    var sz = st.big ? 21 : 13;
+    return '<button class="map-pin' + (st.here ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
+      'style="left:' + st.x + '%; top:' + st.y + '%; width:' + sz + 'px; height:' + sz + 'px;" aria-label="' + esc(st.name) + '"></button>';
+  }).join("");
+
+  var recents = recentStops.map(function(id){
+    var st = stop(id);
+    var avs = st.met.slice(0,2).map(function(m){
+      return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
+    }).join("");
+    return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+      '<span class="code">' + esc(st.code) + '</span>' +
+      '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+        '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
+      '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
+        '<span class="score">' + esc(st.record) + '</span>' +
+        '<div class="stack">' + avs +
+          (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
+        '</div></div>' +
+    '</div>';
+  }).join("");
+
+  return statusbar(false) +
+    '<div class="appbar">' +
+      '<div class="brand"><span class="ring"></span><b>CurlPlan</b></div>' +
+      avatar(me.initials, 34) .replace('class="avatar"','class="avatar" data-action="settings" aria-label="Appearance"') +
+    '</div>' +
+    '<div class="scroll">' +
+      '<div>' +
+        '<div class="eyebrow">' + esc(me.season) + '</div>' +
+        '<div class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin-top:3px;">On the ice, ' +
+          '<span class="ital accent">coast to coast</span></div>' +
+      '</div>' +
+      '<div class="card telemetry">' +
+        '<div class="cell"><div class="num">' + s.rinks + '</div><div class="lab">RINKS</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num">' + s.prov + '</div><div class="lab">PROV</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num">' + s.games + '</div><div class="lab">GAMES</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num accent">' + s.win + '<span style="font-size:14px;">%</span></div><div class="lab">WIN</div></div>' +
+      '</div>' +
+      '<div class="map">' +
+        '<svg viewBox="0 0 100 56" preserveAspectRatio="none">' +
+          '<g stroke="var(--line)" stroke-width="0.3" opacity="0.7">' +
+            '<line x1="0" y1="14" x2="100" y2="14"/><line x1="0" y1="28" x2="100" y2="28"/><line x1="0" y1="42" x2="100" y2="42"/>' +
+            '<line x1="25" y1="0" x2="25" y2="56"/><line x1="50" y1="0" x2="50" y2="56"/><line x1="75" y1="0" x2="75" y2="56"/>' +
+          '</g>' +
+          '<path d="M14 36 L30 22 L50 38 L70 18 L86 30" fill="none" stroke="var(--accent)" stroke-width="0.7" stroke-dasharray="2 2" opacity="0.75"/>' +
+        '</svg>' +
+        '<div class="pebble-tex"></div>' +
+        pins +
+        '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>' +
+        '<div class="map-meta">12 STOPS · 2,400 KM</div>' +
+      '</div>' +
+      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" data-action="tab" data-tab="spiels">All</span></div>' +
+      recents +
+    '</div>' +
+    tabbar("passport");
+}
+
+function viewLocker(){
+  var cards = feed.map(function(p){
+    if(p.type === "result"){
+      var a = curler(p.author);
+      return '<div class="card post">' +
+        '<div class="head" data-action="curler" data-id="' + a.id + '">' + avatar(a.initials, 38) +
+          '<div style="flex:1;"><div class="name">' + esc(a.name) + '</div>' +
+          '<div class="meta">' + esc(a.role.toUpperCase()) + ' · ' + esc(a.club.toUpperCase()) + ' · ' + esc(p.time) + '</div></div>' +
+          '<span style="font-size:18px; color:var(--muted);">⋯</span></div>' +
+        '<div class="body">' + esc(p.body) + '</div>' +
+        '<div class="scorebar"><span class="big">' + p.score.for + '<span style="color:var(--muted);"> – </span>' + p.score.ag + '</span>' +
+          '<span class="win-chip">' + esc(p.score.res) + '</span>' +
+          '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
+        '<div class="actions"><span data-action="like">♡ ' + p.likes + '</span><span>💬 ' + p.comments + '</span><span style="margin-left:auto;">↗</span></div>' +
+      '</div>';
+    }
+    if(p.type === "spiel"){
+      return '<div class="card spiel post" style="padding:14px;">' +
+        '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent); margin-bottom:7px;">SHARED SPIEL</div>' +
+        '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
+          esc(p.title) + ' <span class="ital">' + esc(p.spiel) + '</span></div>' +
+        '<div class="row">' + avatarStack(p.who) +
+          '<div class="mono" style="font-size:11px; color:var(--muted); line-height:1.3;">' + esc(p.where) + '<br>' + esc(p.when) + '</div>' +
+          '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join">I\'m in</button></div>' +
+      '</div>';
+    }
+    // review
+    var r = curler(p.author);
+    var full = "★".repeat(p.stars), emptyStars = "★".repeat(5 - p.stars);
+    return '<div class="card post">' +
+      '<div class="head" data-action="curler" data-id="' + r.id + '">' + avatar(r.initials, 32) +
+        '<div style="flex:1;"><div class="name" style="font-size:13px;">' + esc(r.name) + '</div>' +
+        '<div class="meta" style="font-size:10px;">RINK REVIEW · ' + esc(p.time) + '</div></div></div>' +
+      '<div class="serif" style="font-size:16px; color:var(--ink); white-space:nowrap;">' + esc(p.rink) + '</div>' +
+      '<div class="row" style="gap:8px; margin-top:4px;">' +
+        '<span style="font-size:13px; letter-spacing:2px; color:var(--accent);">' + full + '</span>' +
+        '<span style="font-size:13px; letter-spacing:2px; color:var(--line);">' + emptyStars + '</span>' +
+        '<span style="font:400 13px \'Hanken Grotesk\'; color:var(--muted);">— ' + esc(p.note) + '</span></div>' +
+    '</div>';
+  }).join("");
+
+  return statusbar(false) +
+    '<div class="appbar" style="flex-direction:column; align-items:stretch; gap:0;">' +
+      '<div style="display:flex; align-items:center; justify-content:space-between;">' +
+        '<div class="serif" style="font-size:28px; color:var(--ink);">Locker Room</div>' +
+        '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink);">⌕</span></div>' +
+      '<div style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
+        '<span style="font:700 14px \'Hanken Grotesk\'; color:var(--ink); padding-bottom:9px; border-bottom:2.5px solid var(--accent);">Following</span>' +
+        '<span style="font:500 14px \'Hanken Grotesk\'; color:var(--muted); padding-bottom:9px;">Discover</span></div>' +
+    '</div>' +
+    '<div class="scroll" style="gap:13px;">' + cards + '</div>' +
+    '<button class="fab" data-action="compose" aria-label="New post">+</button>' +
+    tabbar("locker");
+}
+
+function viewSpiels(){
+  var rows = spiels.map(function(sp){
+    var solid = sp.status === "You're in";
+    return '<div class="card" style="padding:14px;">' +
+      '<div class="row" style="align-items:flex-start;">' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--muted);">' + esc(sp.when) + '</div>' +
+          '<div class="serif" style="font-size:21px; color:var(--ink); line-height:1.1; margin-top:3px;">' + esc(sp.name) + '</div>' +
+          '<div class="sub" style="margin-top:4px;">' + esc(sp.where) + '</div>' +
+        '</div>' +
+        '<span class="' + (solid ? 'win-chip' : 'tag') + '" style="' + (solid ? '' : 'padding:5px 10px;') + '">' + esc(sp.status) + '</span>' +
+      '</div>' +
+      '<div class="row" style="margin-top:12px;">' + avatarStack(sp.going) +
+        '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
+        '<button class="pill-btn ghost" style="margin-left:auto;" data-action="join">Details</button></div>' +
+    '</div>';
+  }).join("");
+
+  return statusbar(false) +
+    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Spiels</div>' +
+      '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--ink);">+</span></div>' +
+    '<div class="scroll">' +
+      '<div class="eyebrow">Your season ahead</div>' +
+      rows +
+    '</div>' +
+    tabbar("spiels");
+}
+
+function viewRoster(){
+  var rows = curlers.map(function(c){
+    return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
+      avatar(c.initials, 44, 'av') +
+      '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
+        '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+      '<button class="pill-btn' + (c.following ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
+        (c.following ? 'Following' : 'Follow') + '</button>' +
+    '</div>';
+  }).join("");
+
+  return statusbar(false) +
+    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Roster</div>' +
+      '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink);">⌕</span></div>' +
+    '<div class="scroll">' +
+      '<div class="eyebrow">Your circle · ' + curlers.length + ' curlers</div>' +
+      rows +
+    '</div>' +
+    tabbar("roster");
+}
+
+function viewStop(id){
+  var st = stop(id);
+  if(!st) return viewPassport();
+  var ice = st.ice;
+  var games = st.games.length ? st.games.map(function(g, i){
+    return '<div class="gline"' + (i < st.games.length - 1 ? '' : ' style="border-bottom:0;"') + '>' +
+      '<span class="statusdot" style="background:' + (g.res==="W"?'var(--accent)':'var(--muted)') + '; ' + (g.res==="W"?'':'opacity:.5;') + '"></span>' +
+      '<span class="nm">' + esc(g.opp) + '</span>' +
+      '<span class="score">' + esc(g.score) + '</span>' +
+      '<span class="res" style="color:' + resColor(g.res) + ';">' + esc(g.res) + '</span></div>';
+  }).join("") : '<div class="gline" style="border-bottom:0;"><span class="nm" style="color:var(--muted); font-weight:500;">No games logged here yet</span></div>';
+
+  var people = st.met.length ? st.met.map(function(mid){
+    var c = curler(mid);
+    var btn = c.following
+      ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
+      : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
+    return '<div class="prow">' +
+      '<span data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
+      '<div style="flex:1; min-width:0; cursor:pointer;" data-action="curler" data-id="' + c.id + '">' +
+        '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+      btn + '</div>';
+  }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
+
+  return '<div class="stop-hero">' +
+      '<div class="tex"></div>' +
+      '<svg viewBox="0 0 384 228" preserveAspectRatio="none"><g stroke="#fff" opacity="0.16">' +
+        '<line x1="0" y1="150" x2="384" y2="150" stroke-width="2"/>' +
+        '<line x1="0" y1="150" x2="384" y2="150" stroke="var(--house-red)" stroke-width="2" opacity="0.5"/>' +
+        '<line x1="0" y1="186" x2="384" y2="186" stroke-width="1.5"/></g></svg>' +
+      '<div class="arc"></div>' +
+      statusbar(true) +
+      '<button class="hero-back" data-action="back" aria-label="Back">‹</button>' +
+      '<div class="cap"><div class="loc">📍 ' + esc(st.club.toUpperCase().split(" ")[0]) + ', ' + esc(st.prov) + ' · ' + esc(st.dates) + '</div>' +
+        '<h2>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h2></div>' +
+    '</div>' +
+    '<div class="scroll" style="padding-top:16px;">' +
+      '<div><div class="eyebrow" style="margin-bottom:8px;">Ice read</div>' +
+        '<div class="iceread">' +
+          '<div class="cell"><div class="v">' + esc(ice.speed) + '</div><div class="l">SPEED · ' + esc(ice.speedSec) + '</div></div>' +
+          '<div class="cell"><div class="v">' + esc(ice.curl) + '<small>ft</small></div><div class="l">CURL</div></div>' +
+          '<div class="cell"><div class="v accent">' + esc(ice.rec) + '</div><div class="l">YOUR REC</div></div>' +
+        '</div></div>' +
+      '<div class="card glist">' +
+        '<div class="ghead"><span class="t">Your games here</span><span class="n">' + st.games.length + ' GP</span></div>' +
+        games +
+      '</div>' +
+      '<div class="sec-head"><span class="lab">People you met here</span><span class="act">+ All</span></div>' +
+      '<div style="display:flex; flex-direction:column; gap:12px;">' + people + '</div>' +
+    '</div>';
+}
+
+function viewCurler(id){
+  var c = curler(id);
+  if(!c) return viewRoster();
+  var st = c.stats;
+  var rinks = c.rinks.map(function(r, i){
+    var more = i === c.rinks.length - 1 && /more/.test(r);
+    return '<span class="tag"' + (more ? ' style="color:var(--muted);"' : '') + '>' +
+      (more ? '' : '<span class="ring tight" style="width:12px;height:12px;"></span>') + esc(r) + '</span>';
+  }).join("");
+  var form = c.form.map(function(f, i){
+    return '<div class="gline"' + (i < c.form.length - 1 ? '' : ' style="border-bottom:0;"') + '>' +
+      '<span class="nm">' + esc(f.label) + '</span><span class="score">' + esc(f.score) + '</span>' +
+      '<span class="res" style="color:' + resColor(f.res) + ';">' + esc(f.res) + '</span></div>';
+  }).join("");
+
+  return statusbar(false) +
+    '<div style="flex:none; padding:6px 20px 0;"><button class="backbtn" data-action="back" aria-label="Back">‹</button></div>' +
+    '<div class="scroll" style="padding-top:10px;">' +
+      '<div class="identity">' +
+        '<span class="halo">' + avatar(c.initials, 78, 'av') + '</span>' +
+        '<div><h2>' + esc(c.name) + '</h2><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
+        '<span class="metpill"><span class="d"></span>You met at ' + esc(c.metAt) + '</span>' +
+      '</div>' +
+      '<div class="actions2">' +
+        '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (c.following ? 'Following' : '+ Follow') + '</button>' +
+        '<button class="b outline" data-action="message">Message</button>' +
+      '</div>' +
+      '<div class="card telemetry">' +
+        '<div class="cell"><div class="num" style="font-size:24px;">' + esc(st.record) + '</div><div class="lab">RECORD</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num accent" style="font-size:24px;">' + esc(st.win) + '</div><div class="lab">WIN</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num" style="font-size:24px;">' + st.rinks + '</div><div class="lab">RINKS</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num" style="font-size:24px;">' + st.mutual + '</div><div class="lab">MUTUAL</div></div>' +
+      '</div>' +
+      '<div><div class="eyebrow" style="margin-bottom:9px;">Rinks you\'ve both played</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + rinks + '</div></div>' +
+      '<div><div class="eyebrow" style="margin-bottom:9px;">Recent form</div>' +
+        '<div class="card glist">' + form + '</div></div>' +
+    '</div>';
+}
+
+/* ============================================================
+   Router / nav stack
+   ============================================================ */
+var state = { tab:"passport", stack:[] }; // stack entries: {view:"stop"|"curler", id}
+
+function render(){
+  var html, top = state.stack[state.stack.length - 1];
+  if(top){
+    html = top.view === "stop" ? viewStop(top.id) : viewCurler(top.id);
+  } else {
+    html = ({ passport:viewPassport, locker:viewLocker, spiels:viewSpiels, roster:viewRoster }[state.tab])();
+  }
+  el("view").innerHTML = html;
+  el("view").scrollTop = 0;
+  var sc = el("view").querySelector(".scroll");
+  if(sc) sc.scrollTop = 0;
+}
+
+function syncHash(){
+  var top = state.stack[state.stack.length - 1];
+  var h = top ? (top.view + "/" + top.id) : state.tab;
+  if(("#" + h) !== location.hash){ history.replaceState(null, "", "#" + h); }
+}
+function gotoTab(tab){ state.tab = tab; state.stack = []; render(); syncHash(); }
+function push(view, id){ state.stack.push({ view:view, id:id }); render(); syncHash(); }
+function back(){ state.stack.pop(); render(); syncHash(); }
+
+function applyHash(){
+  var h = (location.hash || "").replace(/^#/, "");
+  if(!h){ return; }
+  var parts = h.split("/");
+  if(parts[0] === "stop" && stop(parts[1])){ state.tab = "passport"; state.stack = [{view:"stop", id:parts[1]}]; return; }
+  if(parts[0] === "curler" && curler(parts[1])){ state.tab = "roster"; state.stack = [{view:"curler", id:parts[1]}]; return; }
+  if(["passport","locker","spiels","roster"].indexOf(parts[0]) > -1){ state.tab = parts[0]; state.stack = []; }
+}
+
+/* ============================================================
+   Settings sheet
+   ============================================================ */
+function buildSettings(){
+  // accent swatches
+  el("seg-accent").innerHTML = ACCENTS.map(function(a){
+    return '<button class="swatch" data-accent="' + esc(a.key) + '" style="background:' + a.val + ';" aria-label="' + esc(a.key) + '"></button>';
+  }).join("");
+  syncSettings();
+}
+function syncSettings(){
+  Array.prototype.forEach.call(el("seg-theme").children, function(b){
+    b.classList.toggle("on", b.getAttribute("data-theme-val") === prefs.theme);
+  });
+  Array.prototype.forEach.call(el("seg-accent").children, function(b){
+    b.classList.toggle("on", b.getAttribute("data-accent") === prefs.accent);
+  });
+  el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
+}
+function openSettings(){ el("scrim").classList.add("open"); el("sheet").classList.add("open"); }
+function closeSettings(){ el("scrim").classList.remove("open"); el("sheet").classList.remove("open"); }
+
+/* ============================================================
+   Toast
+   ============================================================ */
+var toastTimer;
+function toast(msg){
+  var t = el("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1600);
+}
+
+/* ============================================================
+   Event delegation
+   ============================================================ */
+el("screen").addEventListener("click", function(e){
+  var t = e.target.closest("[data-action]");
+
+  // settings controls (live even without data-action wrapper actions)
+  var themeBtn = e.target.closest("[data-theme-val]");
+  if(themeBtn){ prefs.theme = themeBtn.getAttribute("data-theme-val"); applyPrefs(); savePrefs(); syncSettings(); return; }
+  var accBtn = e.target.closest("[data-accent]");
+  if(accBtn){ prefs.accent = accBtn.getAttribute("data-accent"); applyPrefs(); savePrefs(); syncSettings(); return; }
+  if(e.target.closest("#toggle-pebble")){ prefs.pebble = !prefs.pebble; applyPrefs(); savePrefs(); syncSettings(); return; }
+
+  if(!t) return;
+  var action = t.getAttribute("data-action");
+  var id = t.getAttribute("data-id");
+
+  switch(action){
+    case "tab":      gotoTab(t.getAttribute("data-tab")); break;
+    case "stop":     push("stop", id); break;
+    case "curler":   push("curler", id); break;
+    case "back":     back(); break;
+    case "settings": openSettings(); break;
+    case "close-settings": closeSettings(); break;
+    case "follow": {
+      var c = curler(id);
+      if(c){ c.following = !c.following; render(); toast(c.following ? "Following " + c.name : "Unfollowed " + c.name); }
+      break;
+    }
+    case "join":     toast("Saved to your spiels"); break;
+    case "compose":  toast("Share a result, review, or spiel"); break;
+    case "message":  toast("Messaging coming soon"); break;
+    case "like":     toast("Liked"); break;
+    default: break;
+  }
+});
+
+/* ============================================================
+   Boot
+   ============================================================ */
+window.addEventListener("hashchange", function(){ applyHash(); render(); });
+
+applyQueryOverrides();
+applyPrefs();
+buildSettings();
+applyHash();
+render();
+
+/* offline support — network-first SW (purges any older CurlPlan cache) */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("./sw.js").catch(function(){}); });
+}
+</script>
 </body>
 </html>

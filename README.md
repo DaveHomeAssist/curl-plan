@@ -1,55 +1,69 @@
 # CurlPlan
 
-> Personal curling calendar, planner, game log, and ice notes.
+> Your season, your circle. A curling-native app — map your season, stay close to your circle.
 
-## Features
+The root app (`index.html`) is the **Hi-Fi concept**: a mobile-first, single-file
+build of the "Passport + Locker Room" direction. The original multi-view planner
+is preserved, fully working, under [`classic/`](classic/).
 
-- **Calendar** — track games, practices, bonspiels, and league nights
-- **Game Log** — record results, shot percentages, and key shots
-- **Practice Tracker** — log sessions with focus areas and duration
-- **Ice Notes** — remember rink conditions (speed, curl, quirks)
-- **Daily Planner** — pre-game goals and post-game reflections
-- **Import/Export** — back up and restore all data as JSON
+## Hi-Fi app (root)
 
-## Quick Start
+A single, self-contained HTML file — no build, no dependencies, web fonts only.
+
+### Screens
+
+- **Passport** (home) — season telemetry, the house-ring season map, recent stops
+- **Locker Room** — result posts, shared spiels, rink reviews, compose FAB
+- **Stop detail** — ice read, your games here, people you met
+- **Curler profile** — identity, stats, shared rinks, recent form
+- **Spiels** — your season schedule and who from your circle is going
+- **Roster** — your circle, with follow/unfollow
+
+### Interactions
+
+- Bottom **tab bar** navigation + push/back into stop & curler detail screens
+- **Follow/unfollow** across Roster, profiles, and stop detail
+- **Appearance** settings (tap the avatar): Ice/Arena theme, accent
+  (House red / blue / Granite), pebble texture — persisted to localStorage
+- **Deep links**: `#locker`, `#spiels`, `#roster`, `#stop/<id>`, `#curler/<id>`
+- **Shareable themed links**: `?theme=arena&accent=House%20blue&pebble=0`
+
+### Quick start
 
 Open `index.html` in a browser, or serve the repo from any static host.
 
-Data is stored in localStorage and persists across sessions.
+## Classic app (`classic/`)
+
+The original planner — Calendar, Game Log, Practice Tracker, Ice Notes, Daily
+Planner — with split CSS/JS assets, localStorage persistence, and offline support.
+Still live at `classic/index.html`. See [`classic/`](classic/) for its assets.
 
 ## Structure
 
 ```
 curl-plan/
-├── index.html                  # Static entrypoint
-├── assets/
-│   ├── css/app.css             # Styles
-│   └── js/app/
-│       ├── utils.js            # Shared utilities
-│       ├── core.js             # State management and data model
-│       ├── render.js           # UI rendering
-│       ├── actions.js          # Event handlers and CRUD
-│       └── bootstrap.js        # App initialization
-├── docs/
-│   ├── how-to-guide.html       # End-user walkthrough
-│   ├── BRAND_BIBLE.md          # Brand positioning and tokens
-│   └── IMPLEMENTATION_PLAN_*.md # UX task batches
+├── index.html              # Hi-Fi app (self-contained single file)
+├── sw.js                   # Service worker (network-first; purges legacy cache)
+├── classic/                # Original multi-view planner (archived, still working)
+│   ├── index.html
+│   ├── sw.js
+│   └── assets/css|js|icons
+├── docs/                   # Brand bible, UX audits, how-to guide
 ├── scripts/
-│   └── verify-split.js         # Split verification harness
-├── AGENTS.md                   # Agent instructions and issue tracker
-├── CLAUDE.md                   # Architecture constraints
-└── README.md                   # This file
+│   ├── verify-app.js       # Verifies the root Hi-Fi app + service worker
+│   └── verify-split.js     # Verifies the classic split app
+├── CLAUDE.md               # Architecture constraints
+└── README.md               # This file
 ```
 
 ## Verification
 
-Run the split verification harness after structural changes:
-
 ```bash
-node scripts/verify-split.js
+node scripts/verify-app.js     # root Hi-Fi app: JS parses, views/router/SW/favicon present
+node scripts/verify-split.js   # classic app: required IDs, script order, schema, parseability
 ```
 
-This checks required IDs, script load order, `SCHEMA_VERSION`, and combined JS parseability.
+Both run in CI on push/PR via `.github/workflows/verify.yml`.
 
 ## Deployment
 
@@ -58,16 +72,6 @@ This checks required IDs, script load order, `SCHEMA_VERSION`, and combined JS p
 
 ## Tech
 
-- Static HTML entrypoint with split CSS/JS assets
-- No dependencies
-- localStorage persistence
-- Responsive layout (desktop + mobile)
-
-## Links
-
-- Guide: `docs/how-to-guide.html`
-- Next pass: `NEXT_PASS_UX_FEATURES.md`
-
-## Conventions
-
-This project follows the shared naming conventions in `30-shared-resources/shared-standards/NAMING_CONVENTIONS.md`.
+- Self-contained single-file root app (no dependencies)
+- localStorage for appearance prefs; service worker for offline shell
+- Responsive: device frame on desktop, full-bleed on phones

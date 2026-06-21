@@ -29,8 +29,8 @@ global.setTimeout = global.setTimeout;
 global.clearTimeout = global.clearTimeout;
 
 // ── Load app modules ──
-const utilsCode = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', 'app', 'utils.js'), 'utf8');
-const coreCode = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', 'app', 'core.js'), 'utf8');
+const utilsCode = fs.readFileSync(path.join(__dirname, '..', 'classic', 'assets', 'js', 'app', 'utils.js'), 'utf8');
+const coreCode = fs.readFileSync(path.join(__dirname, '..', 'classic', 'assets', 'js', 'app', 'core.js'), 'utf8');
 
 // eval in global scope so var declarations become globals
 // Wrap const/let in a way that exposes needed symbols

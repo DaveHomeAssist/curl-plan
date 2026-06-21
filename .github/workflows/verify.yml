@@ -7,11 +7,14 @@ on:
     branches: [main]
 
 jobs:
-  verify-split:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node scripts/verify-split.js
+      - name: Verify root Hi-Fi app
+        run: node scripts/verify-app.js
+      - name: Verify archived classic app
+        run: node scripts/verify-split.js

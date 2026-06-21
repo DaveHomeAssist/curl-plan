@@ -3,8 +3,11 @@
 const fs = require("fs");
 const path = require("path");
 
+// The original multi-file app now lives under classic/ (the root index.html is the
+// promoted single-file Hi-Fi app, checked by verify-app.js instead).
 const root = path.resolve(__dirname, "..");
-const indexPath = path.join(root, "index.html");
+const base = path.join(root, "classic");
+const indexPath = path.join(base, "index.html");
 const html = fs.readFileSync(indexPath, "utf8");
 
 const expectedScripts = [
@@ -69,13 +72,13 @@ requiredIds.forEach((id) => {
   assert(count === 1, `Expected id="${id}" exactly once, found ${count}.`);
 });
 
-const stateSource = fs.readFileSync(path.join(root, "assets/js/app/core.js"), "utf8");
+const stateSource = fs.readFileSync(path.join(base, "assets/js/app/core.js"), "utf8");
 assert(/const SCHEMA_VERSION = 4;/.test(stateSource), "SCHEMA_VERSION must remain 4 in core.js.");
-assert(fs.existsSync(path.join(root, "assets/icons/favicon/favicon.svg")), "favicon.svg must exist.");
+assert(fs.existsSync(path.join(base, "assets/icons/favicon/favicon.svg")), "favicon.svg must exist.");
 
 const combined = expectedScripts
-  .map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+  .map((file) => fs.readFileSync(path.join(base, file), "utf8"))
   .join("\n");
 new Function(combined);
 
-console.log("verify-split: ok");
+console.log("verify-split: ok (classic/)");
