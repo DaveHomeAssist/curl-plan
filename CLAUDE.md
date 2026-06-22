@@ -99,6 +99,7 @@ All collections share one localStorage key as a single JSON blob.
 | 002 | P2 | deferred | is-working button class triggers but does not clear | Add setTimeout clear to markWorking() |
 | 003 | P1 | resolved | importData fails on legacy schema versions | Added migrateRaw() switch in core.js; called in importData before normalizeState |
 | 004 | P2 | resolved | Quick capture and next pass UX work remain | Planner prep, lineup, and bonspiel workflows are now live |
+| 005 | P1 | resolved | iOS SwiftUI port ships read-only: create actions unwired, no persistence | Native `ios/` port rendered seed data only; `Store.toggleFollow` was the sole mutation. RESOLVED across 3 passes (xcodebuild green each pass, runs on iPhone 17 / iOS 26.5): P1 wired New Spiel / New Result / New Curler sheets + `Store.addSpiel/addResult/addCurler` + reusable `CreateScaffold`/`CPField`/`CPChips`; P2 fixed the dead CTAs — Spiels "Details" → `SpielDetailSheet` with RSVP (`setSpielStatus`), Locker "I'm in" → working toggle, Curler "Message" → `ShareLink`, Roster + Locker search wired to live filters; P3 added `Codable` to the mutable models + `Persist`/UserDefaults round-trip so creates and follow-state survive relaunch. Deferred (feature stubs, not dead CTAs): Locker "Discover" tab, "All"/"+ All" see-all links, result social row. Tracked from status run RUN-20260621-1118. |
 
 ## Session Log
 
@@ -123,3 +124,6 @@ All collections share one localStorage key as a single JSON blob.
 [2026-06-21] [CurlPlan] [fix] SWs whitelist each other's cache (origin-wide CacheStorage); rename classic cache to curlplan-classic-v6
 [2026-06-21] [CurlPlan] [fix] Repath tests/ stress harness to classic/assets; retarget how-to-guide and BRAND_BIBLE doc paths to classic/
 [2026-06-21] [CurlPlan] [feat] Add native SwiftUI port under ios/ (Xcode project, 6 screens, house-ring system, Ice/Arena theming)
+[2026-06-22] [CurlPlan] [feat] iOS port: wire create actions (New Spiel/Result/Curler) + Store add methods + CreateScaffold/CPField/CPChips
+[2026-06-22] [CurlPlan] [fix] iOS port: fix dead CTAs — Spiels Details RSVP sheet, Locker "I'm in" toggle, Curler Message→Share, Roster+Locker search
+[2026-06-22] [CurlPlan] [feat] iOS port: Codable models + UserDefaults persistence so creates and follow-state survive relaunch (resolves #005)

@@ -77,13 +77,12 @@ struct CurlerProfileView: View {
             }
             .buttonStyle(.plain)
 
-            Button { } label: {
-                Text("Message")
+            ShareLink(item: "\(c.name) — \(c.role), \(c.club) (\(c.prov)). Met at \(c.metAt). Record \(c.record), \(c.win) wins.") {
+                Text("Share")
                     .font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 11.5)
                     .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(settings.ink, lineWidth: 1.5))
             }
-            .buttonStyle(.plain)
         }
     }
 

@@ -195,6 +195,119 @@ struct VRule: View {
     var body: some View { Rectangle().fill(settings.line).frame(width: 1) }
 }
 
+// MARK: - Create-sheet building blocks
+
+// Labelled text field styled to the panel/line tokens.
+struct CPField: View {
+    @EnvironmentObject var settings: AppSettings
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var keyboard: UIKeyboardType = .default
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
+            TextField(placeholder, text: $text)
+                .font(.grotesk(15)).foregroundStyle(settings.ink)
+                .tint(settings.accent)
+                .keyboardType(keyboard)
+                .autocorrectionDisabled()
+                .padding(.vertical, 11).padding(.horizontal, 13)
+                .background(settings.panel)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(settings.line, lineWidth: 1))
+        }
+    }
+}
+
+// Single-select chip row (status / role pickers).
+struct CPChips: View {
+    @EnvironmentObject var settings: AppSettings
+    let label: String
+    let options: [String]
+    @Binding var selection: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
+            HStack(spacing: 8) {
+                ForEach(options, id: \.self) { opt in
+                    let on = selection == opt
+                    Button { selection = opt } label: {
+                        Text(opt)
+                            .font(.grotesk(12, .semibold))
+                            .foregroundStyle(on ? .white : settings.ink)
+                            .padding(.vertical, 8).padding(.horizontal, 13)
+                            .background(on ? settings.accent : settings.panel)
+                            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(on ? Color.clear : settings.line, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+}
+
+// Shared scaffold for the create sheets: drag handle, title, fields, Cancel/Save bar.
+struct CreateScaffold<Content: View>: View {
+    @EnvironmentObject var settings: AppSettings
+    let title: String
+    let subtitle: String
+    let canSave: Bool
+    let onCancel: () -> Void
+    let onSave: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule().fill(settings.line).frame(width: 38, height: 4)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12).padding(.bottom, 14)
+
+            Text(title).font(.serif(24)).foregroundStyle(settings.ink)
+            Text(subtitle).font(.grotesk(13)).foregroundStyle(settings.muted)
+                .padding(.bottom, 18)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 14) { content() }
+            }
+
+            HStack(spacing: 10) {
+                Button(action: onCancel) {
+                    Text("Cancel").font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
+                        .frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .strokeBorder(settings.ink, lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onSave) {
+                    Text("Save").font(.grotesk(14, .bold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).padding(.vertical, 13)
+                        .background(canSave ? settings.accent : settings.muted.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+            }
+            .padding(.top, 14)
+        }
+        .padding(.horizontal, 22)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(settings.card)
+    }
+}
+
 // A circular glass back button for hero / detail screens.
 struct CircleBackButton: View {
     @EnvironmentObject var settings: AppSettings

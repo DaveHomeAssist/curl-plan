@@ -2,14 +2,14 @@ import SwiftUI
 
 // MARK: - Models
 
-struct GameLine: Identifiable, Hashable {
-    let id = UUID()
+struct GameLine: Identifiable, Hashable, Codable {
+    var id = UUID()
     let label: String   // opponent or game label
     let score: String   // "8–4"
     let res: String     // "W" / "L"
 }
 
-struct Curler: Identifiable, Hashable {
+struct Curler: Identifiable, Hashable, Codable {
     let id: String
     let initials: String
     let name: String
@@ -47,26 +47,26 @@ struct Stop: Identifiable, Hashable {
     let met: [String]       // curler ids
 }
 
-struct ResultPost: Identifiable {
-    let id = UUID()
+struct ResultPost: Identifiable, Codable {
+    var id = UUID()
     let author: String, time: String, body: String
     let scoreFor: Int, scoreAgainst: Int, res: String, vs: String
     let likes: Int, comments: Int
 }
 
-struct SpielPost: Identifiable {
-    let id = UUID()
+struct SpielPost: Identifiable, Codable {
+    var id = UUID()
     let title: String, spielName: String, whereText: String, whenText: String
     let who: [String]
 }
 
-struct ReviewPost: Identifiable {
-    let id = UUID()
+struct ReviewPost: Identifiable, Codable {
+    var id = UUID()
     let author: String, time: String, rink: String
     let stars: Int, note: String
 }
 
-enum FeedItem: Identifiable {
+enum FeedItem: Identifiable, Codable {
     case result(ResultPost)
     case spiel(SpielPost)
     case review(ReviewPost)
@@ -80,13 +80,13 @@ enum FeedItem: Identifiable {
     }
 }
 
-struct Spiel: Identifiable, Hashable {
+struct Spiel: Identifiable, Hashable, Codable {
     let id: String
     let name: String
     let whereText: String
     let whenText: String
-    let status: String
-    let going: [String]
+    var status: String
+    var going: [String]
 }
 
 // Navigation routes for the per-tab NavigationStacks.
@@ -95,14 +95,38 @@ enum Route: Hashable {
     case curler(String)
 }
 
+// MARK: - Persistence
+
+enum Persist {
+    static let curlersKey = "cp.curlers.v1"
+    static let spielsKey = "cp.spiels.v1"
+    static let feedKey = "cp.feed.v1"
+
+    static func save<T: Encodable>(_ value: T, _ key: String) {
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        UserDefaults.standard.set(data, forKey: key)
+    }
+
+    static func load<T: Decodable>(_ key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+}
+
 // MARK: - Store
 
 final class Store: ObservableObject {
-    @Published var curlers: [Curler] = Seed.curlers
+    @Published var curlers: [Curler] = Seed.curlers { didSet { Persist.save(curlers, Persist.curlersKey) } }
     @Published var stops: [Stop] = Seed.stops
-    @Published var spiels: [Spiel] = Seed.spiels
-    let feed: [FeedItem] = Seed.feed
+    @Published var spiels: [Spiel] = Seed.spiels { didSet { Persist.save(spiels, Persist.spielsKey) } }
+    @Published var feed: [FeedItem] = Seed.feed { didSet { Persist.save(feed, Persist.feedKey) } }
     let me = Me()
+
+    init() {
+        if let saved: [Curler] = Persist.load(Persist.curlersKey) { curlers = saved }
+        if let saved: [Spiel] = Persist.load(Persist.spielsKey) { spiels = saved }
+        if let saved: [FeedItem] = Persist.load(Persist.feedKey) { feed = saved }
+    }
 
     struct Me {
         let name = "Dana Mercer"
@@ -126,6 +150,51 @@ final class Store: ObservableObject {
     func toggleFollow(_ id: String) {
         guard let i = curlers.firstIndex(where: { $0.id == id }) else { return }
         curlers[i].following.toggle()
+    }
+
+    // MARK: - Create actions
+
+    @discardableResult
+    func addSpiel(name: String, whereText: String, whenText: String, status: String) -> Spiel {
+        let spiel = Spiel(id: "sp-\(UUID().uuidString.prefix(6))",
+                          name: name,
+                          whereText: whereText.isEmpty ? "TBD" : whereText,
+                          whenText: whenText.isEmpty ? "DATE TBD" : whenText,
+                          status: status, going: [])
+        spiels.insert(spiel, at: 0)
+        return spiel
+    }
+
+    func setSpielStatus(_ id: String, _ status: String) {
+        guard let i = spiels.firstIndex(where: { $0.id == id }) else { return }
+        spiels[i].status = status
+    }
+
+    func addResult(body: String, scoreFor: Int, scoreAgainst: Int, vs: String) {
+        let res = scoreFor == scoreAgainst ? "TIE" : (scoreFor > scoreAgainst ? "WIN" : "LOSS")
+        let opp = vs.trimmingCharacters(in: .whitespaces)
+        let vsLabel = opp.isEmpty ? "" : (opp.lowercased().hasPrefix("vs") ? opp : "vs \(opp)")
+        let post = ResultPost(author: "me", time: "now", body: body,
+                              scoreFor: scoreFor, scoreAgainst: scoreAgainst,
+                              res: res, vs: vsLabel, likes: 0, comments: 0)
+        feed.insert(.result(post), at: 0)
+    }
+
+    @discardableResult
+    func addCurler(name: String, role: String, club: String, prov: String) -> Curler {
+        let initials = name.split(separator: " ").prefix(2)
+            .compactMap { $0.first }.map(String.init).joined().uppercased()
+        let curler = Curler(id: "c-\(UUID().uuidString.prefix(6))",
+                            initials: initials.isEmpty ? "?" : initials,
+                            name: name,
+                            role: role.isEmpty ? "Curler" : role,
+                            club: club.isEmpty ? "—" : club,
+                            prov: prov.isEmpty ? "—" : prov,
+                            metAt: "your roster", following: true,
+                            record: "0–0", win: "—", rinks: 0, mutual: 0,
+                            sharedRinks: [], form: [])
+        curlers.insert(curler, at: 0)
+        return curler
     }
 }
 
