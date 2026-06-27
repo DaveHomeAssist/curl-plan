@@ -4,6 +4,7 @@ struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @State private var showSettings = false
+    @State private var showAllStops = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -12,23 +13,41 @@ struct PassportView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     hero
                     telemetry
-                    SeasonMap()
-                    SectionHeader(title: "Recent stops", action: "All")
-                    ForEach(store.recentStops) { stop in
-                        NavigationLink(value: Route.stop(stop.id)) {
-                            RecentStopTile(stop: stop)
+                    if store.stops.isEmpty {
+                        EmptyStateView(title: "No stops yet",
+                                       message: "Your season map will fill in as you visit rinks or restore an exported season.",
+                                       systemImage: "map")
+                    } else {
+                        SeasonMap()
+                    }
+                    SectionHeader(title: "Recent stops",
+                                  action: store.allActivityStops.isEmpty ? nil : "All",
+                                  actionAccessibilityLabel: "Show all stops",
+                                  onAction: { showAllStops = true })
+                    if store.recentStops.isEmpty {
+                        EmptyStateView(title: "No rink activity yet",
+                                       message: "Visit a stop from the map or log results to build your Passport history.",
+                                       systemImage: "figure.curling")
+                    } else {
+                        ForEach(store.recentStops) { stop in
+                            NavigationLink(value: Route.stop(stop.id)) {
+                                RecentStopTile(stop: stop)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("curlplan.recentStop.\(stop.id)")
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
                 .padding(.bottom, 96)
+                .cpReadableContent()
             }
         }
         .background(settings.screen)
         .navigationBarHidden(true)
         .sheet(isPresented: $showSettings) { SettingsSheet() }
+        .sheet(isPresented: $showAllStops) { AllStopsSheet() }
     }
 
     private var header: some View {
@@ -42,10 +61,13 @@ struct PassportView: View {
                 AvatarView(initials: store.me.initials, size: 34)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Open settings")
+            .accessibilityIdentifier("curlplan.settings")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
         .padding(.bottom, 12)
+        .cpReadableContent()
     }
 
     private var hero: some View {
@@ -61,19 +83,19 @@ struct PassportView: View {
 
     private var telemetry: some View {
         HStack(spacing: 0) {
-            statCell("\(store.me.rinks)", "RINKS")
+            statCell("\(store.me.rinks)", "RINKS", identifier: "curlplan.passport.stat.rinks")
             VRule()
-            statCell("\(store.me.prov)", "PROV")
+            statCell("\(store.me.prov)", "PROV", identifier: "curlplan.passport.stat.provinces")
             VRule()
-            statCell("\(store.me.games)", "GAMES")
+            statCell("\(store.me.games)", "GAMES", identifier: "curlplan.passport.stat.games")
             VRule()
-            statCell("\(store.me.win)%", "WIN", accent: true)
+            statCell("\(store.me.win)%", "WIN", accent: true, identifier: "curlplan.passport.stat.win")
         }
         .padding(.vertical, 13)
         .cpCard()
     }
 
-    private func statCell(_ value: String, _ label: String, accent: Bool = false) -> some View {
+    private func statCell(_ value: String, _ label: String, accent: Bool = false, identifier: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.serif(26))
@@ -84,6 +106,9 @@ struct PassportView: View {
                 .foregroundStyle(settings.muted)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
+        .accessibilityIdentifier(identifier)
     }
 }
 
@@ -111,7 +136,7 @@ struct RecentStopTile: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { _ in "" }, size: 20, plus: stop.plus)
+                AvatarStack(initials: store.initials(for: stop.met), size: 20, plus: store.plusLabel(for: stop.met))
             }
         }
         .padding(12)
@@ -162,7 +187,7 @@ struct SeasonMap: View {
                 ForEach(store.stops) { s in
                     NavigationLink(value: Route.stop(s.id)) {
                         HouseRing(size: s.big ? 21 : 13)
-                            .overlay(Circle().strokeBorder(.white.opacity(s.here ? 0.85 : 0), lineWidth: 3))
+                            .overlay(Circle().strokeBorder(.white.opacity(store.isCurrentStop(s.id) ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     }
                     .buttonStyle(.plain)
@@ -174,9 +199,12 @@ struct SeasonMap: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
+            let current = store.stops.first { store.isCurrentStop($0.id) }
             HStack(spacing: 7) {
                 Circle().fill(settings.accent).frame(width: 7, height: 7)
-                Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                Text(current.map { "\($0.club) · active visit" } ?? "Season route")
+                    .font(.grotesk(11, .semibold))
+                    .foregroundStyle(settings.ink)
             }
             .padding(.vertical, 5)
             .padding(.horizontal, 11)
@@ -186,7 +214,7 @@ struct SeasonMap: View {
             .padding(13)
         }
         .overlay(alignment: .bottomTrailing) {
-            Text("12 STOPS · 2,400 KM")
+            Text("\(store.seasonSummary.rinks) STOPS · \(store.seasonSummary.distanceLabel) KM")
                 .font(.mono(10, .medium))
                 .tracking(1)
                 .foregroundStyle(settings.ink)
@@ -195,6 +223,51 @@ struct SeasonMap: View {
                 .background(settings.card.opacity(0.92))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .padding(12)
+                .accessibilityIdentifier("curlplan.passport.distance")
         }
+    }
+}
+
+struct AllStopsSheet: View {
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 13) {
+                    if store.allActivityStops.isEmpty {
+                        EmptyStateView(title: "No stops yet",
+                                       message: "Visited stops and rink activity will appear here.",
+                                       systemImage: "map")
+                    } else {
+                        ForEach(store.allActivityStops) { stop in
+                            NavigationLink(value: Route.stop(stop.id)) {
+                                RecentStopTile(stop: stop)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .background(settings.screen)
+            .navigationTitle("All stops")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .stop(let id): StopDetailView(stopID: id)
+                case .curler(let id): CurlerProfileView(curlerID: id)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundStyle(settings.accent)
+                }
+            }
+        }
+        .presentationBackground(settings.screen)
     }
 }
