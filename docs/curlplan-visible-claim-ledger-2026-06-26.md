@@ -54,6 +54,20 @@ Status key:
 | GPS verified location | Not claimed | visible text scan has no `gps` match |
 | Here now | Not claimed | visible text scan has no `here now` match |
 
+## Future Account And Social Claims
+
+These claims remain blocked until `docs/curlplan-accounts-social-roadmap-2026-06-28.md` is implemented with backend-backed proof. They are not current app capabilities.
+
+| Claim | Required authority before claim can ship | Gate row |
+| --- | --- | --- |
+| Sign in, sign out, account restore | Auth service, revocable session, account-scoped season document, account deletion/export paths | `FR-ACCOUNT` |
+| Cloud sync or cross-device restore | Sync API, versioned season document, offline queue, conflict receipts, second-device proof | `FR-SYNC` |
+| Public profile or discoverable curler identity | Public identity API, visibility settings, search index, block-aware profile fetch | `FR-PUBLIC-ID` |
+| Remote follow, friend, teammate, invite, or block | Relationship graph API, second-device agreement, block enforcement at API and UI | `FR-RELATIONSHIP` |
+| Shared spiel, bonspiel, roster, lineup, RSVP, or scorecard | Shared object API, membership roles, visibility, versioning, permission checks | `FR-SHARED-OBJECTS` |
+| Reaction, comment, message, notification, or public conversation | Interaction API, edit/delete/report/block flows, notification suppression, rate limits | `FR-SOCIAL` |
+| Report, moderation, account deletion, privacy export, community safety | Report queue, moderation state, audit logs, rate limits, privacy policy, App Store privacy labels | `FR-TRUST-SAFETY` |
+
 ## Automated Screenflow Evidence
 
 These simulator UI tests now exist in `ios/CurlPlanUITests/CurlPlanPrimaryScreenflowUITests.swift` and run through the actual SwiftUI app on `CurlPlan Audit iPhone 17`, iOS 26.5.

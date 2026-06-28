@@ -3,3 +3,6 @@ node_modules/
 .env
 *.log
 archives/
+
+# SwiftPM build output (CurlPlanCore test target)
+.build/
