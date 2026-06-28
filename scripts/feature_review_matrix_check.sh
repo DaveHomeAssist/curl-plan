@@ -28,7 +28,7 @@ mark_unmapped() {
   printf '%s\n' "$1" >> "$unmapped_file"
 }
 
-REVIEW_PATHS="ios/CurlPlan ios/CurlPlan.xcodeproj ios/CurlPlanUITests tests/CurlPlanCoreTests docs scripts Package.swift Makefile .github/workflows"
+REVIEW_PATHS="ios/CurlPlan ios/CurlPlan.xcodeproj ios/CurlPlanUITests tests/CurlPlanCoreTests docs scripts services Package.swift Makefile .github/workflows"
 
 if [ "$#" -gt 0 ]; then
   for path in "$@"; do
@@ -52,6 +52,18 @@ fi
 while IFS= read -r path; do
   [ -n "$path" ] || continue
   case "$path" in
+    ios/CurlPlan/AccountBackendAPI.swift)
+      add_rows FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
+      ;;
+    ios/CurlPlan/AccountHTTPBackend.swift)
+      add_rows FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
+      ;;
+    ios/CurlPlan/AccountRuntime.swift)
+      add_rows FR-ACCOUNT FR-SYNC FR-SETTINGS FR-CLAIMS
+      ;;
+    ios/CurlPlan/AccountSocialContracts.swift)
+      add_rows FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
+      ;;
     ios/CurlPlan/Models.swift)
       add_rows FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
       ;;
@@ -97,17 +109,26 @@ while IFS= read -r path; do
     ios/CurlPlanUITests/*.swift|ios/CurlPlanUITests/*/*.swift)
       add_rows test-support FR-A11Y FR-CLAIMS
       ;;
+    tests/CurlPlanCoreTests/AccountBackendAPITests.swift|tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|tests/CurlPlanCoreTests/AccountRuntimeTests.swift|tests/CurlPlanCoreTests/AccountSocialContractTests.swift|Tests/CurlPlanCoreTests/AccountBackendAPITests.swift|Tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|Tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|Tests/CurlPlanCoreTests/AccountRuntimeTests.swift|Tests/CurlPlanCoreTests/AccountSocialContractTests.swift)
+      add_rows test-support FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
+      ;;
     tests/CurlPlanCoreTests/*.swift|Tests/CurlPlanCoreTests/*.swift)
       add_rows test-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
       ;;
     Package.swift)
-      add_rows build-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
+      add_rows build-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
+      ;;
+    services/account-backend/*|scripts/verify-account-backend.mjs)
+      add_rows gate-support FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
       ;;
     Makefile|scripts/feature_review_matrix_check.sh|scripts/*)
       add_rows gate-support
       ;;
     .github/workflows/*)
       add_rows gate-support build-support
+      ;;
+    docs/curlplan-accounts-social-roadmap-*.md)
+      add_rows docs-only FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY
       ;;
     docs/curlplan-feature-review-*.md|docs/reviews/*.md)
       add_rows docs-only gate-support
@@ -152,6 +173,13 @@ if [ -s "$rows_file" ]; then
       FR-SETTINGS) echo "- FR-SETTINGS: Settings recovery" ;;
       FR-A11Y) echo "- FR-A11Y: Small screen and accessibility reachability" ;;
       FR-CLAIMS) echo "- FR-CLAIMS: Unsupported authority guardrails" ;;
+      FR-ACCOUNT) echo "- FR-ACCOUNT: Account foundation" ;;
+      FR-SYNC) echo "- FR-SYNC: Cloud sync without social" ;;
+      FR-PUBLIC-ID) echo "- FR-PUBLIC-ID: Public identity" ;;
+      FR-RELATIONSHIP) echo "- FR-RELATIONSHIP: Relationship graph" ;;
+      FR-SHARED-OBJECTS) echo "- FR-SHARED-OBJECTS: Shared curling objects" ;;
+      FR-SOCIAL) echo "- FR-SOCIAL: Social interactions" ;;
+      FR-TRUST-SAFETY) echo "- FR-TRUST-SAFETY: Trust, safety, and compliance" ;;
       docs-only) echo "- docs-only: Documentation-only change" ;;
       gate-support) echo "- gate-support: Feature review gate tooling or docs" ;;
       test-support) echo "- test-support: Test support change" ;;
@@ -180,6 +208,12 @@ if [ -s "$rows_file" ]; then
   fi
   if grep -q 'FR-CIRCLE' "$rows_file"; then
     echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<simulator-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanPrimaryScreenflowUITests/testRouteDistanceAndCircleMembershipSurfacesStayTruthfulAcrossRelaunch"
+  fi
+  if grep -Eq 'FR-ACCOUNT|FR-SYNC|FR-PUBLIC-ID|FR-RELATIONSHIP|FR-SHARED-OBJECTS|FR-SOCIAL|FR-TRUST-SAFETY' "$rows_file"; then
+    echo "- docs/curlplan-accounts-social-roadmap-2026-06-28.md: run the phase-specific AS screenflow and backend authorization tests before shipping backend-backed claims"
+  fi
+  if grep -Eq 'FR-ACCOUNT|FR-SYNC|FR-TRUST-SAFETY' "$rows_file" && grep -Eq 'services/account-backend/|scripts/verify-account-backend.mjs' "$files_file"; then
+    echo "- node scripts/verify-account-backend.mjs"
   fi
   printf '%s\n' "- rg -in \"likes|comments|public roster|here now|GPS verification|official result\" ios/CurlPlan ios/CurlPlanUITests tests/CurlPlanCoreTests -g '*.swift'"
   printf '%s\n' "- rg -in \"\\b(Text|Label|Button)\\([^\\n]*(official|public roster|likes|comments|gps|here now|live)\" ios/CurlPlan -g '*.swift'"

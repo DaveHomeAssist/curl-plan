@@ -33,6 +33,8 @@ struct RosterView: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(searching ? "Close roster search" : "Search roster")
+                    .accessibilityIdentifier("curlplan.roster.search")
                     Button { showingNew = true } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 18, weight: .medium))
@@ -42,11 +44,14 @@ struct RosterView: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Add curler")
+                    .accessibilityIdentifier("curlplan.addCurler")
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 6)
             .padding(.bottom, 12)
+            .cpReadableContent()
 
             if searching {
                 HStack(spacing: 8) {
@@ -54,6 +59,7 @@ struct RosterView: View {
                     TextField("Search your circle", text: $query)
                         .font(.grotesk(15)).foregroundStyle(settings.ink).tint(settings.accent)
                         .autocorrectionDisabled()
+                        .accessibilityIdentifier("curlplan.roster.searchField")
                     if !query.isEmpty {
                         Button { query = "" } label: {
                             Image(systemName: "xmark.circle.fill").foregroundStyle(settings.muted)
@@ -66,14 +72,19 @@ struct RosterView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .padding(.horizontal, 20)
                 .padding(.bottom, 10)
+                .cpReadableContent()
             }
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     Eyebrow(text: "Your circle · \(filtered.count) curler\(filtered.count == 1 ? "" : "s")")
                     if filtered.isEmpty {
-                        Text("No curlers match \"\(query)\".")
-                            .font(.grotesk(13)).foregroundStyle(settings.muted)
+                        EmptyStateView(title: query.isEmpty ? "No curlers yet" : "No curlers found",
+                                       message: query.isEmpty ? "Add teammates, spares, and people you meet on the ice." : "No curlers match \"\(query)\".",
+                                       systemImage: "person.crop.circle.badge.plus",
+                                       actionTitle: query.isEmpty ? "Add curler" : nil) {
+                            showingNew = true
+                        }
                     } else {
                         VStack(spacing: 12) {
                             ForEach(filtered) { c in
@@ -85,6 +96,7 @@ struct RosterView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
                 .padding(.bottom, 96)
+                .cpReadableContent()
             }
         }
         .background(settings.screen)
@@ -141,10 +153,12 @@ private struct RosterRow: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("curlplan.roster.curler.\(curler.id)")
             Spacer()
-            PillButton(title: curler.following ? "Following" : "Follow", filled: !curler.following) {
+            PillButton(title: curler.following ? "In circle" : "Add", filled: !curler.following) {
                 store.toggleFollow(curler.id)
             }
+            .accessibilityIdentifier("curlplan.roster.follow.\(curler.id)")
         }
         .padding(12)
         .cpCard()

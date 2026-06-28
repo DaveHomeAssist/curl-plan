@@ -5,31 +5,89 @@ struct StopDetailView: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     let stopID: String
+    @State private var visitMessage: String?
+    @State private var showingVisitCapture = false
 
     var body: some View {
         Group {
             if let stop = store.stop(stopID) {
+                let metIDs = store.peopleMetIDs(for: stop.id)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 14) {
                         hero(stop)
                         VStack(alignment: .leading, spacing: 14) {
+                            visitControl(stop)
                             iceRead(stop)
                             gamesHere(stop)
-                            SectionHeader(title: "People you met here", action: "+ All")
-                            people(stop)
+                            SectionHeader(title: "People you met here",
+                                          action: metIDs.isEmpty ? nil : "+ All",
+                                          actionAccessibilityLabel: "Follow everyone met here",
+                                          onAction: { store.followAll(metIDs) })
+                            people(stop, metIDs: metIDs)
                         }
                         .padding(.horizontal, 20)
+                        .cpReadableContent()
                     }
                     .padding(.bottom, 96)
                 }
                 .background(settings.screen)
                 .ignoresSafeArea(edges: .top)
+                .sheet(isPresented: $showingVisitCapture) {
+                    VisitCaptureSheet(stop: stop) { receipt in
+                        visitMessage = receipt.userMessage
+                    }
+                }
             } else {
                 settings.screen
             }
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private func visitControl(_ stop: Stop) -> some View {
+        let active = store.isCurrentStop(stop.id)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(active ? "Active visit" : "No active visit")
+                        .font(.grotesk(14, .bold))
+                        .foregroundStyle(settings.ink)
+                    Text(active ? "End this visit when you leave the rink." : "Start a local visit for this stop.")
+                        .font(.grotesk(12, .medium))
+                        .foregroundStyle(settings.muted)
+                }
+                Spacer()
+                Button {
+                    if active {
+                        let receipt = store.endVisit(stopID: stop.id)
+                        visitMessage = receipt.userMessage
+                    } else {
+                        showingVisitCapture = true
+                    }
+                } label: {
+                    Text(active ? "End visit" : "Start visit")
+                        .font(.grotesk(13, .bold))
+                        .foregroundStyle(active ? settings.ink : .white)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(active ? settings.panel : settings.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .strokeBorder(active ? settings.ink : Color.clear, lineWidth: 1.4))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(active ? "curlplan.stop.endVisit" : "curlplan.stop.startVisit")
+            }
+
+            if let visitMessage {
+                Text(visitMessage)
+                    .font(.mono(10, .medium))
+                    .foregroundStyle(settings.muted)
+            }
+        }
+        .padding(14)
+        .cpCard(radius: 14)
     }
 
     // MARK: Hero
@@ -94,21 +152,39 @@ struct StopDetailView: View {
     // MARK: Games here
 
     private func gamesHere(_ stop: Stop) -> some View {
-        VStack(spacing: 0) {
+        let results = store.stopResults(stop.id)
+        let count = results.isEmpty ? stop.games.count : results.count
+        return VStack(spacing: 0) {
             HStack {
                 Text("Your games here").font(.grotesk(12, .semibold)).foregroundStyle(settings.ink)
                 Spacer()
-                Text("\(stop.games.count) GP").font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                Text("\(count) GP").font(.mono(10, .medium)).foregroundStyle(settings.muted)
             }
             .padding(.vertical, 11).padding(.horizontal, 13)
             Rectangle().fill(settings.line).frame(height: 1)
 
-            if stop.games.isEmpty {
+            if count == 0 {
                 HStack {
                     Text("No games logged here yet").font(.grotesk(13, .medium)).foregroundStyle(settings.muted)
                     Spacer()
                 }
                 .padding(.vertical, 11).padding(.horizontal, 13)
+            } else if !results.isEmpty {
+                ForEach(Array(results.enumerated()), id: \.element.id) { idx, result in
+                    HStack(spacing: 10) {
+                        Circle()
+                            .fill(result.res == "WIN" ? settings.accent : settings.muted)
+                            .opacity(result.res == "WIN" ? 1 : 0.5)
+                            .frame(width: 7, height: 7)
+                        Text(result.opponent.isEmpty ? "Logged result" : "vs \(result.opponent)")
+                            .font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
+                        Spacer()
+                        Text(result.scoreLabel).font(.serif(16)).foregroundStyle(settings.ink)
+                        ResultBadge(res: result.res == "WIN" ? "W" : (result.res == "LOSS" ? "L" : result.res))
+                    }
+                    .padding(.vertical, 10).padding(.horizontal, 13)
+                    if idx < results.count - 1 { Rectangle().fill(settings.line).frame(height: 1) }
+                }
             } else {
                 ForEach(Array(stop.games.enumerated()), id: \.element.id) { idx, g in
                     HStack(spacing: 10) {
@@ -131,15 +207,15 @@ struct StopDetailView: View {
 
     // MARK: People met
 
-    private func people(_ stop: Stop) -> some View {
+    private func people(_ stop: Stop, metIDs: [String]) -> some View {
         VStack(spacing: 12) {
-            if stop.met.isEmpty {
+            if metIDs.isEmpty {
                 HStack {
                     Text("No connections logged here yet.").font(.mono(11, .medium)).foregroundStyle(settings.muted)
                     Spacer()
                 }
             }
-            ForEach(stop.met, id: \.self) { id in
+            ForEach(metIDs, id: \.self) { id in
                 if let c = store.curler(id) {
                     HStack(spacing: 11) {
                         NavigationLink(value: Route.curler(c.id)) {
@@ -153,8 +229,9 @@ struct StopDetailView: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("curlplan.stop.curler.\(c.id)")
                         Spacer()
-                        PillButton(title: c.following ? "Following" : "Follow", filled: !c.following) {
+                        PillButton(title: c.following ? "In circle" : "Add", filled: !c.following) {
                             store.toggleFollow(c.id)
                         }
                     }
@@ -175,5 +252,68 @@ struct StopDetailView: View {
     private func cityLabel(_ stop: Stop) -> String {
         let city = stop.club.uppercased().split(separator: " ").first.map(String.init) ?? stop.prov
         return "\(city), \(stop.prov) · \(stop.dates)"
+    }
+}
+
+private struct VisitCaptureSheet: View {
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let stop: Stop
+    let onReceipt: (MutationReceipt) -> Void
+    @State private var selectedCurlerIDs: Set<String> = []
+    @State private var note = ""
+
+    private var metIDs: [String] {
+        store.curlers.map(\.id).filter { selectedCurlerIDs.contains($0) }
+    }
+
+    var body: some View {
+        CreateScaffold(title: "Start visit",
+                       subtitle: "Record who you met at \(stop.club).",
+                       canSave: true,
+                       onCancel: { dismiss() },
+                       onSave: {
+                           let receipt = store.startVisit(stopID: stop.id,
+                                                          curlerIDs: metIDs,
+                                                          note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+                           onReceipt(receipt)
+                           dismiss()
+                       }) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("PEOPLE MET")
+                    .font(.mono(10, .medium))
+                    .tracking(1.5)
+                    .foregroundStyle(settings.muted)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(store.curlers) { curler in
+                            let selected = selectedCurlerIDs.contains(curler.id)
+                            Button {
+                                if selected {
+                                    selectedCurlerIDs.remove(curler.id)
+                                } else {
+                                    selectedCurlerIDs.insert(curler.id)
+                                }
+                            } label: {
+                                Text(curler.name)
+                                    .font(.grotesk(12, .semibold))
+                                    .foregroundStyle(selected ? .white : settings.ink)
+                                    .lineLimit(1)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 13)
+                                    .background(selected ? settings.accent : settings.panel)
+                                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .strokeBorder(selected ? Color.clear : settings.line, lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("curlplan.visit.curler.\(curler.id)")
+                        }
+                    }
+                }
+            }
+            CPField(label: "Visit note", text: $note, placeholder: "Practice ice, draw night, or event note")
+        }
     }
 }

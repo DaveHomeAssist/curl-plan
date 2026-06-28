@@ -1,4 +1,4 @@
-.PHONY: feature-review
+.PHONY: feature-review account-backend-verify
 
 feature-review:
 	@if [ -n "$(CHANGED_FILES)" ]; then \
@@ -6,3 +6,6 @@ feature-review:
 	else \
 		scripts/feature_review_matrix_check.sh; \
 	fi
+
+account-backend-verify:
+	node scripts/verify-account-backend.mjs

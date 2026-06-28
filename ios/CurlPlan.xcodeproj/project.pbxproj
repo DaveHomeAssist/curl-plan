@@ -7,38 +7,72 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		000000000000000000000011 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* Components.swift */; };
-		000000000000000000000013 /* CurlPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* CurlPlanApp.swift */; };
-		000000000000000000000015 /* CurlerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* CurlerProfileView.swift */; };
-		000000000000000000000017 /* LockerRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* LockerRoomView.swift */; };
-		000000000000000000000019 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* Models.swift */; };
-		00000000000000000000001B /* PassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* PassportView.swift */; };
-		00000000000000000000001D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* RootView.swift */; };
-		00000000000000000000001F /* RosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* RosterView.swift */; };
-		000000000000000000000021 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* SettingsSheet.swift */; };
-		000000000000000000000023 /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* SpielsView.swift */; };
-		000000000000000000000025 /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* StopDetailView.swift */; };
-		000000000000000000000027 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* Theme.swift */; };
+		00000000000000000000001C /* AccountBackendAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001B /* AccountBackendAPI.swift */; };
+		00000000000000000000001E /* AccountHTTPBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001D /* AccountHTTPBackend.swift */; };
+		000000000000000000000020 /* AccountRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001F /* AccountRuntime.swift */; };
+		000000000000000000000022 /* AccountSocialContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* AccountSocialContracts.swift */; };
+		000000000000000000000024 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* Components.swift */; };
+		000000000000000000000026 /* CurlPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000025 /* CurlPlanApp.swift */; };
+		000000000000000000000028 /* CurlerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000027 /* CurlerProfileView.swift */; };
+		00000000000000000000002A /* LiveMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000029 /* LiveMapView.swift */; };
+		00000000000000000000002C /* LockerRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002B /* LockerRoomView.swift */; };
+		00000000000000000000002E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002D /* Models.swift */; };
+		000000000000000000000030 /* PassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002F /* PassportView.swift */; };
+		000000000000000000000032 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* RootView.swift */; };
+		000000000000000000000034 /* RosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000033 /* RosterView.swift */; };
+		000000000000000000000036 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000035 /* SettingsSheet.swift */; };
+		000000000000000000000038 /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000037 /* SpielsView.swift */; };
+		00000000000000000000003A /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000039 /* StopDetailView.swift */; };
+		00000000000000000000003C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003B /* Theme.swift */; };
+		00000000000000000000003E /* CurlPlanPrimaryScreenflowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003D /* CurlPlanPrimaryScreenflowUITests.swift */; };
+		000000000000000000000040 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003F /* Assets.xcassets */; };
+		000000000000000000000042 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000041 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		000000000000000000000006 /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000010 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
-		000000000000000000000012 /* CurlPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanApp.swift"; sourceTree = "<group>"; };
-		000000000000000000000014 /* CurlerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlerProfileView.swift"; sourceTree = "<group>"; };
-		000000000000000000000016 /* LockerRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LockerRoomView.swift"; sourceTree = "<group>"; };
-		000000000000000000000018 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
-		00000000000000000000001A /* PassportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PassportView.swift"; sourceTree = "<group>"; };
-		00000000000000000000001C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
-		00000000000000000000001E /* RosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RosterView.swift"; sourceTree = "<group>"; };
-		000000000000000000000020 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsSheet.swift"; sourceTree = "<group>"; };
-		000000000000000000000022 /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
-		000000000000000000000024 /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
-		000000000000000000000026 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+		000000000000000000000008 /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000009 /* CurlPlanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		00000000000000000000001B /* AccountBackendAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountBackendAPI.swift"; sourceTree = "<group>"; };
+		00000000000000000000001D /* AccountHTTPBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountHTTPBackend.swift"; sourceTree = "<group>"; };
+		00000000000000000000001F /* AccountRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountRuntime.swift"; sourceTree = "<group>"; };
+		000000000000000000000021 /* AccountSocialContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountSocialContracts.swift"; sourceTree = "<group>"; };
+		000000000000000000000023 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
+		000000000000000000000025 /* CurlPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanApp.swift"; sourceTree = "<group>"; };
+		000000000000000000000027 /* CurlerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlerProfileView.swift"; sourceTree = "<group>"; };
+		000000000000000000000029 /* LiveMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LiveMapView.swift"; sourceTree = "<group>"; };
+		00000000000000000000002B /* LockerRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LockerRoomView.swift"; sourceTree = "<group>"; };
+		00000000000000000000002D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
+		00000000000000000000002F /* PassportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PassportView.swift"; sourceTree = "<group>"; };
+		000000000000000000000031 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
+		000000000000000000000033 /* RosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RosterView.swift"; sourceTree = "<group>"; };
+		000000000000000000000035 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsSheet.swift"; sourceTree = "<group>"; };
+		000000000000000000000037 /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
+		000000000000000000000039 /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
+		00000000000000000000003B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+		00000000000000000000003D /* CurlPlanPrimaryScreenflowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanPrimaryScreenflowUITests.swift"; sourceTree = "<group>"; };
+		00000000000000000000003F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		000000000000000000000041 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXContainerItemProxy section */
+		000000000000000000000010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000000000002;
+			remoteInfo = CurlPlan;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFrameworksBuildPhase section */
-		000000000000000000000008 /* Frameworks */ = {
+		00000000000000000000000B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		00000000000000000000000E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -48,37 +82,54 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		000000000000000000000003 = {
+		000000000000000000000004 = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000004 /* CurlPlan */,
-				000000000000000000000005 /* Products */,
+				000000000000000000000005 /* CurlPlan */,
+				000000000000000000000006 /* CurlPlanUITests */,
+				000000000000000000000007 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		000000000000000000000004 /* CurlPlan */ = {
+		000000000000000000000005 /* CurlPlan */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000010 /* Components.swift */,
-				000000000000000000000012 /* CurlPlanApp.swift */,
-				000000000000000000000014 /* CurlerProfileView.swift */,
-				000000000000000000000016 /* LockerRoomView.swift */,
-				000000000000000000000018 /* Models.swift */,
-				00000000000000000000001A /* PassportView.swift */,
-				00000000000000000000001C /* RootView.swift */,
-				00000000000000000000001E /* RosterView.swift */,
-				000000000000000000000020 /* SettingsSheet.swift */,
-				000000000000000000000022 /* SpielsView.swift */,
-				000000000000000000000024 /* StopDetailView.swift */,
-				000000000000000000000026 /* Theme.swift */,
+				00000000000000000000003F /* Assets.xcassets */,
+				000000000000000000000041 /* PrivacyInfo.xcprivacy */,
+				00000000000000000000001B /* AccountBackendAPI.swift */,
+				00000000000000000000001D /* AccountHTTPBackend.swift */,
+				00000000000000000000001F /* AccountRuntime.swift */,
+				000000000000000000000021 /* AccountSocialContracts.swift */,
+				000000000000000000000023 /* Components.swift */,
+				000000000000000000000025 /* CurlPlanApp.swift */,
+				000000000000000000000027 /* CurlerProfileView.swift */,
+				000000000000000000000029 /* LiveMapView.swift */,
+				00000000000000000000002B /* LockerRoomView.swift */,
+				00000000000000000000002D /* Models.swift */,
+				00000000000000000000002F /* PassportView.swift */,
+				000000000000000000000031 /* RootView.swift */,
+				000000000000000000000033 /* RosterView.swift */,
+				000000000000000000000035 /* SettingsSheet.swift */,
+				000000000000000000000037 /* SpielsView.swift */,
+				000000000000000000000039 /* StopDetailView.swift */,
+				00000000000000000000003B /* Theme.swift */,
 			);
 			path = CurlPlan;
 			sourceTree = "<group>";
 		};
-		000000000000000000000005 /* Products */ = {
+		000000000000000000000006 /* CurlPlanUITests */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000006 /* CurlPlan.app */,
+				00000000000000000000003D /* CurlPlanPrimaryScreenflowUITests.swift */,
+			);
+			path = CurlPlanUITests;
+			sourceTree = "<group>";
+		};
+		000000000000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000008 /* CurlPlan.app */,
+				000000000000000000000009 /* CurlPlanUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,11 +139,11 @@
 /* Begin PBXNativeTarget section */
 		000000000000000000000002 /* CurlPlan */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000000B /* Build configuration list for PBXNativeTarget "CurlPlan" */;
+			buildConfigurationList = 000000000000000000000013 /* Build configuration list for PBXNativeTarget "CurlPlan" */;
 			buildPhases = (
-				000000000000000000000007 /* Sources */,
-				000000000000000000000008 /* Frameworks */,
-				000000000000000000000009 /* Resources */,
+				00000000000000000000000A /* Sources */,
+				00000000000000000000000B /* Frameworks */,
+				00000000000000000000000C /* Resources */,
 			);
 			buildRules = (
 			);
@@ -100,8 +151,26 @@
 			);
 			name = CurlPlan;
 			productName = CurlPlan;
-			productReference = 000000000000000000000006 /* CurlPlan.app */;
+			productReference = 000000000000000000000008 /* CurlPlan.app */;
 			productType = "com.apple.product-type.application";
+		};
+		000000000000000000000003 /* CurlPlanUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000014 /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */;
+			buildPhases = (
+				00000000000000000000000D /* Sources */,
+				00000000000000000000000E /* Frameworks */,
+				00000000000000000000000F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				000000000000000000000011 /* PBXTargetDependency */,
+			);
+			name = CurlPlanUITests;
+			productName = CurlPlanUITests;
+			productReference = 000000000000000000000009 /* CurlPlanUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -116,9 +185,13 @@
 					000000000000000000000002 = {
 						CreatedOnToolsVersion = 15.4;
 					};
+					000000000000000000000003 = {
+						CreatedOnToolsVersion = 15.4;
+						TestTargetID = 000000000000000000000002;
+					};
 				};
 			};
-			buildConfigurationList = 00000000000000000000000A /* Build configuration list for PBXProject "CurlPlan" */;
+			buildConfigurationList = 000000000000000000000012 /* Build configuration list for PBXProject "CurlPlan" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -126,18 +199,28 @@
 				en,
 				Base,
 			);
-			mainGroup = 000000000000000000000003;
-			productRefGroup = 000000000000000000000005 /* Products */;
+			mainGroup = 000000000000000000000004;
+			productRefGroup = 000000000000000000000007 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				000000000000000000000002 /* CurlPlan */,
+				000000000000000000000003 /* CurlPlanUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		000000000000000000000009 /* Resources */ = {
+		00000000000000000000000C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000040 /* Assets.xcassets in Resources */,
+				000000000000000000000042 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		00000000000000000000000F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -147,29 +230,50 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		000000000000000000000007 /* Sources */ = {
+		00000000000000000000000A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000011 /* Components.swift in Sources */,
-				000000000000000000000013 /* CurlPlanApp.swift in Sources */,
-				000000000000000000000015 /* CurlerProfileView.swift in Sources */,
-				000000000000000000000017 /* LockerRoomView.swift in Sources */,
-				000000000000000000000019 /* Models.swift in Sources */,
-				00000000000000000000001B /* PassportView.swift in Sources */,
-				00000000000000000000001D /* RootView.swift in Sources */,
-				00000000000000000000001F /* RosterView.swift in Sources */,
-				000000000000000000000021 /* SettingsSheet.swift in Sources */,
-				000000000000000000000023 /* SpielsView.swift in Sources */,
-				000000000000000000000025 /* StopDetailView.swift in Sources */,
-				000000000000000000000027 /* Theme.swift in Sources */,
+				00000000000000000000001C /* AccountBackendAPI.swift in Sources */,
+				00000000000000000000001E /* AccountHTTPBackend.swift in Sources */,
+				000000000000000000000020 /* AccountRuntime.swift in Sources */,
+				000000000000000000000022 /* AccountSocialContracts.swift in Sources */,
+				000000000000000000000024 /* Components.swift in Sources */,
+				000000000000000000000026 /* CurlPlanApp.swift in Sources */,
+				000000000000000000000028 /* CurlerProfileView.swift in Sources */,
+				00000000000000000000002A /* LiveMapView.swift in Sources */,
+				00000000000000000000002C /* LockerRoomView.swift in Sources */,
+				00000000000000000000002E /* Models.swift in Sources */,
+				000000000000000000000030 /* PassportView.swift in Sources */,
+				000000000000000000000032 /* RootView.swift in Sources */,
+				000000000000000000000034 /* RosterView.swift in Sources */,
+				000000000000000000000036 /* SettingsSheet.swift in Sources */,
+				000000000000000000000038 /* SpielsView.swift in Sources */,
+				00000000000000000000003A /* StopDetailView.swift in Sources */,
+				00000000000000000000003C /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		00000000000000000000000D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00000000000000000000003E /* CurlPlanPrimaryScreenflowUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		000000000000000000000011 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000000000002 /* CurlPlan */;
+			targetProxy = 000000000000000000000010 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
-		00000000000000000000000C /* Debug */ = {
+		000000000000000000000015 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -196,7 +300,7 @@
 			};
 			name = Debug;
 		};
-		00000000000000000000000D /* Release */ = {
+		000000000000000000000016 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -218,12 +322,14 @@
 			};
 			name = Release;
 		};
-		00000000000000000000000E /* Debug */ = {
+		000000000000000000000017 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43DPAZ2867;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -245,12 +351,14 @@
 			};
 			name = Debug;
 		};
-		00000000000000000000000F /* Release */ = {
+		000000000000000000000018 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43DPAZ2867;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -272,23 +380,76 @@
 			};
 			name = Release;
 		};
+		000000000000000000000019 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43DPAZ2867;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlanUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CurlPlan;
+			};
+			name = Debug;
+		};
+		00000000000000000000001A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43DPAZ2867;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlanUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CurlPlan;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		00000000000000000000000A /* Build configuration list for PBXProject "CurlPlan" */ = {
+		000000000000000000000012 /* Build configuration list for PBXProject "CurlPlan" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				00000000000000000000000C /* Debug */,
-				00000000000000000000000D /* Release */,
+				000000000000000000000015 /* Debug */,
+				000000000000000000000016 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		00000000000000000000000B /* Build configuration list for PBXNativeTarget "CurlPlan" */ = {
+		000000000000000000000013 /* Build configuration list for PBXNativeTarget "CurlPlan" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				00000000000000000000000E /* Debug */,
-				00000000000000000000000F /* Release */,
+				000000000000000000000017 /* Debug */,
+				000000000000000000000018 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000014 /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000019 /* Debug */,
+				00000000000000000000001A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
