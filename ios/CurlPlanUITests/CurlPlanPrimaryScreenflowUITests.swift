@@ -3,6 +3,11 @@ import XCTest
 final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
     private var app: XCUIApplication!
 
+    // Deployed dev account backend (dominic tailnet). Used only by the opt-in
+    // account screenflow test. Cleartext http needs an ATS exception or TLS to
+    // actually connect — see testAccountCredentialScreenflow...'s skip guard.
+    private let accountBackendURL = "http://100.100.62.111:8787"
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
@@ -12,6 +17,9 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
                 "-UIPreferredContentSizeCategoryName",
                 "UICTContentSizeCategoryAccessibilityM"
             ]
+        }
+        if name.contains("AccountCredentialScreenflow") {
+            app.launchEnvironment["CURLPLAN_ACCOUNT_BACKEND_URL"] = accountBackendURL
         }
         app.launch()
     }
@@ -520,6 +528,68 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
         openSettings()
         XCTAssertTrue(app.buttons["curlplan.settings.export-season"].waitForExistence(timeout: 4))
         app.buttons["curlplan.settings.done"].tap()
+    }
+
+    // AS 01/02/03 in-app proof: create a backend account (imports the local season),
+    // sign out, sign back in (restores the season), then delete the account.
+    // Opt-in: set CURLPLAN_RUN_ACCOUNT_UI=1 in the test runner environment AND ensure
+    // the deployed backend is reachable. Cleartext http to the tailnet IP requires an
+    // ATS exception or TLS, so this is skipped by default to keep the suite green.
+    func testAccountCredentialScreenflowCreateSignInDeleteAgainstBackend() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CURLPLAN_RUN_ACCOUNT_UI"] == "1",
+                          "Set CURLPLAN_RUN_ACCOUNT_UI=1 and ensure the deployed account backend is reachable (ATS exception or TLS).")
+
+        XCTAssertTrue(app.buttons["curlplan.setup.use-demo-season"].waitForExistence(timeout: 6))
+        app.buttons["curlplan.setup.use-demo-season"].tap()
+        XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
+
+        let stamp = Int(Date().timeIntervalSince1970)
+        let handle = "uitest-\(stamp)"
+        let password = "uitest-pass-\(stamp)"
+        let message = app.staticTexts["curlplan.settings.account.message"]
+
+        openSettings()
+
+        // Create account + import the local demo season.
+        tapButton("curlplan.settings.create-backend-account")
+        fillCredential(handle: handle, password: password)
+        expectLabelContains(message, "imported season version", timeout: 30)
+
+        // Sign out revokes the server session.
+        tapButton("curlplan.settings.sign-out-account")
+        expectLabelContains(message, "signed out", timeout: 25)
+
+        // Sign back in with the same credentials restores the account season.
+        tapButton("curlplan.settings.sign-in-to-account")
+        fillCredential(handle: handle, password: password)
+        expectLabelContains(message, "season version", timeout: 30)
+
+        // Clean up: delete the throwaway backend account.
+        tapButton("curlplan.settings.delete-backend-account")
+        let confirm = app.buttons["curlplan.settings.confirm.deleteAccount"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 6))
+        confirm.tap()
+        expectLabelContains(message, "deleted", timeout: 30)
+    }
+
+    private func fillCredential(handle: String, password: String) {
+        let handleField = app.textFields["curlplan.account.credential.handle"]
+        XCTAssertTrue(handleField.waitForExistence(timeout: 6))
+        handleField.tap()
+        handleField.typeText(handle)
+        let passwordField = app.secureTextFields["curlplan.account.credential.password"]
+        XCTAssertTrue(passwordField.waitForExistence(timeout: 4))
+        passwordField.tap()
+        passwordField.typeText(password)
+        let submit = app.buttons["curlplan.account.credential.submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 4))
+        submit.tap()
+    }
+
+    private func expectLabelContains(_ element: XCUIElement, _ text: String, timeout: TimeInterval) {
+        let predicate = NSPredicate(format: "label CONTAINS[c] %@", text)
+        expectation(for: predicate, evaluatedWith: element)
+        waitForExpectations(timeout: timeout)
     }
 
     private func openLocker() {
