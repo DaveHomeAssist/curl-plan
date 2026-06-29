@@ -6,7 +6,7 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
     // Deployed dev account backend (dominic tailnet). Used only by the opt-in
     // account screenflow test. Cleartext http needs an ATS exception or TLS to
     // actually connect — see testAccountCredentialScreenflow...'s skip guard.
-    private let accountBackendURL = "http://100.100.62.111:8787"
+    private let accountBackendURL = "http://dominic.tailae148c.ts.net:8787"
 
     override func setUpWithError() throws {
         continueAfterFailure = false

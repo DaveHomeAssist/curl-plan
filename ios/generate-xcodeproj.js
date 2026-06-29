@@ -72,6 +72,7 @@ const targetBuildSettings = `
 \t\t\t\tDEVELOPMENT_TEAM = 43DPAZ2867;
 \t\t\t\tENABLE_PREVIEWS = YES;
 \t\t\t\tGENERATE_INFOPLIST_FILE = YES;
+\t\t\t\tINFOPLIST_FILE = CurlPlan/Info.plist;
 \t\t\t\tINFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 \t\t\t\tINFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 \t\t\t\tINFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -462,7 +463,7 @@ const scheme = `<?xml version="1.0" encoding="UTF-8"?>
            dominic tailnet host. Release/Archive ship unconfigured so the app makes
            no backend claims. Tests do not inherit this (shouldUseLaunchSchemeArgsEnv=NO). -->
       <EnvironmentVariables>
-         <EnvironmentVariable key="CURLPLAN_ACCOUNT_BACKEND_URL" value="http://dominic:8787" isEnabled="YES"></EnvironmentVariable>
+         <EnvironmentVariable key="CURLPLAN_ACCOUNT_BACKEND_URL" value="http://dominic.tailae148c.ts.net:8787" isEnabled="YES"></EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES">

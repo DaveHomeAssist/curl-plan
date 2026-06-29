@@ -19,6 +19,7 @@ let package = Package(
                 "Components.swift",
                 "CurlPlanApp.swift",
                 "CurlerProfileView.swift",
+                "Info.plist",
                 "LiveMapView.swift",
                 "LockerRoomView.swift",
                 "PassportView.swift",
