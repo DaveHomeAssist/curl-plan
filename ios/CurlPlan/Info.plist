@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Partial Info.plist merged with Xcode's generated keys (GENERATE_INFOPLIST_FILE=YES).
+	  Only an App Transport Security exception for the CurlPlan dev account backend on the
+	  dominic Tailscale host, which serves cleartext http on the private tailnet. The
+	  exception is scoped to that single internal hostname; every other host keeps default
+	  ATS (TLS required). This host does not exist outside the tailnet, so a shipped build
+	  gains no real-world cleartext capability. Replace with TLS when the service is public.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>dominic.tailae148c.ts.net</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>
