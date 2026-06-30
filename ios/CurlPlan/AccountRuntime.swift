@@ -18,7 +18,7 @@ struct AccountRuntimeState: Equatable {
     var seasonVersion: Int?
 
     static let unconfigured = AccountRuntimeState(kind: .unconfigured,
-                                                  title: "Backend unavailable",
+                                                  title: "Local-only season",
                                                   detail: "This build is using local season data only. Export and import remain the recovery path.",
                                                   accountID: nil,
                                                   exportSections: [],
@@ -27,7 +27,7 @@ struct AccountRuntimeState: Equatable {
     static func signedOut(accountID: String?) -> AccountRuntimeState {
         AccountRuntimeState(kind: .signedOut,
                             title: accountID == nil ? "No backend session" : "Signed out",
-                            detail: accountID == nil ? "Create an account or sign in with your handle and password to use backend restore." : "Sign in with your handle and password to restore this season or delete the account.",
+                            detail: accountID == nil ? "Create or sign in to this configured backend with your handle and password." : "Sign in with your handle and password to load this backend season or delete the account.",
                             accountID: accountID,
                             exportSections: [],
                             seasonVersion: nil)

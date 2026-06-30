@@ -35,7 +35,7 @@ struct SettingsSheet: View {
                     .foregroundStyle(settings.accent)
                     .accessibilityIdentifier("curlplan.settings.done")
             }
-            Text("Same season, your circle - tune the ice.")
+            Text("Same season, local roster - tune the ice.")
                 .font(.grotesk(13)).foregroundStyle(settings.muted)
                 .padding(.bottom, 4)
 
@@ -104,7 +104,9 @@ struct SettingsSheet: View {
                 pendingAction = .setup
             }
 
-            accountSection
+            if accountRuntime.isConfigured {
+                accountSection
+            }
 
             Spacer(minLength: 0)
             }
@@ -165,7 +167,7 @@ struct SettingsSheet: View {
 
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Account")
+            Text("Dev account backend")
                 .font(.serif(22))
                 .foregroundStyle(settings.ink)
                 .padding(.top, 18)
@@ -199,33 +201,33 @@ struct SettingsSheet: View {
 
             if accountRuntime.isConfigured {
                 if accountRuntime.isSignedIn {
-                    dataButtonRow(title: "Export account data",
+                    dataButtonRow(title: "Export backend data",
                                   sub: "REQUEST BACKEND EXPORT SECTIONS",
                                   systemImage: "tray.and.arrow.up",
                                   isDisabled: accountRuntime.isBusy) {
                         runAccount(.export)
                     }
-                    dataButtonRow(title: "Sign out account",
+                    dataButtonRow(title: "Sign out backend",
                                   sub: "REVOKE THIS BACKEND SESSION",
                                   systemImage: "rectangle.portrait.and.arrow.right",
                                   isDisabled: accountRuntime.isBusy) {
                         runAccount(.signOut)
                     }
-                    dataButtonRow(title: "Delete backend account",
+                    dataButtonRow(title: "Delete dev account",
                                   sub: "API DELETE, SESSIONS REVOKED",
                                   systemImage: "person.crop.circle.badge.xmark",
                                   isDisabled: accountRuntime.isBusy) {
                         pendingAccountAction = .delete
                     }
                 } else {
-                    dataButtonRow(title: "Create backend account",
+                    dataButtonRow(title: "Create dev account",
                                   sub: "SET A HANDLE AND PASSWORD, IMPORT THIS SEASON",
                                   systemImage: "person.crop.circle.badge.plus",
                                   isDisabled: accountRuntime.isBusy) {
                         credentialMode = .create
                     }
-                    dataButtonRow(title: "Sign in to account",
-                                  sub: "RESTORE SEASON WITH YOUR HANDLE AND PASSWORD",
+                    dataButtonRow(title: "Sign in to dev account",
+                                  sub: "LOAD SEASON FROM CONFIGURED BACKEND",
                                   systemImage: "arrow.down.doc",
                                   isDisabled: accountRuntime.isBusy) {
                         credentialMode = .signIn
@@ -377,15 +379,15 @@ enum AccountCredentialMode: Identifiable {
 
     var title: String {
         switch self {
-        case .create: return "Create backend account"
-        case .signIn: return "Sign in to account"
+        case .create: return "Create dev account"
+        case .signIn: return "Sign in to dev account"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .create: return "Choose a handle and password. This device imports your current local season after the API session opens."
-        case .signIn: return "Enter the handle and password for this account to restore its season from the backend."
+        case .create: return "Choose a handle and password. This device imports your current local season after the configured backend session opens."
+        case .signIn: return "Enter the handle and password for this configured backend to load its saved season."
         }
     }
 
