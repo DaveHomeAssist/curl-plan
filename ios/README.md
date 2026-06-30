@@ -27,7 +27,7 @@ No third-party dependencies, no package resolution — pure SwiftUI.
 | `LockerRoomView.swift` | Feed: results, shared spiels, rink reviews |
 | `StopDetailView.swift` | Stop: ice read, games here, people met |
 | `CurlerProfileView.swift` | Person: stats, shared rinks, recent form |
-| `SpielsView.swift` / `RosterView.swift` | Season schedule / your circle |
+| `SpielsView.swift` / `RosterView.swift` | Season schedule / local roster |
 | `SettingsSheet.swift` | Appearance sheet (theme / accent / pebble) |
 
 ## Notes
@@ -46,5 +46,5 @@ No third-party dependencies, no package resolution — pure SwiftUI.
 
 ## Parity with the web build
 Same six screens, house-ring system, Ice/Arena theming, accent + pebble settings,
-tab navigation, and push-to-detail (stop / curler) flows. Follow state is live
+tab navigation, and push-to-detail (stop / curler) flows. Local roster state is live
 across Roster, profiles, and stop detail.

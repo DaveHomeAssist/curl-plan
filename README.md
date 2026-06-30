@@ -1,6 +1,6 @@
 # CurlPlan
 
-> Your season, your circle. A curling-native app — map your season, stay close to your circle.
+> Your season, your local roster. A curling-native app — map your season and keep your curling notes in one place.
 
 The root app (`index.html`) is the **Hi-Fi concept**: a mobile-first, single-file
 build of the "Passport + Locker Room" direction. The original multi-view planner
@@ -16,13 +16,13 @@ A single, self-contained HTML file — no build, no dependencies, web fonts only
 - **Locker Room** — result posts, shared spiels, rink reviews, compose FAB
 - **Stop detail** — ice read, your games here, people you met
 - **Curler profile** — identity, stats, shared rinks, recent form
-- **Spiels** — your season schedule and who from your circle is going
-- **Roster** — your circle, with follow/unfollow
+- **Spiels** — your season schedule and locally saved attendance
+- **Roster** — local curlers saved to this season
 
 ### Interactions
 
 - Bottom **tab bar** navigation + push/back into stop & curler detail screens
-- **Follow/unfollow** across Roster, profiles, and stop detail
+- **Save/remove local roster state** across Roster, profiles, and stop detail
 - **Appearance** settings (tap the avatar): Ice/Arena theme, accent
   (House red / blue / Granite), pebble texture — persisted to localStorage
 - **Deep links**: `#locker`, `#spiels`, `#roster`, `#stop/<id>`, `#curler/<id>`
