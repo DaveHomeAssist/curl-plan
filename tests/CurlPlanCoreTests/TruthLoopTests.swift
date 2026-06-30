@@ -18,6 +18,70 @@ final class StoreMutationTests: XCTestCase {
         XCTAssertNotNil(receipt.undoToken)
         XCTAssertEqual(store.results.count, before + 1)
     }
+
+    func testAddSpielCreatesCanonicalDatesBonspielAndKnownRouteStop() {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+
+        let receipt = store.addSpiel(name: "Okanagan Classic",
+                                     whereText: "Kelowna, BC",
+                                     startDate: testDate(year: 2026, month: 3, day: 6),
+                                     endDate: testDate(year: 2026, month: 3, day: 8),
+                                     status: "You're in",
+                                     discipline: .mixed)
+
+        XCTAssertTrue(receipt.changedDomains.contains(.spiels))
+        XCTAssertTrue(receipt.changedDomains.contains(.bonspiels))
+        XCTAssertTrue(receipt.changedDomains.contains(.stops))
+
+        let spiel = store.spiels[0]
+        XCTAssertEqual(spiel.startDate, "2026-03-06")
+        XCTAssertEqual(spiel.endDate, "2026-03-08")
+        XCTAssertEqual(spiel.whenText, "MAR 6-8")
+        XCTAssertNotNil(spiel.stopID)
+
+        let stop = spiel.stopID.flatMap(store.stop)
+        XCTAssertEqual(stop?.name, "Okanagan Classic")
+        XCTAssertEqual(stop?.club, "Kelowna Curling Club")
+        XCTAssertEqual(stop?.latitude, 49.8880)
+        XCTAssertEqual(stop?.longitude, -119.4960)
+
+        let bonspiel = store.bonspiel(for: spiel.id)
+        XCTAssertEqual(bonspiel?.startDate, "2026-03-06")
+        XCTAssertEqual(bonspiel?.endDate, "2026-03-08")
+        XCTAssertEqual(bonspiel?.venue.name, "Kelowna Curling Club")
+        XCTAssertEqual(bonspiel?.venue.city, "Kelowna")
+        XCTAssertEqual(bonspiel?.venue.region, "BC")
+        XCTAssertEqual(bonspiel?.timezone, "America/Vancouver")
+    }
+
+    func testAddSpielDoesNotInventRouteStopForUnknownVenue() {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+
+        let receipt = store.addSpiel(name: "Mystery Spiel",
+                                     whereText: "Some Arena, SK",
+                                     startDate: testDate(year: 2026, month: 4, day: 10),
+                                     endDate: testDate(year: 2026, month: 4, day: 12),
+                                     status: "Watching",
+                                     discipline: .fourPlayer)
+
+        XCTAssertFalse(receipt.changedDomains.contains(.stops))
+        XCTAssertEqual(store.stops.count, 0)
+        XCTAssertNil(store.spiels[0].stopID)
+        XCTAssertEqual(store.bonspiel(for: store.spiels[0].id)?.venue.city, "Some Arena")
+        XCTAssertEqual(store.bonspiel(for: store.spiels[0].id)?.venue.region, "SK")
+    }
+
+    private func testDate(year: Int, month: Int, day: Int) -> Date {
+        var components = DateComponents()
+        components.calendar = Calendar(identifier: .gregorian)
+        components.timeZone = .current
+        components.year = year
+        components.month = month
+        components.day = day
+        return components.date!
+    }
 }
 
 final class DerivedSummaryTests: XCTestCase {

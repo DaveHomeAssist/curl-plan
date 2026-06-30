@@ -59,31 +59,71 @@ struct NewSpielSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var location = ""
-    @State private var dates = ""
+    @State private var startDate = Date()
+    @State private var endDate = Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date()
     @State private var status = "You're in"
     @State private var discipline = CurlingDiscipline.fourPlayer.label
 
-    private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate >= startDate
+    }
+
+    private var validationMessage: String? {
+        endDate < startDate ? "End date must be on or after start date." : nil
+    }
 
     var body: some View {
         CreateScaffold(title: "New spiel",
                        subtitle: "Add a bonspiel to your season ahead.",
                        canSave: canSave,
+                       validationMessage: validationMessage,
                        onCancel: { dismiss() },
                        onSave: {
                            store.addSpiel(name: name.trimmingCharacters(in: .whitespaces),
                                           whereText: location.trimmingCharacters(in: .whitespaces),
-                                          whenText: dates.trimmingCharacters(in: .whitespaces).uppercased(),
+                                          startDate: startDate,
+                                          endDate: endDate,
                                           status: status,
                                           discipline: CurlingDiscipline.fromLabel(discipline))
                            dismiss()
                        }) {
             CPField(label: "Name", text: $name, placeholder: "Brier Patch Open")
             CPField(label: "Location", text: $location, placeholder: "Kamloops, BC")
-            CPField(label: "Dates", text: $dates, placeholder: "FEB 14–16")
+            HStack(spacing: 10) {
+                CPDateField(label: "Start", date: $startDate)
+                CPDateField(label: "End", date: $endDate)
+            }
             CPChips(label: "Your status", options: ["You're in", "Watching", "Invite"], selection: $status)
             CPChips(label: "Discipline", options: CurlingDiscipline.allCases.map(\.label), selection: $discipline)
         }
+    }
+}
+
+private struct CPDateField: View {
+    @EnvironmentObject var settings: AppSettings
+    let label: String
+    @Binding var date: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(.mono(10, .medium))
+                .tracking(1.5)
+                .foregroundStyle(settings.muted)
+            DatePicker("", selection: $date, displayedComponents: .date)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .tint(settings.accent)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 10)
+                .background(settings.panel)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(settings.line, lineWidth: 1))
+                .accessibilityIdentifier("curlplan.date.\(label.lowercased())")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -256,6 +296,7 @@ private struct BonspielSummaryCard: View {
                 metric("Discipline", record.discipline.label)
                 metric("Rules", record.rulesProfile.rulebookRef)
                 metric("Ends", "\(record.rulesProfile.scheduledEnds)")
+                metric("Dates", record.startDate == record.endDate ? record.startDate : "\(record.startDate) to \(record.endDate)")
                 metric("Timezone", record.timezone)
             }
             Text("\(record.venue.name) · \(record.venue.display)")

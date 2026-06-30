@@ -792,6 +792,9 @@ private extension Store {
 
 private extension LiveMapStop {
     static func coordinate(for stop: Stop) -> CLLocationCoordinate2D {
+        if let latitude = stop.latitude, let longitude = stop.longitude {
+            return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        }
         if let known = knownCoordinates[stop.id] { return known }
         let lat = 48.8 + (stop.y / 100.0) * 5.2
         let lon = -122.4 + (stop.x / 100.0) * 25.6
