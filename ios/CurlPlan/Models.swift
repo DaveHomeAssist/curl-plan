@@ -99,6 +99,188 @@ struct Curler: Identifiable, Hashable, Codable {
     var importedHistory: ImportedCurlerHistory? = nil
 }
 
+enum VenueAuthority: String, Hashable, Codable {
+    case curated
+    case mapItem = "map_item"
+    case geocodedAddress = "geocoded_address"
+    case freeText = "free_text"
+    case unmapped
+}
+
+struct Venue: Identifiable, Hashable, Codable {
+    let id: String
+    var displayName: String
+    var aliases: [String] = []
+    var clubName: String
+    var city: String
+    var region: String
+    var country: String
+    var postalAddress: String
+    var latitude: Double? = nil
+    var longitude: Double? = nil
+    var timezone: String? = nil
+    var authority: VenueAuthority
+    var mapItemIdentifier: String? = nil
+    var sourceURL: String? = nil
+    var sourceCheckedAt: String? = nil
+    var seasonMapX: Double? = nil
+    var seasonMapY: Double? = nil
+    var code: String? = nil
+
+    var canMap: Bool {
+        latitude != nil && longitude != nil
+    }
+
+    var displayLocationText: String {
+        let parts = [city, region].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return parts.isEmpty ? postalAddress : parts.joined(separator: ", ")
+    }
+
+    var bonspielVenue: BonspielVenue {
+        BonspielVenue(name: clubName.isEmpty ? displayName : clubName,
+                      city: city,
+                      region: region,
+                      country: country.isEmpty ? "CA" : country)
+    }
+
+    func stop(spielID: String, name: String, dateText: String) -> Stop? {
+        guard let latitude, let longitude else { return nil }
+        let point = Venue.seasonMapPoint(latitude: latitude,
+                                         longitude: longitude,
+                                         fallbackX: seasonMapX,
+                                         fallbackY: seasonMapY)
+        return Stop(id: "stop-\(spielID)",
+                    code: stopCode,
+                    name: name,
+                    club: clubName.isEmpty ? displayName : clubName,
+                    prov: region.isEmpty ? "TBD" : region,
+                    dates: dateText,
+                    record: "—",
+                    here: false,
+                    x: point.x,
+                    y: point.y,
+                    big: false,
+                    plus: nil,
+                    iceSpeed: "—",
+                    iceSpeedSec: "—",
+                    iceCurl: "—",
+                    iceRec: "—",
+                    games: [],
+                    met: [],
+                    latitude: latitude,
+                    longitude: longitude,
+                    venueID: id)
+    }
+
+    static func generatedID(prefix: String = "venue", name: String, city: String = "", region: String = "") -> String {
+        let source = [name, city, region]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let slug = source
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .map { character -> Character in
+                character.isLetter || character.isNumber ? character : "-"
+            }
+            .reduce(into: "") { result, character in
+                if character == "-" && result.last == "-" { return }
+                result.append(character)
+            }
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return "\(prefix)-\(slug.isEmpty ? UUID().uuidString.prefix(8).lowercased() : slug)"
+    }
+
+    private var stopCode: String {
+        if let code = code?.trimmingCharacters(in: .whitespacesAndNewlines), !code.isEmpty {
+            return code.uppercased()
+        }
+        let base = city.isEmpty ? displayName : city
+        let letters = base.filter(\.isLetter).prefix(3).map(String.init).joined().uppercased()
+        return letters.isEmpty ? "VEN" : letters
+    }
+
+    private static func seasonMapPoint(latitude: Double,
+                                       longitude: Double,
+                                       fallbackX: Double?,
+                                       fallbackY: Double?) -> (x: Double, y: Double) {
+        if let fallbackX, let fallbackY {
+            return (clamp(fallbackX), clamp(fallbackY))
+        }
+
+        let x = ((longitude + 140.0) / 70.0) * 100.0
+        let y = ((70.0 - latitude) / 25.0) * 100.0
+        return (clamp(x), clamp(y))
+    }
+
+    private static func clamp(_ value: Double) -> Double {
+        min(100, max(0, value))
+    }
+}
+
+struct VenueResolver {
+    static func resolve(_ freeText: String, venues: [Venue]) -> Venue? {
+        let query = normalized(freeText)
+        guard !query.isEmpty else { return nil }
+        return venues.first { venue in
+            authoritativeTerms(for: venue).contains { term in
+                query == term || (term.count >= 4 && query.contains(term)) || (query.count >= 4 && term.contains(query))
+            }
+        }
+    }
+
+    static func suggestions(for query: String, venues: [Venue], limit: Int = 5) -> [Venue] {
+        let clean = normalized(query)
+        guard !clean.isEmpty else {
+            return Array(venues.prefix(limit))
+        }
+        let ranked = venues.compactMap { venue -> (Venue, Int)? in
+            let terms = matchTerms(for: venue)
+            if terms.contains(clean) { return (venue, 0) }
+            if terms.contains(where: { $0.hasPrefix(clean) }) { return (venue, 1) }
+            if terms.contains(where: { $0.contains(clean) || clean.contains($0) }) { return (venue, 2) }
+            return nil
+        }
+        return ranked.sorted { lhs, rhs in
+            if lhs.1 != rhs.1 { return lhs.1 < rhs.1 }
+            return lhs.0.displayName < rhs.0.displayName
+        }
+        .prefix(limit)
+        .map(\.0)
+    }
+
+    static func matches(_ venue: Venue, query: String) -> Bool {
+        let clean = normalized(query)
+        guard !clean.isEmpty else { return false }
+        return matchTerms(for: venue).contains { term in
+            clean == term || (term.count >= 4 && clean.contains(term)) || (clean.count >= 4 && term.contains(clean))
+        }
+    }
+
+    static func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: ".", with: "")
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func authoritativeTerms(for venue: Venue) -> [String] {
+        ([venue.displayName, venue.clubName, venue.postalAddress] + venue.aliases)
+            .map(normalized)
+            .filter { !$0.isEmpty }
+    }
+
+    private static func matchTerms(for venue: Venue) -> [String] {
+        (authoritativeTerms(for: venue) + [venue.city, "\(venue.city), \(venue.region)"].map(normalized))
+            .filter { !$0.isEmpty }
+    }
+}
+
 struct Stop: Identifiable, Hashable, Codable {
     let id: String
     let code: String
@@ -120,6 +302,7 @@ struct Stop: Identifiable, Hashable, Codable {
     var met: [String]       // curler ids
     var latitude: Double? = nil
     var longitude: Double? = nil
+    var venueID: String? = nil
 }
 
 struct ResultPost: Identifiable, Hashable, Codable {
@@ -164,6 +347,7 @@ struct Spiel: Identifiable, Hashable, Codable {
     var startDate: String? = nil
     var endDate: String? = nil
     var stopID: String? = nil
+    var venueID: String? = nil
 }
 
 struct GameResult: Identifiable, Hashable, Codable {
@@ -243,6 +427,7 @@ enum SeasonDomain: String, Hashable, Codable {
     case setup
     case profile
     case curlers
+    case venues
     case stops
     case visits
     case spiels
@@ -519,6 +704,7 @@ struct BonspielRecord: Identifiable, Hashable, Codable {
     var shortName: String
     var season: String
     var discipline: CurlingDiscipline
+    var venueID: String? = nil
     var venue: BonspielVenue
     var timezone: String
     var startDate: String
@@ -540,6 +726,7 @@ struct BonspielRecord: Identifiable, Hashable, Codable {
                               homeClub: String,
                               startDate: String? = nil,
                               endDate: String? = nil,
+                              venueID: String? = nil,
                               venue resolvedVenue: BonspielVenue? = nil,
                               timezone resolvedTimezone: String? = nil) -> BonspielRecord {
         let id = "bon-\(spielID)"
@@ -554,6 +741,7 @@ struct BonspielRecord: Identifiable, Hashable, Codable {
             shortName: String(name.prefix(22)),
             season: "2025-26",
             discipline: discipline,
+            venueID: venueID,
             venue: venue,
             timezone: resolvedTimezone ?? "America/Vancouver",
             startDate: (canonicalStart?.isEmpty == false ? canonicalStart : nil) ?? fallbackDate,
@@ -609,6 +797,7 @@ struct AppData: Hashable, Codable {
     var setupComplete: Bool
     var profile: PlayerProfile
     var curlers: [Curler]
+    var venues: [Venue]
     var stops: [Stop]
     var visits: [StopVisit]
     var spiels: [Spiel]
@@ -621,6 +810,7 @@ struct AppData: Hashable, Codable {
          setupComplete: Bool,
          profile: PlayerProfile,
          curlers: [Curler],
+         venues: [Venue],
          stops: [Stop],
          visits: [StopVisit],
          spiels: [Spiel],
@@ -632,6 +822,7 @@ struct AppData: Hashable, Codable {
         self.setupComplete = setupComplete
         self.profile = profile
         self.curlers = curlers
+        self.venues = venues
         self.stops = stops
         self.visits = visits
         self.spiels = spiels
@@ -646,6 +837,7 @@ struct AppData: Hashable, Codable {
         case setupComplete
         case profile
         case curlers
+        case venues
         case stops
         case visits
         case spiels
@@ -661,6 +853,7 @@ struct AppData: Hashable, Codable {
         setupComplete = try container.decodeIfPresent(Bool.self, forKey: .setupComplete) ?? true
         profile = try container.decode(PlayerProfile.self, forKey: .profile)
         curlers = try container.decodeIfPresent([Curler].self, forKey: .curlers) ?? []
+        venues = try container.decodeIfPresent([Venue].self, forKey: .venues) ?? []
         stops = try container.decodeIfPresent([Stop].self, forKey: .stops) ?? []
         visits = try container.decodeIfPresent([StopVisit].self, forKey: .visits) ?? []
         spiels = try container.decodeIfPresent([Spiel].self, forKey: .spiels) ?? []
@@ -689,108 +882,6 @@ enum StoreDataError: LocalizedError {
 enum Route: Hashable, Codable {
     case stop(String)
     case curler(String)
-}
-
-private struct SpielRouteLocation {
-    let code: String
-    let city: String
-    let region: String
-    let club: String
-    let latitude: Double
-    let longitude: Double
-    let seasonMapX: Double
-    let seasonMapY: Double
-    let timezone: String
-
-    var venue: BonspielVenue {
-        BonspielVenue(name: club, city: city, region: region, country: "CA")
-    }
-
-    func stop(spielID: String, name: String, dateText: String) -> Stop {
-        Stop(id: "stop-\(spielID)",
-             code: code,
-             name: name,
-             club: club,
-             prov: region,
-             dates: dateText,
-             record: "—",
-             here: false,
-             x: seasonMapX,
-             y: seasonMapY,
-             big: false,
-             plus: nil,
-             iceSpeed: "—",
-             iceSpeedSec: "—",
-             iceCurl: "—",
-             iceRec: "—",
-             games: [],
-             met: [],
-             latitude: latitude,
-             longitude: longitude)
-    }
-
-    static func resolve(_ freeText: String) -> SpielRouteLocation? {
-        let normalized = freeText
-            .lowercased()
-            .replacingOccurrences(of: ".", with: "")
-            .replacingOccurrences(of: "-", with: " ")
-        return known.first { place in
-            place.matchTerms.contains { normalized.contains($0) }
-        }?.location
-    }
-
-    private static let known: [(matchTerms: [String], location: SpielRouteLocation)] = [
-        (["kamloops", "kamloops curling club"],
-         SpielRouteLocation(code: "KAM",
-                            city: "Kamloops",
-                            region: "BC",
-                            club: "Kamloops Curling Club",
-                            latitude: 50.6745,
-                            longitude: -120.3273,
-                            seasonMapX: 86,
-                            seasonMapY: 54,
-                            timezone: "America/Vancouver")),
-        (["kelowna", "kelowna curling club"],
-         SpielRouteLocation(code: "KEL",
-                            city: "Kelowna",
-                            region: "BC",
-                            club: "Kelowna Curling Club",
-                            latitude: 49.8880,
-                            longitude: -119.4960,
-                            seasonMapX: 70,
-                            seasonMapY: 32,
-                            timezone: "America/Vancouver")),
-        (["vernon", "vernon curling club"],
-         SpielRouteLocation(code: "VER",
-                            city: "Vernon",
-                            region: "BC",
-                            club: "Vernon Curling Club",
-                            latitude: 50.2670,
-                            longitude: -119.2720,
-                            seasonMapX: 50,
-                            seasonMapY: 68,
-                            timezone: "America/Vancouver")),
-        (["calgary", "sage valley", "calgary granite"],
-         SpielRouteLocation(code: "CAL",
-                            city: "Calgary",
-                            region: "AB",
-                            club: "Calgary Granite CC",
-                            latitude: 51.0447,
-                            longitude: -114.0719,
-                            seasonMapX: 30,
-                            seasonMapY: 39,
-                            timezone: "America/Edmonton")),
-        (["winnipeg", "granite city"],
-         SpielRouteLocation(code: "WPG",
-                            city: "Winnipeg",
-                            region: "MB",
-                            club: "Granite City CC",
-                            latitude: 49.8951,
-                            longitude: -97.1384,
-                            seasonMapX: 14,
-                            seasonMapY: 64,
-                            timezone: "America/Winnipeg"))
-    ]
 }
 
 // MARK: - Persistence
@@ -871,6 +962,7 @@ final class Store: ObservableObject {
     var setupComplete: Bool { data.setupComplete }
     var profile: PlayerProfile { data.profile }
     var curlers: [Curler] { data.curlers }
+    var venues: [Venue] { data.venues }
     var stops: [Stop] { data.stops }
     var visits: [StopVisit] { data.visits }
     var spiels: [Spiel] { data.spiels }
@@ -941,6 +1033,10 @@ final class Store: ObservableObject {
     }
 
     func curler(_ id: String) -> Curler? { data.curlers.first(where: { $0.id == id }) }
+    func venue(_ id: String) -> Venue? { data.venues.first(where: { $0.id == id }) }
+    func venueSuggestions(for query: String, limit: Int = 5) -> [Venue] {
+        VenueResolver.suggestions(for: query, venues: data.venues, limit: limit)
+    }
     func stop(_ id: String) -> Stop? { data.stops.first(where: { $0.id == id }) }
     func bonspiel(_ id: String) -> BonspielRecord? {
         data.bonspiels.first(where: { $0.id == id })
@@ -1224,7 +1320,7 @@ final class Store: ObservableObject {
         let previous = data
         apply(Seed.appData(setupComplete: true), shouldPersist: true)
         return receipt(action: "startDemoSeason",
-                       domains: [.setup, .profile, .curlers, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
+                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
                        message: "Demo season loaded.",
                        previous: previous)
     }
@@ -1237,6 +1333,7 @@ final class Store: ObservableObject {
                       setupComplete: true,
                       profile: blankProfile,
                       curlers: [],
+                      venues: Seed.venues,
                       stops: [],
                       visits: [],
                       spiels: [],
@@ -1246,7 +1343,7 @@ final class Store: ObservableObject {
                       bonspiels: []),
               shouldPersist: true)
         return receipt(action: "startBlankSeason",
-                       domains: [.setup, .profile, .curlers, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
+                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
                        message: "Blank season started.",
                        previous: previous)
     }
@@ -1260,6 +1357,7 @@ final class Store: ObservableObject {
                                                    homeClub: profile.homeClub,
                                                    province: profile.homeProvince),
                       curlers: [],
+                      venues: Seed.venues,
                       stops: [],
                       visits: [],
                       spiels: [],
@@ -1269,7 +1367,7 @@ final class Store: ObservableObject {
                       bonspiels: []),
               shouldPersist: true)
         return receipt(action: "clearSeason",
-                       domains: [.setup, .profile, .curlers, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
+                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
                        message: "Season cleared.",
                        previous: previous)
     }
@@ -1311,7 +1409,7 @@ final class Store: ObservableObject {
         normalized.setupComplete = true
         apply(normalized, shouldPersist: true)
         return receipt(action: "importData",
-                       domains: [.setup, .profile, .curlers, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
+                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
                        message: "Season imported.",
                        previous: previous)
     }
@@ -1365,11 +1463,29 @@ final class Store: ObservableObject {
                  status: status,
                  discipline: discipline,
                  startDate: nil,
-                 endDate: nil)
+                 endDate: nil,
+                 venue: nil)
     }
 
     @discardableResult
     func addSpiel(name: String, whereText: String, startDate: Date, endDate: Date, status: String, discipline: CurlingDiscipline) -> MutationReceipt {
+        addSpiel(name: name,
+                 whereText: whereText,
+                 startDate: startDate,
+                 endDate: endDate,
+                 status: status,
+                 discipline: discipline,
+                 venue: nil)
+    }
+
+    @discardableResult
+    func addSpiel(name: String,
+                  whereText: String,
+                  startDate: Date,
+                  endDate: Date,
+                  status: String,
+                  discipline: CurlingDiscipline,
+                  venue: Venue?) -> MutationReceipt {
         let orderedStart = min(startDate, endDate)
         let orderedEnd = max(startDate, endDate)
         let startISO = Self.isoDateString(orderedStart)
@@ -1380,7 +1496,8 @@ final class Store: ObservableObject {
                         status: status,
                         discipline: discipline,
                         startDate: startISO,
-                        endDate: endISO)
+                        endDate: endISO,
+                        venue: venue)
     }
 
     @discardableResult
@@ -1390,27 +1507,43 @@ final class Store: ObservableObject {
                           status: String,
                           discipline: CurlingDiscipline,
                           startDate: String?,
-                          endDate: String?) -> MutationReceipt {
+                          endDate: String?,
+                          venue confirmedVenue: Venue?) -> MutationReceipt {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanLocation = whereText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let routeLocation = SpielRouteLocation.resolve(cleanLocation)
+        let resolvedVenue = confirmedVenue ?? VenueResolver.resolve(cleanLocation, venues: data.venues)
         let spielID = "sp-\(UUID().uuidString.prefix(6))"
+        let locationText = cleanLocation.isEmpty
+            ? (resolvedVenue?.displayLocationText.isEmpty == false ? resolvedVenue?.displayLocationText ?? "TBD" : "TBD")
+            : cleanLocation
         let spiel = Spiel(id: spielID,
                           name: cleanName,
-                          whereText: cleanLocation.isEmpty ? "TBD" : cleanLocation,
+                          whereText: locationText,
                           whenText: whenText.isEmpty ? "DATE TBD" : whenText,
                           status: status,
                           going: [],
                           startDate: startDate,
                           endDate: endDate,
-                          stopID: routeLocation == nil ? nil : "stop-\(spielID)")
-        let routeStop = routeLocation?.stop(spielID: spiel.id, name: spiel.name, dateText: spiel.whenText)
+                          stopID: resolvedVenue?.canMap == true ? "stop-\(spielID)" : nil,
+                          venueID: resolvedVenue?.id)
+        let routeStop = resolvedVenue?.stop(spielID: spiel.id, name: spiel.name, dateText: spiel.whenText)
         var domains: Set<SeasonDomain> = [.spiels, .bonspiels]
         if routeStop != nil { domains.insert(.stops) }
+        let venueIsNew = resolvedVenue.map { venue in
+            !data.venues.contains(where: { $0.id == venue.id })
+        } ?? false
+        if venueIsNew { domains.insert(.venues) }
         return mutate(action: "addSpiel",
                       domains: domains,
                       message: "Spiel added.") { draft in
             draft.spiels.insert(spiel, at: 0)
+            if let resolvedVenue {
+                if let existingIndex = draft.venues.firstIndex(where: { $0.id == resolvedVenue.id }) {
+                    draft.venues[existingIndex] = resolvedVenue
+                } else {
+                    draft.venues.insert(resolvedVenue, at: 0)
+                }
+            }
             if let routeStop {
                 draft.stops.insert(routeStop, at: 0)
             }
@@ -1422,8 +1555,9 @@ final class Store: ObservableObject {
                                                                 homeClub: draft.profile.homeClub,
                                                                 startDate: startDate,
                                                                 endDate: endDate,
-                                                                venue: routeLocation?.venue,
-                                                                timezone: routeLocation?.timezone),
+                                                                venueID: resolvedVenue?.id,
+                                                                venue: resolvedVenue?.bonspielVenue,
+                                                                timezone: resolvedVenue?.timezone),
                                    at: 0)
         }
     }
@@ -1861,7 +1995,7 @@ final class Store: ObservableObject {
         let previous = data
         apply(snapshot, shouldPersist: true)
         return receipt(action: "undo",
-                       domains: [.setup, .profile, .curlers, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
+                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
                        message: "Undo complete.",
                        previous: previous)
     }
@@ -2104,6 +2238,13 @@ final class Store: ObservableObject {
             normalized.bonspiels = Seed.bonspiels
         }
 
+        if normalized.venues.isEmpty {
+            normalized.venues = Seed.venues
+        } else {
+            let importedVenueIDs = Set(normalized.venues.map(\.id))
+            normalized.venues.append(contentsOf: Seed.venues.filter { !importedVenueIDs.contains($0.id) })
+        }
+
         normalized.curlers = normalized.curlers.map { curler in
             var copy = curler
             if copy.importedHistory == nil {
@@ -2145,17 +2286,40 @@ final class Store: ObservableObject {
             }
         }
 
+        let venueIDs = Set(normalized.venues.map(\.id))
+        normalized.stops = normalized.stops.map { stop in
+            var copy = stop
+            if let venueID = copy.venueID, !venueIDs.contains(venueID) {
+                copy.venueID = nil
+            }
+            if copy.venueID == nil,
+               let venue = VenueResolver.resolve("\(copy.club), \(copy.prov)", venues: normalized.venues) {
+                copy.venueID = venue.id
+                if copy.latitude == nil { copy.latitude = venue.latitude }
+                if copy.longitude == nil { copy.longitude = venue.longitude }
+            }
+            return copy
+        }
+
         let stopIDs = Set(normalized.stops.map(\.id))
         normalized.spiels = normalized.spiels.map { spiel in
             var copy = spiel
             if let stopID = copy.stopID, !stopIDs.contains(stopID) {
                 copy.stopID = nil
             }
+            if let venueID = copy.venueID, !venueIDs.contains(venueID) {
+                copy.venueID = nil
+            }
+            if copy.venueID == nil,
+               let venue = VenueResolver.resolve(copy.whereText, venues: normalized.venues) {
+                copy.venueID = venue.id
+            }
             return copy
         }
 
         let curlerIDs = Set(normalized.curlers.map(\.id) + ["me"])
         let spielIDs = Set(normalized.spiels.map(\.id))
+        let spielsByID = Dictionary(uniqueKeysWithValues: normalized.spiels.map { ($0.id, $0) })
 
         normalized.visits = normalized.visits
             .filter { stopIDs.contains($0.stopID) }
@@ -2178,6 +2342,19 @@ final class Store: ObservableObject {
             .filter { spielIDs.contains($0.linkedSpielID) }
             .map { bonspiel in
                 var copy = bonspiel
+                if let venueID = copy.venueID, !venueIDs.contains(venueID) {
+                    copy.venueID = nil
+                }
+                if copy.venueID == nil {
+                    copy.venueID = spielsByID[copy.linkedSpielID]?.venueID
+                }
+                if let venueID = copy.venueID,
+                   let venue = normalized.venues.first(where: { $0.id == venueID }) {
+                    copy.venue = venue.bonspielVenue
+                    if let timezone = venue.timezone {
+                        copy.timezone = timezone
+                    }
+                }
                 for teamIndex in copy.teams.indices {
                     for memberIndex in copy.teams[teamIndex].members.indices {
                         if let curlerID = copy.teams[teamIndex].members[memberIndex].curlerID,
@@ -2244,6 +2421,7 @@ enum Seed {
                 setupComplete: setupComplete,
                 profile: .demo,
                 curlers: curlers,
+                venues: venues,
                 stops: stops,
                 visits: visits,
                 spiels: spiels,
@@ -2286,47 +2464,130 @@ enum Seed {
                       GameLine(label: "Final · Winnipeg", score: "6–5", res: "W")])
     ]
 
+    static let venues: [Venue] = [
+        Venue(id: "venue-kamloops-curling-club",
+              displayName: "Kamloops Curling Club",
+              aliases: ["Kamloops, BC", "Brier Patch Open"],
+              clubName: "Kamloops Curling Club",
+              city: "Kamloops",
+              region: "BC",
+              country: "CA",
+              postalAddress: "Kamloops, BC",
+              latitude: 50.6745,
+              longitude: -120.3273,
+              timezone: "America/Vancouver",
+              authority: .curated,
+              seasonMapX: 86,
+              seasonMapY: 54,
+              code: "KAM"),
+        Venue(id: "venue-kelowna-curling-club",
+              displayName: "Kelowna Curling Club",
+              aliases: ["Kelowna, BC", "Okanagan Classic"],
+              clubName: "Kelowna Curling Club",
+              city: "Kelowna",
+              region: "BC",
+              country: "CA",
+              postalAddress: "Kelowna, BC",
+              latitude: 49.8880,
+              longitude: -119.4960,
+              timezone: "America/Vancouver",
+              authority: .curated,
+              seasonMapX: 70,
+              seasonMapY: 32,
+              code: "KEL"),
+        Venue(id: "venue-vernon-curling-club",
+              displayName: "Vernon Curling Club",
+              aliases: ["Vernon, BC"],
+              clubName: "Vernon Curling Club",
+              city: "Vernon",
+              region: "BC",
+              country: "CA",
+              postalAddress: "Vernon, BC",
+              latitude: 50.2670,
+              longitude: -119.2720,
+              timezone: "America/Vancouver",
+              authority: .curated,
+              seasonMapX: 50,
+              seasonMapY: 68,
+              code: "VER"),
+        Venue(id: "venue-sage-valley-cc",
+              displayName: "Sage Valley CC",
+              aliases: ["Sage Valley"],
+              clubName: "Sage Valley CC",
+              city: "Calgary",
+              region: "AB",
+              country: "CA",
+              postalAddress: "Calgary, AB",
+              latitude: 51.0447,
+              longitude: -114.0719,
+              timezone: "America/Edmonton",
+              authority: .curated,
+              seasonMapX: 30,
+              seasonMapY: 39,
+              code: "CAL"),
+        Venue(id: "venue-granite-city-cc",
+              displayName: "Granite City CC",
+              aliases: ["Granite City", "Winnipeg, MB", "Prairie Cashspiel"],
+              clubName: "Granite City CC",
+              city: "Winnipeg",
+              region: "MB",
+              country: "CA",
+              postalAddress: "Winnipeg, MB",
+              latitude: 49.8951,
+              longitude: -97.1384,
+              timezone: "America/Winnipeg",
+              authority: .curated,
+              seasonMapX: 14,
+              seasonMapY: 64,
+              code: "WPG")
+    ]
+
     static let stops: [Stop] = [
         Stop(id: "kamloops", code: "KAM", name: "Kamloops Cashspiel", club: "Kamloops Curling Club", prov: "BC",
              dates: "FEB 14–16", record: "—", here: false, x: 86, y: 54, big: true,
              iceSpeed: "Fast", iceSpeedSec: "23.6s", iceCurl: "4–5", iceRec: "—",
-             games: [], met: []),
+             games: [], met: [],
+             latitude: 50.6745, longitude: -120.3273, venueID: "venue-kamloops-curling-club"),
         Stop(id: "kelowna", code: "KEL", name: "Kelowna Bonspiel", club: "Kelowna Curling Club", prov: "BC",
              dates: "JAN 9–11", record: "3–1", x: 70, y: 32, plus: "+3",
              iceSpeed: "Fast", iceSpeedSec: "24.1s", iceCurl: "5–6", iceRec: "3–1",
              games: [GameLine(label: "vs Carter", score: "8–4", res: "W"),
                      GameLine(label: "vs Lindqvist", score: "5–7", res: "L")],
-             met: ["sam", "jo", "dee"]),
+             met: ["sam", "jo", "dee"],
+             latitude: 49.8880, longitude: -119.4960, venueID: "venue-kelowna-curling-club"),
         Stop(id: "vernon", code: "VER", name: "Vernon Cashspiel", club: "Vernon Curling Club", prov: "BC",
              dates: "DEC 2", record: "2–1", x: 50, y: 68, plus: "+2",
              iceSpeed: "Medium", iceSpeedSec: "25.0s", iceCurl: "4–5", iceRec: "2–1",
              games: [GameLine(label: "vs Reid", score: "6–8", res: "L"),
                      GameLine(label: "vs Mara", score: "7–5", res: "W")],
-             met: ["sam", "jo"]),
+             met: ["sam", "jo"],
+             latitude: 50.2670, longitude: -119.2720, venueID: "venue-vernon-curling-club"),
         Stop(id: "calgary", code: "CAL", name: "Sage Valley Open", club: "Sage Valley CC", prov: "AB",
              dates: "NOV 14–16", record: "2–2", x: 30, y: 39,
              iceSpeed: "Keen", iceSpeedSec: "23.2s", iceCurl: "6–7", iceRec: "2–2",
              games: [GameLine(label: "vs Carter", score: "9–7", res: "W"),
                      GameLine(label: "vs Park", score: "4–9", res: "L")],
-             met: ["carter"]),
+             met: ["carter"],
+             latitude: 51.0447, longitude: -114.0719, venueID: "venue-sage-valley-cc"),
         Stop(id: "winnipeg", code: "WPG", name: "Granite City Classic", club: "Granite City CC", prov: "MB",
              dates: "OCT 24–26", record: "3–0", x: 14, y: 64,
              iceSpeed: "Fast", iceSpeedSec: "24.4s", iceCurl: "5–6", iceRec: "3–0",
              games: [GameLine(label: "vs Lindqvist", score: "6–5", res: "W"),
                      GameLine(label: "vs Olsen", score: "8–3", res: "W")],
-             met: ["lind"])
+             met: ["lind"],
+             latitude: 49.8951, longitude: -97.1384, venueID: "venue-granite-city-cc")
     ]
 
     static let spiels: [Spiel] = [
         Spiel(id: "sp1", name: "Brier Patch Open", whereText: "Kamloops, BC", whenText: "FEB 14–16",
               status: "You're in", going: ["sam", "jo", "lind"],
-              startDate: "2026-02-14", endDate: "2026-02-16", stopID: "kamloops"),
+              startDate: "2026-02-14", endDate: "2026-02-16", stopID: "kamloops", venueID: "venue-kamloops-curling-club"),
         Spiel(id: "sp2", name: "Okanagan Classic", whereText: "Kelowna, BC", whenText: "MAR 6–8",
               status: "Watching", going: ["dee", "carter"],
-              startDate: "2026-03-06", endDate: "2026-03-08", stopID: "kelowna"),
+              startDate: "2026-03-06", endDate: "2026-03-08", stopID: "kelowna", venueID: "venue-kelowna-curling-club"),
         Spiel(id: "sp3", name: "Prairie Cashspiel", whereText: "Winnipeg, MB", whenText: "MAR 27–29",
               status: "Invite", going: ["lind"],
-              startDate: "2026-03-27", endDate: "2026-03-29", stopID: "winnipeg")
+              startDate: "2026-03-27", endDate: "2026-03-29", stopID: "winnipeg", venueID: "venue-granite-city-cc")
     ]
 
     static let visits: [StopVisit] = [
@@ -2399,6 +2660,7 @@ enum Seed {
             shortName: "Brier Patch",
             season: "2025-26",
             discipline: .fourPlayer,
+            venueID: "venue-kamloops-curling-club",
             venue: BonspielVenue(name: "Kamloops Curling Club", city: "Kamloops", region: "BC", country: "CA"),
             timezone: "America/Vancouver",
             startDate: "2026-02-14",
@@ -2516,6 +2778,7 @@ enum Seed {
                                      homeClub: "Calgary Granite CC",
                                      startDate: "2026-03-06",
                                      endDate: "2026-03-08",
+                                     venueID: "venue-kelowna-curling-club",
                                      venue: BonspielVenue(name: "Kelowna Curling Club", city: "Kelowna", region: "BC", country: "CA")),
         BonspielRecord.defaultLinked(spielID: "sp3",
                                      name: "Prairie Cashspiel",
@@ -2525,6 +2788,7 @@ enum Seed {
                                      homeClub: "Calgary Granite CC",
                                      startDate: "2026-03-27",
                                      endDate: "2026-03-29",
+                                     venueID: "venue-granite-city-cc",
                                      venue: BonspielVenue(name: "Granite City CC", city: "Winnipeg", region: "MB", country: "CA"),
                                      timezone: "America/Winnipeg")
     ]

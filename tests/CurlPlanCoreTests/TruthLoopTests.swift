@@ -39,16 +39,19 @@ final class StoreMutationTests: XCTestCase {
         XCTAssertEqual(spiel.endDate, "2026-03-08")
         XCTAssertEqual(spiel.whenText, "MAR 6-8")
         XCTAssertNotNil(spiel.stopID)
+        XCTAssertEqual(spiel.venueID, "venue-kelowna-curling-club")
 
         let stop = spiel.stopID.flatMap(store.stop)
         XCTAssertEqual(stop?.name, "Okanagan Classic")
         XCTAssertEqual(stop?.club, "Kelowna Curling Club")
         XCTAssertEqual(stop?.latitude, 49.8880)
         XCTAssertEqual(stop?.longitude, -119.4960)
+        XCTAssertEqual(stop?.venueID, "venue-kelowna-curling-club")
 
         let bonspiel = store.bonspiel(for: spiel.id)
         XCTAssertEqual(bonspiel?.startDate, "2026-03-06")
         XCTAssertEqual(bonspiel?.endDate, "2026-03-08")
+        XCTAssertEqual(bonspiel?.venueID, "venue-kelowna-curling-club")
         XCTAssertEqual(bonspiel?.venue.name, "Kelowna Curling Club")
         XCTAssertEqual(bonspiel?.venue.city, "Kelowna")
         XCTAssertEqual(bonspiel?.venue.region, "BC")
@@ -58,6 +61,7 @@ final class StoreMutationTests: XCTestCase {
     func testAddSpielDoesNotInventRouteStopForUnknownVenue() {
         let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
         store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+        let startingVenueCount = store.venues.count
 
         let receipt = store.addSpiel(name: "Mystery Spiel",
                                      whereText: "Some Arena, SK",
@@ -67,10 +71,53 @@ final class StoreMutationTests: XCTestCase {
                                      discipline: .fourPlayer)
 
         XCTAssertFalse(receipt.changedDomains.contains(.stops))
+        XCTAssertFalse(receipt.changedDomains.contains(.venues))
         XCTAssertEqual(store.stops.count, 0)
+        XCTAssertEqual(store.venues.count, startingVenueCount)
         XCTAssertNil(store.spiels[0].stopID)
+        XCTAssertNil(store.spiels[0].venueID)
         XCTAssertEqual(store.bonspiel(for: store.spiels[0].id)?.venue.city, "Some Arena")
         XCTAssertEqual(store.bonspiel(for: store.spiels[0].id)?.venue.region, "SK")
+    }
+
+    func testAddSpielStoresSelectedVenueAndCreatesCoordinateRouteStop() {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+        let selectedVenue = Venue(id: "venue-geocoded-prairie-ice-centre",
+                                  displayName: "Prairie Ice Centre",
+                                  aliases: ["Prairie Ice Centre, Saskatoon"],
+                                  clubName: "Prairie Ice Centre",
+                                  city: "Saskatoon",
+                                  region: "SK",
+                                  country: "CA",
+                                  postalAddress: "Saskatoon, SK",
+                                  latitude: 52.1579,
+                                  longitude: -106.6702,
+                                  timezone: "America/Regina",
+                                  authority: .geocodedAddress)
+
+        let receipt = store.addSpiel(name: "Prairie Spiel",
+                                     whereText: "Prairie Ice Centre",
+                                     startDate: testDate(year: 2026, month: 4, day: 17),
+                                     endDate: testDate(year: 2026, month: 4, day: 19),
+                                     status: "You're in",
+                                     discipline: .fourPlayer,
+                                     venue: selectedVenue)
+
+        XCTAssertTrue(receipt.changedDomains.contains(.venues))
+        XCTAssertTrue(receipt.changedDomains.contains(.stops))
+        XCTAssertEqual(store.venues.first?.id, selectedVenue.id)
+        XCTAssertEqual(store.spiels[0].venueID, selectedVenue.id)
+
+        let stop = store.spiels[0].stopID.flatMap(store.stop)
+        XCTAssertEqual(stop?.venueID, selectedVenue.id)
+        XCTAssertEqual(stop?.latitude, 52.1579)
+        XCTAssertEqual(stop?.longitude, -106.6702)
+
+        let bonspiel = store.bonspiel(for: store.spiels[0].id)
+        XCTAssertEqual(bonspiel?.venueID, selectedVenue.id)
+        XCTAssertEqual(bonspiel?.venue.name, "Prairie Ice Centre")
+        XCTAssertEqual(bonspiel?.timezone, "America/Regina")
     }
 
     private func testDate(year: Int, month: Int, day: Int) -> Date {
@@ -434,6 +481,7 @@ final class PersistenceRoundTripTests: XCTestCase {
         XCTAssertEqual(decoded.results.count, store.results.count)
         XCTAssertEqual(decoded.visits.count, store.visits.count)
         XCTAssertEqual(decoded.attendance.count, store.attendance.count)
+        XCTAssertEqual(decoded.venues.count, store.venues.count)
         XCTAssertEqual(decoded.bonspiels.count, store.bonspiels.count)
     }
 
@@ -562,6 +610,7 @@ final class SeedIsolationTests: XCTestCase {
         store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
 
         XCTAssertEqual(store.curlers.count, 0)
+        XCTAssertEqual(store.venues.count, Seed.venues.count)
         XCTAssertEqual(store.stops.count, 0)
         XCTAssertEqual(store.visits.count, 0)
         XCTAssertEqual(store.spiels.count, 0)

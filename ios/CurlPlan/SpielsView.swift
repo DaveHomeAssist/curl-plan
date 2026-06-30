@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 
 struct SpielsView: View {
@@ -57,19 +58,27 @@ struct SpielsView: View {
 struct NewSpielSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var venueSearch = VenueSearchModel()
     @State private var name = ""
     @State private var location = ""
     @State private var startDate = Date()
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date()
     @State private var status = "You're in"
     @State private var discipline = CurlingDiscipline.fourPlayer.label
+    @State private var selectedVenue: Venue?
+    @State private var resolvingVenue = false
 
     private var canSave: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate >= startDate
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate >= startDate && !resolvingVenue
     }
 
     private var validationMessage: String? {
-        endDate < startDate ? "End date must be on or after start date." : nil
+        if resolvingVenue { return "Resolving venue..." }
+        return endDate < startDate ? "End date must be on or after start date." : nil
+    }
+
+    private var curatedSuggestions: [Venue] {
+        store.venueSuggestions(for: location, limit: 4)
     }
 
     var body: some View {
@@ -78,17 +87,16 @@ struct NewSpielSheet: View {
                        canSave: canSave,
                        validationMessage: validationMessage,
                        onCancel: { dismiss() },
-                       onSave: {
-                           store.addSpiel(name: name.trimmingCharacters(in: .whitespaces),
-                                          whereText: location.trimmingCharacters(in: .whitespaces),
-                                          startDate: startDate,
-                                          endDate: endDate,
-                                          status: status,
-                                          discipline: CurlingDiscipline.fromLabel(discipline))
-                           dismiss()
-                       }) {
+                       onSave: save) {
             CPField(label: "Name", text: $name, placeholder: "Brier Patch Open")
-            CPField(label: "Location", text: $location, placeholder: "Kamloops, BC")
+            VenueLocationField(location: $location,
+                               selectedVenue: selectedVenue,
+                               curatedSuggestions: curatedSuggestions,
+                               mapSuggestions: venueSearch.suggestions,
+                               isSearching: venueSearch.isSearching,
+                               resolvingVenue: resolvingVenue,
+                               onVenueSelect: selectVenue,
+                               onMapSelect: selectMapSuggestion)
             HStack(spacing: 10) {
                 CPDateField(label: "Start", date: $startDate)
                 CPDateField(label: "End", date: $endDate)
@@ -96,6 +104,347 @@ struct NewSpielSheet: View {
             CPChips(label: "Your status", options: ["You're in", "Watching", "Invite"], selection: $status)
             CPChips(label: "Discipline", options: CurlingDiscipline.allCases.map(\.label), selection: $discipline)
         }
+        .onAppear { venueSearch.update(query: location) }
+        .onChange(of: location) { _, newValue in
+            if let selectedVenue,
+               !VenueResolver.matches(selectedVenue, query: newValue),
+               VenueResolver.normalized(newValue) != VenueResolver.normalized(selectedVenue.displayName) {
+                self.selectedVenue = nil
+            }
+            venueSearch.update(query: newValue)
+        }
+    }
+
+    private func selectVenue(_ venue: Venue) {
+        selectedVenue = venue
+        location = venue.displayName
+    }
+
+    private func selectMapSuggestion(_ suggestion: VenueSearchSuggestion) {
+        resolvingVenue = true
+        Task {
+            let venue = await VenueSearchModel.resolve(suggestion)
+            await MainActor.run {
+                resolvingVenue = false
+                if let venue {
+                    selectVenue(venue)
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let cleanLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedVenue = selectedVenue ?? VenueResolver.resolve(cleanLocation, venues: store.venues)
+        if let resolvedVenue {
+            commit(venue: resolvedVenue)
+            return
+        }
+        guard !cleanLocation.isEmpty else {
+            commit(venue: nil)
+            return
+        }
+
+        resolvingVenue = true
+        Task {
+            let geocodedVenue = await VenueSearchModel.geocode(cleanLocation)
+            await MainActor.run {
+                resolvingVenue = false
+                commit(venue: geocodedVenue)
+            }
+        }
+    }
+
+    private func commit(venue: Venue?) {
+        store.addSpiel(name: name.trimmingCharacters(in: .whitespaces),
+                       whereText: location.trimmingCharacters(in: .whitespaces),
+                       startDate: startDate,
+                       endDate: endDate,
+                       status: status,
+                       discipline: CurlingDiscipline.fromLabel(discipline),
+                       venue: venue)
+        dismiss()
+    }
+}
+
+private struct VenueLocationField: View {
+    @EnvironmentObject var settings: AppSettings
+    @Binding var location: String
+    let selectedVenue: Venue?
+    let curatedSuggestions: [Venue]
+    let mapSuggestions: [VenueSearchSuggestion]
+    let isSearching: Bool
+    let resolvingVenue: Bool
+    let onVenueSelect: (Venue) -> Void
+    let onMapSelect: (VenueSearchSuggestion) -> Void
+
+    private var visibleMapSuggestions: [VenueSearchSuggestion] {
+        Array(mapSuggestions.prefix(4))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("LOCATION")
+                .font(.mono(10, .medium))
+                .tracking(1.5)
+                .foregroundStyle(settings.muted)
+
+            HStack(spacing: 9) {
+                TextField("Kamloops, BC", text: $location)
+                    .font(.grotesk(15))
+                    .foregroundStyle(settings.ink)
+                    .tint(settings.accent)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("curlplan.field.location")
+                if resolvingVenue || isSearching {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(settings.accent)
+                } else if selectedVenue != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(settings.accent)
+                        .accessibilityHidden(true)
+                }
+            }
+            .padding(.vertical, 11)
+            .padding(.horizontal, 13)
+            .background(settings.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(settings.line, lineWidth: 1))
+
+            if selectedVenue != nil || !curatedSuggestions.isEmpty || !visibleMapSuggestions.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(curatedSuggestions) { venue in
+                        VenueSuggestionRow(title: venue.displayName,
+                                           subtitle: subtitle(for: venue),
+                                           systemImage: "mappin.and.ellipse",
+                                           selected: selectedVenue?.id == venue.id) {
+                            onVenueSelect(venue)
+                        }
+                    }
+                    ForEach(visibleMapSuggestions) { suggestion in
+                        VenueSuggestionRow(title: suggestion.title,
+                                           subtitle: suggestion.subtitle,
+                                           systemImage: "map",
+                                           selected: false) {
+                            onMapSelect(suggestion)
+                        }
+                    }
+                }
+                .background(settings.panel.opacity(0.55))
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(settings.line, lineWidth: 1))
+            }
+        }
+    }
+
+    private func subtitle(for venue: Venue) -> String {
+        let location = venue.displayLocationText
+        let authority = venue.authority.label
+        return location.isEmpty ? authority : "\(location) · \(authority)"
+    }
+}
+
+private struct VenueSuggestionRow: View {
+    @EnvironmentObject var settings: AppSettings
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: selected ? "checkmark.circle.fill" : systemImage)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(selected ? settings.accent : settings.muted)
+                    .frame(width: 18, height: 18)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.grotesk(13, .semibold))
+                        .foregroundStyle(settings.ink)
+                        .lineLimit(1)
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.grotesk(11))
+                            .foregroundStyle(settings.muted)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 9)
+            .padding(.horizontal, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct VenueSearchSuggestion: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let subtitle: String
+
+    init(title: String, subtitle: String) {
+        self.title = title
+        self.subtitle = subtitle
+        id = Venue.generatedID(prefix: "venue-search", name: title, city: subtitle)
+    }
+
+    var queryText: String {
+        [title, subtitle].filter { !$0.isEmpty }.joined(separator: " ")
+    }
+}
+
+private final class VenueSearchModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var suggestions: [VenueSearchSuggestion] = []
+    @Published var isSearching = false
+
+    private let completer = MKLocalSearchCompleter()
+    private var lastQuery = ""
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+        completer.region = Self.searchRegion
+    }
+
+    func update(query: String) {
+        let clean = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard clean.count >= 3 else {
+            lastQuery = ""
+            suggestions = []
+            isSearching = false
+            completer.queryFragment = ""
+            return
+        }
+        guard clean != lastQuery else { return }
+        lastQuery = clean
+        isSearching = true
+        completer.queryFragment = clean
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        let mapped = completer.results.reduce(into: [VenueSearchSuggestion]()) { result, completion in
+            let suggestion = VenueSearchSuggestion(title: completion.title, subtitle: completion.subtitle)
+            guard !result.contains(where: { $0.id == suggestion.id }) else { return }
+            result.append(suggestion)
+        }
+        DispatchQueue.main.async {
+            self.suggestions = Array(mapped.prefix(6))
+            self.isSearching = false
+        }
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        DispatchQueue.main.async {
+            self.suggestions = []
+            self.isSearching = false
+        }
+    }
+
+    static func resolve(_ suggestion: VenueSearchSuggestion) async -> Venue? {
+        await withCheckedContinuation { continuation in
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = suggestion.queryText
+            request.region = searchRegion
+            MKLocalSearch(request: request).start { response, _ in
+                let venue = response?.mapItems.compactMap { Venue.mapItem($0, fallbackName: suggestion.title) }.first
+                continuation.resume(returning: venue)
+            }
+        }
+    }
+
+    static func geocode(_ query: String) async -> Venue? {
+        await withCheckedContinuation { continuation in
+            CLGeocoder().geocodeAddressString(query) { placemarks, _ in
+                let venue = placemarks?.compactMap { Venue.geocoded($0, fallbackName: query) }.first
+                continuation.resume(returning: venue)
+            }
+        }
+    }
+
+    private static let searchRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 53.0, longitude: -106.0),
+        span: MKCoordinateSpan(latitudeDelta: 35, longitudeDelta: 70)
+    )
+}
+
+private extension VenueAuthority {
+    var label: String {
+        switch self {
+        case .curated: return "Curated"
+        case .mapItem: return "Apple Maps"
+        case .geocodedAddress: return "Geocoded"
+        case .freeText: return "Free text"
+        case .unmapped: return "Unmapped"
+        }
+    }
+}
+
+private extension Venue {
+    static func mapItem(_ item: MKMapItem, fallbackName: String) -> Venue? {
+        let placemark = item.placemark
+        guard CLLocationCoordinate2DIsValid(placemark.coordinate) else { return nil }
+        let name = item.name?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? item.name!.trimmingCharacters(in: .whitespacesAndNewlines)
+            : fallbackName
+        let city = placemark.locality ?? placemark.subAdministrativeArea ?? ""
+        let region = placemark.administrativeArea ?? ""
+        let country = placemark.isoCountryCode ?? "CA"
+        return Venue(id: Venue.generatedID(prefix: "venue-map", name: name, city: city, region: region),
+                     displayName: name,
+                     aliases: [fallbackName, placemark.title].compactMap { $0 }.filter { !$0.isEmpty },
+                     clubName: name,
+                     city: city,
+                     region: region,
+                     country: country,
+                     postalAddress: formattedAddress(placemark),
+                     latitude: placemark.coordinate.latitude,
+                     longitude: placemark.coordinate.longitude,
+                     timezone: placemark.timeZone?.identifier,
+                     authority: .mapItem)
+    }
+
+    static func geocoded(_ placemark: CLPlacemark, fallbackName: String) -> Venue? {
+        guard let location = placemark.location,
+              CLLocationCoordinate2DIsValid(location.coordinate) else { return nil }
+        let name = placemark.name?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? placemark.name!.trimmingCharacters(in: .whitespacesAndNewlines)
+            : fallbackName
+        let city = placemark.locality ?? placemark.subAdministrativeArea ?? ""
+        let region = placemark.administrativeArea ?? ""
+        let country = placemark.isoCountryCode ?? "CA"
+        return Venue(id: Venue.generatedID(prefix: "venue-geocoded", name: name, city: city, region: region),
+                     displayName: name,
+                     aliases: [fallbackName],
+                     clubName: name,
+                     city: city,
+                     region: region,
+                     country: country,
+                     postalAddress: formattedAddress(placemark),
+                     latitude: location.coordinate.latitude,
+                     longitude: location.coordinate.longitude,
+                     timezone: placemark.timeZone?.identifier,
+                     authority: .geocodedAddress)
+    }
+
+    private static func formattedAddress(_ placemark: CLPlacemark) -> String {
+        let street = [placemark.subThoroughfare, placemark.thoroughfare]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return [street, placemark.locality, placemark.administrativeArea, placemark.postalCode, placemark.isoCountryCode]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
     }
 }
 
