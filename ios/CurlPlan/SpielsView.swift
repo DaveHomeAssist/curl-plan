@@ -636,6 +636,7 @@ struct SpielDetailSheet: View {
 
 private struct BonspielSummaryCard: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
     let record: BonspielRecord
 
     var body: some View {
@@ -647,6 +648,7 @@ private struct BonspielSummaryCard: View {
                 metric("Ends", "\(record.rulesProfile.scheduledEnds)")
                 metric("Dates", record.startDate == record.endDate ? record.startDate : "\(record.startDate) to \(record.endDate)")
                 metric("Timezone", record.timezone)
+                metric("Venue source", venueSource)
             }
             Text("\(record.venue.name) · \(record.venue.display)")
                 .font(.grotesk(13, .semibold))
@@ -657,6 +659,11 @@ private struct BonspielSummaryCard: View {
         }
         .padding(14)
         .cpCard(radius: 16)
+    }
+
+    private var venueSource: String {
+        guard let venueID = record.venueID, let venue = store.venue(venueID) else { return "Free text" }
+        return venue.canMap ? "\(venue.authority.label) coordinates" : venue.authority.label
     }
 
     private func metric(_ label: String, _ value: String) -> some View {
@@ -823,17 +830,85 @@ private struct BonspielTeamMemberSheet: View {
     }
 }
 
+private struct BonspielGameSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let record: BonspielRecord
+    let onReceipt: (MutationReceipt) -> Void
+    @State private var drawLabel: String
+    @State private var scheduledStartAt: String
+    @State private var sheet: String
+    @State private var opponentName = ""
+
+    init(record: BonspielRecord, onReceipt: @escaping (MutationReceipt) -> Void) {
+        self.record = record
+        self.onReceipt = onReceipt
+        _drawLabel = State(initialValue: "Draw \(record.games.count + 1)")
+        _scheduledStartAt = State(initialValue: Self.defaultScheduledStart(for: record))
+        _sheet = State(initialValue: "Sheet A")
+    }
+
+    private var validationMessage: String? {
+        canSave ? nil : "Draw, scheduled start, sheet, and opponent are required."
+    }
+
+    private var canSave: Bool {
+        !drawLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !scheduledStartAt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !sheet.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !opponentName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        CreateScaffold(title: "New game",
+                       subtitle: "Create a local draw and sheet snapshot for this bonspiel.",
+                       canSave: canSave,
+                       validationMessage: validationMessage,
+                       onCancel: { dismiss() },
+                       onSave: save) {
+            CPField(label: "Draw", text: $drawLabel, placeholder: "Draw 1")
+            CPField(label: "Scheduled start", text: $scheduledStartAt, placeholder: "2026-02-14 10:00")
+            CPField(label: "Sheet", text: $sheet, placeholder: "Sheet A")
+            CPField(label: "Opponent", text: $opponentName, placeholder: "Team Northern")
+        }
+    }
+
+    private func save() {
+        let receipt = store.addBonspielGame(bonspielID: record.id,
+                                            drawLabel: drawLabel,
+                                            scheduledStartAt: scheduledStartAt,
+                                            sheet: sheet,
+                                            opponentName: opponentName)
+        onReceipt(receipt)
+        dismiss()
+    }
+
+    private static func defaultScheduledStart(for record: BonspielRecord) -> String {
+        let start = record.startDate.trimmingCharacters(in: .whitespacesAndNewlines)
+        if start.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
+            return "\(start) 10:00"
+        }
+        return start == "Date TBD" ? "" : start
+    }
+}
+
 private struct BonspielGamesCard: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @State private var showingNewGame = false
+    @State private var editingScoreGame: BonspielGame?
     @State private var actionMessage: String?
     let record: BonspielRecord
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Game snapshots", action: "\(record.games.count) game\(record.games.count == 1 ? "" : "s")")
+            SectionHeader(title: "Game snapshots",
+                          action: "New game",
+                          actionAccessibilityLabel: "Add local bonspiel game") {
+                showingNewGame = true
+            }
             if record.games.isEmpty {
-                Text("No game snapshots captured yet.")
+                Text("No local games created yet.")
                     .font(.grotesk(13))
                     .foregroundStyle(settings.muted)
             } else {
@@ -897,6 +972,16 @@ private struct BonspielGamesCard: View {
         }
         .padding(14)
         .cpCard(radius: 16)
+        .sheet(isPresented: $showingNewGame) {
+            BonspielGameSheet(record: record) { receipt in
+                actionMessage = receipt.userMessage
+            }
+        }
+        .sheet(item: $editingScoreGame) { game in
+            BonspielScoreEditSheet(record: record, game: game) { receipt in
+                actionMessage = receipt.userMessage
+            }
+        }
     }
 
     private func gameControls(_ game: BonspielGame) -> some View {
@@ -911,6 +996,9 @@ private struct BonspielGamesCard: View {
 
             if !game.scoreAgreement.confirmed {
                 HStack(spacing: 6) {
+                    gameActionButton("Edit end", id: "curlplan.bonspiel.\(game.id).editScore") {
+                        editingScoreGame = game
+                    }
                     gameActionButton("A +1", id: "curlplan.bonspiel.\(game.id).scoreA") {
                         recordNextEnd(game, teamA: 1, teamB: 0, isBlank: false)
                     }
@@ -940,9 +1028,16 @@ private struct BonspielGamesCard: View {
                     }
                 }
             } else {
-                Text("Local result confirmed")
-                    .font(.mono(10, .bold))
-                    .foregroundStyle(settings.accent)
+                HStack(spacing: 6) {
+                    Text("Local result confirmed")
+                        .font(.mono(10, .bold))
+                        .foregroundStyle(settings.accent)
+                    Spacer()
+                    gameActionButton("Correct score", id: "curlplan.bonspiel.\(game.id).correctScore") {
+                        editingScoreGame = game
+                    }
+                    .frame(maxWidth: 118)
+                }
             }
         }
     }
@@ -1029,5 +1124,107 @@ private struct BonspielGamesCard: View {
                                                    isBlank: isBlank,
                                                    isExtraEnd: nextEnd > game.scheduledEnds)
         actionMessage = receipt.userMessage
+    }
+}
+
+private struct BonspielScoreEditSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let record: BonspielRecord
+    let game: BonspielGame
+    let onReceipt: (MutationReceipt) -> Void
+    @State private var endNumber: String
+    @State private var scoringSide: String
+    @State private var points: String
+    @State private var endType: String
+
+    init(record: BonspielRecord, game: BonspielGame, onReceipt: @escaping (MutationReceipt) -> Void) {
+        self.record = record
+        self.game = game
+        self.onReceipt = onReceipt
+        let nextEnd = (game.ends.map(\.endNumber).max() ?? 0) + 1
+        let suggestedEnd = min(max(nextEnd, 1), game.scheduledEnds)
+        let existing = game.ends.first(where: { $0.endNumber == suggestedEnd })
+        _endNumber = State(initialValue: "\(existing?.endNumber ?? suggestedEnd)")
+        if let existing {
+            if existing.isBlank {
+                _scoringSide = State(initialValue: "Blank")
+                _points = State(initialValue: "1")
+            } else if existing.teamA > 0 {
+                _scoringSide = State(initialValue: "Team A")
+                _points = State(initialValue: "\(existing.teamA)")
+            } else {
+                _scoringSide = State(initialValue: "Team B")
+                _points = State(initialValue: "\(existing.teamB)")
+            }
+            _endType = State(initialValue: existing.isExtraEnd ? "Extra" : "Regulation")
+        } else {
+            _scoringSide = State(initialValue: "Team A")
+            _points = State(initialValue: "1")
+            _endType = State(initialValue: suggestedEnd > game.scheduledEnds ? "Extra" : "Regulation")
+        }
+    }
+
+    private var endNumberValue: Int? {
+        Int(endNumber.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private var pointsValue: Int? {
+        Int(points.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private var validationMessage: String? {
+        guard let endNumberValue, endNumberValue > 0 else { return "End number must be positive." }
+        if scoringSide != "Blank" {
+            guard let pointsValue, pointsValue > 0 else { return "Scoring end needs points." }
+        }
+        return nil
+    }
+
+    private var canSave: Bool { validationMessage == nil }
+
+    var body: some View {
+        CreateScaffold(title: game.scoreAgreement.confirmed ? "Correct score" : "Edit score",
+                       subtitle: "Update one local end. Confirm the scorecard again after a correction.",
+                       canSave: canSave,
+                       validationMessage: validationMessage,
+                       onCancel: { dismiss() },
+                       onSave: save) {
+            CPField(label: "End", text: $endNumber, placeholder: "1", keyboard: .numberPad)
+            CPChips(label: "Scored by", options: ["Team A", "Blank", "Team B"], selection: $scoringSide)
+            if scoringSide != "Blank" {
+                CPField(label: "Points", text: $points, placeholder: "1", keyboard: .numberPad)
+            }
+            CPChips(label: "End type", options: ["Regulation", "Extra"], selection: $endType)
+        }
+    }
+
+    private func save() {
+        guard let endNumberValue else { return }
+        let pointsValue = scoringSide == "Blank" ? 0 : (self.pointsValue ?? 0)
+        let teamA = scoringSide == "Team A" ? pointsValue : 0
+        let teamB = scoringSide == "Team B" ? pointsValue : 0
+        let isBlank = scoringSide == "Blank"
+        let isExtraEnd = endType == "Extra" || endNumberValue > game.scheduledEnds
+        let receipt: MutationReceipt
+        if game.scoreAgreement.confirmed || game.status == .finalized || game.status == .forfeit {
+            receipt = store.correctBonspielEndScore(bonspielID: record.id,
+                                                    gameID: game.id,
+                                                    endNumber: endNumberValue,
+                                                    teamA: teamA,
+                                                    teamB: teamB,
+                                                    isBlank: isBlank,
+                                                    isExtraEnd: isExtraEnd)
+        } else {
+            receipt = store.recordBonspielEndScore(bonspielID: record.id,
+                                                   gameID: game.id,
+                                                   endNumber: endNumberValue,
+                                                   teamA: teamA,
+                                                   teamB: teamB,
+                                                   isBlank: isBlank,
+                                                   isExtraEnd: isExtraEnd)
+        }
+        onReceipt(receipt)
+        dismiss()
     }
 }

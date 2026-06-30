@@ -979,14 +979,15 @@ final class Store: ObservableObject {
         let visited = data.stops.filter { stopHasActivity($0.id) }
         let provinces = Set(visited.map(\.prov).filter { !$0.isEmpty && $0 != "TBD" }).count
         let met = Set(data.visits.flatMap(\.curlerIDs) + data.stops.flatMap(\.met) + data.results.flatMap(\.participantCurlerIDs)).count
+        let routeKilometers = Self.routeKilometers(for: visited)
         return SeasonSummary(rinks: visited.count,
                              provinces: provinces,
                              games: games,
                              winPercent: winPercent,
                              wins: wins,
                              met: met,
-                             kilometers: 0,
-                             distanceLabel: "—")
+                             kilometers: routeKilometers ?? 0,
+                             distanceLabel: routeKilometers.map(String.init) ?? "—")
     }
 
     var needsOnboarding: Bool { !data.setupComplete }
@@ -1101,9 +1102,9 @@ final class Store: ObservableObject {
         if let stop = data.stops.first(where: { peopleMetIDs(for: $0.id).contains(id) }) {
             return "Met at \(stop.club.isEmpty ? stop.name : stop.club)"
         }
-        guard let curler = curler(id) else { return "Local circle member" }
+        guard let curler = curler(id) else { return "Local roster member" }
         if curler.metAt.localizedCaseInsensitiveContains("Added to") {
-            return "Added to your circle"
+            return "Added to your local roster"
         }
         return "Imported note: \(curler.metAt)"
     }
@@ -1201,7 +1202,7 @@ final class Store: ObservableObject {
     func toggleFollow(_ id: String) -> MutationReceipt {
         mutate(action: "toggleFollow",
                domains: [.curlers, .feed],
-               message: "Follow state updated.",
+               message: "Roster state updated.",
                focusRoute: .curler(id)) { draft in
             guard let i = draft.curlers.firstIndex(where: { $0.id == id }) else { return }
             draft.curlers[i].following.toggle()
@@ -1212,7 +1213,7 @@ final class Store: ObservableObject {
     func followAll(_ ids: [String]) -> MutationReceipt {
         mutate(action: "followAll",
                domains: [.curlers, .feed],
-               message: "Curlers added to your circle.") { draft in
+               message: "Curlers saved to your roster.") { draft in
             for id in ids {
                 guard let i = draft.curlers.firstIndex(where: { $0.id == id }) else { continue }
                 draft.curlers[i].following = true
@@ -1455,6 +1456,13 @@ final class Store: ObservableObject {
         return formatter.date(from: value)
     }
 
+    private static func slug(_ value: String) -> String {
+        let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789")
+        let mapped = value.lowercased().map { allowed.contains($0) ? String($0) : "-" }.joined()
+        let clean = mapped.split(separator: "-").joined(separator: "-")
+        return clean.isEmpty ? "opponent" : clean
+    }
+
     @discardableResult
     func addSpiel(name: String, whereText: String, whenText: String, status: String, discipline: CurlingDiscipline) -> MutationReceipt {
         addSpiel(name: name,
@@ -1559,6 +1567,77 @@ final class Store: ObservableObject {
                                                                 venue: resolvedVenue?.bonspielVenue,
                                                                 timezone: resolvedVenue?.timezone),
                                    at: 0)
+        }
+    }
+
+    @discardableResult
+    func addBonspielGame(bonspielID: String,
+                         drawLabel: String,
+                         scheduledStartAt: String,
+                         sheet: String,
+                         opponentName: String) -> MutationReceipt {
+        let cleanDraw = drawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanStart = scheduledStartAt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanSheet = sheet.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanOpponent = opponentName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanDraw.isEmpty, !cleanStart.isEmpty, !cleanSheet.isEmpty, !cleanOpponent.isEmpty else {
+            return blockedReceipt(action: "addBonspielGame", message: "Game needs draw, scheduled start, sheet, and opponent.")
+        }
+        guard let record = bonspiel(bonspielID) else {
+            return blockedReceipt(action: "addBonspielGame", message: "Bonspiel not found.")
+        }
+
+        let stageID = record.stages.first?.id ?? "\(bonspielID)-pool"
+        let fallbackHomeTeam = BonspielTeam(id: "\(bonspielID)-team-me",
+                                            displayName: "Team \(profile.homeClub.isEmpty ? "CurlPlan" : profile.homeClub)",
+                                            shortName: "Team CP",
+                                            affiliation: profile.homeClub.isEmpty ? "Home club TBD" : profile.homeClub,
+                                            members: [])
+        let homeTeamID = record.teams.first?.id ?? fallbackHomeTeam.id
+        let suffix = UUID().uuidString.prefix(8).lowercased()
+        let opponentSlug = Self.slug(cleanOpponent)
+        let opponentTeam = BonspielTeam(id: "\(bonspielID)-team-\(opponentSlug)-\(suffix)",
+                                        displayName: cleanOpponent,
+                                        shortName: String(cleanOpponent.prefix(12)),
+                                        affiliation: "",
+                                        members: [])
+        let game = BonspielGame(id: "\(bonspielID)-game-\(suffix)",
+                                stageID: stageID,
+                                drawLabel: cleanDraw,
+                                status: .scheduled,
+                                scheduledStartAt: cleanStart,
+                                sheet: cleanSheet,
+                                teamAID: homeTeamID,
+                                teamBID: opponentTeam.id,
+                                stoneColorAssignment: "Team A dark handles",
+                                lsfeOrPlacementDecision: BonspielLastStoneDecision(method: "LSD pending",
+                                                                                   teamID: homeTeamID,
+                                                                                   evidence: "Local game setup"),
+                                scheduledEnds: record.rulesProfile.scheduledEnds,
+                                minEndsForLocalResult: record.rulesProfile.minEndsForLocalResult,
+                                ends: [],
+                                gameLineups: [],
+                                lineupChanges: [],
+                                resultFlags: BonspielResultFlags(isFinal: false, conceded: false, forfeited: false),
+                                scoreAgreement: BonspielScoreAgreement(confirmed: false, confirmedAt: nil, confirmedBy: nil),
+                                version: 1)
+
+        return mutate(action: "addBonspielGame",
+                      domains: [.bonspiels],
+                      message: "Game snapshot added.") { draft in
+            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }) else { return }
+            if draft.bonspiels[bonspielIndex].stages.isEmpty {
+                draft.bonspiels[bonspielIndex].stages.append(BonspielStage(id: stageID,
+                                                                           name: "Pool",
+                                                                           stageType: "round_robin",
+                                                                           sequence: 1))
+            }
+            if draft.bonspiels[bonspielIndex].teams.first(where: { $0.id == homeTeamID }) == nil {
+                draft.bonspiels[bonspielIndex].teams.append(fallbackHomeTeam)
+            }
+            draft.bonspiels[bonspielIndex].teams.append(opponentTeam)
+            draft.bonspiels[bonspielIndex].games.append(game)
+            draft.bonspiels[bonspielIndex].version += 1
         }
     }
 
@@ -1913,6 +1992,74 @@ final class Store: ObservableObject {
     }
 
     @discardableResult
+    func correctBonspielEndScore(bonspielID: String,
+                                 gameID: String,
+                                 endNumber: Int,
+                                 teamA: Int,
+                                 teamB: Int,
+                                 isBlank: Bool = false,
+                                 isExtraEnd: Bool = false,
+                                 hammerTeamIDStart: String? = nil,
+                                 measureRequired: Bool = false,
+                                 powerPlayUsed: Bool = false) -> MutationReceipt {
+        guard let game = bonspielGame(bonspielID: bonspielID, gameID: gameID) else {
+            return blockedReceipt(action: "correctBonspielEndScore", message: "Bonspiel game not found.")
+        }
+        guard game.scoreAgreement.confirmed || game.status == .finalized || game.status == .forfeit else {
+            return recordBonspielEndScore(bonspielID: bonspielID,
+                                          gameID: gameID,
+                                          endNumber: endNumber,
+                                          teamA: teamA,
+                                          teamB: teamB,
+                                          isBlank: isBlank,
+                                          isExtraEnd: isExtraEnd,
+                                          hammerTeamIDStart: hammerTeamIDStart,
+                                          measureRequired: measureRequired,
+                                          powerPlayUsed: powerPlayUsed)
+        }
+        if let message = endScoreValidationMessage(game: game,
+                                                   endNumber: endNumber,
+                                                   teamA: teamA,
+                                                   teamB: teamB,
+                                                   isBlank: isBlank,
+                                                   isExtraEnd: isExtraEnd) {
+            return blockedReceipt(action: "correctBonspielEndScore", message: message)
+        }
+
+        let score = BonspielEndScore(id: "\(gameID)-e\(endNumber)",
+                                     endNumber: endNumber,
+                                     teamA: teamA,
+                                     teamB: teamB,
+                                     hammerTeamIDStart: hammerTeamIDStart,
+                                     isBlank: isBlank,
+                                     isExtraEnd: isExtraEnd,
+                                     measureRequired: measureRequired,
+                                     powerPlayUsed: powerPlayUsed)
+        return mutate(action: "correctBonspielEndScore",
+                      domains: [.bonspiels, .results, .feed],
+                      message: "Correction saved. Confirm the scorecard again.") { draft in
+            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
+                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
+            if let endIndex = draft.bonspiels[bonspielIndex].games[gameIndex].ends.firstIndex(where: { $0.endNumber == endNumber }) {
+                draft.bonspiels[bonspielIndex].games[gameIndex].ends[endIndex] = score
+            } else {
+                draft.bonspiels[bonspielIndex].games[gameIndex].ends.append(score)
+            }
+            draft.bonspiels[bonspielIndex].games[gameIndex].ends.sort { $0.endNumber < $1.endNumber }
+            draft.bonspiels[bonspielIndex].games[gameIndex].resultFlags.isFinal = false
+            draft.bonspiels[bonspielIndex].games[gameIndex].scoreAgreement = BonspielScoreAgreement(confirmed: false,
+                                                                                                     confirmedAt: nil,
+                                                                                                     confirmedBy: nil)
+            if [.finalized, .forfeit, .complete].contains(draft.bonspiels[bonspielIndex].games[gameIndex].status) {
+                draft.bonspiels[bonspielIndex].games[gameIndex].status = .inProgress
+            }
+            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
+            draft.bonspiels[bonspielIndex].version += 1
+            draft.results.removeAll { $0.bonspielGameID == gameID }
+        }
+    }
+
+    @discardableResult
     func setBonspielResultFlags(bonspielID: String,
                                 gameID: String,
                                 conceded: Bool,
@@ -2029,6 +2176,32 @@ final class Store: ObservableObject {
         data.visits.contains { $0.stopID == stopID }
             || data.results.contains { $0.stopID == stopID }
             || (stop(stopID).map { !$0.games.isEmpty || !$0.met.isEmpty || $0.record != "—" } ?? false)
+    }
+
+    private static func routeKilometers(for stops: [Stop]) -> Int? {
+        let coordinates = stops.compactMap { stop -> (latitude: Double, longitude: Double)? in
+            guard let latitude = stop.latitude, let longitude = stop.longitude else { return nil }
+            return (latitude, longitude)
+        }
+        guard !coordinates.isEmpty else { return nil }
+        guard coordinates.count > 1 else { return 0 }
+        let total = zip(coordinates, coordinates.dropFirst()).reduce(0.0) { partial, pair in
+            partial + haversineKilometers(from: pair.0, to: pair.1)
+        }
+        return Int(total.rounded())
+    }
+
+    private static func haversineKilometers(from start: (latitude: Double, longitude: Double),
+                                            to end: (latitude: Double, longitude: Double)) -> Double {
+        let earthRadius = 6371.0
+        let lat1 = start.latitude * .pi / 180
+        let lat2 = end.latitude * .pi / 180
+        let deltaLat = (end.latitude - start.latitude) * .pi / 180
+        let deltaLon = (end.longitude - start.longitude) * .pi / 180
+        let a = sin(deltaLat / 2) * sin(deltaLat / 2)
+            + cos(lat1) * cos(lat2) * sin(deltaLon / 2) * sin(deltaLon / 2)
+        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return earthRadius * c
     }
 
     private func mutate(action: String,
@@ -2794,7 +2967,7 @@ enum Seed {
     ]
 
     static let feed: [FeedItem] = [
-        .spiel(SpielPost(title: "5 curlers you follow are headed to", spielName: "Brier Patch Open",
+        .spiel(SpielPost(title: "5 saved curlers are headed to", spielName: "Brier Patch Open",
                          whereText: "KAMLOOPS", whenText: "FEB 14–16", who: ["sam", "jo", "lind"])),
         .review(ReviewPost(author: "jo", time: "5H", rink: "Granite City CC", stars: 4,
                            note: "fast, 5–6 ft of curl"))
