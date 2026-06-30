@@ -102,8 +102,8 @@ struct LockerRoomView: View {
                         }
                     case .discover:
                         if discoverSuggestions.isEmpty {
-                            EmptyStateView(title: "No new curlers to discover",
-                                           message: "Everyone in your roster is already in your circle.",
+                            EmptyStateView(title: "No local suggestions",
+                                           message: "Every locally referenced curler is already saved to your roster.",
                                            systemImage: "person.2")
                         } else {
                             ForEach(discoverSuggestions) { curler in
@@ -161,8 +161,8 @@ struct LockerRoomView: View {
                 .accessibilityIdentifier("curlplan.locker.search")
             }
             HStack(spacing: 22) {
-                lockerTab(.following, "Following")
-                lockerTab(.discover, "Discover")
+                lockerTab(.following, "Local feed", identifier: "following")
+                lockerTab(.discover, "Suggested", identifier: "discover")
                 Spacer()
             }
             .overlay(alignment: .bottom) { settings.line.frame(height: 1) }
@@ -178,7 +178,7 @@ struct LockerRoomView: View {
         undoToken = receipt.undoToken
     }
 
-    private func lockerTab(_ tab: LockerMode, _ title: String) -> some View {
+    private func lockerTab(_ tab: LockerMode, _ title: String, identifier: String) -> some View {
         Button {
             mode = tab
             query = ""
@@ -193,7 +193,7 @@ struct LockerRoomView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Show \(title)")
-        .accessibilityIdentifier("curlplan.locker.tab.\(title.lowercased())")
+        .accessibilityIdentifier("curlplan.locker.tab.\(identifier)")
     }
 }
 
@@ -246,7 +246,7 @@ private struct DiscoverCurlerCard: View {
             }
             .buttonStyle(.plain)
             Spacer()
-            PillButton(title: "Follow") {
+            PillButton(title: "Save") {
                 store.toggleFollow(curler.id)
             }
             .accessibilityIdentifier("curlplan.discover.follow.\(curler.id)")

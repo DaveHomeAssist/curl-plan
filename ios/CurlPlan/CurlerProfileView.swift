@@ -89,7 +89,7 @@ struct CurlerProfileView: View {
         return VStack(spacing: 10) {
             HStack(spacing: 10) {
                 Button { store.toggleFollow(c.id) } label: {
-                    Text(c.following ? "In circle" : "+ Circle")
+                    Text(c.following ? "Saved" : "Save local")
                         .font(.grotesk(14, .bold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(settings.accent)

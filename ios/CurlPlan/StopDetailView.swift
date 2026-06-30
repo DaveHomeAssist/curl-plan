@@ -20,8 +20,8 @@ struct StopDetailView: View {
                             iceRead(stop)
                             gamesHere(stop)
                             SectionHeader(title: "People you met here",
-                                          action: metIDs.isEmpty ? nil : "+ All",
-                                          actionAccessibilityLabel: "Follow everyone met here",
+                                          action: metIDs.isEmpty ? nil : "Save all",
+                                          actionAccessibilityLabel: "Save everyone met here to local roster",
                                           onAction: { store.followAll(metIDs) })
                             people(stop, metIDs: metIDs)
                         }
@@ -231,7 +231,7 @@ struct StopDetailView: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("curlplan.stop.curler.\(c.id)")
                         Spacer()
-                        PillButton(title: c.following ? "In circle" : "Add", filled: !c.following) {
+                        PillButton(title: c.following ? "Saved" : "Save", filled: !c.following) {
                             store.toggleFollow(c.id)
                         }
                     }

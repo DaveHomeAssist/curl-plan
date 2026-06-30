@@ -56,7 +56,7 @@ struct RosterView: View {
             if searching {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundStyle(settings.muted)
-                    TextField("Search your circle", text: $query)
+                    TextField("Search roster", text: $query)
                         .font(.grotesk(15)).foregroundStyle(settings.ink).tint(settings.accent)
                         .autocorrectionDisabled()
                         .accessibilityIdentifier("curlplan.roster.searchField")
@@ -77,7 +77,7 @@ struct RosterView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Eyebrow(text: "Your circle · \(filtered.count) curler\(filtered.count == 1 ? "" : "s")")
+                    Eyebrow(text: "Local roster · \(filtered.count) curler\(filtered.count == 1 ? "" : "s")")
                     if filtered.isEmpty {
                         EmptyStateView(title: query.isEmpty ? "No curlers yet" : "No curlers found",
                                        message: query.isEmpty ? "Add teammates, spares, and people you meet on the ice." : "No curlers match \"\(query)\".",
@@ -117,7 +117,7 @@ struct NewCurlerSheet: View {
 
     var body: some View {
         CreateScaffold(title: "Add to roster",
-                       subtitle: "Add a curler to your circle.",
+                       subtitle: "Add a curler to your local roster.",
                        canSave: canSave,
                        onCancel: { dismiss() },
                        onSave: {
@@ -155,7 +155,7 @@ private struct RosterRow: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("curlplan.roster.curler.\(curler.id)")
             Spacer()
-            PillButton(title: curler.following ? "In circle" : "Add", filled: !curler.following) {
+            PillButton(title: curler.following ? "Saved" : "Save", filled: !curler.following) {
                 store.toggleFollow(curler.id)
             }
             .accessibilityIdentifier("curlplan.roster.follow.\(curler.id)")
