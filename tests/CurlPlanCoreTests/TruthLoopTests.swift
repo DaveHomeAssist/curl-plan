@@ -120,6 +120,66 @@ final class StoreMutationTests: XCTestCase {
         XCTAssertEqual(bonspiel?.timezone, "America/Regina")
     }
 
+    func testAddBonspielGameCreatesLocalDrawSheetAndOpponentTeam() throws {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+        _ = store.addSpiel(name: "Okanagan Classic",
+                           whereText: "Kelowna, BC",
+                           startDate: testDate(year: 2026, month: 3, day: 6),
+                           endDate: testDate(year: 2026, month: 3, day: 8),
+                           status: "You're in",
+                           discipline: .fourPlayer)
+
+        let initialRecord = try XCTUnwrap(store.bonspiel(for: store.spiels[0].id))
+        XCTAssertEqual(initialRecord.games.count, 0)
+
+        let receipt = store.addBonspielGame(bonspielID: initialRecord.id,
+                                            drawLabel: "Draw 1",
+                                            scheduledStartAt: "2026-03-06 10:00",
+                                            sheet: "Sheet A",
+                                            opponentName: "Team Northern")
+
+        XCTAssertEqual(receipt.action, "addBonspielGame")
+        XCTAssertTrue(receipt.changedDomains.contains(.bonspiels))
+
+        let record = try XCTUnwrap(store.bonspiel(initialRecord.id))
+        XCTAssertEqual(record.games.count, 1)
+        XCTAssertEqual(record.teams.count, 2)
+
+        let game = try XCTUnwrap(record.games.first)
+        XCTAssertEqual(game.drawLabel, "Draw 1")
+        XCTAssertEqual(game.scheduledStartAt, "2026-03-06 10:00")
+        XCTAssertEqual(game.sheet, "Sheet A")
+        XCTAssertEqual(game.teamAID, record.teams.first?.id)
+        XCTAssertEqual(record.teamName(game.teamBID), "Team Northern")
+        XCTAssertEqual(game.status, .scheduled)
+        XCTAssertEqual(game.scheduledEnds, record.rulesProfile.scheduledEnds)
+        XCTAssertEqual(game.minEndsForLocalResult, record.rulesProfile.minEndsForLocalResult)
+        XCTAssertFalse(game.scoreAgreement.confirmed)
+    }
+
+    func testAddBonspielGameRejectsIncompleteLocalDraw() throws {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        store.startBlankSeason(name: "Alex Stone", homeClub: "Test CC", province: "BC")
+        _ = store.addSpiel(name: "Okanagan Classic",
+                           whereText: "Kelowna, BC",
+                           startDate: testDate(year: 2026, month: 3, day: 6),
+                           endDate: testDate(year: 2026, month: 3, day: 8),
+                           status: "You're in",
+                           discipline: .fourPlayer)
+        let record = try XCTUnwrap(store.bonspiel(for: store.spiels[0].id))
+
+        let receipt = store.addBonspielGame(bonspielID: record.id,
+                                            drawLabel: "Draw 1",
+                                            scheduledStartAt: "2026-03-06 10:00",
+                                            sheet: " ",
+                                            opponentName: "Team Northern")
+
+        XCTAssertEqual(receipt.changedDomains, [])
+        XCTAssertTrue(receipt.userMessage.contains("Game needs draw"))
+        XCTAssertEqual(store.bonspiel(record.id)?.games.count, 0)
+    }
+
     private func testDate(year: Int, month: Int, day: Int) -> Date {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
@@ -139,9 +199,37 @@ final class DerivedSummaryTests: XCTestCase {
     }
 
     func testRouteDistanceIsUnavailableWhenNoMeasuredDistanceExists() {
-        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+        var data = Seed.appData(setupComplete: true)
+        data.stops = [
+            Stop(id: "unmapped",
+                 code: "UNK",
+                 name: "Unmapped Bonspiel",
+                 club: "Unknown Club",
+                 prov: "TBD",
+                 dates: "APR 1",
+                 record: "1-0",
+                 x: 50,
+                 y: 50,
+                 iceSpeed: "—",
+                 iceSpeedSec: "—",
+                 iceCurl: "—",
+                 iceRec: "—",
+                 games: [],
+                 met: [])
+        ]
+        data.results = []
+        data.visits = []
+        let store = Store(appData: data, loadPersisted: false)
 
         XCTAssertEqual(store.seasonSummary.distanceLabel, "—")
+        XCTAssertEqual(store.seasonSummary.kilometers, 0)
+    }
+
+    func testRouteDistanceDerivesFromActivityStopCoordinates() {
+        let store = Store(appData: Seed.appData(setupComplete: true), loadPersisted: false)
+
+        XCTAssertGreaterThan(store.seasonSummary.kilometers, 0)
+        XCTAssertEqual(store.seasonSummary.distanceLabel, "\(store.seasonSummary.kilometers)")
     }
 }
 
@@ -379,6 +467,44 @@ final class BonspielScoreTests: XCTestCase {
 
         _ = store.confirmBonspielGameResult(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")
         XCTAssertEqual(store.results.filter { $0.bonspielGameID == "bp-g1" }.count, 1)
+    }
+
+    func testFinalizedScorecardCorrectionInvalidatesLinkedResultUntilReconfirmed() {
+        var data = Seed.appData(setupComplete: true)
+        data.bonspiels[0].games[0].status = .inProgress
+        data.bonspiels[0].games[0].ends = [
+            BonspielEndScore(id: "e1", endNumber: 1, teamA: 1, teamB: 0, hammerTeamIDStart: nil, isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
+            BonspielEndScore(id: "e2", endNumber: 2, teamA: 0, teamB: 1, hammerTeamIDStart: nil, isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
+            BonspielEndScore(id: "e3", endNumber: 3, teamA: 2, teamB: 0, hammerTeamIDStart: nil, isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
+            BonspielEndScore(id: "e4", endNumber: 4, teamA: 0, teamB: 0, hammerTeamIDStart: nil, isBlank: true, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
+            BonspielEndScore(id: "e5", endNumber: 5, teamA: 1, teamB: 0, hammerTeamIDStart: nil, isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
+            BonspielEndScore(id: "e6", endNumber: 6, teamA: 0, teamB: 1, hammerTeamIDStart: nil, isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false)
+        ]
+        let store = Store(appData: data, loadPersisted: false)
+        _ = store.confirmBonspielGameResult(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")
+
+        let blocked = store.recordBonspielEndScore(bonspielID: "bon-brier-patch-open",
+                                                   gameID: "bp-g1",
+                                                   endNumber: 1,
+                                                   teamA: 0,
+                                                   teamB: 2)
+        XCTAssertEqual(blocked.changedDomains, [])
+
+        let correction = store.correctBonspielEndScore(bonspielID: "bon-brier-patch-open",
+                                                       gameID: "bp-g1",
+                                                       endNumber: 1,
+                                                       teamA: 0,
+                                                       teamB: 2)
+
+        XCTAssertTrue(correction.changedDomains.contains(.bonspiels))
+        XCTAssertTrue(correction.changedDomains.contains(.results))
+        XCTAssertEqual(store.bonspielGame(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")?.scoreAgreement.confirmed, false)
+        XCTAssertEqual(store.bonspielGame(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")?.status, .inProgress)
+        XCTAssertEqual(store.bonspielGame(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")?.scoreLabel, "3-4")
+        XCTAssertEqual(store.results.filter { $0.bonspielGameID == "bp-g1" }.count, 0)
+
+        _ = store.confirmBonspielGameResult(bonspielID: "bon-brier-patch-open", gameID: "bp-g1")
+        XCTAssertEqual(store.results.filter { $0.bonspielGameID == "bp-g1" }.first?.scoreLabel, "3-4")
     }
 
     func testConcededScorecardCanConfirmBeforeMinimumEnds() {

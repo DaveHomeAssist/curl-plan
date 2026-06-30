@@ -415,54 +415,51 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
         assertRosterShowsCurler(name: "Bad Import Guard", club: "GUARD CC")
     }
 
-    func testDiscoverFollowActionPersistsToCircleState() throws {
+    func testDiscoverSaveActionPersistsToLocalRosterState() throws {
         XCTAssertTrue(app.buttons["curlplan.setup.use-demo-season"].waitForExistence(timeout: 6))
         app.buttons["curlplan.setup.use-demo-season"].tap()
         XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
 
         openLocker()
-        app.buttons["Show Discover"].tap()
+        tapButton("curlplan.locker.tab.discover")
         XCTAssertTrue(app.staticTexts["Sam Reid"].waitForExistence(timeout: 4))
         app.buttons["curlplan.discover.follow.sam"].tap()
-        XCTAssertFalse(app.buttons["curlplan.discover.follow.sam"].waitForExistence(timeout: 2))
+        assertSamSavedInRoster()
 
         app.terminate()
         app.launchArguments = []
         app.launch()
 
         XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
-        openLocker()
-        app.buttons["Show Discover"].tap()
-        XCTAssertFalse(app.buttons["curlplan.discover.follow.sam"].waitForExistence(timeout: 2))
+        assertSamSavedInRoster()
     }
 
-    func testRouteDistanceAndCircleMembershipSurfacesStayTruthfulAcrossRelaunch() throws {
+    func testRouteDistanceAndLocalRosterSurfacesStayTruthfulAcrossRelaunch() throws {
         XCTAssertTrue(app.buttons["curlplan.setup.use-demo-season"].waitForExistence(timeout: 6))
         app.buttons["curlplan.setup.use-demo-season"].tap()
         XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
 
         openPassport()
-        assertPassportStat("curlplan.passport.distance", contains: "— KM")
+        assertPassportStat("curlplan.passport.distance", contains: "KM")
+        XCTAssertFalse(app.descendants(matching: .any)["curlplan.passport.distance"].label.contains("— KM"))
 
         openRoster()
         searchRoster("Sam Reid")
         tapButton("curlplan.roster.follow.sam")
-        assertButton("curlplan.roster.follow.sam", contains: "In circle")
+        assertButton("curlplan.roster.follow.sam", contains: "Saved")
         tapButton("curlplan.roster.curler.sam")
-        assertButton("curlplan.profile.toggleFollow", contains: "In circle")
+        assertButton("curlplan.profile.toggleFollow", contains: "Saved")
         tapButton("curlplan.profile.toggleFollow")
-        assertButton("curlplan.profile.toggleFollow", contains: "+ Circle")
+        assertButton("curlplan.profile.toggleFollow", contains: "Save local")
         tapButton("curlplan.profile.toggleFollow")
-        assertButton("curlplan.profile.toggleFollow", contains: "In circle")
+        assertButton("curlplan.profile.toggleFollow", contains: "Saved")
 
         app.terminate()
         app.launchArguments = []
         app.launch()
 
         XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
-        openLocker()
-        tapButton("curlplan.locker.tab.discover")
-        XCTAssertFalse(app.buttons["curlplan.discover.follow.sam"].waitForExistence(timeout: 2))
+        assertSamSavedInRoster()
     }
 
     func testLockerFeedSearchFilterAndBackingSourceDeletionSurvivesRelaunch() throws {
@@ -487,16 +484,14 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
         tapButton("curlplan.locker.tab.discover")
         XCTAssertTrue(app.staticTexts["Sam Reid"].waitForExistence(timeout: 4))
         tapButton("curlplan.discover.follow.sam")
-        XCTAssertFalse(app.buttons["curlplan.discover.follow.sam"].waitForExistence(timeout: 2))
+        assertSamSavedInRoster()
 
         app.terminate()
         app.launchArguments = []
         app.launch()
 
         XCTAssertTrue(app.otherElements["curlplan.main"].waitForExistence(timeout: 6))
-        openLocker()
-        tapButton("curlplan.locker.tab.discover")
-        XCTAssertFalse(app.buttons["curlplan.discover.follow.sam"].waitForExistence(timeout: 2))
+        assertSamSavedInRoster()
     }
 
     func testSmallScreenAccessibilityPrimaryControlsRemainReachable() throws {
@@ -602,6 +597,12 @@ final class CurlPlanPrimaryScreenflowUITests: XCTestCase {
 
     private func openRoster() {
         openTab(identifier: "roster", title: "Roster", expectedHeading: "Roster")
+    }
+
+    private func assertSamSavedInRoster() {
+        openRoster()
+        searchRoster("Sam Reid")
+        assertButton("curlplan.roster.follow.sam", contains: "Saved")
     }
 
     private func openSettings() {
