@@ -28,7 +28,7 @@ struct LiveMapView: View {
     }
 
     private var routeCoordinates: [CLLocationCoordinate2D] {
-        stops.map(\.coordinate)
+        stops.filter(\.hasMeasuredCoordinate).map(\.coordinate)
     }
 
     private var compact: Bool {
@@ -89,8 +89,8 @@ struct LiveMapView: View {
                 EmptyMapContent()
             }
         case .home:
-            if let home = stops.first(where: \.home) {
-                ForEach(stops.filter { !$0.home }) { stop in
+            if let home = stops.first(where: { $0.home && $0.hasMeasuredCoordinate }) {
+                ForEach(stops.filter { !$0.home && $0.hasMeasuredCoordinate }) { stop in
                     MapPolyline(coordinates: [home.coordinate, stop.coordinate])
                         .stroke(settings.accent, style: StrokeStyle(lineWidth: 2.1, lineCap: .round, lineJoin: .round, dash: [1, 9]))
                 }
@@ -728,6 +728,7 @@ private struct LiveMapStop: Identifiable {
     let name: String
     let city: String
     let coordinate: CLLocationCoordinate2D
+    let hasMeasuredCoordinate: Bool
     let meta: String
     let record: String
     let speed: String
@@ -767,6 +768,7 @@ private extension Store {
             let recordLosses = results.filter { $0.res == "LOSS" || $0.res == "L" }.count + stop.games.filter { $0.res == "L" }.count
             let hasWinningRecord = recordWins > recordLosses
             let coordinate = LiveMapStop.coordinate(for: stop)
+            let hasMeasuredCoordinate = stop.latitude != nil && stop.longitude != nil
             let gameCount = results.isEmpty ? stop.games.count : results.count
 
             return LiveMapStop(id: stop.id,
@@ -774,6 +776,7 @@ private extension Store {
                                name: stop.name,
                                city: "\(stop.club), \(stop.prov)",
                                coordinate: coordinate,
+                               hasMeasuredCoordinate: hasMeasuredCoordinate,
                                meta: "\(stop.club.uppercased()) · \(stop.dates)",
                                record: stop.record,
                                speed: stop.iceSpeed,

@@ -170,11 +170,13 @@ struct SeasonMap: View {
                 .stroke(settings.line, lineWidth: 1)
                 .opacity(0.7)
 
-                // dashed route (decorative)
+                // route through stops with measured coordinates
                 Path { p in
-                    let pts: [(Double, Double)] = [(14, 36), (30, 22), (50, 38), (70, 18), (86, 30)]
+                    let pts = store.stops
+                        .filter { $0.latitude != nil && $0.longitude != nil }
+                        .map { ($0.x, $0.y) }
                     for (i, pt) in pts.enumerated() {
-                        let cp = CGPoint(x: w * pt.0 / 100, y: h * pt.1 / 56)
+                        let cp = CGPoint(x: w * pt.0 / 100, y: h * pt.1 / 100)
                         if i == 0 { p.move(to: cp) } else { p.addLine(to: cp) }
                     }
                 }
