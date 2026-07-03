@@ -16,7 +16,7 @@
 <style>
 /* ============================================================
    CurlPlan — Hi-Fi Concept implementation
-   Single file, no build, no dependencies. Faithful to the
+   Single file today (dependencies, a build step, and a backend are all welcome). Faithful to the
    "Passport + Locker Room" design concept; made navigable.
    ============================================================ */
 
@@ -336,6 +336,64 @@ body{
   opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:60; white-space:nowrap;
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ---------- sheet forms (compose / submissions / messaging) ---------- */
+.seg-type{ display:flex; gap:6px; margin:2px 0 16px; }
+.seg-type button{
+  flex:1; font:600 12px 'Hanken Grotesk'; border:1px solid var(--line); background:var(--panel); color:var(--ink);
+  border-radius:9px; padding:9px 10px; cursor:pointer;
+}
+.seg-type button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.field{ margin-bottom:13px; }
+.field > label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.field input, .field textarea, .field select{
+  width:100%; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel);
+  border:1px solid var(--line); border-radius:11px; padding:11px 12px; outline:none;
+}
+.field input:focus, .field textarea:focus, .field select:focus{ border-color:var(--accent); }
+.field textarea{ resize:vertical; min-height:74px; line-height:1.4; }
+.field.split{ display:flex; gap:10px; }
+.field.split > div{ flex:1; }
+.stars-pick{ display:flex; gap:4px; }
+.stars-pick button{ background:none; border:0; cursor:pointer; font-size:26px; line-height:1; color:var(--line); padding:0; }
+.stars-pick button.on{ color:var(--accent); }
+.sheet-actions{ display:flex; gap:10px; margin-top:6px; }
+.sheet-actions .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
+.sheet-actions .b.solid{ background:var(--accent); color:#fff; }
+.sheet-actions .b.outline{ border:1.5px solid var(--ink); color:var(--ink); background:transparent; padding:11.5px; }
+
+/* ---------- message thread ---------- */
+.thread{ display:flex; flex-direction:column; gap:9px; max-height:300px; overflow-y:auto; padding:4px 2px 10px; }
+.thread::-webkit-scrollbar{ width:0; }
+.bub{ max-width:78%; padding:9px 13px; border-radius:15px; font:500 14px/1.35 'Hanken Grotesk'; }
+.bub .ts{ display:block; font:500 9px 'DM Mono'; letter-spacing:.08em; margin-top:4px; opacity:.6; }
+.bub.them{ align-self:flex-start; background:var(--panel); color:var(--ink); border-bottom-left-radius:5px; }
+.bub.me{ align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:5px; }
+.thread-empty{ text-align:center; color:var(--muted); font:400 14px 'Hanken Grotesk'; padding:22px 10px; }
+.composer{ display:flex; gap:9px; align-items:flex-end; }
+.composer textarea{ flex:1; min-height:44px; max-height:120px; }
+.composer button{ flex:none; }
+
+/* small inline submission lists on stop detail */
+.subrow{ display:flex; align-items:center; gap:9px; padding:9px 13px; }
+.subrow + .subrow{ border-top:1px solid var(--line); }
+.subrow .nm{ flex:1; font:600 13px 'Hanken Grotesk'; color:var(--ink); }
+.subrow .meta{ font:500 10px 'DM Mono'; color:var(--muted); }
+.add-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.add-row .pill-btn.ghost{ flex:1; text-align:center; }
+
+/* ---------- auth screen ---------- */
+.auth-wrap{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:15px; padding:8px 22px 30px; overflow-y:auto; }
+.auth-wrap::-webkit-scrollbar{ width:0; }
+.auth-head{ text-align:center; }
+.auth-head .ring{ width:46px; height:46px; display:inline-block; margin-bottom:10px; box-shadow:0 2px 8px rgba(10,15,18,.3); }
+.auth-head h2{ font:400 32px 'Instrument Serif'; color:var(--ink); margin:0; line-height:1.05; }
+.auth-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 14px 34px -22px rgba(15,20,24,.4); }
+.auth-err{ background:rgba(192,64,44,.12); color:var(--accent); border-radius:10px; padding:9px 12px; font:600 12px 'Hanken Grotesk'; margin-bottom:13px; }
+.auth-alt{ text-align:center; font:500 13px 'Hanken Grotesk'; color:var(--muted); }
+.auth-alt b{ color:var(--accent); cursor:pointer; }
+.pw-meter{ height:5px; border-radius:99px; background:var(--line); overflow:hidden; margin-top:8px; }
+.pw-meter > i{ display:block; height:100%; width:0; background:var(--accent); transition:width .2s; }
 </style>
 </head>
 <body>
@@ -366,6 +424,17 @@ body{
         <div class="k">Pebble texture<small>ICE GRAIN OVERLAY</small></div>
         <button type="button" class="toggle" id="toggle-pebble" aria-label="Toggle pebble texture"></button>
       </div>
+      <div class="set-row">
+        <div class="k">Account<small id="acct-meta">—</small></div>
+        <button type="button" class="pill-btn ghost" data-action="signout">Sign out</button>
+      </div>
+    </div>
+
+    <!-- generic action sheet (compose / submissions / messaging) -->
+    <div class="sheet-scrim" id="scrim2" data-action="close-sheet"></div>
+    <div class="sheet" id="sheet2" role="dialog" aria-label="Action">
+      <div class="grab"></div>
+      <div id="sheet-body"></div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -383,6 +452,9 @@ function esc(s){
     .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function el(id){ return document.getElementById(id); }
+/* one localStorage-JSON idiom for prefs, store, and auth */
+function readJSON(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
+function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){} }
 
 /* ============================================================
    Appearance prefs (the concept's props made real & persisted)
@@ -396,20 +468,17 @@ var PREFS_KEY = "curlplan-hifi-prefs-v1";
 var prefs = loadPrefs();
 
 function loadPrefs(){
-  var def = { theme:"ice", accent:"House red", pebble:true };
-  try{
-    var raw = JSON.parse(localStorage.getItem(PREFS_KEY));
-    if(raw && typeof raw === "object"){
-      return {
-        theme:  raw.theme === "arena" ? "arena" : "ice",
-        accent: ACCENTS.some(function(a){return a.key===raw.accent;}) ? raw.accent : "House red",
-        pebble: raw.pebble !== false
-      };
-    }
-  }catch(e){}
-  return def;
+  var raw = readJSON(PREFS_KEY);
+  if(raw && typeof raw === "object"){
+    return {
+      theme:  raw.theme === "arena" ? "arena" : "ice",
+      accent: ACCENTS.some(function(a){return a.key===raw.accent;}) ? raw.accent : "House red",
+      pebble: raw.pebble !== false
+    };
+  }
+  return { theme:"ice", accent:"House red", pebble:true };
 }
-function savePrefs(){ try{ localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }catch(e){} }
+function savePrefs(){ writeJSON(PREFS_KEY, prefs); }
 function applyQueryOverrides(){
   // optional deep-link overrides, e.g. ?theme=arena&accent=House%20blue&pebble=0 (not persisted)
   try{
@@ -432,36 +501,39 @@ function applyPrefs(){
 /* ============================================================
    Seed data — a coherent curling season
    ============================================================ */
-var me = { name:"Dana Mercer", initials:"DM", role:"Skip", club:"Kamloops CC", prov:"BC",
+// defaultMe = the demo identity (and the "Explore demo" session). A signed-in user
+// overrides identity via activeMe(); the season data below stays shared demo data.
+var defaultMe = { name:"Dana Mercer", initials:"DM", role:"Skip", club:"Kamloops CC", prov:"BC",
            season:"Season 2025–26 · in progress",
-           stats:{ rinks:12, prov:4, games:38, win:68 } };
+           stats:{ clubs:12, prov:4, games:38, win:68 } };
+var me = defaultMe;
 
 // curlers in your circle
 var curlers = [
   { id:"sam",  initials:"SR", name:"Sam Reid", role:"Skip",  club:"Vernon CC",   prov:"BC",
     metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"21–9", win:"70%", rinks:9, mutual:3 },
-    rinks:["Kelowna","Vernon","+4 more"],
+    stats:{ record:"21–9", win:"70%", clubs:9, mutual:3 },
+    clubs:["Kelowna","Vernon","+4 more"],
     form:[ {label:"A-final · Kelowna", score:"8–5", res:"W"}, {label:"Semi · Kelowna", score:"7–6", res:"W"} ] },
   { id:"jo",   initials:"JM", name:"Jo Mara", role:"Lead · Spare", club:"In roster", prov:"BC",
     metAt:"Kelowna · Jan 2026", following:true,
-    stats:{ record:"15–11", win:"58%", rinks:7, mutual:5 },
-    rinks:["Kelowna","Kamloops","+2 more"],
+    stats:{ record:"15–11", win:"58%", clubs:7, mutual:5 },
+    clubs:["Kelowna","Kamloops","+2 more"],
     form:[ {label:"Pool · Kelowna", score:"6–4", res:"W"}, {label:"Tie-break · Vernon", score:"5–7", res:"L"} ] },
   { id:"dee",  initials:"DT", name:"Dee Tan", role:"Lead", club:"Glenmore CC", prov:"BC",
     metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"12–10", win:"55%", rinks:6, mutual:2 },
-    rinks:["Kelowna","Glenmore","+1 more"],
+    stats:{ record:"12–10", win:"55%", clubs:6, mutual:2 },
+    clubs:["Kelowna","Glenmore","+1 more"],
     form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Pool · Kelowna", score:"4–8", res:"L"} ] },
   { id:"carter", initials:"BC", name:"Bryn Carter", role:"Skip", club:"Sage Valley CC", prov:"AB",
     metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"18–12", win:"60%", rinks:8, mutual:1 },
-    rinks:["Kelowna","Calgary","+3 more"],
+    stats:{ record:"18–12", win:"60%", clubs:8, mutual:1 },
+    clubs:["Kelowna","Calgary","+3 more"],
     form:[ {label:"Pool · Kelowna", score:"4–8", res:"L"}, {label:"Final · Calgary", score:"9–7", res:"W"} ] },
   { id:"lind", initials:"EL", name:"Erik Lindqvist", role:"Third", club:"Granite City CC", prov:"MB",
     metAt:"Kelowna · Jan 2026", following:true,
-    stats:{ record:"24–8", win:"75%", rinks:11, mutual:2 },
-    rinks:["Kelowna","Winnipeg","+5 more"],
+    stats:{ record:"24–8", win:"75%", clubs:11, mutual:2 },
+    clubs:["Kelowna","Winnipeg","+5 more"],
     form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Final · Winnipeg", score:"6–5", res:"W"} ] }
 ];
 function curler(id){ return curlers.filter(function(c){return c.id===id;})[0]; }
@@ -498,11 +570,11 @@ var recentStops = ["kelowna","vernon"]; // newest season results
 
 // locker-room feed
 var feed = [
-  { type:"result", author:"sam", time:"2H", body:"Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
+  { id:"seed-1", type:"result", author:"sam", time:"2H", body:"Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
     score:{ for:8, ag:5, res:"WIN", vs:"vs Northern" }, likes:24, comments:6 },
-  { type:"spiel", title:"5 curlers you follow are headed to", spiel:"Brier Patch Open",
+  { id:"seed-2", type:"spiel", title:"5 curlers you follow are headed to", spiel:"Brier Patch Open", spielId:"sp1",
     where:"KAMLOOPS", when:"FEB 14–16", who:["sam","jo","lind"] },
-  { type:"review", author:"jo", time:"5H", rink:"Granite City CC", stars:4, note:"fast, 5–6 ft of curl" }
+  { id:"seed-3", type:"review", author:"jo", time:"5H", club:"Granite City CC", stars:4, note:"fast, 5–6 ft of curl" }
 ];
 
 // spiels (season schedule)
@@ -511,6 +583,214 @@ var spiels = [
   { id:"sp2", name:"Okanagan Classic", where:"Kelowna, BC", when:"MAR 6–8", status:"Watching", going:["dee","carter"] },
   { id:"sp3", name:"Prairie Cashspiel", where:"Winnipeg, MB", when:"MAR 27–29", status:"Invite", going:["lind"] }
 ];
+
+/* ============================================================
+   Persisted app state — the social/log layer the concept
+   prototyped but never backed. One JSON blob per session under
+   curlplan-hifi-state-v1:<userId|demo> (appearance prefs stay
+   separate). Stored locally for now; a server-backed sync can
+   replace this later. Seed data is the baseline; the store holds
+   the user's overrides + additions. Posts are stamped author:"me"
+   — unambiguous because each store belongs to exactly one session.
+   ============================================================ */
+var STORE_KEY_BASE = "curlplan-hifi-state-v1";
+function storeKey(){
+  var u = currentUser();
+  return STORE_KEY_BASE + ":" + (u ? u.id : "anon");
+}
+function migrateLegacyStore(){
+  // pre-auth builds wrote one device-global blob; that era's data was the
+  // demo session's, so move it into the demo bucket once
+  try{
+    var legacy = localStorage.getItem(STORE_KEY_BASE);
+    if(legacy === null) return;
+    if(localStorage.getItem(STORE_KEY_BASE + ":demo") === null){
+      localStorage.setItem(STORE_KEY_BASE + ":demo", legacy);
+    }
+    localStorage.removeItem(STORE_KEY_BASE);
+  }catch(e){}
+}
+var store = defaultStore(); // hydrated by refreshStore() at boot and on every auth change
+
+function defaultStore(){
+  return {
+    v:1,
+    follows:{},   // curlerId -> bool (overrides seed `following`)
+    likes:{},     // postId -> bool (liked by me)
+    joins:{},     // spielId -> status string ("You're in" | "Watching" | "Invite")
+    posts:[],     // user-authored feed items, newest-first
+    visits:{},    // stopId -> [ {date, note, at} ]
+    reviews:{},   // stopId -> [ {stars, note, at} ]
+    iceReads:{},  // stopId -> [ {speed, curl, note, at} ]
+    threads:{}    // curlerId -> [ {from:"me"|"them", text, at} ]
+  };
+}
+function loadStore(){
+  var d = defaultStore();
+  var raw = readJSON(storeKey());
+  if(raw && typeof raw === "object"){
+    ["follows","likes","joins","visits","reviews","iceReads","threads"].forEach(function(k){
+      if(raw[k] && typeof raw[k] === "object") d[k] = raw[k];
+    });
+    if(Array.isArray(raw.posts)) d.posts = raw.posts;
+  }
+  return sanitizeStore(d);
+}
+function clampStars(n){ n = parseInt(n, 10); return isNaN(n) ? 1 : Math.max(1, Math.min(5, n)); }
+function sanitizeStore(d){
+  // per-item guards for hand-edited / older-schema blobs: no renderer should
+  // ever see a non-array bucket, a shapeless post, or an out-of-range stars
+  ["visits","reviews","iceReads","threads"].forEach(function(k){
+    Object.keys(d[k]).forEach(function(id){ if(!Array.isArray(d[k][id])) delete d[k][id]; });
+  });
+  d.posts = d.posts.filter(function(p){ return p && typeof p === "object" && p.id && p.type; });
+  d.posts.forEach(function(p){ if(p.type === "review") p.stars = clampStars(p.stars); });
+  Object.keys(d.reviews).forEach(function(id){
+    d.reviews[id].forEach(function(r){ if(r && typeof r === "object") r.stars = clampStars(r.stars); });
+  });
+  return d;
+}
+function saveStore(){ writeJSON(storeKey(), store); }
+function refreshStore(){ store = loadStore(); }
+function uid(prefix){ return prefix + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random()*1e4).toString(36); }
+
+/* a person record for rendering — seed curlers or "me" */
+function person(id){
+  if(id === "me") return { id:"me", initials:me.initials, name:me.name, role:me.role, club:me.club };
+  return curler(id);
+}
+
+/* canonical naming (see Notion "Curling terminology definitions"):
+   Club = facility/org, Team = competitive entry referred to by skip,
+   display a team as "{Club short} · {Skip}" when collisions matter. */
+function clubShort(club){ return String(club || "").replace(/\s+(Curling Club|CC)$/i, "").trim() || String(club || ""); }
+function teamLabel(club, skip){ return clubShort(club) + " · " + skip; }
+function initialsOf(name){
+  var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "··";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+/* ---- derivations: seed baseline + user overrides ---- */
+function isFollowing(c){
+  if(!c) return false;
+  return store.follows.hasOwnProperty(c.id) ? !!store.follows[c.id] : !!c.following;
+}
+function setFollowing(id, val){ store.follows[id] = val; saveStore(); }
+
+function isLiked(postId){ return !!store.likes[postId]; }
+function likeCount(p){ return (p.likes || 0) + (isLiked(p.id) ? 1 : 0); }
+function toggleLike(postId){ store.likes[postId] = !store.likes[postId]; saveStore(); }
+
+function spielStatus(sp){ return store.joins[sp.id] || sp.status; }
+function setSpielStatus(id, status){ store.joins[id] = status; saveStore(); }
+function spielById(id){ return spiels.filter(function(s){return s.id===id;})[0]; }
+function withdrawSpiel(id){
+  var sp = spielById(id);
+  // dropping the override reverts to the seed status (e.g. back to "Invite");
+  // when the seed itself is "You're in", only an explicit override can leave
+  if(sp && sp.status === "You're in") store.joins[id] = "Watching";
+  else delete store.joins[id];
+  saveStore();
+}
+
+function allPosts(){ return store.posts.concat(feed); }
+
+/* telemetry for a real account, computed live from their own log —
+   demo numbers stay with the demo session (activeMe leaves stats null here) */
+function derivedStats(){
+  var clubIds = Object.keys(store.visits).filter(function(k){ return (store.visits[k] || []).length; });
+  var provs = {};
+  clubIds.forEach(function(sid){ var st = stop(sid); if(st) provs[st.prov] = true; });
+  var games = 0, wins = 0;
+  store.posts.forEach(function(p){
+    if(p.type === "result" && p.score){ games++; if(p.score.res === "WIN") wins++; }
+  });
+  return { clubs:clubIds.length, prov:Object.keys(provs).length, games:games,
+    win:games ? Math.round(wins * 100 / games) : 0 };
+}
+
+/* ============================================================
+   Accounts & auth — user identity + session. Local-first
+   scaffold with a backend-ready seam: swap signUp / signIn /
+   currentUser for a real API (or the connected Clerk instance)
+   and the rest of the app is unchanged. Stored separately under
+   curlplan-hifi-auth-v1.
+   NOTE: passwords are obfuscated with a non-cryptographic hash
+   for this on-device demo only — NOT secure. Real auth should
+   run through a backend or Clerk (see CLAUDE.md engineering policy).
+   ============================================================ */
+var AUTH_KEY = "curlplan-hifi-auth-v1";
+var auth = loadAuth();
+var authMode = "signin";   // "signin" | "signup"
+var authError = "";
+// typed-but-not-submitted form values, so an error re-render doesn't wipe the
+// form (password intentionally excluded — never re-rendered into markup)
+var authDraft = { name:"", club:"", email:"", role:"Skip" };
+function resetAuthDraft(){ authDraft = { name:"", club:"", email:"", role:"Skip" }; }
+
+function defaultAuth(){ return { users:[], session:null }; }
+function loadAuth(){
+  var d = defaultAuth();
+  var raw = readJSON(AUTH_KEY);
+  if(raw && typeof raw === "object"){
+    if(Array.isArray(raw.users)) d.users = raw.users;
+    if(typeof raw.session === "string") d.session = raw.session;
+  }
+  return d;
+}
+function saveAuth(){ writeJSON(AUTH_KEY, auth); }
+function hashPass(s){ // djb2 — obfuscation only, NOT cryptographic
+  var h = 5381, str = String(s);
+  for(var i = 0; i < str.length; i++){ h = ((h << 5) + h + str.charCodeAt(i)) | 0; }
+  return (h >>> 0).toString(36);
+}
+function userByEmail(email){
+  var e = String(email || "").trim().toLowerCase();
+  return auth.users.filter(function(u){ return u.email === e; })[0] || null;
+}
+function currentUser(){
+  if(auth.session === "demo"){
+    return { id:"demo", name:defaultMe.name, email:"demo@curlplan.app", club:defaultMe.club, role:defaultMe.role, prov:defaultMe.prov, demo:true };
+  }
+  if(!auth.session) return null;
+  return auth.users.filter(function(u){ return u.id === auth.session; })[0] || null;
+}
+function activeMe(){
+  var u = currentUser();
+  if(!u || u.demo) return defaultMe;
+  return {
+    name:u.name, initials:initialsOf(u.name), role:u.role || "Skip",
+    club:u.club || defaultMe.club, prov:u.prov || defaultMe.prov,
+    season:"Your season · in progress",
+    stats:null // real accounts: viewPassport derives live stats from their store
+  };
+}
+function refreshMe(){ me = activeMe(); }
+
+/* --- auth actions (the backend-ready seam) --- */
+function signUp(f){
+  var name = String(f.name || "").trim(),
+      email = String(f.email || "").trim().toLowerCase(),
+      pass = String(f.pass || "");
+  if(!name) return { ok:false, error:"Add your name" };
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok:false, error:"Enter a valid email" };
+  if(pass.length < 6) return { ok:false, error:"Password needs 6+ characters" };
+  if(userByEmail(email)) return { ok:false, error:"That email already has an account" };
+  var user = { id:uid("u"), name:name, email:email, pass:hashPass(pass),
+    club:String(f.club || "").trim() || "Independent", role:f.role || "Skip", prov:String(f.prov || "").trim() };
+  auth.users.push(user);
+  auth.session = user.id;
+  saveAuth();
+  return { ok:true };
+}
+function signIn(email, pass){
+  var u = userByEmail(email);
+  if(!u || u.pass !== hashPass(pass)) return { ok:false, error:"Email or password is incorrect" };
+  auth.session = u.id; saveAuth();
+  return { ok:true };
+}
+function signOut(){ auth.session = null; saveAuth(); }
 
 /* ============================================================
    Shared render helpers
@@ -533,6 +813,37 @@ function avatarStack(ids){
   }).join("") + '</div>';
 }
 function resColor(res){ return res === "W" ? "var(--accent)" : "var(--muted)"; }
+function likeBtn(p){
+  var liked = isLiked(p.id);
+  return '<span data-action="like" data-id="' + esc(p.id) + '"' + (liked ? ' style="color:var(--accent);"' : '') + '>' +
+    (liked ? "♥" : "♡") + ' ' + likeCount(p) + '</span>';
+}
+function starsRow(n){
+  n = Math.max(0, Math.min(5, parseInt(n, 10) || 0));
+  return '<span style="font-size:13px; letter-spacing:2px; color:var(--accent);">' + "★".repeat(n) + '</span>' +
+    '<span style="font-size:13px; letter-spacing:2px; color:var(--line);">' + "★".repeat(5 - n) + '</span>';
+}
+/* the one post header + actions bar every feed card shares */
+function postHead(p, o){
+  o = o || {};
+  var a = person(p.author) || { id:"", initials:"?", name:"Unknown curler", role:"CURLER", club:"—" };
+  var nav = (!a.id || a.id === "me") ? "" : ' data-action="curler" data-id="' + esc(a.id) + '"';
+  var meta = o.meta || (esc((a.role || "").toUpperCase()) + ' · ' + esc((a.club || "").toUpperCase()) + ' · ' + esc(postTime(p)));
+  return '<div class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
+    '<div style="flex:1;"><div class="name"' + (o.nameSize ? ' style="font-size:' + o.nameSize + 'px;"' : '') + '>' + esc(a.name) + '</div>' +
+    '<div class="meta"' + (o.metaSize ? ' style="font-size:' + o.metaSize + 'px;"' : '') + '>' + meta + '</div></div>' +
+    (o.noMenu ? '' : '<span style="font-size:18px; color:var(--muted);">⋯</span>') +
+  '</div>';
+}
+function postActions(p){
+  return '<div class="actions">' + likeBtn(p) + '<span>💬 ' + (p.comments || 0) + '</span><span style="margin-left:auto;">↗</span></div>';
+}
+/* titled .glist card for the stop-detail submission lists; "" when empty */
+function submissionCard(title, items, rowFn){
+  if(!items.length) return "";
+  return '<div class="card glist"><div class="ghead"><span class="t">' + esc(title) + '</span><span class="n">' + items.length + '</span></div>' +
+    items.map(rowFn).join("") + '</div>';
+}
 
 function tabbar(active){
   var tabs = [
@@ -554,8 +865,60 @@ function tabbar(active){
 /* ============================================================
    Views
    ============================================================ */
+function viewAuth(){
+  var signup = authMode === "signup";
+  var seg = '<div class="seg-type">' +
+    '<button type="button" class="' + (!signup ? "on" : "") + '" data-action="auth-mode" data-mode="signin">Sign in</button>' +
+    '<button type="button" class="' + (signup ? "on" : "") + '" data-action="auth-mode" data-mode="signup">Create account</button>' +
+  '</div>';
+
+  var fields = "";
+  if(signup){
+    var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){
+      return '<option' + (r === authDraft.role ? " selected" : "") + '>' + r + '</option>';
+    }).join("");
+    fields +=
+      '<div class="field"><label>Name</label><input id="au-name" placeholder="Dana Mercer" autocomplete="name" value="' + esc(authDraft.name) + '"></div>' +
+      '<div class="field split">' +
+        '<div><label>Home club</label><input id="au-club" placeholder="Kamloops CC" value="' + esc(authDraft.club) + '"></div>' +
+        '<div><label>Position</label><select id="au-role">' + roles + '</select></div>' +
+      '</div>';
+  }
+  fields +=
+    '<div class="field"><label>Email</label><input id="au-email" type="email" placeholder="you@club.ca" autocomplete="email" value="' + esc(authDraft.email) + '"></div>' +
+    '<div class="field"><label>Password</label>' +
+      '<input id="au-pass" type="password" placeholder="' + (signup ? "6+ characters" : "Your password") + '" autocomplete="' + (signup ? "new-password" : "current-password") + '">' +
+      (signup ? '<div class="pw-meter"><i id="pw-bar"></i></div>' : '') +
+    '</div>';
+
+  var err = authError ? '<div class="auth-err">' + esc(authError) + '</div>' : '';
+
+  return statusbar(false) +
+    '<div class="appbar"><div class="brand"><span class="ring"></span><b>CurlPlan</b></div></div>' +
+    '<div class="auth-wrap">' +
+      '<div class="auth-head">' +
+        '<span class="ring"></span>' +
+        '<h2>' + (signup ? 'Join the circle' : 'Welcome back') + '</h2>' +
+        '<div class="eyebrow" style="margin-top:6px;">' + (signup ? 'Your season, your circle' : 'Sign in to your season') + '</div>' +
+      '</div>' +
+      '<div class="auth-card">' +
+        seg + err + fields +
+        '<div class="sheet-actions" style="margin-top:4px;">' +
+          '<button class="b solid" style="flex:1;" data-action="' + (signup ? 'submit-signup' : 'submit-signin') + '">' +
+            (signup ? 'Create account' : 'Sign in') + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="auth-alt">' +
+        (signup
+          ? 'Already curling here? <b data-action="auth-mode" data-mode="signin">Sign in</b>'
+          : 'New here? <b data-action="auth-mode" data-mode="signup">Create an account</b>') +
+      '</div>' +
+      '<div class="auth-alt" style="margin-top:2px;"><b data-action="auth-demo">Explore the demo →</b></div>' +
+    '</div>';
+}
+
 function viewPassport(){
-  var s = me.stats;
+  var s = me.stats || derivedStats();
   var pins = stops.map(function(st){
     var sz = st.big ? 21 : 13;
     return '<button class="map-pin' + (st.here ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
@@ -591,7 +954,7 @@ function viewPassport(){
           '<span class="ital accent">coast to coast</span></div>' +
       '</div>' +
       '<div class="card telemetry">' +
-        '<div class="cell"><div class="num">' + s.rinks + '</div><div class="lab">RINKS</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num">' + s.clubs + '</div><div class="lab">CLUBS</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num">' + s.prov + '</div><div class="lab">PROV</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num">' + s.games + '</div><div class="lab">GAMES</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num accent">' + s.win + '<span style="font-size:14px;">%</span></div><div class="lab">WIN</div></div>' +
@@ -616,42 +979,42 @@ function viewPassport(){
 }
 
 function viewLocker(){
-  var cards = feed.map(function(p){
+  var cards = allPosts().map(function(p){
     if(p.type === "result"){
-      var a = curler(p.author);
-      return '<div class="card post">' +
-        '<div class="head" data-action="curler" data-id="' + a.id + '">' + avatar(a.initials, 38) +
-          '<div style="flex:1;"><div class="name">' + esc(a.name) + '</div>' +
-          '<div class="meta">' + esc(a.role.toUpperCase()) + ' · ' + esc(a.club.toUpperCase()) + ' · ' + esc(p.time) + '</div></div>' +
-          '<span style="font-size:18px; color:var(--muted);">⋯</span></div>' +
-        '<div class="body">' + esc(p.body) + '</div>' +
-        '<div class="scorebar"><span class="big">' + p.score.for + '<span style="color:var(--muted);"> – </span>' + p.score.ag + '</span>' +
+      return '<div class="card post">' + postHead(p) +
+        (p.body ? '<div class="body">' + esc(p.body) + '</div>' : '') +
+        '<div class="scorebar"><span class="big">' + esc(p.score.for) + '<span style="color:var(--muted);"> – </span>' + esc(p.score.ag) + '</span>' +
           '<span class="win-chip">' + esc(p.score.res) + '</span>' +
           '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
-        '<div class="actions"><span data-action="like">♡ ' + p.likes + '</span><span>💬 ' + p.comments + '</span><span style="margin-left:auto;">↗</span></div>' +
+        postActions(p) +
+      '</div>';
+    }
+    if(p.type === "note"){
+      return '<div class="card post">' + postHead(p) +
+        '<div class="body">' + esc(p.body) + '</div>' +
+        postActions(p) +
       '</div>';
     }
     if(p.type === "spiel"){
+      var sp = spielById(p.spielId);
+      var spielBtn = !sp ? '' : (spielStatus(sp) === "You're in"
+        ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going ✓</button>'
+        : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">I\'m in</button>');
       return '<div class="card spiel post" style="padding:14px;">' +
         '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent); margin-bottom:7px;">SHARED SPIEL</div>' +
         '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
           esc(p.title) + ' <span class="ital">' + esc(p.spiel) + '</span></div>' +
         '<div class="row">' + avatarStack(p.who) +
           '<div class="mono" style="font-size:11px; color:var(--muted); line-height:1.3;">' + esc(p.where) + '<br>' + esc(p.when) + '</div>' +
-          '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join">I\'m in</button></div>' +
+          spielBtn +
+        '</div>' +
       '</div>';
     }
     // review
-    var r = curler(p.author);
-    var full = "★".repeat(p.stars), emptyStars = "★".repeat(5 - p.stars);
     return '<div class="card post">' +
-      '<div class="head" data-action="curler" data-id="' + r.id + '">' + avatar(r.initials, 32) +
-        '<div style="flex:1;"><div class="name" style="font-size:13px;">' + esc(r.name) + '</div>' +
-        '<div class="meta" style="font-size:10px;">RINK REVIEW · ' + esc(p.time) + '</div></div></div>' +
-      '<div class="serif" style="font-size:16px; color:var(--ink); white-space:nowrap;">' + esc(p.rink) + '</div>' +
-      '<div class="row" style="gap:8px; margin-top:4px;">' +
-        '<span style="font-size:13px; letter-spacing:2px; color:var(--accent);">' + full + '</span>' +
-        '<span style="font-size:13px; letter-spacing:2px; color:var(--line);">' + emptyStars + '</span>' +
+      postHead(p, { size:32, nameSize:13, metaSize:10, noMenu:true, meta:'CLUB REVIEW · ' + esc(postTime(p)) }) +
+      '<div class="serif" style="font-size:16px; color:var(--ink); white-space:nowrap;">' + esc(p.club) + '</div>' +
+      '<div class="row" style="gap:8px; margin-top:4px;">' + starsRow(p.stars) +
         '<span style="font:400 13px \'Hanken Grotesk\'; color:var(--muted);">— ' + esc(p.note) + '</span></div>' +
     '</div>';
   }).join("");
@@ -672,7 +1035,11 @@ function viewLocker(){
 
 function viewSpiels(){
   var rows = spiels.map(function(sp){
-    var solid = sp.status === "You're in";
+    var status = spielStatus(sp);
+    var solid = status === "You're in";
+    var btn = solid
+      ? '<button class="pill-btn ghost" style="margin-left:auto;" data-action="leave-spiel" data-id="' + sp.id + '">Withdraw</button>'
+      : '<button class="pill-btn" style="margin-left:auto;" data-action="join-spiel" data-id="' + sp.id + '">Register</button>';
     return '<div class="card" style="padding:14px;">' +
       '<div class="row" style="align-items:flex-start;">' +
         '<div style="flex:1; min-width:0;">' +
@@ -680,11 +1047,11 @@ function viewSpiels(){
           '<div class="serif" style="font-size:21px; color:var(--ink); line-height:1.1; margin-top:3px;">' + esc(sp.name) + '</div>' +
           '<div class="sub" style="margin-top:4px;">' + esc(sp.where) + '</div>' +
         '</div>' +
-        '<span class="' + (solid ? 'win-chip' : 'tag') + '" style="' + (solid ? '' : 'padding:5px 10px;') + '">' + esc(sp.status) + '</span>' +
+        '<span class="' + (solid ? 'win-chip' : 'tag') + '" style="' + (solid ? '' : 'padding:5px 10px;') + '">' + esc(status) + '</span>' +
       '</div>' +
       '<div class="row" style="margin-top:12px;">' + avatarStack(sp.going) +
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
-        '<button class="pill-btn ghost" style="margin-left:auto;" data-action="join">Details</button></div>' +
+        btn + '</div>' +
     '</div>';
   }).join("");
 
@@ -704,8 +1071,8 @@ function viewRoster(){
       avatar(c.initials, 44, 'av') +
       '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
         '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
-      '<button class="pill-btn' + (c.following ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
-        (c.following ? 'Following' : 'Follow') + '</button>' +
+      '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
+        (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
     '</div>';
   }).join("");
 
@@ -723,6 +1090,15 @@ function viewStop(id){
   var st = stop(id);
   if(!st) return viewPassport();
   var ice = st.ice;
+  var iceReadList = submissionCard("Community ice reads", store.iceReads[st.id] || [], function(r){
+    return '<div class="subrow"><span class="nm">' + esc(r.speed) + ' · ' + esc(r.curl) + ' ft</span>' +
+      (r.note ? '<span class="meta">' + esc(r.note) + '</span>' : '') + '</div>'; });
+  var visitList = submissionCard("Your visits", store.visits[st.id] || [], function(v){
+    return '<div class="subrow"><span class="nm">' + esc(v.date) + '</span>' +
+      (v.note ? '<span class="meta">' + esc(v.note) + '</span>' : '') + '</div>'; });
+  var reviewList = submissionCard("Reviews", store.reviews[st.id] || [], function(r){
+    return '<div class="subrow">' + starsRow(r.stars) +
+      '<span class="meta" style="margin-left:auto; max-width:60%; text-align:right;">' + esc(r.note || "") + '</span></div>'; });
   var games = st.games.length ? st.games.map(function(g, i){
     return '<div class="gline"' + (i < st.games.length - 1 ? '' : ' style="border-bottom:0;"') + '>' +
       '<span class="statusdot" style="background:' + (g.res==="W"?'var(--accent)':'var(--muted)') + '; ' + (g.res==="W"?'':'opacity:.5;') + '"></span>' +
@@ -733,7 +1109,7 @@ function viewStop(id){
 
   var people = st.met.length ? st.met.map(function(mid){
     var c = curler(mid);
-    var btn = c.following
+    var btn = isFollowing(c)
       ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
       : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
     return '<div class="prow">' +
@@ -756,16 +1132,24 @@ function viewStop(id){
         '<h2>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h2></div>' +
     '</div>' +
     '<div class="scroll" style="padding-top:16px;">' +
-      '<div><div class="eyebrow" style="margin-bottom:8px;">Ice read</div>' +
+      '<div><div class="sec-head" style="margin-bottom:8px;"><span class="lab">Ice read</span></div>' +
         '<div class="iceread">' +
           '<div class="cell"><div class="v">' + esc(ice.speed) + '</div><div class="l">SPEED · ' + esc(ice.speedSec) + '</div></div>' +
           '<div class="cell"><div class="v">' + esc(ice.curl) + '<small>ft</small></div><div class="l">CURL</div></div>' +
           '<div class="cell"><div class="v accent">' + esc(ice.rec) + '</div><div class="l">YOUR REC</div></div>' +
         '</div></div>' +
+      iceReadList +
+      '<div class="add-row">' +
+        '<button class="pill-btn ghost" data-action="log-visit" data-id="' + st.id + '">Log visit</button>' +
+        '<button class="pill-btn ghost" data-action="add-iceread" data-id="' + st.id + '">Ice read</button>' +
+        '<button class="pill-btn ghost" data-action="add-review" data-id="' + st.id + '">Write review</button>' +
+      '</div>' +
       '<div class="card glist">' +
         '<div class="ghead"><span class="t">Your games here</span><span class="n">' + st.games.length + ' GP</span></div>' +
         games +
       '</div>' +
+      visitList +
+      reviewList +
       '<div class="sec-head"><span class="lab">People you met here</span><span class="act">+ All</span></div>' +
       '<div style="display:flex; flex-direction:column; gap:12px;">' + people + '</div>' +
     '</div>';
@@ -775,10 +1159,10 @@ function viewCurler(id){
   var c = curler(id);
   if(!c) return viewRoster();
   var st = c.stats;
-  var rinks = c.rinks.map(function(r, i){
-    var more = i === c.rinks.length - 1 && /more/.test(r);
+  var clubChips = c.clubs.map(function(label, i){
+    var more = i === c.clubs.length - 1 && /more/.test(label);
     return '<span class="tag"' + (more ? ' style="color:var(--muted);"' : '') + '>' +
-      (more ? '' : '<span class="ring tight" style="width:12px;height:12px;"></span>') + esc(r) + '</span>';
+      (more ? '' : '<span class="ring tight" style="width:12px;height:12px;"></span>') + esc(label) + '</span>';
   }).join("");
   var form = c.form.map(function(f, i){
     return '<div class="gline"' + (i < c.form.length - 1 ? '' : ' style="border-bottom:0;"') + '>' +
@@ -795,17 +1179,17 @@ function viewCurler(id){
         '<span class="metpill"><span class="d"></span>You met at ' + esc(c.metAt) + '</span>' +
       '</div>' +
       '<div class="actions2">' +
-        '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (c.following ? 'Following' : '+ Follow') + '</button>' +
-        '<button class="b outline" data-action="message">Message</button>' +
+        '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (isFollowing(c) ? 'Following' : '+ Follow') + '</button>' +
+        '<button class="b outline" data-action="message" data-id="' + c.id + '">Message</button>' +
       '</div>' +
       '<div class="card telemetry">' +
         '<div class="cell"><div class="num" style="font-size:24px;">' + esc(st.record) + '</div><div class="lab">RECORD</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num accent" style="font-size:24px;">' + esc(st.win) + '</div><div class="lab">WIN</div></div><div class="vline"></div>' +
-        '<div class="cell"><div class="num" style="font-size:24px;">' + st.rinks + '</div><div class="lab">RINKS</div></div><div class="vline"></div>' +
+        '<div class="cell"><div class="num" style="font-size:24px;">' + st.clubs + '</div><div class="lab">CLUBS</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num" style="font-size:24px;">' + st.mutual + '</div><div class="lab">MUTUAL</div></div>' +
       '</div>' +
-      '<div><div class="eyebrow" style="margin-bottom:9px;">Rinks you\'ve both played</div>' +
-        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + rinks + '</div></div>' +
+      '<div><div class="eyebrow" style="margin-bottom:9px;">Clubs you\'ve both played</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + clubChips + '</div></div>' +
       '<div><div class="eyebrow" style="margin-bottom:9px;">Recent form</div>' +
         '<div class="card glist">' + form + '</div></div>' +
     '</div>';
@@ -816,7 +1200,15 @@ function viewCurler(id){
    ============================================================ */
 var state = { tab:"passport", stack:[] }; // stack entries: {view:"stop"|"curler", id}
 
-function render(){
+function render(opts){
+  // keepScroll: re-rendering the same view after an in-view mutation (follow,
+  // join, submission) must not throw the user back to the top
+  var keep = opts && opts.keepScroll, kept = 0;
+  if(keep){
+    var pre = el("view").querySelector(".scroll");
+    kept = pre ? pre.scrollTop : 0;
+  }
+  if(!currentUser()){ el("view").innerHTML = viewAuth(); el("view").scrollTop = 0; return; }
   var html, top = state.stack[state.stack.length - 1];
   if(top){
     html = top.view === "stop" ? viewStop(top.id) : viewCurler(top.id);
@@ -826,7 +1218,7 @@ function render(){
   el("view").innerHTML = html;
   el("view").scrollTop = 0;
   var sc = el("view").querySelector(".scroll");
-  if(sc) sc.scrollTop = 0;
+  if(sc) sc.scrollTop = keep ? kept : 0;
 }
 
 function syncHash(){
@@ -837,6 +1229,11 @@ function syncHash(){
 function gotoTab(tab){ state.tab = tab; state.stack = []; render(); syncHash(); }
 function push(view, id){ state.stack.push({ view:view, id:id }); render(); syncHash(); }
 function back(){ state.stack.pop(); render(); syncHash(); }
+function enterApp(){
+  // after auth success: render whatever the boot deep link restored (default
+  // state is the passport) instead of resetting to the passport
+  render(); syncHash();
+}
 
 function applyHash(){
   var h = (location.hash || "").replace(/^#/, "");
@@ -866,7 +1263,16 @@ function syncSettings(){
   });
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
 }
-function openSettings(){ el("scrim").classList.add("open"); el("sheet").classList.add("open"); }
+function openSettings(){
+  var u = currentUser(), m = el("acct-meta");
+  if(m){
+    // canonical team identity: "{Club short} · {Skip}" (see terminology page)
+    m.textContent = u
+      ? (u.demo ? "Demo session · " + teamLabel(me.club, me.name) : u.email + " · " + teamLabel(me.club, me.name))
+      : "Signed out";
+  }
+  el("scrim").classList.add("open"); el("sheet").classList.add("open");
+}
 function closeSettings(){ el("scrim").classList.remove("open"); el("sheet").classList.remove("open"); }
 
 /* ============================================================
@@ -879,6 +1285,182 @@ function toast(msg){
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1600);
+}
+
+/* ============================================================
+   Action sheet (compose / submissions / messaging)
+   ============================================================ */
+var formStars = 0; // shared picker state — only one sheet is open at a time
+
+function openSheet(html){
+  el("sheet-body").innerHTML = html;
+  el("scrim2").classList.add("open");
+  el("sheet2").classList.add("open");
+  var first = el("sheet2").querySelector("input, textarea, select");
+  if(first) try{ first.focus(); }catch(e){}
+}
+function closeSheet(){ el("scrim2").classList.remove("open"); el("sheet2").classList.remove("open"); }
+function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
+
+function starPicker(){
+  var b = "";
+  for(var i = 1; i <= 5; i++){
+    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i + '">★</button>';
+  }
+  return '<div class="stars-pick" id="f-stars">' + b + '</div>';
+}
+function setStars(n){
+  formStars = n;
+  var wrap = el("f-stars");
+  if(!wrap) return;
+  Array.prototype.forEach.call(wrap.children, function(btn, i){
+    btn.classList.toggle("on", (i + 1) <= n);
+  });
+}
+function fmtTime(at){
+  try{ var d = new Date(at); var h = d.getHours(), m = d.getMinutes();
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m; }catch(e){ return ""; }
+}
+function fmtAgo(at){ // relative label in the seed feed's idiom ("2H", "3D")
+  var s = Math.floor((Date.now() - at) / 1000);
+  if(s < 60) return "NOW";
+  var m = Math.floor(s / 60); if(m < 60) return m + "M";
+  var h = Math.floor(m / 60); if(h < 24) return h + "H";
+  var d = Math.floor(h / 24); if(d < 7) return d + "D";
+  try{ return new Date(at).toLocaleDateString(undefined, { month:"short", day:"numeric" }).toUpperCase(); }
+  catch(e){ return d + "D"; }
+}
+function postTime(p){ return p.at ? fmtAgo(p.at) : (p.time || ""); } // p.time = legacy/seed label
+
+/* ---- compose a feed post ---- */
+function openCompose(type){
+  type = type || "note";
+  formStars = type === "review" ? 5 : 0;
+  var seg = ["note","result","review"].map(function(t){
+    var lab = t === "note" ? "Note" : t === "result" ? "Result" : "Review";
+    return '<button type="button" class="' + (t === type ? "on" : "") + '" data-action="compose-type" data-type="' + t + '">' + lab + '</button>';
+  }).join("");
+
+  var body;
+  if(type === "result"){
+    body = '<div class="field split"><div><label>For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
+      '<div><label>Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
+      '<div class="field"><label>Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
+      '<div class="field"><label>Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
+  } else if(type === "review"){
+    body = '<div class="field"><label>Club</label><input id="f-club" placeholder="Granite City CC"></div>' +
+      '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
+      '<div class="field"><label>Note</label><textarea id="f-body" placeholder="fast, 5–6 ft of curl"></textarea></div>';
+  } else {
+    body = '<div class="field"><label>What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
+  }
+
+  openSheet('<h3>Share</h3><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
+    '<div class="seg-type">' + seg + '</div>' + body +
+    '<div class="sheet-actions">' +
+      '<button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-compose" data-type="' + type + '">Post</button>' +
+    '</div>');
+}
+function submitCompose(type){
+  var post;
+  if(type === "result"){
+    var f = parseInt(val("f-for"), 10), a = parseInt(val("f-ag"), 10);
+    if(isNaN(f) || isNaN(a)){ toast("Add both scores"); return; }
+    post = { id:uid("p"), type:"result", author:"me", at:Date.now(), body:val("f-body"),
+      score:{ for:f, ag:a, res:(f > a ? "WIN" : f < a ? "LOSS" : "TIE"), vs:val("f-vs") ? "vs " + val("f-vs") : "" },
+      likes:0, comments:0 };
+  } else if(type === "review"){
+    var club = val("f-club");
+    if(!club){ toast("Name the club"); return; }
+    post = { id:uid("p"), type:"review", author:"me", at:Date.now(), club:club, stars:formStars || 1, note:val("f-body") };
+  } else {
+    var b = val("f-body");
+    if(!b){ toast("Write something first"); return; }
+    post = { id:uid("p"), type:"note", author:"me", at:Date.now(), body:b, likes:0, comments:0 };
+  }
+  store.posts.unshift(post);
+  saveStore();
+  closeSheet();
+  gotoTab("locker");
+  toast("Posted to your Locker Room");
+}
+
+/* ---- stop detail submissions ---- */
+function openVisit(stopId){
+  var st = stop(stopId); if(!st) return;
+  openSheet('<h3>Log a visit</h3><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field"><label>Date</label><input id="f-date" placeholder="Today"></div>' +
+    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button></div>');
+  if(el("f-date")) el("f-date").value = "Today";
+}
+/* shared tail for every stop-detail submission */
+function addStopEntry(kind, stopId, entry, msg){
+  (store[kind][stopId] = store[kind][stopId] || []).unshift(entry);
+  saveStore(); closeSheet(); render({keepScroll:true}); toast(msg);
+}
+function submitVisit(stopId){
+  addStopEntry("visits", stopId, { date:val("f-date") || "Today", note:val("f-note"), at:Date.now() }, "Visit logged");
+}
+function openIceRead(stopId){
+  var st = stop(stopId); if(!st) return;
+  var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
+  openSheet('<h3>Add an ice read</h3><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field split"><div><label>Speed</label><select id="f-speed">' + opts + '</select></div>' +
+      '<div><label>Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
+    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button></div>');
+}
+function submitIceRead(stopId){
+  var curl = val("f-curl");
+  if(!curl){ toast("Add a curl figure"); return; }
+  addStopEntry("iceReads", stopId, { speed:val("f-speed") || "Medium", curl:curl, note:val("f-note"), at:Date.now() }, "Ice read added");
+}
+function openReview(stopId){
+  var st = stop(stopId); if(!st) return;
+  formStars = 5;
+  openSheet('<h3>Write a review</h3><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
+    '<div class="field"><label>Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-review" data-id="' + stopId + '">Post review</button></div>');
+}
+function submitReview(stopId){
+  addStopEntry("reviews", stopId, { stars:formStars || 1, note:val("f-note"), at:Date.now() }, "Review posted");
+}
+
+/* ---- local message thread ---- */
+function openThread(curlerId){
+  var c = curler(curlerId); if(!c) return;
+  var msgs = store.threads[curlerId] || [];
+  var body = msgs.length ? '<div class="thread" id="f-thread">' + msgs.map(function(m){
+      return '<div class="bub ' + (m.from === "me" ? "me" : "them") + '">' + esc(m.text) +
+        '<span class="ts">' + fmtTime(m.at) + '</span></div>';
+    }).join("") + '</div>'
+    : '<div class="thread-empty">No messages yet. Say hello to ' + esc(c.name.split(" ")[0]) + '.</div>';
+  openSheet('<h3>' + esc(c.name) + '</h3><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
+    body +
+    '<div class="composer"><textarea id="f-msg" placeholder="Message…"></textarea>' +
+      '<button class="pill-btn" data-action="send-msg" data-id="' + curlerId + '">Send</button></div>');
+  var th = el("f-thread"); if(th) th.scrollTop = th.scrollHeight;
+}
+function sendMessage(curlerId){
+  var text = val("f-msg");
+  if(!text) return;
+  var msg = { from:"me", text:text, at:Date.now() };
+  (store.threads[curlerId] = store.threads[curlerId] || []).push(msg);
+  saveStore();
+  var th = el("f-thread");
+  if(!th){ openThread(curlerId); return; } // first message: swap the empty state for a thread
+  var bub = document.createElement("div"); // append one bubble — keeps composer focus and thread DOM
+  bub.className = "bub me";
+  bub.innerHTML = esc(msg.text) + '<span class="ts">' + fmtTime(msg.at) + '</span>';
+  th.appendChild(bub);
+  th.scrollTop = th.scrollHeight;
+  el("f-msg").value = "";
 }
 
 /* ============================================================
@@ -897,6 +1479,7 @@ el("screen").addEventListener("click", function(e){
   if(!t) return;
   var action = t.getAttribute("data-action");
   var id = t.getAttribute("data-id");
+  var type = t.getAttribute("data-type");
 
   switch(action){
     case "tab":      gotoTab(t.getAttribute("data-tab")); break;
@@ -905,18 +1488,112 @@ el("screen").addEventListener("click", function(e){
     case "back":     back(); break;
     case "settings": openSettings(); break;
     case "close-settings": closeSettings(); break;
-    case "follow": {
-      var c = curler(id);
-      if(c){ c.following = !c.following; render(); toast(c.following ? "Following " + c.name : "Unfollowed " + c.name); }
+    case "close-sheet":    closeSheet(); break;
+
+    // accounts & auth
+    case "auth-mode": authMode = t.getAttribute("data-mode"); authError = ""; render(); break;
+    case "auth-demo": {
+      auth.session = "demo"; saveAuth(); authError = ""; resetAuthDraft();
+      refreshStore(); refreshMe(); enterApp();
       break;
     }
-    case "join":     toast("Saved to your spiels"); break;
-    case "compose":  toast("Share a result, review, or spiel"); break;
-    case "message":  toast("Messaging coming soon"); break;
-    case "like":     toast("Liked"); break;
+    case "submit-signin": {
+      var si = signIn(val("au-email"), val("au-pass"));
+      if(si.ok){
+        authError = ""; resetAuthDraft();
+        refreshStore(); refreshMe(); enterApp();
+        toast("Welcome back, " + me.name.split(" ")[0]);
+      }
+      else { authError = si.error; render(); }
+      break;
+    }
+    case "submit-signup": {
+      var su = signUp({ name:val("au-name"), email:val("au-email"), pass:val("au-pass"),
+        club:val("au-club"), role:(el("au-role") ? el("au-role").value : "Skip") });
+      if(su.ok){
+        authError = ""; resetAuthDraft();
+        refreshStore(); refreshMe(); enterApp();
+        toast("Welcome to CurlPlan, " + me.name.split(" ")[0]);
+      }
+      else { authError = su.error; render(); }
+      break;
+    }
+    case "signout": {
+      signOut(); closeSettings(); refreshStore(); refreshMe();
+      state.tab = "passport"; state.stack = []; authMode = "signin"; authError = "";
+      render(); syncHash(); toast("Signed out");
+      break;
+    }
+
+    case "follow": {
+      var c = curler(id);
+      if(c){ var nv = !isFollowing(c); setFollowing(id, nv); render({keepScroll:true}); toast(nv ? "Following " + c.name : "Unfollowed " + c.name); }
+      break;
+    }
+    case "like": {
+      if(id){
+        toggleLike(id);
+        var lp = allPosts().filter(function(x){ return x.id === id; })[0];
+        if(lp) t.outerHTML = likeBtn(lp); // patch the heart in place — no re-render, no scroll jump
+        else render({keepScroll:true});
+      }
+      break;
+    }
+
+    // bonspiel registration
+    case "join-spiel": {
+      if(id){ setSpielStatus(id, "You're in"); render({keepScroll:true}); toast("You're registered"); }
+      break;
+    }
+    case "leave-spiel": {
+      if(id){ withdrawSpiel(id); render({keepScroll:true}); toast("Registration withdrawn"); }
+      break;
+    }
+
+    // compose
+    case "compose":      openCompose("note"); break;
+    case "compose-type": {
+      var draft = el("f-body") ? el("f-body").value : ""; // carry the typed body across the type switch
+      openCompose(type);
+      if(draft && el("f-body")) el("f-body").value = draft;
+      break;
+    }
+    case "submit-compose": submitCompose(type); break;
+
+    // stop detail submissions
+    case "log-visit":      openVisit(id); break;
+    case "submit-visit":   submitVisit(id); break;
+    case "add-iceread":    openIceRead(id); break;
+    case "submit-iceread": submitIceRead(id); break;
+    case "add-review":     openReview(id); break;
+    case "submit-review":  submitReview(id); break;
+    case "pick-star":      setStars(parseInt(t.getAttribute("data-val"), 10)); break;
+
+    // messaging
+    case "message":   openThread(id); break;
+    case "send-msg":  sendMessage(id); break;
+
     default: break;
   }
 });
+
+/* live password-strength meter + draft capture on the auth screen */
+var AUTH_DRAFT_FIELDS = { "au-name":"name", "au-club":"club", "au-email":"email", "au-role":"role" };
+function onAuthInput(e){
+  if(!e.target || !e.target.id) return;
+  var key = AUTH_DRAFT_FIELDS[e.target.id];
+  if(key){ authDraft[key] = e.target.value; return; }
+  if(e.target.id === "au-pass"){
+    var bar = el("pw-bar");
+    if(bar){
+      var v = e.target.value;
+      var score = Math.min(4, Math.floor(v.length / 3)) + (/[^a-zA-Z0-9]/.test(v) ? 1 : 0);
+      bar.style.width = Math.min(100, score * 22) + "%";
+    }
+  }
+}
+el("screen").addEventListener("input", onAuthInput);
+el("screen").addEventListener("change", onAuthInput); // <select> coverage on older engines
 
 /* ============================================================
    Boot
@@ -927,6 +1604,9 @@ applyQueryOverrides();
 applyPrefs();
 buildSettings();
 applyHash();
+migrateLegacyStore();
+refreshStore();
+refreshMe();
 render();
 
 /* offline support — network-first SW (purges any older CurlPlan cache) */
