@@ -316,4 +316,4 @@ This is non-negotiable. The app must be fully functional with zero motion.
 - Content strategy (event types, game log fields, ice note schema)
 - Data model (see `CLAUDE.md` for storage schema)
 - Feature roadmap (see `docs/IMPLEMENTATION_PLAN_*.md`)
-- Deployment (static hosting, no build step, no CI)
+- Deployment and hosting specifics

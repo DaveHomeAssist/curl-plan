@@ -51,9 +51,9 @@ The following flows passed against a local static server:
 ## Deferred / Not In Scope
 
 - recurring events
-- backend or sync features
-- framework migration
 - automated in-repo browser test harness beyond the static verification script
+
+(Backend, sync, and adopting a framework are no longer out of scope on principle.)
 
 ## Recommended Next Steps
 

@@ -8,7 +8,7 @@ is preserved, fully working, under [`classic/`](classic/).
 
 ## Hi-Fi app (root)
 
-A single, self-contained HTML file — no build, no dependencies, web fonts only.
+A single HTML file today, web fonts only — with a build step, dependencies, and a backend all on the table as it grows.
 
 ### Screens
 
@@ -42,13 +42,13 @@ Still live at `classic/index.html`. See [`classic/`](classic/) for its assets.
 
 A SwiftUI port of the Hi-Fi concept — same six screens, house-ring system, Ice/Arena
 theming, tab navigation, and push-to-detail flows. Open `ios/CurlPlan.xcodeproj` in
-Xcode 15.4+ (iOS 17+), no dependencies. See [`ios/README.md`](ios/README.md).
+Xcode 15.4+ (iOS 17+) — nothing extra to install. See [`ios/README.md`](ios/README.md).
 
 ## Structure
 
 ```
 curl-plan/
-├── index.html              # Hi-Fi web app (self-contained single file)
+├── index.html              # Hi-Fi web app (single file today)
 ├── sw.js                   # Service worker (network-first; purges legacy cache)
 ├── ios/                    # Native SwiftUI port (Xcode project)
 │   ├── CurlPlan.xcodeproj
@@ -61,7 +61,7 @@ curl-plan/
 ├── scripts/
 │   ├── verify-app.js       # Verifies the root Hi-Fi app + service worker
 │   └── verify-split.js     # Verifies the classic split app
-├── CLAUDE.md               # Architecture constraints
+├── CLAUDE.md               # Architecture + engineering policy
 └── README.md               # This file
 ```
 
@@ -81,6 +81,6 @@ Both run in CI on push/PR via `.github/workflows/verify.yml`.
 
 ## Tech
 
-- Self-contained single-file root app (no dependencies)
+- Single-file root app today (dependencies + backend welcome as it grows)
 - localStorage for appearance prefs; service worker for offline shell
 - Responsive: device frame on desktop, full-bleed on phones

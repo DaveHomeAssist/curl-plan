@@ -2,7 +2,7 @@
 
 > **Source:** UX_AUDIT_2026-03-18.md (15 findings: 4 critical, 6 high, 5 medium)
 > **Architecture:** Split-file vanilla JS (index.html + app.css + core.js + render.js + actions.js + bootstrap.js + utils.js)
-> **Constraint:** No dependencies, no build step, localStorage persistence
+> **Storage:** localStorage persistence — dependencies, build steps, and a backend are all permitted
 
 ---
 
@@ -241,7 +241,7 @@
 ```text
 CurlPlan Batch A: Data Safety & Guards
 Architecture: Split-file vanilla JS (index.html + assets/css/app.css + assets/js/app/*.js)
-Constraint: No dependencies, no build step, localStorage only, all HTML uses escapeHtml()
+Storage: localStorage; all HTML uses escapeHtml(). Dependencies and a build step are allowed.
 
 You are making 5 changes to improve data safety. Read each target file before editing.
 

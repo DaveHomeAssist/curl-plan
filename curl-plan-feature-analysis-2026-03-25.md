@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-25
 **Project:** curl-plan
-**Stack:** Multi-file static HTML app (index.html + JS modules + CSS), localStorage persistence, service worker, no build step, no dependencies
+**Stack:** Multi-file static HTML app (index.html + JS modules + CSS), localStorage persistence, service worker
 
 ---
 
@@ -11,7 +11,7 @@
 | Feature | Status | Data Source / Persistence | Critical Gap |
 |---|---|---|---|
 | 6-view tabbed app shell (Dashboard, Calendar, Planner, Games, Practice, Ice Notes) | Complete | DOM state + ARIA tabs | None |
-| localStorage data persistence (single JSON blob) | Complete | `curlplan-v1` localStorage key | No cloud sync — data lives only in one browser |
+| localStorage data persistence (single JSON blob) | Complete | `curlplan-v1` localStorage key | No cloud sync yet — data lives in one browser |
 | Event CRUD with modal-based workflow | Complete | localStorage, modal forms | None |
 | Game logging with scores and outcomes | Complete | localStorage, modal forms | None |
 | Practice session logging | Complete | localStorage, modal forms | None |
@@ -41,7 +41,7 @@
 
 ### 1. Six-View Tabbed Application Shell
 
-**Problem it solves:** Organizes a curler's entire season workflow — scheduling, game prep, logging, analysis, and rink knowledge — in one local-first tool.
+**Problem it solves:** Organizes a curler's entire season workflow — scheduling, game prep, logging, analysis, and rink knowledge — in one tool.
 
 **Implementation:** Navigation tabs (`#navTabs`, index.html line ~114-121) use `role="tablist"` with individual `role="tab"` buttons controlling `role="tabpanel"` view sections. Tab switching toggles `.is-active` class. Views include Dashboard (stats grid, upcoming sheet, planner snapshot, recent results, latest ice read), Calendar (filter bar, event feed, selected event detail), Game Planner (pre-game/post-game two-card layout), Game Log, Practice, and Ice Notes. A view context strip and suggested-next strip provide contextual guidance.
 
@@ -125,4 +125,4 @@
 
 2. **Implement rink name normalization or an alias system.** The rink memory feature's value depends on matching rink names consistently. A simple normalization (lowercase, trim, strip common suffixes like "Curling Club") or an alias table would prevent duplicate rink profiles.
 
-3. **Add a cloud sync or file-based sync option.** The app is local-first by design ("Yours. Local. No cloud."), but data loss from browser clearing or device switching is the biggest risk. Even a manual "sync to file" on a cloud drive (Dropbox, iCloud) would mitigate this without compromising the local-first philosophy.
+3. **Add cloud sync or a backend.** Data loss from browser clearing or device switching is the biggest risk. A hosted sync (account-based, or file-based on a cloud drive like Dropbox/iCloud) would mitigate this — backends and external services are fully on the table.
