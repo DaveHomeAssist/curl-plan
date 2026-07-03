@@ -127,3 +127,5 @@ All collections share one localStorage key as a single JSON blob.
 [2026-06-22] [CurlPlan] [feat] iOS port: wire create actions (New Spiel/Result/Curler) + Store add methods + CreateScaffold/CPField/CPChips
 [2026-06-22] [CurlPlan] [fix] iOS port: fix dead CTAs — Spiels Details RSVP sheet, Locker "I'm in" toggle, Curler Message→Share, Roster+Locker search
 [2026-06-22] [CurlPlan] [feat] iOS port: Codable models + UserDefaults persistence so creates and follow-state survive relaunch (resolves #005)
+[2026-07-03] [CurlPlan] [feat] Add curling-clubs seed dataset (166 US clubs) from Notion for location choices
+[2026-07-03] [CurlPlan] [feat] Root app: account flow (sign up / in / out via a local provider behind a Clerk-ready seam) gated in front of the app; onboarding home-club picker sourced from the clubs seed; account + change-club rows in settings

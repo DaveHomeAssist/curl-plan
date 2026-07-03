@@ -336,6 +336,34 @@ body{
   opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:60; white-space:nowrap;
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ---------- auth (account flow) ---------- */
+.auth-wrap{ display:flex; flex-direction:column; gap:20px; width:100%; max-width:330px; margin:auto; padding:24px 0; }
+.auth-card{ padding:20px 18px; display:flex; flex-direction:column; }
+.auth-l{ font:600 11px 'DM Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:12px 0 6px; }
+.auth-l.first{ margin-top:0; }
+.auth-in{ font:500 15px 'Hanken Grotesk'; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:12px 13px; outline:none; }
+.auth-in:focus{ border-color:var(--accent); }
+.auth-club{ text-align:left; font:600 14px 'Hanken Grotesk'; color:var(--muted); background:var(--panel); border:1px dashed var(--line); border-radius:11px; padding:12px 13px; cursor:pointer; }
+.auth-club.chosen{ color:var(--ink); border-style:solid; }
+.auth-err{ font:600 12px 'Hanken Grotesk'; color:var(--accent); margin-top:10px; }
+.auth-err:empty{ display:none; }
+.auth-submit{ margin-top:16px; padding:13px; font-size:15px; border-radius:12px; }
+.auth-alt{ text-align:center; font:500 13px 'Hanken Grotesk'; color:var(--muted); }
+.auth-link{ color:var(--accent); font-weight:700; cursor:pointer; }
+.auth-note{ text-align:center; font:500 10px 'DM Mono',monospace; letter-spacing:.08em; color:var(--muted); opacity:.8; }
+
+/* ---------- club picker (location choices) ---------- */
+.cp-search{ width:100%; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:11px 13px; outline:none; margin-bottom:12px; }
+.cp-search:focus{ border-color:var(--accent); }
+.cp-list{ max-height:46vh; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+.cp-list::-webkit-scrollbar{ width:0; }
+.cp-item{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:none; border:0; border-radius:10px; padding:10px 8px; cursor:pointer; }
+.cp-item:hover{ background:var(--panel); }
+.cp-name{ font:600 14px 'Hanken Grotesk'; color:var(--ink); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cp-loc{ font:500 11px 'DM Mono',monospace; color:var(--muted); flex:none; }
+.cp-empty{ padding:24px 8px; text-align:center; font:500 13px 'Hanken Grotesk'; color:var(--muted); }
+.acct-signout{ font:700 12px 'Hanken Grotesk'; background:transparent; border:1.5px solid var(--line); color:var(--accent); border-radius:10px; padding:7px 13px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -352,6 +380,14 @@ body{
       <h3>Appearance</h3>
       <p class="sub">Same season, your circle — tune the ice.</p>
       <div class="set-row">
+        <div class="k">Account<small id="acct-email">—</small></div>
+        <button type="button" class="acct-signout" data-action="signout">Sign out</button>
+      </div>
+      <div class="set-row">
+        <div class="k">Home club<small id="acct-club">—</small></div>
+        <button type="button" class="pill-btn ghost" style="font-size:12px;" data-action="change-club">Change</button>
+      </div>
+      <div class="set-row">
         <div class="k">Theme<small>ICE / ARENA</small></div>
         <div class="seg" id="seg-theme">
           <button type="button" data-theme-val="ice">Ice</button>
@@ -366,6 +402,16 @@ body{
         <div class="k">Pebble texture<small>ICE GRAIN OVERLAY</small></div>
         <button type="button" class="toggle" id="toggle-pebble" aria-label="Toggle pebble texture"></button>
       </div>
+    </div>
+
+    <!-- club picker sheet (location choices) -->
+    <div class="sheet-scrim" id="clubscrim" data-action="close-clubs"></div>
+    <div class="sheet" id="clubsheet" role="dialog" aria-label="Choose your home club">
+      <div class="grab"></div>
+      <h3>Home club</h3>
+      <p class="sub">Search 166 curling clubs — pick your home ice.</p>
+      <input id="clubsearch" class="cp-search" type="text" placeholder="Search club, city, or state…" autocomplete="off" aria-label="Search clubs">
+      <div id="clublist" class="cp-list"></div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -511,6 +557,256 @@ var spiels = [
   { id:"sp2", name:"Okanagan Classic", where:"Kelowna, BC", when:"MAR 6–8", status:"Watching", going:["dee","carter"] },
   { id:"sp3", name:"Prairie Cashspiel", where:"Winnipeg, MB", when:"MAR 27–29", status:"Invite", going:["lind"] }
 ];
+
+/* ============================================================
+   Curling clubs — seed data for location choices.
+   Compact list derived from data/curling-clubs.json (Notion
+   'DB | Curling Clubs'); the full geocoded dataset lives there.
+   ============================================================ */
+var CLUBS = [
+  {id:"rocket-city-curling-club", name:"Rocket City Curling Club", city:"Huntsville", st:"AL", region:"Southeast"},
+  {id:"anchorage-curling-club", name:"Anchorage Curling Club", city:"Anchorage", st:"AK", region:"Pacific Northwest & Alaska"},
+  {id:"fairbanks-curling-club", name:"Fairbanks Curling Club", city:"Fairbanks", st:"AK", region:"Pacific Northwest & Alaska"},
+  {id:"palmer-curling-club", name:"Palmer Curling Club", city:"Palmer", st:"AK", region:"Pacific Northwest & Alaska"},
+  {id:"coyotes-curling-club", name:"Coyotes Curling Club", city:"Tempe", st:"AZ", region:"Mountain Pacific"},
+  {id:"curl-san-diego", name:"Curl San Diego", city:"Carlsbad", st:"CA", region:"Mountain Pacific"},
+  {id:"hollywood-curling", name:"Hollywood Curling", city:"Los Angeles", st:"CA", region:"Mountain Pacific"},
+  {id:"orange-county-curling-club", name:"Orange County Curling Club", city:"Irvine", st:"CA", region:"Mountain Pacific"},
+  {id:"san-francisco-bay-area-curling-club", name:"San Francisco Bay Area Curling Club", city:"Oakland", st:"CA", region:"Mountain Pacific"},
+  {id:"silicon-valley-curling-club", name:"Silicon Valley Curling Club", city:"San Jose / Fremont", st:"CA", region:"Mountain Pacific"},
+  {id:"wine-country-curling-club", name:"Wine Country Curling Club", city:"Roseville", st:"CA", region:"Mountain Pacific"},
+  {id:"aspen-curling-club", name:"Aspen Curling Club", city:"Aspen", st:"CO", region:"Mid-America"},
+  {id:"broadmoor-curling-club", name:"Broadmoor Curling Club", city:"Colorado Springs", st:"CO", region:"Mid-America"},
+  {id:"cloud-city-curling-club", name:"Cloud City Curling Club", city:"Leadville", st:"CO", region:"Mid-America"},
+  {id:"denver-curling-club", name:"Denver Curling Club", city:"Denver", st:"CO", region:"Mid-America"},
+  {id:"rock-creek-curling", name:"Rock Creek Curling", city:"Lafayette", st:"CO", region:"Mid-America"},
+  {id:"steamboat-springs-curling-club", name:"Steamboat Springs Curling Club", city:"Steamboat Springs", st:"CO", region:"Mid-America"},
+  {id:"telluride-curling-club", name:"Telluride Curling Club", city:"Telluride", st:"CO", region:"Mid-America"},
+  {id:"hartford-curling-club", name:"Hartford Curling Club", city:"West Hartford", st:"CT", region:"Northeast"},
+  {id:"norfolk-curling-club", name:"Norfolk Curling Club", city:"Norfolk", st:"CT", region:"Northeast"},
+  {id:"nutmeg-curling-club", name:"Nutmeg Curling Club", city:"Bridgeport", st:"CT", region:"Northeast"},
+  {id:"diamond-state-curling-club", name:"Diamond State Curling Club", city:"Newark", st:"DE", region:"Mid-Atlantic"},
+  {id:"jacksonville-granite-curling-club", name:"Jacksonville Granite Curling Club", city:"Jacksonville", st:"FL", region:"Southeast"},
+  {id:"loggerhead-curling-club", name:"Loggerhead Curling Club", city:"Lake Worth", st:"FL", region:"Southeast"},
+  {id:"orlando-curling-club", name:"Orlando Curling Club", city:"Kissimmee", st:"FL", region:"Southeast"},
+  {id:"tampa-bay-curling-club", name:"Tampa Bay Curling Club", city:"Wesley Chapel", st:"FL", region:"Southeast"},
+  {id:"ybor-city-curling-club", name:"Ybor City Curling Club", city:"Tampa", st:"FL", region:"Southeast"},
+  {id:"atlanta-curling-club", name:"Atlanta Curling Club", city:"Atlanta", st:"GA", region:"Southeast"},
+  {id:"peachtree-curling-association", name:"Peachtree Curling Association", city:"Marietta", st:"GA", region:"Southeast"},
+  {id:"boise-curling-club", name:"Boise Curling Club", city:"Boise", st:"ID", region:"Pacific Northwest & Alaska"},
+  {id:"inland-northwest-curling-club", name:"Inland Northwest Curling Club", city:"Coeur d'Alene", st:"ID", region:"Pacific Northwest & Alaska"},
+  {id:"chicago-curling-club", name:"Chicago Curling Club", city:"Northbrook", st:"IL", region:"Midwest"},
+  {id:"exmoor-curling-club", name:"Exmoor Curling Club", city:"Highland Park", st:"IL", region:"Midwest"},
+  {id:"waltham-curling-club", name:"Waltham Curling Club", city:"Triumph", st:"IL", region:"Midwest"},
+  {id:"wilmette-curling-club", name:"Wilmette Curling Club", city:"Wilmette", st:"IL", region:"Midwest"},
+  {id:"windy-city-curling-club", name:"Windy City Curling Club", city:"Villa Park", st:"IL", region:"Midwest"},
+  {id:"circle-city-curling-club", name:"Circle City Curling Club", city:"Anderson", st:"IN", region:"Great Lakes"},
+  {id:"fort-wayne-curling-club", name:"Fort Wayne Curling Club", city:"Fort Wayne", st:"IN", region:"Great Lakes"},
+  {id:"cedar-rapids-curling-club", name:"Cedar Rapids Curling Club", city:"Cedar Rapids", st:"IA", region:"Midwest"},
+  {id:"des-moines-curling-club", name:"Des Moines Curling Club", city:"West Des Moines", st:"IA", region:"Midwest"},
+  {id:"derby-city-curling-club", name:"Derby City Curling Club", city:"Louisville", st:"KY", region:"Great Lakes"},
+  {id:"belfast-curling-club", name:"Belfast Curling Club", city:"Belfast", st:"ME", region:"Northeast"},
+  {id:"pine-tree-curling-club", name:"Pine Tree Curling Club", city:"Portland", st:"ME", region:"Northeast"},
+  {id:"barnstormers", name:"Barnstormers", city:"Westminster", st:"MD", region:"Mid-Atlantic"},
+  {id:"chesapeake-curling-club", name:"Chesapeake Curling Club", city:"Easton", st:"MD", region:"Mid-Atlantic"},
+  {id:"potomac-curling-club", name:"Potomac Curling Club", city:"Laurel", st:"MD", region:"Mid-Atlantic"},
+  {id:"blackstone-valley-curling-club", name:"Blackstone Valley Curling Club", city:"Hopedale", st:"MA", region:"Northeast"},
+  {id:"boston-curling-club", name:"Boston Curling Club", city:"Sudbury", st:"MA", region:"Northeast"},
+  {id:"broomstones-curling-club", name:"Broomstones Curling Club", city:"Wayland", st:"MA", region:"Northeast"},
+  {id:"cape-cod-curling-club", name:"Cape Cod Curling Club", city:"Falmouth", st:"MA", region:"Northeast"},
+  {id:"colonial-curling-association", name:"Colonial Curling Association", city:"Worcester", st:"MA", region:"Northeast"},
+  {id:"curling-club-of-the-berkshires", name:"Curling Club of the Berkshires", city:"Pittsfield", st:"MA", region:"Northeast"},
+  {id:"lower-cape-curling-club", name:"Lower Cape Curling Club", city:"Orleans", st:"MA", region:"Northeast"},
+  {id:"nantucket-curling-club", name:"Nantucket Curling Club", city:"Nantucket", st:"MA", region:"Northeast"},
+  {id:"new-pond-curling-club", name:"New Pond Curling Club", city:"Walpole", st:"MA", region:"Northeast"},
+  {id:"north-end-curling-club", name:"North End Curling Club", city:"Boston", st:"MA", region:"Northeast"},
+  {id:"petersham-curling-club", name:"Petersham Curling Club", city:"Petersham", st:"MA", region:"Northeast"},
+  {id:"south-shore-curling-club", name:"South Shore Curling Club", city:"Bridgewater", st:"MA", region:"Northeast"},
+  {id:"the-country-club", name:"The Country Club", city:"Chestnut Hill (Brookline)", st:"MA", region:"Northeast"},
+  {id:"weston-curling-club", name:"Weston Curling Club", city:"Weston", st:"MA", region:"Northeast"},
+  {id:"copper-country-curling-club", name:"Copper Country Curling Club", city:"Calumet", st:"MI", region:"Great Lakes"},
+  {id:"delta-rocks-curling-club", name:"Delta Rocks Curling Club", city:"Escanaba", st:"MI", region:"Great Lakes"},
+  {id:"detroit-curling-club", name:"Detroit Curling Club", city:"Ferndale", st:"MI", region:"Great Lakes"},
+  {id:"grand-rapids-curling-club", name:"Grand Rapids Curling Club", city:"Grand Rapids", st:"MI", region:"Great Lakes"},
+  {id:"kalamazoo-curling-club", name:"Kalamazoo Curling Club", city:"Kalamazoo", st:"MI", region:"Great Lakes"},
+  {id:"lansing-curling-club", name:"Lansing Curling Club", city:"East Lansing", st:"MI", region:"Great Lakes"},
+  {id:"lewiston-curling-club", name:"Lewiston Curling Club", city:"Lewiston", st:"MI", region:"Great Lakes"},
+  {id:"midland-curling-club", name:"Midland Curling Club", city:"Midland", st:"MI", region:"Great Lakes"},
+  {id:"traverse-city-curling-club", name:"Traverse City Curling Club", city:"Traverse City", st:"MI", region:"Great Lakes"},
+  {id:"bemidji-curling-club", name:"Bemidji Curling Club", city:"Bemidji", st:"MN", region:"Minnesota"},
+  {id:"cambridge-curling-club", name:"Cambridge Curling Club", city:"Cambridge", st:"MN", region:"Minnesota"},
+  {id:"chaska-curling-club", name:"Chaska Curling Club", city:"Chaska", st:"MN", region:"Minnesota"},
+  {id:"curl-mesabi", name:"Curl Mesabi", city:"Eveleth", st:"MN", region:"Minnesota"},
+  {id:"dakota-curling-club", name:"Dakota Curling Club", city:"Lakeville", st:"MN", region:"Minnesota"},
+  {id:"duluth-curling-club", name:"Duluth Curling Club", city:"Duluth", st:"MN", region:"Minnesota"},
+  {id:"four-seasons-curling-club", name:"Four Seasons Curling Club", city:"Blaine", st:"MN", region:"Minnesota"},
+  {id:"frogtown-curling-club", name:"Frogtown Curling Club", city:"St. Paul", st:"MN", region:"Minnesota"},
+  {id:"hibbing-curling-club", name:"Hibbing Curling Club", city:"Hibbing", st:"MN", region:"Minnesota"},
+  {id:"mankato-curling-club", name:"Mankato Curling Club", city:"Mankato", st:"MN", region:"Minnesota"},
+  {id:"st-paul-curling-club", name:"St. Paul Curling Club", city:"St. Paul", st:"MN", region:"Minnesota"},
+  {id:"two-harbors-curling-club", name:"Two Harbors Curling Club", city:"Two Harbors", st:"MN", region:"Minnesota"},
+  {id:"mid-south-curling-club", name:"Mid-South Curling Club", city:"Olive Branch", st:"MS", region:"Southeast"},
+  {id:"kansas-city-curling-club", name:"Kansas City Curling Club", city:"Blue Springs", st:"MO", region:"Midwest"},
+  {id:"st-louis-curling-club", name:"St. Louis Curling Club", city:"Creve Coeur", st:"MO", region:"Midwest"},
+  {id:"aksarben-curling-club", name:"Aksarben Curling Club", city:"Omaha", st:"NE", region:"Midwest"},
+  {id:"curlvegas", name:"CurlVegas", city:"Las Vegas", st:"NV", region:"Mountain Pacific"},
+  {id:"lake-tahoe-epic-curling", name:"Lake Tahoe Epic Curling", city:"Stateline", st:"NV", region:"Mountain Pacific"},
+  {id:"granite-curling-club-nh", name:"Granite Curling Club (NH)", city:"Hollis", st:"NH", region:"Northeast"},
+  {id:"lakes-region-curling-association", name:"Lakes Region Curling Association", city:"Wolfeboro", st:"NH", region:"Northeast"},
+  {id:"merrimack-valley-curling-club", name:"Merrimack Valley Curling Club", city:"Merrimack", st:"NH", region:"Northeast"},
+  {id:"mount-washington-valley-curling-club", name:"Mount Washington Valley Curling Club", city:"Conway", st:"NH", region:"Northeast"},
+  {id:"nashua-country-club", name:"Nashua Country Club", city:"Nashua", st:"NH", region:"Northeast"},
+  {id:"plymouth-rocks-curling-club", name:"Plymouth Rocks Curling Club", city:"Plymouth", st:"NH", region:"Northeast"},
+  {id:"jersey-pinelands-curling-club", name:"Jersey Pinelands Curling Club", city:"Pennsauken Township", st:"NJ", region:"Mid-Atlantic"},
+  {id:"plainfield-curling-club", name:"Plainfield Curling Club", city:"South Plainfield", st:"NJ", region:"Mid-Atlantic"},
+  {id:"princeton-university-curling-club", name:"Princeton University Curling Club", city:"Princeton", st:"NJ", region:"Mid-Atlantic"},
+  {id:"road-runner-curling-club", name:"Road Runner Curling Club", city:"Albuquerque", st:"NM", region:"Mid-America"},
+  {id:"albany-curling-club", name:"Albany Curling Club", city:"Albany", st:"NY", region:"Northeast"},
+  {id:"ardsley-curling-club", name:"Ardsley Curling Club", city:"Irvington (Ardsley-on-Hudson)", st:"NY", region:"Northeast"},
+  {id:"brooklyn-lakeside-curling-club", name:"Brooklyn Lakeside Curling Club", city:"Brooklyn", st:"NY", region:"Northeast"},
+  {id:"buffalo-curling-club", name:"Buffalo Curling Club", city:"Buffalo", st:"NY", region:"Northeast"},
+  {id:"finger-lakes-curling-club", name:"Finger Lakes Curling Club", city:"Ithaca", st:"NY", region:"Northeast"},
+  {id:"lake-placid-curling-club", name:"Lake Placid Curling Club", city:"Lake Placid", st:"NY", region:"Northeast"},
+  {id:"long-island-curling-club", name:"Long Island Curling Club", city:"Syosset", st:"NY", region:"Northeast"},
+  {id:"new-york-caledonian-curling-club", name:"New York Caledonian Curling Club", city:"Bronxville", st:"NY", region:"Northeast"},
+  {id:"rochester-curling-club", name:"Rochester Curling Club", city:"Rochester", st:"NY", region:"Northeast"},
+  {id:"schenectady-curling-club", name:"Schenectady Curling Club", city:"Schenectady", st:"NY", region:"Northeast"},
+  {id:"utica-curling-club", name:"Utica Curling Club", city:"Whitesboro", st:"NY", region:"Northeast"},
+  {id:"charlotte-curling-association", name:"Charlotte Curling Association", city:"Charlotte", st:"NC", region:"Southeast"},
+  {id:"coastal-carolina-curling-club", name:"Coastal Carolina Curling Club", city:"Wilmington", st:"NC", region:"Southeast"},
+  {id:"triangle-curling-club", name:"Triangle Curling Club", city:"Durham", st:"NC", region:"Southeast"},
+  {id:"bowling-green-curling-club", name:"Bowling Green Curling Club", city:"Bowling Green", st:"OH", region:"Great Lakes"},
+  {id:"cincinnati-curling-club", name:"Cincinnati Curling Club", city:"West Chester", st:"OH", region:"Great Lakes"},
+  {id:"cleveland-skating-club", name:"Cleveland Skating Club", city:"Shaker Heights", st:"OH", region:"Great Lakes"},
+  {id:"columbus-curling-club", name:"Columbus Curling Club", city:"Columbus", st:"OH", region:"Great Lakes"},
+  {id:"curl-troy", name:"Curl Troy", city:"Troy", st:"OH", region:"Great Lakes"},
+  {id:"mayfield-curling-club", name:"Mayfield Curling Club", city:"Warrensville Heights", st:"OH", region:"Great Lakes"},
+  {id:"tulsa-curling-club", name:"Tulsa Curling Club", city:"Tulsa", st:"OK", region:"Mid-America"},
+  {id:"bend-curling-club", name:"Bend Curling Club", city:"Bend", st:"OR", region:"Pacific Northwest & Alaska"},
+  {id:"evergreen-curling-club", name:"Evergreen Curling Club", city:"Portland (Beaverton)", st:"OR", region:"Pacific Northwest & Alaska"},
+  {id:"anthracite-curling-club", name:"Anthracite Curling Club", city:"Wilkes-Barre", st:"PA", region:"Mid-Atlantic"},
+  {id:"bucks-county-curling-club", name:"Bucks County Curling Club", city:"Warminster", st:"PA", region:"Mid-Atlantic"},
+  {id:"french-creek-curling-club", name:"French Creek Curling Club", city:"Meadville / Erie", st:"PA", region:"Mid-Atlantic"},
+  {id:"nittany-valley-curling-club", name:"Nittany Valley Curling Club", city:"State College", st:"PA", region:"Mid-Atlantic"},
+  {id:"philadelphia-curling-club", name:"Philadelphia Curling Club", city:"Paoli", st:"PA", region:"Mid-Atlantic"},
+  {id:"pittsburgh-curling-club", name:"Pittsburgh Curling Club", city:"Pittsburgh", st:"PA", region:"Mid-Atlantic"},
+  {id:"rail-city-curling-club", name:"Rail City Curling Club", city:"Altoona", st:"PA", region:"Mid-Atlantic"},
+  {id:"ocean-state-curling-club", name:"Ocean State Curling Club", city:"Smithfield", st:"RI", region:"Northeast"},
+  {id:"pawcatuck-river-curling-club", name:"Pawcatuck River Curling Club", city:"Westerly", st:"RI", region:"Northeast"},
+  {id:"charleston-curling-club", name:"Charleston Curling Club", city:"North Charleston", st:"SC", region:"Southeast"},
+  {id:"palmetto-curling-club", name:"Palmetto Curling Club", city:"Greenville", st:"SC", region:"Southeast"},
+  {id:"great-smoky-mountains-curling-club", name:"Great Smoky Mountains Curling Club", city:"Knoxville", st:"TN", region:"Southeast"},
+  {id:"nashville-curling-club", name:"Nashville Curling Club", city:"Nashville", st:"TN", region:"Southeast"},
+  {id:"curling-club-of-houston", name:"Curling Club of Houston", city:"Houston", st:"TX", region:"Mid-America"},
+  {id:"dallas-fort-worth-curling-club", name:"Dallas/Fort Worth Curling Club", city:"Dallas", st:"TX", region:"Mid-America"},
+  {id:"lone-star-curling-club", name:"Lone Star Curling Club", city:"Austin", st:"TX", region:"Mid-America"},
+  {id:"cache-valley-stone-society", name:"Cache Valley Stone Society", city:"Logan", st:"UT", region:"Mountain Pacific"},
+  {id:"ogden-curling-club", name:"Ogden Curling Club", city:"Ogden", st:"UT", region:"Mountain Pacific"},
+  {id:"park-city-curling-club", name:"Park City Curling Club", city:"Park City", st:"UT", region:"Mountain Pacific"},
+  {id:"utah-olympic-oval-curling-club", name:"Utah Olympic Oval Curling Club", city:"Salt Lake City", st:"UT", region:"Mountain Pacific"},
+  {id:"green-mountain-curling-club", name:"Green Mountain Curling Club", city:"Burlington", st:"VT", region:"Northeast"},
+  {id:"rutland-rocks-curling-club", name:"Rutland Rocks Curling Club", city:"Rutland", st:"VT", region:"Northeast"},
+  {id:"upper-valley-curling-club", name:"Upper Valley Curling Club", city:"White River Junction / Woodstock", st:"VT", region:"Northeast"},
+  {id:"blue-ridge-curling-club", name:"Blue Ridge Curling Club", city:"Charlottesville", st:"VA", region:"Mid-Atlantic"},
+  {id:"curling-club-of-virginia", name:"Curling Club of Virginia", city:"Richmond", st:"VA", region:"Mid-Atlantic"},
+  {id:"loudoun-curling-club", name:"Loudoun Curling Club", city:"Leesburg", st:"VA", region:"Mid-Atlantic"},
+  {id:"roanoke-valley-curling-club", name:"Roanoke Valley Curling Club", city:"Roanoke", st:"VA", region:"Mid-Atlantic"},
+  {id:"granite-curling-club-of-seattle", name:"Granite Curling Club of Seattle", city:"Seattle", st:"WA", region:"Pacific Northwest & Alaska"},
+  {id:"morgantown-curling-club", name:"Morgantown Curling Club", city:"Morgantown", st:"WV", region:"Mid-Atlantic"},
+  {id:"appleton-curling-club", name:"Appleton Curling Club", city:"Appleton", st:"WI", region:"Wisconsin"},
+  {id:"blackhawk-curling-club", name:"Blackhawk Curling Club", city:"Janesville", st:"WI", region:"Wisconsin"},
+  {id:"eau-claire-curling-club", name:"Eau Claire Curling Club", city:"Eau Claire", st:"WI", region:"Wisconsin"},
+  {id:"green-bay-curling-club", name:"Green Bay Curling Club", city:"Green Bay", st:"WI", region:"Wisconsin"},
+  {id:"kettle-moraine-curling-club", name:"Kettle Moraine Curling Club", city:"Hartland", st:"WI", region:"Wisconsin"},
+  {id:"la-crosse-curling-club", name:"La Crosse Curling Club", city:"La Crosse", st:"WI", region:"Wisconsin"},
+  {id:"madison-curling-club", name:"Madison Curling Club", city:"McFarland", st:"WI", region:"Wisconsin"},
+  {id:"marshfield-curling-club", name:"Marshfield Curling Club", city:"Marshfield", st:"WI", region:"Wisconsin"},
+  {id:"medford-curling-club", name:"Medford Curling Club", city:"Medford", st:"WI", region:"Wisconsin"},
+  {id:"milwaukee-curling-club", name:"Milwaukee Curling Club", city:"Cedarburg", st:"WI", region:"Wisconsin"},
+  {id:"portage-curling-club", name:"Portage Curling Club", city:"Portage", st:"WI", region:"Wisconsin"},
+  {id:"rice-lake-curling-club", name:"Rice Lake Curling Club", city:"Rice Lake", st:"WI", region:"Wisconsin"},
+  {id:"stevens-point-curling-club", name:"Stevens Point Curling Club", city:"Stevens Point", st:"WI", region:"Wisconsin"},
+  {id:"superior-curling-club", name:"Superior Curling Club", city:"Superior", st:"WI", region:"Wisconsin"},
+  {id:"waupaca-curling-club", name:"Waupaca Curling Club", city:"Waupaca", st:"WI", region:"Wisconsin"},
+  {id:"wausau-curling-club", name:"Wausau Curling Club", city:"Wausau", st:"WI", region:"Wisconsin"},
+  {id:"wauwatosa-curling-club", name:"Wauwatosa Curling Club", city:"Wauwatosa", st:"WI", region:"Wisconsin"}
+];
+function clubById(id){ for(var i=0;i<CLUBS.length;i++){ if(CLUBS[i].id===id) return CLUBS[i]; } return null; }
+function clubLabel(c){ return c ? (c.name + " · " + (c.city ? c.city + ", " : "") + c.st) : ""; }
+
+/* ============================================================
+   Account (local provider). This is the swap seam: replace the
+   localStorage-backed methods below with Clerk (sign in/up/out,
+   sessions) + a backend for account-scoped data. The rest of the
+   app only talks to Account.current()/signUp()/signIn()/signOut().
+   ============================================================ */
+var AUTH_KEY = "curlplan-hifi-accounts-v1";
+var SESSION_KEY = "curlplan-hifi-session-v1";
+
+function initialsFrom(name){
+  var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return "??";
+  var a = parts[0].charAt(0);
+  var b = parts.length > 1 ? parts[parts.length - 1].charAt(0) : (parts[0].charAt(1) || "");
+  return (a + b).toUpperCase();
+}
+
+var Account = {
+  all: function(){
+    try{ var r = JSON.parse(localStorage.getItem(AUTH_KEY)); return (r && typeof r === "object") ? r : {}; }
+    catch(e){ return {}; }
+  },
+  _save: function(m){ try{ localStorage.setItem(AUTH_KEY, JSON.stringify(m)); }catch(e){} },
+  current: function(){
+    try{
+      var email = localStorage.getItem(SESSION_KEY);
+      if(!email) return null;
+      return this.all()[email.toLowerCase()] || null;
+    }catch(e){ return null; }
+  },
+  signUp: function(name, email, homeClubId){
+    name = String(name || "").trim();
+    email = String(email || "").trim().toLowerCase();
+    if(!name) return { error:"Enter your name." };
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error:"Enter a valid email." };
+    var m = this.all();
+    if(m[email]) return { error:"That email already has an account — sign in instead." };
+    var acc = { id:"acc_" + email, name:name, email:email, initials:initialsFrom(name), homeClubId:homeClubId || null };
+    m[email] = acc; this._save(m);
+    try{ localStorage.setItem(SESSION_KEY, email); }catch(e){}
+    return { account:acc };
+  },
+  signIn: function(email){
+    email = String(email || "").trim().toLowerCase();
+    var acc = this.all()[email];
+    if(!acc) return { error:"No account for that email — create one." };
+    try{ localStorage.setItem(SESSION_KEY, email); }catch(e){}
+    return { account:acc };
+  },
+  signOut: function(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} },
+  update: function(patch){
+    var acc = this.current(); if(!acc) return null;
+    var m = this.all();
+    Object.keys(patch).forEach(function(k){ acc[k] = patch[k]; });
+    if(patch.name) acc.initials = initialsFrom(patch.name);
+    m[acc.email] = acc; this._save(m); return acc;
+  }
+};
+
+/* Reflect the signed-in account into the Passport identity (keeps demo stats). */
+function syncMe(){
+  var acc = Account.current();
+  if(!acc) return;
+  me.name = acc.name;
+  me.initials = acc.initials;
+  var club = clubById(acc.homeClubId);
+  if(club){ me.club = club.name; me.prov = club.st; }
+}
+
+var authMode = "signup";   // "signup" | "signin"
+var pendingClubId = null;   // club chosen during sign-up, applied on submit
+var clubSheetTarget = "signup"; // where a club pick applies: "signup" | "account"
+
 
 /* ============================================================
    Shared render helpers
@@ -812,11 +1108,80 @@ function viewCurler(id){
 }
 
 /* ============================================================
+   Auth view + club picker (location choices)
+   ============================================================ */
+function viewAuth(){
+  var signup = authMode !== "signin";
+  return statusbar(false) +
+    '<div class="scroll" style="justify-content:center; gap:0; padding:0 26px;">' +
+      '<div class="auth-wrap">' +
+        '<div style="text-align:center;">' +
+          '<span class="ring" style="width:46px; height:46px; display:inline-block;"></span>' +
+          '<div class="serif" style="font-size:32px; color:var(--ink); margin-top:12px; line-height:1.05;">Your season,<br><span class="ital accent">your circle</span></div>' +
+          '<p style="font:400 14px/1.5 \'Hanken Grotesk\'; color:var(--muted); margin:8px 0 0;">' +
+            (signup ? 'Create your account to map your season across the ice.' : 'Welcome back — sign in to your season.') + '</p>' +
+        '</div>' +
+        '<div class="auth-card card">' +
+          (signup ? '<label class="auth-l first" for="au-name">Full name</label><input id="au-name" class="auth-in" type="text" placeholder="e.g. Dana Mercer" autocomplete="name">' : '') +
+          '<label class="auth-l' + (signup ? '' : ' first') + '" for="au-email">Email</label>' +
+          '<input id="au-email" class="auth-in" type="email" placeholder="you@example.com" autocomplete="email">' +
+          (signup ? '<label class="auth-l">Home club</label><button type="button" id="clubfield" class="auth-club" data-action="open-clubs">Choose your home club</button>' : '') +
+          '<div id="au-err" class="auth-err" role="alert"></div>' +
+          '<button class="pill-btn auth-submit" data-action="auth-submit">' + (signup ? 'Create account' : 'Sign in') + '</button>' +
+        '</div>' +
+        '<div class="auth-alt">' + (signup ? 'Already have an account? ' : 'New to CurlPlan? ') +
+          '<span class="auth-link" data-action="auth-mode" data-mode="' + (signup ? 'signin' : 'signup') + '">' +
+          (signup ? 'Sign in' : 'Create one') + '</span></div>' +
+        '<div class="auth-note">Local account · <span class="mono">Clerk-ready seam</span></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderClubList(q){
+  q = String(q || "").trim().toLowerCase();
+  var items = CLUBS;
+  if(q){ items = CLUBS.filter(function(c){
+    return (c.name + " " + c.city + " " + c.st + " " + c.region).toLowerCase().indexOf(q) > -1;
+  }); }
+  var shown = items.slice(0, 60);
+  var list = el("clublist");
+  if(!list) return;
+  list.innerHTML = shown.length ? shown.map(function(c){
+    return '<button class="cp-item" data-action="pick-club" data-id="' + esc(c.id) + '">' +
+      '<span class="ring tight" style="width:14px; height:14px; flex:none;"></span>' +
+      '<span class="cp-name">' + esc(c.name) + '</span>' +
+      '<span class="cp-loc">' + esc((c.city ? c.city + ", " : "") + c.st) + '</span></button>';
+  }).join("") : '<div class="cp-empty">No clubs match that search.</div>';
+}
+function openClubs(target){
+  clubSheetTarget = target || "signup";
+  var box = el("clubsearch"); if(box) box.value = "";
+  renderClubList("");
+  el("clubscrim").classList.add("open");
+  el("clubsheet").classList.add("open");
+  setTimeout(function(){ try{ el("clubsearch").focus(); }catch(e){} }, 60);
+}
+function closeClubs(){ el("clubscrim").classList.remove("open"); el("clubsheet").classList.remove("open"); }
+function pickClub(id){
+  var c = clubById(id);
+  if(clubSheetTarget === "account"){
+    Account.update({ homeClubId:id }); syncMe(); closeClubs(); render();
+    toast(c ? "Home club set to " + c.name : "Home club updated");
+    return;
+  }
+  pendingClubId = id;
+  var btn = el("clubfield");
+  if(btn){ btn.textContent = c ? clubLabel(c) : "Choose your home club"; btn.classList.add("chosen"); }
+  closeClubs();
+}
+
+/* ============================================================
    Router / nav stack
    ============================================================ */
 var state = { tab:"passport", stack:[] }; // stack entries: {view:"stop"|"curler", id}
 
 function render(){
+  if(!Account.current()){ el("view").innerHTML = viewAuth(); el("view").scrollTop = 0; return; }
   var html, top = state.stack[state.stack.length - 1];
   if(top){
     html = top.view === "stop" ? viewStop(top.id) : viewCurler(top.id);
@@ -866,7 +1231,15 @@ function syncSettings(){
   });
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
 }
-function openSettings(){ el("scrim").classList.add("open"); el("sheet").classList.add("open"); }
+function openSettings(){
+  var acc = Account.current();
+  if(acc){
+    var em = el("acct-email"); if(em) em.textContent = acc.email;
+    var club = clubById(acc.homeClubId);
+    var cl = el("acct-club"); if(cl) cl.textContent = club ? clubLabel(club) : "Not set";
+  }
+  el("scrim").classList.add("open"); el("sheet").classList.add("open");
+}
 function closeSettings(){ el("scrim").classList.remove("open"); el("sheet").classList.remove("open"); }
 
 /* ============================================================
@@ -904,6 +1277,25 @@ el("screen").addEventListener("click", function(e){
     case "curler":   push("curler", id); break;
     case "back":     back(); break;
     case "settings": openSettings(); break;
+    case "auth-mode": authMode = t.getAttribute("data-mode"); pendingClubId = null; render(); break;
+    case "auth-submit": {
+      var signup = authMode !== "signin";
+      var email = (el("au-email") || {}).value || "";
+      var res = signup ? Account.signUp((el("au-name") || {}).value || "", email, pendingClubId) : Account.signIn(email);
+      if(res.error){ var er = el("au-err"); if(er) er.textContent = res.error; break; }
+      pendingClubId = null; syncMe();
+      state.tab = "passport"; state.stack = []; render(); syncHash();
+      toast(signup ? "Welcome, " + res.account.name.split(" ")[0] : "Signed in");
+      break;
+    }
+    case "open-clubs":  openClubs("signup"); break;
+    case "change-club": closeSettings(); openClubs("account"); break;
+    case "close-clubs": closeClubs(); break;
+    case "pick-club":   pickClub(id); break;
+    case "signout":
+      Account.signOut(); closeSettings();
+      state.tab = "passport"; state.stack = []; render(); syncHash(); toast("Signed out");
+      break;
     case "close-settings": closeSettings(); break;
     case "follow": {
       var c = curler(id);
@@ -918,6 +1310,10 @@ el("screen").addEventListener("click", function(e){
   }
 });
 
+el("screen").addEventListener("input", function(e){
+  if(e.target && e.target.id === "clubsearch"){ renderClubList(e.target.value); }
+});
+
 /* ============================================================
    Boot
    ============================================================ */
@@ -927,6 +1323,7 @@ applyQueryOverrides();
 applyPrefs();
 buildSettings();
 applyHash();
+syncMe();
 render();
 
 /* offline support — network-first SW (purges any older CurlPlan cache) */
