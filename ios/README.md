@@ -24,9 +24,9 @@ No third-party dependencies, no package resolution — pure SwiftUI.
 | `Components.swift` | `HouseRing`, avatars, pebble texture, card style, pills |
 | `RootView.swift` | Custom tab bar + per-tab `NavigationStack` + routing |
 | `PassportView.swift` | Home: telemetry, season map, recent stops |
-| `LockerRoomView.swift` | Feed: results, shared spiels, rink reviews |
+| `LockerRoomView.swift` | Feed: results, shared spiels, club reviews |
 | `StopDetailView.swift` | Stop: ice read, games here, people met |
-| `CurlerProfileView.swift` | Person: stats, shared rinks, recent form |
+| `CurlerProfileView.swift` | Person: stats, shared clubs, recent form |
 | `SpielsView.swift` / `RosterView.swift` | Season schedule / local roster |
 | `SettingsSheet.swift` | Appearance sheet (theme / accent / pebble) |
 

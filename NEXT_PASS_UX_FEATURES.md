@@ -1,11 +1,10 @@
 # Next UX / Features Pass
 
-This pass should stay within the current product shape:
+This pass can use whatever tools fit the job — dependencies, a build step, a
+backend, and external services are all on the table:
 
-- static local-first app
+- backends, servers, APIs, databases, and dependencies are allowed
 - split asset structure already in place
-- no libraries
-- fast local-first behavior
 - desktop and mobile first
 - no schema reset unless migration is explicit
 
@@ -152,11 +151,11 @@ Acceptance:
 
 Do not pull these into the next pass unless priorities above are done:
 
-- multi-user sync
-- backend/auth
 - charts-heavy analytics
 - drag-and-drop calendar
-- framework migration
+
+Backend, auth, multi-user sync, and adopting a framework are all fair game now —
+they are no longer deferred on principle. Build them whenever they earn their place.
 
 ## Implementation Order
 

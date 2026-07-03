@@ -33,7 +33,7 @@ struct LockerRoomView: View {
                 || p.whereText.localizedCaseInsensitiveContains(q)
         case .review(let p):
             return (store.curler(p.author)?.name ?? "").localizedCaseInsensitiveContains(q)
-                || p.rink.localizedCaseInsensitiveContains(q)
+                || p.club.localizedCaseInsensitiveContains(q)
                 || p.note.localizedCaseInsensitiveContains(q)
         }
     }
@@ -462,14 +462,14 @@ private struct ReviewCard: View {
                     AvatarView(initials: author?.initials ?? "?", size: 32)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(author?.name ?? "").font(.grotesk(13, .bold)).foregroundStyle(settings.ink)
-                        Text("RINK REVIEW · \(post.time)").font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                        Text("CLUB REVIEW · \(post.time)").font(.mono(10, .medium)).foregroundStyle(settings.muted)
                     }
                     Spacer()
                 }
             }
             .buttonStyle(.plain)
 
-            Text(post.rink).font(.serif(16)).foregroundStyle(settings.ink)
+            Text(post.club).font(.serif(16)).foregroundStyle(settings.ink)
             HStack(spacing: 8) {
                 (Text(String(repeating: "★", count: post.stars)).foregroundColor(settings.accent)
                     + Text(String(repeating: "★", count: max(0, 5 - post.stars))).foregroundColor(settings.line))

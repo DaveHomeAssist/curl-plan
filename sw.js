@@ -1,6 +1,6 @@
 // CurlPlan Service Worker (Hi-Fi app)
-// Self-contained single-file app. Network-first for navigations so the HTML is
-// always fresh; cache-first for other same-origin GETs. On activate we delete every
+// Network-first for navigations so the HTML is always fresh; cache-first for
+// other same-origin GETs. On activate we delete every
 // origin cache except those in KEEP — this purges the legacy "curlplan-sw-v5" cache
 // (the pre-promote root app) while preserving the archived classic app's own cache.
 // NOTE: CacheStorage is per-origin, not per-SW-scope, so the classic worker

@@ -26,7 +26,7 @@ struct CurlerProfileView: View {
                             identity(profile)
                             actions(profile)
                             stats(profile)
-                            sharedRinks(profile)
+                            sharedClubs(profile)
                             recentForm(profile)
                         }
                         .padding(.horizontal, 20)
@@ -160,32 +160,24 @@ struct CurlerProfileView: View {
 
     private func stats(_ profile: CurlerProfileSummary) -> some View {
         HStack(spacing: 0) {
-            statCell(profile.record, "RECORD")
+            StatCell(value: profile.record, label: "RECORD", size: 24)
             VRule()
-            statCell(profile.win, "WIN", accent: true)
+            StatCell(value: profile.win, label: "WIN", accent: true, size: 24)
             VRule()
-            statCell("\(profile.rinks)", "RINKS")
+            StatCell(value: "\(profile.rinks)", label: "CLUBS", size: 24)
             VRule()
-            statCell("\(profile.mutual)", "MUTUAL")
+            StatCell(value: "\(profile.mutual)", label: "MUTUAL", size: 24)
         }
         .padding(.vertical, 14)
         .cpCard()
     }
 
-    private func statCell(_ value: String, _ label: String, accent: Bool = false) -> some View {
-        VStack(spacing: 5) {
-            Text(value).font(.serif(24)).foregroundStyle(accent ? settings.accent : settings.ink)
-            Text(label).font(.mono(9, .medium)).tracking(1).foregroundStyle(settings.muted)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func sharedRinks(_ profile: CurlerProfileSummary) -> some View {
+    private func sharedClubs(_ profile: CurlerProfileSummary) -> some View {
         VStack(alignment: .leading, spacing: 9) {
-            Eyebrow(text: "Rinks you've both played")
+            Eyebrow(text: "Clubs you've both played")
             if profile.sharedRinks.isEmpty {
-                EmptyStateView(title: "No shared rinks yet",
-                               message: "Shared rink history appears after you log stops or games with this curler.",
+                EmptyStateView(title: "No shared clubs yet",
+                               message: "Shared club history appears after you log stops or games with this curler.",
                                systemImage: "house")
             } else {
                 HStack(spacing: 8) {

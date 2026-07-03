@@ -88,6 +88,29 @@ struct AvatarStack: View {
     }
 }
 
+// MARK: - Stat cell (telemetry strips on Passport + profiles)
+
+struct StatCell: View {
+    @EnvironmentObject var settings: AppSettings
+    let value: String
+    let label: String
+    var accent: Bool = false
+    var size: CGFloat = 26
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.serif(size))
+                .foregroundStyle(accent ? settings.accent : settings.ink)
+            Text(label)
+                .font(.mono(9, .medium))
+                .tracking(1.2)
+                .foregroundStyle(settings.muted)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 // MARK: - Pebble texture overlay
 
 struct PebbleOverlay: View {
@@ -96,17 +119,19 @@ struct PebbleOverlay: View {
 
     var body: some View {
         Canvas { ctx, size in
+            // one accumulated path + one fill, not a draw call per dot
+            var dots = Path()
             let step: CGFloat = 9
             var y: CGFloat = 2
             while y < size.height {
                 var x: CGFloat = 2
                 while x < size.width {
-                    ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: 1.6, height: 1.6)),
-                             with: .color(tint))
+                    dots.addEllipse(in: CGRect(x: x, y: y, width: 1.6, height: 1.6))
                     x += step
                 }
                 y += step
             }
+            ctx.fill(dots, with: .color(tint))
         }
         .opacity(opacity * 0.55)
         .allowsHitTesting(false)

@@ -20,12 +20,12 @@ const scripts = Array.from(html.matchAll(/<script>([\s\S]*?)<\/script>/g)).map(m
 assert(scripts.length >= 1, "Expected at least one inline <script> block.");
 new Function(scripts.join("\n"));
 
-// 2. No external <script src> dependencies — the app is self-contained.
-assert(!/<script\s+src=/.test(html), "Root app must not load external scripts.");
+// 2. Dependencies are allowed: external <script src>, bundlers, and a backend are
+//    all permitted. The app is no longer required to be self-contained.
 
 // 3. Primary views + router must be present.
 const required = [
-  "viewPassport", "viewLocker", "viewSpiels", "viewRoster", "viewStop", "viewCurler",
+  "viewAuth", "viewPassport", "viewLocker", "viewSpiels", "viewRoster", "viewStop", "viewCurler",
   "function render(", "function gotoTab(", "function push(", "function back(",
   "applyHash(", "applyQueryOverrides("
 ];
@@ -43,7 +43,7 @@ new Function(sw); // parse-only smoke check (identifiers need not resolve)
 assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v1"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v1.");
 assert(/caches\.keys\(\)/.test(sw) && /caches\.delete\(/.test(sw), "sw.js must purge old caches on activate.");
 
-// 6. Inline favicon (self-contained, no file dependency).
+// 6. Inline favicon present.
 assert(/rel="icon"[^>]*data:image\/svg\+xml/.test(html), "Inline SVG favicon missing.");
 
 // 7. Root shell must not reference the archived classic/ asset tree.

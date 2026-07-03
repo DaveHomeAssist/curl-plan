@@ -83,7 +83,7 @@ struct PassportView: View {
 
     private var telemetry: some View {
         HStack(spacing: 0) {
-            statCell("\(store.me.rinks)", "RINKS", identifier: "curlplan.passport.stat.rinks")
+            statCell("\(store.me.clubs)", "CLUBS", identifier: "curlplan.passport.stat.clubs")
             VRule()
             statCell("\(store.me.prov)", "PROV", identifier: "curlplan.passport.stat.provinces")
             VRule()
@@ -96,19 +96,10 @@ struct PassportView: View {
     }
 
     private func statCell(_ value: String, _ label: String, accent: Bool = false, identifier: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.serif(26))
-                .foregroundStyle(accent ? settings.accent : settings.ink)
-            Text(label)
-                .font(.mono(9, .medium))
-                .tracking(1.2)
-                .foregroundStyle(settings.muted)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(value) \(label)")
-        .accessibilityIdentifier(identifier)
+        StatCell(value: value, label: label, accent: accent)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(value) \(label)")
+            .accessibilityIdentifier(identifier)
     }
 }
 

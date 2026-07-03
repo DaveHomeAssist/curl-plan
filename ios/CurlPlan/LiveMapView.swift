@@ -269,7 +269,7 @@ struct LiveMapView: View {
             }
 
             HStack(spacing: 0) {
-                seasonStat("\(store.seasonSummary.rinks)", "RINKS")
+                seasonStat("\(store.seasonSummary.rinks)", "CLUBS")
                 VRule().frame(height: 48)
                 seasonStat("\(store.seasonSummary.provinces)", "PROV")
                 VRule().frame(height: 48)

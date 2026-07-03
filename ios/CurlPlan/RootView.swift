@@ -15,14 +15,14 @@ struct RootView: View {
                 ZStack(alignment: .bottom) {
                     settings.screen.ignoresSafeArea()
 
-                    Group {
-                        switch tab {
-                        case .passport: TabStack { PassportView() }
-                        case .map:      TabStack { LiveMapView() }
-                        case .locker:   TabStack { LockerRoomView() }
-                        case .spiels:   TabStack { SpielsView() }
-                        case .roster:   TabStack { RosterView() }
-                        }
+                    // all five stacks stay alive so pushed routes and scroll positions
+                    // survive tab switches; only the active one is visible and hit-testable
+                    ZStack {
+                        pane(.passport) { PassportView() }
+                        pane(.map) { LiveMapView() }
+                        pane(.locker) { LockerRoomView() }
+                        pane(.spiels) { SpielsView() }
+                        pane(.roster) { RosterView() }
                     }
 
                     CPTabBar(tab: $tab)
@@ -30,6 +30,13 @@ struct RootView: View {
                 .accessibilityIdentifier("curlplan.main")
             }
         }
+    }
+
+    private func pane<Content: View>(_ t: Tab, @ViewBuilder content: @escaping () -> Content) -> some View {
+        TabStack(content: content)
+            .opacity(tab == t ? 1 : 0)
+            .allowsHitTesting(tab == t)
+            .accessibilityHidden(tab != t)
     }
 }
 
