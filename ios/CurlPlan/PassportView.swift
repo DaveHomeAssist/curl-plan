@@ -61,29 +61,16 @@ struct PassportView: View {
 
     private var telemetry: some View {
         HStack(spacing: 0) {
-            statCell("\(store.me.rinks)", "RINKS")
+            StatCell(value: "\(store.me.clubs)", label: "CLUBS")
             VRule()
-            statCell("\(store.me.prov)", "PROV")
+            StatCell(value: "\(store.me.prov)", label: "PROV")
             VRule()
-            statCell("\(store.me.games)", "GAMES")
+            StatCell(value: "\(store.me.games)", label: "GAMES")
             VRule()
-            statCell("\(store.me.win)%", "WIN", accent: true)
+            StatCell(value: "\(store.me.win)%", label: "WIN", accent: true)
         }
         .padding(.vertical, 13)
         .cpCard()
-    }
-
-    private func statCell(_ value: String, _ label: String, accent: Bool = false) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.serif(26))
-                .foregroundStyle(accent ? settings.accent : settings.ink)
-            Text(label)
-                .font(.mono(9, .medium))
-                .tracking(1.2)
-                .foregroundStyle(settings.muted)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 

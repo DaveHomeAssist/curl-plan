@@ -20,9 +20,9 @@ struct Curler: Identifiable, Hashable, Codable {
     var following: Bool
     let record: String
     let win: String
-    let rinks: Int
+    let clubs: Int
     let mutual: Int
-    let sharedRinks: [String]
+    let sharedClubs: [String]
     let form: [GameLine]
 }
 
@@ -62,7 +62,7 @@ struct SpielPost: Identifiable, Codable {
 
 struct ReviewPost: Identifiable, Codable {
     var id = UUID()
-    let author: String, time: String, rink: String
+    let author: String, time: String, club: String
     let stars: Int, note: String
 }
 
@@ -132,7 +132,7 @@ final class Store: ObservableObject {
         let name = "Dana Mercer"
         let initials = "DM"
         let season = "Season 2025–26 · in progress"
-        let rinks = 12
+        let clubs = 12
         let prov = 4
         let games = 38
         let win = 68
@@ -191,8 +191,8 @@ final class Store: ObservableObject {
                             club: club.isEmpty ? "—" : club,
                             prov: prov.isEmpty ? "—" : prov,
                             metAt: "your roster", following: true,
-                            record: "0–0", win: "—", rinks: 0, mutual: 0,
-                            sharedRinks: [], form: [])
+                            record: "0–0", win: "—", clubs: 0, mutual: 0,
+                            sharedClubs: [], form: [])
         curlers.insert(curler, at: 0)
         return curler
     }
@@ -204,32 +204,32 @@ enum Seed {
     static let curlers: [Curler] = [
         Curler(id: "sam", initials: "SR", name: "Sam Reid", role: "Skip", club: "Vernon CC", prov: "BC",
                metAt: "Kelowna · Jan 2026", following: false,
-               record: "21–9", win: "70%", rinks: 9, mutual: 3,
-               sharedRinks: ["Kelowna", "Vernon", "+4 more"],
+               record: "21–9", win: "70%", clubs: 9, mutual: 3,
+               sharedClubs: ["Kelowna", "Vernon", "+4 more"],
                form: [GameLine(label: "A-final · Kelowna", score: "8–5", res: "W"),
                       GameLine(label: "Semi · Kelowna", score: "7–6", res: "W")]),
         Curler(id: "jo", initials: "JM", name: "Jo Mara", role: "Lead · Spare", club: "In roster", prov: "BC",
                metAt: "Kelowna · Jan 2026", following: true,
-               record: "15–11", win: "58%", rinks: 7, mutual: 5,
-               sharedRinks: ["Kelowna", "Kamloops", "+2 more"],
+               record: "15–11", win: "58%", clubs: 7, mutual: 5,
+               sharedClubs: ["Kelowna", "Kamloops", "+2 more"],
                form: [GameLine(label: "Pool · Kelowna", score: "6–4", res: "W"),
                       GameLine(label: "Tie-break · Vernon", score: "5–7", res: "L")]),
         Curler(id: "dee", initials: "DT", name: "Dee Tan", role: "Lead", club: "Glenmore CC", prov: "BC",
                metAt: "Kelowna · Jan 2026", following: false,
-               record: "12–10", win: "55%", rinks: 6, mutual: 2,
-               sharedRinks: ["Kelowna", "Glenmore", "+1 more"],
+               record: "12–10", win: "55%", clubs: 6, mutual: 2,
+               sharedClubs: ["Kelowna", "Glenmore", "+1 more"],
                form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
                       GameLine(label: "Pool · Kelowna", score: "4–8", res: "L")]),
         Curler(id: "carter", initials: "BC", name: "Bryn Carter", role: "Skip", club: "Sage Valley CC", prov: "AB",
                metAt: "Kelowna · Jan 2026", following: false,
-               record: "18–12", win: "60%", rinks: 8, mutual: 1,
-               sharedRinks: ["Kelowna", "Calgary", "+3 more"],
+               record: "18–12", win: "60%", clubs: 8, mutual: 1,
+               sharedClubs: ["Kelowna", "Calgary", "+3 more"],
                form: [GameLine(label: "Pool · Kelowna", score: "4–8", res: "L"),
                       GameLine(label: "Final · Calgary", score: "9–7", res: "W")]),
         Curler(id: "lind", initials: "EL", name: "Erik Lindqvist", role: "Third", club: "Granite City CC", prov: "MB",
                metAt: "Kelowna · Jan 2026", following: true,
-               record: "24–8", win: "75%", rinks: 11, mutual: 2,
-               sharedRinks: ["Kelowna", "Winnipeg", "+5 more"],
+               record: "24–8", win: "75%", clubs: 11, mutual: 2,
+               sharedClubs: ["Kelowna", "Winnipeg", "+5 more"],
                form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
                       GameLine(label: "Final · Winnipeg", score: "6–5", res: "W")])
     ]
@@ -281,7 +281,7 @@ enum Seed {
                            likes: 24, comments: 6)),
         .spiel(SpielPost(title: "5 curlers you follow are headed to", spielName: "Brier Patch Open",
                          whereText: "KAMLOOPS", whenText: "FEB 14–16", who: ["sam", "jo", "lind"])),
-        .review(ReviewPost(author: "jo", time: "5H", rink: "Granite City CC", stars: 4,
+        .review(ReviewPost(author: "jo", time: "5H", club: "Granite City CC", stars: 4,
                            note: "fast, 5–6 ft of curl"))
     ]
 }

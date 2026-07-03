@@ -10,17 +10,24 @@ struct RootView: View {
         ZStack(alignment: .bottom) {
             settings.screen.ignoresSafeArea()
 
-            Group {
-                switch tab {
-                case .passport: TabStack { PassportView() }
-                case .locker:   TabStack { LockerRoomView() }
-                case .spiels:   TabStack { SpielsView() }
-                case .roster:   TabStack { RosterView() }
-                }
+            // all four stacks stay alive so pushed routes and scroll positions
+            // survive tab switches; only the active one is visible and hit-testable
+            ZStack {
+                pane(.passport) { PassportView() }
+                pane(.locker) { LockerRoomView() }
+                pane(.spiels) { SpielsView() }
+                pane(.roster) { RosterView() }
             }
 
             CPTabBar(tab: $tab)
         }
+    }
+
+    private func pane<Content: View>(_ t: Tab, @ViewBuilder content: @escaping () -> Content) -> some View {
+        TabStack(content: content)
+            .opacity(tab == t ? 1 : 0)
+            .allowsHitTesting(tab == t)
+            .accessibilityHidden(tab != t)
     }
 }
 

@@ -74,6 +74,7 @@ struct NewSpielSheet: View {
 
 private struct SpielRow: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
     @State private var showingDetail = false
     let spiel: Spiel
 
@@ -102,7 +103,7 @@ private struct SpielRow: View {
             }
 
             HStack(spacing: 11) {
-                AvatarStack(initials: spiel.going.map { _ in "" }, size: 28)
+                AvatarStack(initials: spiel.going.map { store.curler($0)?.initials ?? "?" }, size: 28)
                 Text("\(spiel.going.count) of your circle going")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
                 Spacer()

@@ -22,7 +22,7 @@ struct CurlerProfileView: View {
                             identity(c)
                             actions(c)
                             stats(c)
-                            sharedRinks(c)
+                            sharedClubs(c)
                             recentForm(c)
                         }
                         .padding(.horizontal, 20)
@@ -88,31 +88,23 @@ struct CurlerProfileView: View {
 
     private func stats(_ c: Curler) -> some View {
         HStack(spacing: 0) {
-            statCell(c.record, "RECORD")
+            StatCell(value: c.record, label: "RECORD", size: 24)
             VRule()
-            statCell(c.win, "WIN", accent: true)
+            StatCell(value: c.win, label: "WIN", accent: true, size: 24)
             VRule()
-            statCell("\(c.rinks)", "RINKS")
+            StatCell(value: "\(c.clubs)", label: "CLUBS", size: 24)
             VRule()
-            statCell("\(c.mutual)", "MUTUAL")
+            StatCell(value: "\(c.mutual)", label: "MUTUAL", size: 24)
         }
         .padding(.vertical, 14)
         .cpCard()
     }
 
-    private func statCell(_ value: String, _ label: String, accent: Bool = false) -> some View {
-        VStack(spacing: 5) {
-            Text(value).font(.serif(24)).foregroundStyle(accent ? settings.accent : settings.ink)
-            Text(label).font(.mono(9, .medium)).tracking(1).foregroundStyle(settings.muted)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func sharedRinks(_ c: Curler) -> some View {
+    private func sharedClubs(_ c: Curler) -> some View {
         VStack(alignment: .leading, spacing: 9) {
-            Eyebrow(text: "Rinks you've both played")
+            Eyebrow(text: "Clubs you've both played")
             HStack(spacing: 8) {
-                ForEach(Array(c.sharedRinks.enumerated()), id: \.offset) { _, label in
+                ForEach(Array(c.sharedClubs.enumerated()), id: \.offset) { _, label in
                     let isMore = label.contains("more")
                     HStack(spacing: 6) {
                         if !isMore { HouseRing(size: 12) }

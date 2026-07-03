@@ -25,7 +25,7 @@ struct LockerRoomView: View {
                 || p.whereText.localizedCaseInsensitiveContains(q)
         case .review(let p):
             return (store.curler(p.author)?.name ?? "").localizedCaseInsensitiveContains(q)
-                || p.rink.localizedCaseInsensitiveContains(q)
+                || p.club.localizedCaseInsensitiveContains(q)
                 || p.note.localizedCaseInsensitiveContains(q)
         }
     }
@@ -202,6 +202,7 @@ private struct ResultCard: View {
 
 private struct SpielCard: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
     @State private var joined = false
     let post: SpielPost
 
@@ -213,7 +214,7 @@ private struct SpielCard: View {
                 .foregroundColor(settings.ink)
                 .lineSpacing(2)
             HStack(spacing: 11) {
-                AvatarStack(initials: post.who.map { _ in "" }, size: 28)
+                AvatarStack(initials: post.who.map { store.curler($0)?.initials ?? "?" }, size: 28)
                 Text("\(post.whereText)\n\(post.whenText)")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
                 Spacer()
@@ -248,14 +249,14 @@ private struct ReviewCard: View {
                     AvatarView(initials: author?.initials ?? "?", size: 32)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(author?.name ?? "").font(.grotesk(13, .bold)).foregroundStyle(settings.ink)
-                        Text("RINK REVIEW · \(post.time)").font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                        Text("CLUB REVIEW · \(post.time)").font(.mono(10, .medium)).foregroundStyle(settings.muted)
                     }
                     Spacer()
                 }
             }
             .buttonStyle(.plain)
 
-            Text(post.rink).font(.serif(16)).foregroundStyle(settings.ink)
+            Text(post.club).font(.serif(16)).foregroundStyle(settings.ink)
             HStack(spacing: 8) {
                 (Text(String(repeating: "★", count: post.stars)).foregroundColor(settings.accent)
                     + Text(String(repeating: "★", count: max(0, 5 - post.stars))).foregroundColor(settings.line))
