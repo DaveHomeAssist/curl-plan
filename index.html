@@ -709,6 +709,19 @@ function derivedStats(){
   return { clubs:clubIds.length, prov:Object.keys(provs).length, games:games,
     win:games ? Math.round(wins * 100 / games) : 0 };
 }
+/* a signed-in, non-demo user — the demo session and signed-out both use seed chrome */
+function isRealAccount(){ var u = currentUser(); return !!(u && !u.demo); }
+/* stops the user has actually logged a visit at, newest visit first */
+function visitedStops(){
+  return Object.keys(store.visits)
+    .filter(function(id){ return (store.visits[id] || []).length && stop(id); })
+    .map(function(id){
+      var vs = store.visits[id];
+      var latest = vs.reduce(function(m, v){ return Math.max(m, v.at || 0); }, 0);
+      return { id:id, count:vs.length, at:latest };
+    })
+    .sort(function(a, b){ return b.at - a.at; });
+}
 
 /* ============================================================
    Accounts & auth — user identity + session. Local-first
@@ -919,28 +932,54 @@ function viewAuth(){
 
 function viewPassport(){
   var s = me.stats || derivedStats();
+  var real = isRealAccount();
   var pins = stops.map(function(st){
     var sz = st.big ? 21 : 13;
-    return '<button class="map-pin' + (st.here ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
+    // "here now" highlight is a demo cue — a real account has no current location
+    return '<button class="map-pin' + ((st.here && !real) ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
       'style="left:' + st.x + '%; top:' + st.y + '%; width:' + sz + 'px; height:' + sz + 'px;" aria-label="' + esc(st.name) + '"></button>';
   }).join("");
 
-  var recents = recentStops.map(function(id){
-    var st = stop(id);
-    var avs = st.met.slice(0,2).map(function(m){
-      return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
+  var recents;
+  if(real){
+    // personal: stops the user has logged, count badge instead of a seed record
+    var mine = visitedStops();
+    recents = mine.length ? mine.map(function(v){
+      var st = stop(v.id);
+      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+        '<span class="code">' + esc(st.code) + '</span>' +
+        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
+        '<span class="score">' + v.count + (v.count === 1 ? ' visit' : ' visits') + '</span>' +
+      '</div>';
+    }).join("")
+    : '<div class="card tile" style="text-align:center; color:var(--muted); font:500 13px \'Hanken Grotesk\'; padding:18px;">' +
+        'No stops logged yet — tap a pin, then “Log visit,” to start your season map.</div>';
+  } else {
+    recents = recentStops.map(function(id){
+      var st = stop(id);
+      var avs = st.met.slice(0,2).map(function(m){
+        return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
+      }).join("");
+      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+        '<span class="code">' + esc(st.code) + '</span>' +
+        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
+        '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
+          '<span class="score">' + esc(st.record) + '</span>' +
+          '<div class="stack">' + avs +
+            (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
+          '</div></div>' +
+      '</div>';
     }).join("");
-    return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
-      '<span class="code">' + esc(st.code) + '</span>' +
-      '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
-        '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
-      '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
-        '<span class="score">' + esc(st.record) + '</span>' +
-        '<div class="stack">' + avs +
-          (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
-        '</div></div>' +
-    '</div>';
-  }).join("");
+  }
+  // map chrome: the "here now" chip and stop/KM tally are demo flavor; a real
+  // account gets a tally derived from its own visits (no fabricated distance)
+  var hereChip = real ? '' : '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>';
+  var nVisited = visitedStops().length;
+  var mapMeta = real
+    ? (nVisited ? nVisited + (nVisited === 1 ? ' STOP LOGGED' : ' STOPS LOGGED') : 'NEW SEASON')
+    : '12 STOPS · 2,400 KM';
 
   return statusbar(false) +
     '<div class="appbar">' +
@@ -969,8 +1008,8 @@ function viewPassport(){
         '</svg>' +
         '<div class="pebble-tex"></div>' +
         pins +
-        '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>' +
-        '<div class="map-meta">12 STOPS · 2,400 KM</div>' +
+        hereChip +
+        '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
       '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" data-action="tab" data-tab="spiels">All</span></div>' +
       recents +
