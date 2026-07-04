@@ -98,7 +98,7 @@ struct RecentStopTile: View {
 
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { _ in "" }, size: 20, plus: stop.plus)
+                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
             }
         }
         .padding(12)
@@ -161,19 +161,21 @@ struct SeasonMap: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
-            HStack(spacing: 7) {
-                Circle().fill(settings.accent).frame(width: 7, height: 7)
-                Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+            if let here = store.stops.first(where: { $0.here }) {
+                HStack(spacing: 7) {
+                    Circle().fill(settings.accent).frame(width: 7, height: 7)
+                    Text("\(shortName(here)) · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                }
+                .padding(.vertical, 5)
+                .padding(.horizontal, 11)
+                .background(settings.card)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+                .padding(13)
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 11)
-            .background(settings.card)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
-            .padding(13)
         }
         .overlay(alignment: .bottomTrailing) {
-            Text("12 STOPS · 2,400 KM")
+            Text("\(store.stops.count) STOP\(store.stops.count == 1 ? "" : "S") LOGGED")
                 .font(.mono(10, .medium))
                 .tracking(1)
                 .foregroundStyle(settings.ink)
@@ -183,5 +185,10 @@ struct SeasonMap: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .padding(12)
         }
+    }
+
+    // Short, human label for the season-map chip (first word of the club name).
+    private func shortName(_ stop: Stop) -> String {
+        stop.club.split(separator: " ").first.map(String.init) ?? stop.name
     }
 }
