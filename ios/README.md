@@ -20,15 +20,27 @@ No third-party dependencies, no package resolution — pure SwiftUI.
 |------|------|
 | `CurlPlan/CurlPlanApp.swift` | App entry, environment wiring |
 | `Theme.swift` | Color tokens (Ice/Arena), fonts, persisted `AppSettings` |
-| `Models.swift` | Data models, `Store`, seed season data |
-| `Components.swift` | `HouseRing`, avatars, pebble texture, card style, pills |
-| `RootView.swift` | Custom tab bar + per-tab `NavigationStack` + routing |
-| `PassportView.swift` | Home: telemetry, season map, recent stops |
-| `LockerRoomView.swift` | Feed: results, shared spiels, club reviews |
-| `StopDetailView.swift` | Stop: ice read, games here, people met |
-| `CurlerProfileView.swift` | Person: stats, shared clubs, recent form |
-| `SpielsView.swift` / `RosterView.swift` | Season schedule / your circle |
-| `SettingsSheet.swift` | Appearance sheet (theme / accent / pebble) |
+| `Models.swift` | Data models, unified `Post`, per-account `Store`, identity/auth, derivations, persistence |
+| `Seed.generated.swift` | **GENERATED** season baseline (`enum Seed`) — do not edit |
+| `Clubs.generated.swift` | **GENERATED** club vocabulary (`enum Clubs`) — do not edit |
+| `Components.swift` | `HouseRing`, avatars, pebble, card, pills, stars, text areas, search field |
+| `RootView.swift` | Auth gate + custom tab bar + per-tab `NavigationStack` + routing |
+| `AuthView.swift` | Sign in / create account / explore demo |
+| `PassportView.swift` | Home: telemetry, season map, recent/visited stops (personalized) |
+| `LockerRoomView.swift` | Feed: results/notes/reviews/spiels, likes, Following/Discover, search |
+| `ComposeSheet.swift` | Note / result / review composer |
+| `StopDetailView.swift` | Stop: ice read, contributions (visit/ice read/review), games, people |
+| `CurlerProfileView.swift` | Person: stats, shared clubs, form, message + share |
+| `MessageThreadView.swift` | Per-curler local message thread |
+| `SpielsView.swift` / `RosterView.swift` | Season schedule / your circle (search + create) |
+| `SettingsSheet.swift` | Appearance + account (sign out) |
+| `../CurlPlanTests/StoreTests.swift` | Store unit tests (needs a test target wired) |
+
+## Seed data is generated — do not hand-edit
+`Seed.generated.swift` and `Clubs.generated.swift` come from `data/season-seed.json`
+and `data/curling-clubs.json` via `node scripts/gen-seed.js` (run from the repo root).
+This is the same command that regenerates the web app's seed block, so both stay in
+sync. CI fails if they're stale (`node scripts/gen-seed.js --check`).
 
 ## Notes
 - **Fonts:** the concept uses Instrument Serif / Hanken Grotesk / DM Mono. Those
@@ -45,6 +57,16 @@ No third-party dependencies, no package resolution — pure SwiftUI.
   `ios/CurlPlan/` into the project.
 
 ## Parity with the web build
-Same six screens, house-ring system, Ice/Arena theming, accent + pebble settings,
-tab navigation, and push-to-detail (stop / curler) flows. Follow state is live
-across Roster, profiles, and stop detail.
+Full functional parity (as of 2026-07-06): accounts/auth + explore-demo, per-account
+persisted state (follows, likes, joins, posts, visits, ice reads, reviews, threads),
+stop contributions, messaging threads, note/result/review compose, interactive likes,
+spielId-unified spiel registration, personalized Passport with derived stats, functional
+Locker + Roster search, create spiel/curler, and a Following/Discover feed filter — plus
+the shared six screens, house-ring system, Ice/Arena theming, accent + pebble.
+
+`scripts/verify-parity.js` (CI) asserts each capability exists on both platforms.
+
+> **Compile status:** all Swift here was authored on Windows and has **not** been built
+> in Xcode. The `ios` CI job (macos-14) runs `generate-xcodeproj.js` then `xcodebuild
+> build`; run it (or ⌘B locally) before shipping. `StoreTests.swift` needs a unit-test
+> target added to the project before it can run.

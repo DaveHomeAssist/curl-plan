@@ -6,6 +6,9 @@ struct StopDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let stopID: String
 
+    private enum Contribution: String, Identifiable { case visit, iceRead, review; var id: String { rawValue } }
+    @State private var active: Contribution? = nil
+
     var body: some View {
         Group {
             if let stop = store.stop(stopID) {
@@ -14,7 +17,11 @@ struct StopDetailView: View {
                         hero(stop)
                         VStack(alignment: .leading, spacing: 14) {
                             iceRead(stop)
+                            communityIceReads
+                            addRow
                             gamesHere(stop)
+                            yourVisits
+                            reviews
                             SectionHeader(title: "People you met here", action: "+ All")
                             people(stop)
                         }
@@ -30,6 +37,13 @@ struct StopDetailView: View {
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(item: $active) { which in
+            switch which {
+            case .visit:   LogVisitSheet(stopID: stopID)
+            case .iceRead: AddIceReadSheet(stopID: stopID)
+            case .review:  WriteReviewSheet(stopID: stopID)
+            }
+        }
     }
 
     // MARK: Hero
@@ -65,7 +79,7 @@ struct StopDetailView: View {
         }
     }
 
-    // MARK: Ice read
+    // MARK: Ice read (seed) + community reads
 
     private func iceRead(_ stop: Stop) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -89,6 +103,37 @@ struct StopDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 11).padding(.horizontal, 12)
         .cpCard(radius: 14)
+    }
+
+    @ViewBuilder private var communityIceReads: some View {
+        let reads = store.iceReads(stopID)
+        if !reads.isEmpty {
+            listCard(title: "Community ice reads", count: reads.count) {
+                ForEach(reads) { r in
+                    subrow(name: "\(r.speed) · \(r.curl) ft", meta: r.note)
+                }
+            }
+        }
+    }
+
+    // MARK: Contribution add-row
+
+    private var addRow: some View {
+        HStack(spacing: 8) {
+            ghostButton("Log visit") { active = .visit }
+            ghostButton("Ice read") { active = .iceRead }
+            ghostButton("Write review") { active = .review }
+        }
+    }
+
+    private func ghostButton(_ title: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
+                .frame(maxWidth: .infinity).padding(.vertical, 9)
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(settings.ink, lineWidth: 1.5))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Games here
@@ -129,6 +174,34 @@ struct StopDetailView: View {
         .cpCard()
     }
 
+    @ViewBuilder private var yourVisits: some View {
+        let visits = store.visits(stopID)
+        if !visits.isEmpty {
+            listCard(title: "Your visits", count: visits.count) {
+                ForEach(visits) { v in subrow(name: v.date, meta: v.note) }
+            }
+        }
+    }
+
+    @ViewBuilder private var reviews: some View {
+        let list = store.reviews(stopID)
+        if !list.isEmpty {
+            listCard(title: "Reviews", count: list.count) {
+                ForEach(list) { r in
+                    HStack(spacing: 9) {
+                        StarsRow(count: r.stars)
+                        Spacer()
+                        if !r.note.isEmpty {
+                            Text(r.note).font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                                .multilineTextAlignment(.trailing).frame(maxWidth: 180, alignment: .trailing)
+                        }
+                    }
+                    .padding(.vertical, 9).padding(.horizontal, 13)
+                }
+            }
+        }
+    }
+
     // MARK: People met
 
     private func people(_ stop: Stop) -> some View {
@@ -154,13 +227,42 @@ struct StopDetailView: View {
                         }
                         .buttonStyle(.plain)
                         Spacer()
-                        PillButton(title: c.following ? "Following" : "Follow", filled: !c.following) {
+                        PillButton(title: store.isFollowing(c.id) ? "Following" : "Follow",
+                                   filled: !store.isFollowing(c.id)) {
                             store.toggleFollow(c.id)
                         }
                     }
                 }
             }
         }
+    }
+
+    // MARK: Shared list-card + row helpers
+
+    private func listCard<Content: View>(title: String, count: Int, @ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(title).font(.grotesk(12, .semibold)).foregroundStyle(settings.ink)
+                Spacer()
+                Text("\(count)").font(.mono(10, .medium)).foregroundStyle(settings.muted)
+            }
+            .padding(.vertical, 11).padding(.horizontal, 13)
+            Rectangle().fill(settings.line).frame(height: 1)
+            content()
+        }
+        .cpCard()
+    }
+
+    private func subrow(name: String, meta: String) -> some View {
+        HStack(spacing: 9) {
+            Text(name).font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
+            Spacer()
+            if !meta.isEmpty {
+                Text(meta).font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                    .lineLimit(1).truncationMode(.tail).frame(maxWidth: 170, alignment: .trailing)
+            }
+        }
+        .padding(.vertical, 9).padding(.horizontal, 13)
     }
 
     // MARK: Helpers
@@ -175,5 +277,66 @@ struct StopDetailView: View {
     private func cityLabel(_ stop: Stop) -> String {
         let city = stop.club.uppercased().split(separator: " ").first.map(String.init) ?? stop.prov
         return "\(city), \(stop.prov) · \(stop.dates)"
+    }
+}
+
+// MARK: - Contribution sheets
+
+private struct LogVisitSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let stopID: String
+    @State private var date = "Today"
+    @State private var note = ""
+
+    var body: some View {
+        CreateScaffold(title: "Log a visit", subtitle: store.stop(stopID)?.name ?? "",
+                       canSave: true, onCancel: { dismiss() },
+                       onSave: { store.addVisit(stopID, date: date, note: note); dismiss() }) {
+            CPField(label: "Date", text: $date, placeholder: "Today")
+            CPTextArea(label: "Note (optional)", text: $note, placeholder: "Draw weight was up, great hosts…")
+        }
+    }
+}
+
+private struct AddIceReadSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let stopID: String
+    @State private var speed = "Medium"
+    @State private var curl = ""
+    @State private var note = ""
+
+    private var canSave: Bool { !curl.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    var body: some View {
+        CreateScaffold(title: "Add an ice read", subtitle: store.stop(stopID)?.name ?? "",
+                       canSave: canSave, onCancel: { dismiss() },
+                       onSave: { store.addIceRead(stopID, speed: speed, curl: curl.trimmingCharacters(in: .whitespaces), note: note); dismiss() }) {
+            CPChips(label: "Speed", options: ["Keen", "Fast", "Medium", "Slow"], selection: $speed)
+            CPField(label: "Curl (ft)", text: $curl, placeholder: "4–5")
+            CPTextArea(label: "Note (optional)", text: $note, placeholder: "Straight early, more curl after the hog…")
+        }
+    }
+}
+
+private struct WriteReviewSheet: View {
+    @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let stopID: String
+    @State private var stars = 5
+    @State private var note = ""
+
+    var body: some View {
+        CreateScaffold(title: "Write a review", subtitle: store.stop(stopID)?.name ?? "",
+                       canSave: true, onCancel: { dismiss() },
+                       onSave: { store.addStopReview(stopID, stars: stars, note: note); dismiss() }) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("RATING").font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
+                StarPicker(rating: $stars)
+            }
+            CPTextArea(label: "Review", text: $note, placeholder: "Great ice, friendly club, fast bar service.")
+        }
     }
 }

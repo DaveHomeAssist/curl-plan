@@ -2,11 +2,22 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
 
     enum Tab: String, CaseIterable { case passport, locker, spiels, roster }
     @State private var tab: Tab = .passport
 
     var body: some View {
+        Group {
+            if store.isSignedIn {
+                appShell
+            } else {
+                AuthView()
+            }
+        }
+    }
+
+    private var appShell: some View {
         ZStack(alignment: .bottom) {
             settings.screen.ignoresSafeArea()
 

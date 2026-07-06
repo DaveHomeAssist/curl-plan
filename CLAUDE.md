@@ -89,6 +89,36 @@ they exist to prevent naming collisions across clubs, teams, and events.
   **Club** for venue and reserves **Rink** for the lineup. The classic app's legacy
   "rink memory" (per-venue ice notes) predates this canon — rename when next touched.
 
+## Single source of truth (season seed)
+
+The demo season (curlers, stops, spiels, feed, `me`) lives in **`data/season-seed.json`**
+and is the ONLY place to edit it. `scripts/gen-seed.js` regenerates both apps from it:
+
+- `ios/CurlPlan/Seed.generated.swift` — native seed baseline (`enum Seed`)
+- the marker-delimited `SEED` block inside `index.html` — web seed baseline
+- `ios/CurlPlan/Clubs.generated.swift` + the `CLUBS` block in `index.html` — a shared
+  club vocabulary generated from `data/curling-clubs.json` (used by the create pickers)
+
+Workflow: edit `data/season-seed.json` (or `data/curling-clubs.json`) → run
+`node scripts/gen-seed.js` → commit. **Never hand-edit the generated blocks/files.**
+CI runs `node scripts/gen-seed.js --check` and fails if they're stale. This is the
+mechanism that keeps the web and iOS apps from drifting — the root cause of the old gap.
+
+`scripts/verify-parity.js` (also in CI) asserts each parity capability exists on BOTH
+platforms; add a capability to one side without the other and CI fails.
+
+## Web ⟷ iOS parity
+
+As of 2026-07-06 the native iOS port is at **functional parity** with the web Hi-Fi app:
+accounts/auth, per-account persisted state (likes, follows, joins, posts, visits, ice
+reads, reviews, threads), stop contributions, messaging threads, note/result/review
+compose, interactive likes, spielId-unified registration, personalized Passport with
+derived stats, functional search, and create-spiel/curler — plus Following/Discover on
+both. The full plan is in [docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md](docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md).
+All Swift was authored on Windows and **needs a Mac Xcode compile/run pass** (the iOS CI
+job does this); iOS store logic is covered by `ios/CurlPlanTests/StoreTests.swift`, which
+needs a test target wired before it runs.
+
 ## Product tag
 
 `[CurlPlan]`
@@ -149,6 +179,7 @@ All collections share one localStorage key as a single JSON blob.
 | 003 | P1 | resolved | importData fails on legacy schema versions | Added migrateRaw() switch in core.js; called in importData before normalizeState |
 | 004 | P2 | resolved | Quick capture and next pass UX work remain | Planner prep, lineup, and bonspiel workflows are now live |
 | 005 | P1 | resolved | iOS SwiftUI port ships read-only: create actions unwired, no persistence | Native `ios/` port rendered seed data only; `Store.toggleFollow` was the sole mutation. RESOLVED across 3 passes (xcodebuild green each pass, runs on iPhone 17 / iOS 26.5): P1 wired New Spiel / New Result / New Curler sheets + `Store.addSpiel/addResult/addCurler` + reusable `CreateScaffold`/`CPField`/`CPChips`; P2 fixed the dead CTAs — Spiels "Details" → `SpielDetailSheet` with RSVP (`setSpielStatus`), Locker "I'm in" → working toggle, Curler "Message" → `ShareLink`, Roster + Locker search wired to live filters; P3 added `Codable` to the mutable models + `Persist`/UserDefaults round-trip so creates and follow-state survive relaunch. Deferred (feature stubs, not dead CTAs): Locker "Discover" tab, "All"/"+ All" see-all links, result social row. Tracked from status run RUN-20260621-1118. |
+| 006 | P1 | resolved | iOS port lagged the web app by two feature passes | Closed via the 2026-07-06 parity effort (Phases 0–7). iOS rebuilt on a per-account Store with the full social/contribution layer, auth, personalized Passport; web + iOS now generated from one seed (data/season-seed.json) with a CI parity gate. Locker "Discover" is now a working Following/Discover filter on both. Remaining: Mac Xcode compile/run pass (authored on Windows); wire a test target for CurlPlanTests. |
 
 ## Session Log
 
@@ -193,3 +224,11 @@ All collections share one localStorage key as a single JSON blob.
 [2026-07-03] [CurlPlan] [refactor] Web polish pass: scroll-preserving render({keepScroll}) + in-place like toggle, sendMessage appends a bubble (no sheet rebuild), loadStore sanitization (clamped stars, array guards), postHead/postActions/starsRow/submissionCard/addStopEntry/readJSON dedup, viewAuth added to verify-app required tokens
 [2026-07-03] [CurlPlan] [perf] iOS: PebbleOverlay draws one accumulated Path (was ~1k fills per redraw); RootView keeps all four tab NavigationStacks alive (opacity-switched) so pushed routes + scroll survive tab changes — needs an Xcode compile pass (authored on Windows)
 [2026-07-03] [CurlPlan] [fix] Passport personalized for real accounts (isRealAccount): recent stops derive from own visits (visitedStops) with an empty state; "here now" chip + here-pin dropped; map tally reads "N STOP(S) LOGGED"/"NEW SEASON" — demo session keeps the seed map
+[2026-07-06] [CurlPlan] [build] Phase 0 — single source of truth: data/season-seed.json + scripts/gen-seed.js generate both apps (Seed.generated.swift + web SEED block) and a shared club vocab (Clubs.generated.swift + CLUBS block) from data/curling-clubs.json; CI gains seed --check staleness gate, verify-parity.js, and a macOS iOS build job
+[2026-07-06] [CurlPlan] [feat] Phase 1 — iOS state/data-layer rebuild: unified Post model, per-account AppState (follows/likes/joins/posts/visits/reviews/iceReads/threads) with tolerant Codable, identity/auth (SHA-256, backend-ready seam), derived stats, timestamps, spielId, legacy-blob migration, UserDefaults.defaults test seam
+[2026-07-06] [CurlPlan] [feat] Phase 2 — iOS StopDetailView contributions: log visit / ice read / write review sheets + community lists, follow state routed through the store
+[2026-07-06] [CurlPlan] [feat] Phase 3 — iOS interactive likes (persisted), feed spiel registration unified with the Spiels tab via spielId, relative timestamps (RelativeTime.ago)
+[2026-07-06] [CurlPlan] [feat] Phase 4 — iOS compose sheet (note/result/review) replaces result-only; per-curler MessageThreadView restores Message as primary (Share kept secondary)
+[2026-07-06] [CurlPlan] [feat] Phase 5 — iOS AuthView (sign in/up/demo, pw meter), auth-gated RootView, Settings account row + sign out, personalized Passport (derived stats, visited stops, empty state, demo-only map chrome)
+[2026-07-06] [CurlPlan] [feat] Phase 6 — web backports: functional Locker + Roster search (focus-preserving list re-render), create-spiel/curler sheets with club datalist, Following/Discover made functional on BOTH platforms
+[2026-07-06] [CurlPlan] [test] Phase 7 — scripts/verify-parity.js (12 capabilities, CI-gated), ios/CurlPlanTests/StoreTests.swift; docs refreshed (READMEs, CLAUDE.md)

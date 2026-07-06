@@ -1,5 +1,17 @@
 # CurlPlan seed data
 
+## `season-seed.json` — the canonical demo season
+
+Single source of truth for the demo season shared by **both** apps (curlers, stops,
+spiels, locker feed, and the `me` identity). Edit this file by hand, then run
+`node scripts/gen-seed.js` from the repo root to regenerate:
+
+- `ios/CurlPlan/Seed.generated.swift` (native `enum Seed`)
+- the marker-delimited `SEED` block in `index.html` (web)
+
+Never hand-edit the generated outputs. `node scripts/gen-seed.js --check` (CI) fails if
+they're stale. This is what keeps the web and iOS apps from drifting.
+
 ## `curling-clubs.json`
 
 Seed dataset for **location / club choices** (club pickers, location autocomplete,

@@ -65,14 +65,26 @@ curl-plan/
 └── README.md               # This file
 ```
 
+## Shared season seed (single source of truth)
+
+The demo season (curlers, stops, spiels, feed) lives in **`data/season-seed.json`** and
+is the only place to edit it. `node scripts/gen-seed.js` regenerates the web seed block
+in `index.html` **and** the iOS `Seed.generated.swift` from it — so the two apps can't
+drift. It also emits a shared club vocabulary from `data/curling-clubs.json`. CI fails if
+the generated output is stale.
+
 ## Verification
 
 ```bash
-node scripts/verify-app.js     # root Hi-Fi app: JS parses, views/router/SW/favicon present
-node scripts/verify-split.js   # classic app: required IDs, script order, schema, parseability
+node scripts/gen-seed.js          # regenerate web + iOS seed from data/season-seed.json
+node scripts/gen-seed.js --check  # CI: fail if generated seed is stale
+node scripts/verify-app.js        # root Hi-Fi app: JS parses, views/router/SW/favicon present
+node scripts/verify-split.js      # classic app: required IDs, script order, schema, parseability
+node scripts/verify-parity.js     # CI: each capability present on BOTH web and iOS
 ```
 
-Both run in CI on push/PR via `.github/workflows/verify.yml`.
+All run in CI via `.github/workflows/verify.yml` (a `web` job on Linux + an `ios` job on
+macOS that regenerates the Xcode project and runs `xcodebuild build`).
 
 ## Deployment
 

@@ -142,7 +142,8 @@ private struct RosterRow: View {
             }
             .buttonStyle(.plain)
             Spacer()
-            PillButton(title: curler.following ? "Following" : "Follow", filled: !curler.following) {
+            PillButton(title: store.isFollowing(curler.id) ? "Following" : "Follow",
+                       filled: !store.isFollowing(curler.id)) {
                 store.toggleFollow(curler.id)
             }
         }

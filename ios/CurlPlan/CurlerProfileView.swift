@@ -5,6 +5,7 @@ struct CurlerProfileView: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     let curlerID: String
+    @State private var showThread = false
 
     var body: some View {
         Group {
@@ -13,6 +14,13 @@ struct CurlerProfileView: View {
                     HStack {
                         CircleBackButton { dismiss() }
                         Spacer()
+                        ShareLink(item: shareText(c)) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(settings.ink)
+                                .frame(width: 36, height: 36)
+                                .overlay(Circle().strokeBorder(settings.line, lineWidth: 1.5))
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 6)
@@ -37,6 +45,11 @@ struct CurlerProfileView: View {
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showThread) { MessageThreadView(curlerID: curlerID) }
+    }
+
+    private func shareText(_ c: Curler) -> String {
+        "\(c.name) — \(c.role), \(c.club) (\(c.prov)). Met at \(c.metAt). Record \(c.record), \(c.win) wins."
     }
 
     private func identity(_ c: Curler) -> some View {
@@ -69,7 +82,7 @@ struct CurlerProfileView: View {
     private func actions(_ c: Curler) -> some View {
         HStack(spacing: 10) {
             Button { store.toggleFollow(c.id) } label: {
-                Text(c.following ? "Following" : "+ Follow")
+                Text(store.isFollowing(c.id) ? "Following" : "+ Follow")
                     .font(.grotesk(14, .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
                     .background(settings.accent)
@@ -77,12 +90,13 @@ struct CurlerProfileView: View {
             }
             .buttonStyle(.plain)
 
-            ShareLink(item: "\(c.name) — \(c.role), \(c.club) (\(c.prov)). Met at \(c.metAt). Record \(c.record), \(c.win) wins.") {
-                Text("Share")
+            Button { showThread = true } label: {
+                Text("Message")
                     .font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 11.5)
                     .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(settings.ink, lineWidth: 1.5))
             }
+            .buttonStyle(.plain)
         }
     }
 

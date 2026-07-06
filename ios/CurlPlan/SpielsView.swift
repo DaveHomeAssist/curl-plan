@@ -79,7 +79,8 @@ private struct SpielRow: View {
     let spiel: Spiel
 
     var body: some View {
-        let solid = spiel.status == "You're in"
+        let status = store.spielStatus(spiel.id)
+        let solid = status == "You're in"
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
@@ -88,7 +89,7 @@ private struct SpielRow: View {
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted).padding(.top, 2)
                 }
                 Spacer()
-                Text(spiel.status)
+                Text(status)
                     .font(solid ? .mono(9, .bold) : .grotesk(11, .semibold))
                     .tracking(solid ? 1 : 0)
                     .foregroundStyle(solid ? .white : settings.muted)
@@ -140,7 +141,7 @@ struct SpielDetailSheet: View {
                         .foregroundStyle(settings.muted).padding(.bottom, 8)
                     HStack(spacing: 8) {
                         ForEach(statuses, id: \.self) { opt in
-                            let on = spiel.status == opt
+                            let on = store.spielStatus(spiel.id) == opt
                             Button { store.setSpielStatus(spiel.id, opt) } label: {
                                 Text(opt).font(.grotesk(12, .semibold))
                                     .foregroundStyle(on ? .white : settings.ink)

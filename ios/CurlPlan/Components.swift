@@ -333,6 +333,72 @@ struct CreateScaffold<Content: View>: View {
     }
 }
 
+// Read-only star rating (filled accent + empty line), matching the web starsRow().
+struct StarsRow: View {
+    @EnvironmentObject var settings: AppSettings
+    let count: Int
+    var size: CGFloat = 13
+    var body: some View {
+        let n = max(0, min(5, count))
+        return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
+            + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
+            .font(.system(size: size))
+            .tracking(2)
+    }
+}
+
+// Interactive 5-star picker for review/rating inputs.
+struct StarPicker: View {
+    @EnvironmentObject var settings: AppSettings
+    @Binding var rating: Int
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(1...5, id: \.self) { i in
+                Button { rating = i } label: {
+                    Text("★")
+                        .font(.system(size: 26))
+                        .foregroundStyle(i <= rating ? settings.accent : settings.line)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// Labelled multi-line text field (compose bodies, notes, messages).
+struct CPTextArea: View {
+    @EnvironmentObject var settings: AppSettings
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var minHeight: CGFloat = 74
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !label.isEmpty {
+                Text(label.uppercased())
+                    .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
+            }
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(.grotesk(15)).foregroundStyle(settings.muted)
+                        .padding(.vertical, 11).padding(.horizontal, 13)
+                }
+                TextField("", text: $text, axis: .vertical)
+                    .font(.grotesk(15)).foregroundStyle(settings.ink)
+                    .tint(settings.accent)
+                    .padding(.vertical, 11).padding(.horizontal, 13)
+            }
+            .frame(minHeight: minHeight, alignment: .topLeading)
+            .background(settings.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(settings.line, lineWidth: 1))
+        }
+    }
+}
+
 // A circular glass back button for hero / detail screens.
 struct CircleBackButton: View {
     @EnvironmentObject var settings: AppSettings

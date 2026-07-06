@@ -1,6 +1,15 @@
 import SwiftUI
+import CryptoKit
 
-// MARK: - Models
+// ============================================================
+// CurlPlan — data models + Store.
+// Seed baseline lives in Seed.generated.swift (from data/season-seed.json).
+// This file owns the mutable, per-account state layer, identity/auth, and the
+// derivations that mirror the web Hi-Fi app (index.html). Parity target: the web
+// `curlplan-hifi-state-v1:<userId|demo>` store + `curlplan-hifi-auth-v1`.
+// ============================================================
+
+// MARK: - Value models
 
 struct GameLine: Identifiable, Hashable, Codable {
     var id = UUID()
@@ -17,7 +26,7 @@ struct Curler: Identifiable, Hashable, Codable {
     let club: String
     let prov: String
     let metAt: String
-    var following: Bool
+    var following: Bool          // seed baseline; live state is Store.isFollowing()
     let record: String
     let win: String
     let clubs: Int
@@ -35,49 +44,16 @@ struct Stop: Identifiable, Hashable {
     let dates: String
     let record: String
     var here: Bool = false
-    let x: Double           // 0–100 % position on the season map
+    let x: Double
     let y: Double
     var big: Bool = false
-    var plus: String? = nil // "+3" badge on the avatar stack
+    var plus: String? = nil
     let iceSpeed: String
     let iceSpeedSec: String
     let iceCurl: String
     let iceRec: String
     let games: [GameLine]
-    let met: [String]       // curler ids
-}
-
-struct ResultPost: Identifiable, Codable {
-    var id = UUID()
-    let author: String, time: String, body: String
-    let scoreFor: Int, scoreAgainst: Int, res: String, vs: String
-    let likes: Int, comments: Int
-}
-
-struct SpielPost: Identifiable, Codable {
-    var id = UUID()
-    let title: String, spielName: String, whereText: String, whenText: String
-    let who: [String]
-}
-
-struct ReviewPost: Identifiable, Codable {
-    var id = UUID()
-    let author: String, time: String, club: String
-    let stars: Int, note: String
-}
-
-enum FeedItem: Identifiable, Codable {
-    case result(ResultPost)
-    case spiel(SpielPost)
-    case review(ReviewPost)
-
-    var id: UUID {
-        switch self {
-        case .result(let p): return p.id
-        case .spiel(let p): return p.id
-        case .review(let p): return p.id
-        }
-    }
+    let met: [String]
 }
 
 struct Spiel: Identifiable, Hashable, Codable {
@@ -89,199 +65,409 @@ struct Spiel: Identifiable, Hashable, Codable {
     var going: [String]
 }
 
-// Navigation routes for the per-tab NavigationStacks.
-enum Route: Hashable {
-    case stop(String)
-    case curler(String)
+struct MeStats { let clubs: Int; let prov: Int; let games: Int; let win: Int }
+
+struct VisitedStop: Identifiable { let stop: Stop; let count: Int; let at: Double; var id: String { stop.id } }
+
+struct MeInfo {
+    let name: String
+    let initials: String
+    let role: String
+    let club: String
+    let prov: String
+    let season: String
+    let stats: MeStats
 }
 
-// MARK: - Persistence
+// Unified feed post — mirrors the web's uniform dict so seed feed + user posts
+// merge trivially and every post carries a stable String id (likes key on it).
+struct Post: Identifiable, Codable, Hashable {
+    enum Kind: String, Codable { case result, note, review, spiel }
+    let id: String
+    let kind: Kind
+    var author: String?
+    var at: Double?          // epoch seconds; nil => seed, use `time`
+    var time: String?        // seed/legacy relative label
+    // result / note
+    var body: String?
+    var scoreFor: Int?
+    var scoreAgainst: Int?
+    var res: String?
+    var vs: String?
+    var likes: Int
+    var comments: Int
+    // review
+    var club: String?
+    var stars: Int?
+    var note: String?
+    // spiel promo
+    var title: String?
+    var spielName: String?
+    var spielId: String?     // links a feed card back to a real Spiel (parity fix)
+    var whereText: String?
+    var whenText: String?
+    var who: [String]?
 
-enum Persist {
-    static let curlersKey = "cp.curlers.v1"
-    static let spielsKey = "cp.spiels.v1"
-    static let feedKey = "cp.feed.v1"
-
-    static func save<T: Encodable>(_ value: T, _ key: String) {
-        guard let data = try? JSONEncoder().encode(value) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+    init(id: String, kind: Kind, author: String? = nil, at: Double? = nil, time: String? = nil,
+         body: String? = nil, scoreFor: Int? = nil, scoreAgainst: Int? = nil, res: String? = nil,
+         vs: String? = nil, likes: Int = 0, comments: Int = 0, club: String? = nil, stars: Int? = nil,
+         note: String? = nil, title: String? = nil, spielName: String? = nil, spielId: String? = nil,
+         whereText: String? = nil, whenText: String? = nil, who: [String]? = nil) {
+        self.id = id; self.kind = kind; self.author = author; self.at = at; self.time = time
+        self.body = body; self.scoreFor = scoreFor; self.scoreAgainst = scoreAgainst; self.res = res
+        self.vs = vs; self.likes = likes; self.comments = comments; self.club = club; self.stars = stars
+        self.note = note; self.title = title; self.spielName = spielName; self.spielId = spielId
+        self.whereText = whereText; self.whenText = whenText; self.who = who
     }
+}
 
-    static func load<T: Decodable>(_ key: String) -> T? {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(T.self, from: data)
+// MARK: - Stop-detail contribution entries + messages
+
+struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
+struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double }
+struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
+struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: String; let text: String; let at: Double }
+
+// MARK: - Identity
+
+struct Account: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let email: String
+    let passHash: String
+    let club: String
+    let role: String
+    let prov: String
+    var isDemo: Bool { id == "demo" }
+
+    static let demo = Account(id: "demo", name: Seed.me.name, email: "demo@curlplan.app",
+                              passHash: "", club: Seed.me.club, role: Seed.me.role, prov: Seed.me.prov)
+}
+
+struct AuthState: Codable {
+    var users: [Account] = []
+    var session: String? = nil     // userId | "demo" | nil (signed out)
+}
+
+// MARK: - Per-account mutable state (the "store" blob)
+
+struct AppState: Codable {
+    var addedCurlers: [Curler] = []
+    var addedSpiels: [Spiel] = []
+    var follows: [String: Bool] = [:]        // curlerId -> override
+    var likes: [String: Bool] = [:]          // postId -> liked
+    var joins: [String: String] = [:]        // spielId -> status override
+    var posts: [Post] = []                   // user-authored, newest first
+    var visits: [String: [VisitEntry]] = [:] // stopId -> entries
+    var reviews: [String: [ReviewEntry]] = [:]
+    var iceReads: [String: [IceReadEntry]] = [:]
+    var threads: [String: [Message]] = [:]   // curlerId -> messages
+
+    init() {}
+
+    // Tolerant decode: property defaults apply for missing/new keys, so adding a bucket
+    // in a later version never wipes an existing account's saved state (web-parity resilience).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let v = try? c.decodeIfPresent([Curler].self, forKey: .addedCurlers), let x = v { addedCurlers = x }
+        if let v = try? c.decodeIfPresent([Spiel].self, forKey: .addedSpiels), let x = v { addedSpiels = x }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .follows), let x = v { follows = x }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .likes), let x = v { likes = x }
+        if let v = try? c.decodeIfPresent([String: String].self, forKey: .joins), let x = v { joins = x }
+        if let v = try? c.decodeIfPresent([Post].self, forKey: .posts), let x = v { posts = x }
+        if let v = try? c.decodeIfPresent([String: [VisitEntry]].self, forKey: .visits), let x = v { visits = x }
+        if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews), let x = v { reviews = x }
+        if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads), let x = v { iceReads = x }
+        if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads), let x = v { threads = x }
+    }
+}
+
+// MARK: - Time helpers (mirror web fmtAgo / fmtTime)
+
+enum RelativeTime {
+    static func ago(_ at: Double) -> String {
+        let s = Int(Date().timeIntervalSince1970 - at)
+        if s < 60 { return "NOW" }
+        let m = s / 60; if m < 60 { return "\(m)M" }
+        let h = m / 60; if h < 24 { return "\(h)H" }
+        let d = h / 24; if d < 7 { return "\(d)D" }
+        let df = DateFormatter(); df.dateFormat = "MMM d"
+        return df.string(from: Date(timeIntervalSince1970: at)).uppercased()
+    }
+    static func clock(_ at: Double) -> String {
+        let df = DateFormatter(); df.dateFormat = "HH:mm"
+        return df.string(from: Date(timeIntervalSince1970: at))
     }
 }
 
 // MARK: - Store
 
 final class Store: ObservableObject {
-    @Published var curlers: [Curler] = Seed.curlers { didSet { Persist.save(curlers, Persist.curlersKey) } }
-    @Published var stops: [Stop] = Seed.stops
-    @Published var spiels: [Spiel] = Seed.spiels { didSet { Persist.save(spiels, Persist.spielsKey) } }
-    @Published var feed: [FeedItem] = Seed.feed { didSet { Persist.save(feed, Persist.feedKey) } }
-    let me = Me()
+    @Published private(set) var auth: AuthState { didSet { persistAuth() } }
+    @Published private(set) var state: AppState { didSet { persistState() } }
+
+    private static let authKey = "cp.auth.v1"
+    private var stateKey: String { "cp.state.v2:" + (auth.session ?? "anon") }
+
+    /// Persistence backing store — override with an ephemeral suite in tests.
+    static var defaults: UserDefaults = .standard
 
     init() {
-        if let saved: [Curler] = Persist.load(Persist.curlersKey) { curlers = saved }
-        if let saved: [Spiel] = Persist.load(Persist.spielsKey) { spiels = saved }
-        if let saved: [FeedItem] = Persist.load(Persist.feedKey) { feed = saved }
+        let loadedAuth = Store.loadAuth(Store.authKey)
+        auth = loadedAuth
+        // one-time migrate the pre-parity global blobs into the demo bucket
+        Store.migrateLegacyIfNeeded(session: loadedAuth.session)
+        state = Store.loadState(key: "cp.state.v2:" + (loadedAuth.session ?? "anon"))
     }
 
-    struct Me {
-        let name = "Dana Mercer"
-        let initials = "DM"
-        let season = "Season 2025–26 · in progress"
-        let clubs = 12
-        let prov = 4
-        let games = 38
-        let win = 68
+    // MARK: Baselines (immutable seed) + derived collections
+
+    var stops: [Stop] { Seed.stops }
+    var curlers: [Curler] { state.addedCurlers + Seed.curlers }
+    var spiels: [Spiel] { state.addedSpiels + Seed.spiels }
+    var allPosts: [Post] { state.posts + Seed.feed }
+
+    func curler(_ id: String) -> Curler? { curlers.first { $0.id == id } }
+    func stop(_ id: String) -> Stop? { stops.first { $0.id == id } }
+    func spiel(_ id: String) -> Spiel? { spiels.first { $0.id == id } }
+
+    var recentStops: [Stop] { Seed.recentStopIDs.compactMap { stop($0) } }
+
+    // MARK: Identity
+
+    func currentUser() -> Account? {
+        guard let s = auth.session else { return nil }
+        if s == "demo" { return .demo }
+        return auth.users.first { $0.id == s }
+    }
+    var isSignedIn: Bool { auth.session != nil }
+    var isRealAccount: Bool { if let u = currentUser() { return !u.isDemo }; return false }
+
+    var me: MeInfo {
+        guard let u = currentUser(), !u.isDemo else { return Seed.me }
+        return MeInfo(name: u.name, initials: Store.initials(u.name), role: u.role,
+                      club: u.club, prov: u.prov, season: "Your season · in progress",
+                      stats: derivedStats())
     }
 
-    func curler(_ id: String) -> Curler? { curlers.first(where: { $0.id == id }) }
-    func stop(_ id: String) -> Stop? { stops.first(where: { $0.id == id }) }
-
-    var recentStops: [Stop] {
-        ["kelowna", "vernon"].compactMap { id in stops.first(where: { $0.id == id }) }
+    /// Live telemetry for a real account, computed from their own log (demo keeps seed numbers).
+    func derivedStats() -> MeStats {
+        let visitedIds = state.visits.filter { !$0.value.isEmpty }.map { $0.key }
+        var provs = Set<String>()
+        for sid in visitedIds { if let s = stop(sid) { provs.insert(s.prov) } }
+        let results = state.posts.filter { $0.kind == .result }
+        let games = results.count
+        let wins = results.filter { $0.res == "WIN" }.count
+        let win = games > 0 ? Int((Double(wins) * 100 / Double(games)).rounded()) : 0
+        return MeStats(clubs: visitedIds.count, prov: provs.count, games: games, win: win)
     }
 
-    func isFollowing(_ id: String) -> Bool { curler(id)?.following ?? false }
-
-    func toggleFollow(_ id: String) {
-        guard let i = curlers.firstIndex(where: { $0.id == id }) else { return }
-        curlers[i].following.toggle()
+    /// Stops the user has actually logged a visit at, newest visit first.
+    func visitedStops() -> [VisitedStop] {
+        state.visits.compactMap { (sid, entries) -> VisitedStop? in
+            guard !entries.isEmpty, let s = stop(sid) else { return nil }
+            let latest = entries.map { $0.at }.max() ?? 0
+            return VisitedStop(stop: s, count: entries.count, at: latest)
+        }
+        .sorted { $0.at > $1.at }
     }
 
-    // MARK: - Create actions
+    // MARK: Follow graph
+
+    func isFollowing(_ id: String) -> Bool {
+        if let o = state.follows[id] { return o }
+        return curler(id)?.following ?? false
+    }
+    func toggleFollow(_ id: String) { state.follows[id] = !isFollowing(id) }
+
+    // MARK: Likes
+
+    func isLiked(_ postId: String) -> Bool { state.likes[postId] ?? false }
+    func likeCount(_ p: Post) -> Int { p.likes + (isLiked(p.id) ? 1 : 0) }
+    func toggleLike(_ postId: String) { state.likes[postId] = !isLiked(postId) }
+
+    // MARK: Spiel registration (unified across Spiels tab + feed)
+
+    func spielStatus(_ id: String) -> String { state.joins[id] ?? (spiel(id)?.status ?? "Watching") }
+    func setSpielStatus(_ id: String, _ status: String) { state.joins[id] = status }
+    func withdrawSpiel(_ id: String) {
+        if spiel(id)?.status == "You're in" { state.joins[id] = "Watching" }
+        else { state.joins[id] = nil }
+    }
+
+    // MARK: Create actions (write to the per-account state)
 
     @discardableResult
     func addSpiel(name: String, whereText: String, whenText: String, status: String) -> Spiel {
-        let spiel = Spiel(id: "sp-\(UUID().uuidString.prefix(6))",
-                          name: name,
-                          whereText: whereText.isEmpty ? "TBD" : whereText,
-                          whenText: whenText.isEmpty ? "DATE TBD" : whenText,
-                          status: status, going: [])
-        spiels.insert(spiel, at: 0)
-        return spiel
+        let sp = Spiel(id: Store.uid("sp"), name: name,
+                       whereText: whereText.isEmpty ? "TBD" : whereText,
+                       whenText: whenText.isEmpty ? "DATE TBD" : whenText,
+                       status: status, going: [])
+        state.addedSpiels.insert(sp, at: 0)
+        return sp
     }
 
-    func setSpielStatus(_ id: String, _ status: String) {
-        guard let i = spiels.firstIndex(where: { $0.id == id }) else { return }
-        spiels[i].status = status
+    @discardableResult
+    func addCurler(name: String, role: String, club: String, prov: String) -> Curler {
+        let initials = Store.initials(name)
+        let c = Curler(id: Store.uid("c"), initials: initials.isEmpty ? "?" : initials,
+                       name: name, role: role.isEmpty ? "Curler" : role,
+                       club: club.isEmpty ? "—" : club, prov: prov.isEmpty ? "—" : prov,
+                       metAt: "your roster", following: true,
+                       record: "0–0", win: "—", clubs: 0, mutual: 0, sharedClubs: [], form: [])
+        state.addedCurlers.insert(c, at: 0)
+        return c
     }
 
     func addResult(body: String, scoreFor: Int, scoreAgainst: Int, vs: String) {
         let res = scoreFor == scoreAgainst ? "TIE" : (scoreFor > scoreAgainst ? "WIN" : "LOSS")
         let opp = vs.trimmingCharacters(in: .whitespaces)
         let vsLabel = opp.isEmpty ? "" : (opp.lowercased().hasPrefix("vs") ? opp : "vs \(opp)")
-        let post = ResultPost(author: "me", time: "now", body: body,
-                              scoreFor: scoreFor, scoreAgainst: scoreAgainst,
-                              res: res, vs: vsLabel, likes: 0, comments: 0)
-        feed.insert(.result(post), at: 0)
+        let p = Post(id: Store.uid("p"), kind: .result, author: "me", at: Store.now(),
+                     body: body, scoreFor: scoreFor, scoreAgainst: scoreAgainst, res: res,
+                     vs: vsLabel, likes: 0, comments: 0)
+        state.posts.insert(p, at: 0)
     }
 
-    @discardableResult
-    func addCurler(name: String, role: String, club: String, prov: String) -> Curler {
-        let initials = name.split(separator: " ").prefix(2)
-            .compactMap { $0.first }.map(String.init).joined().uppercased()
-        let curler = Curler(id: "c-\(UUID().uuidString.prefix(6))",
-                            initials: initials.isEmpty ? "?" : initials,
-                            name: name,
-                            role: role.isEmpty ? "Curler" : role,
-                            club: club.isEmpty ? "—" : club,
-                            prov: prov.isEmpty ? "—" : prov,
-                            metAt: "your roster", following: true,
-                            record: "0–0", win: "—", clubs: 0, mutual: 0,
-                            sharedClubs: [], form: [])
-        curlers.insert(curler, at: 0)
-        return curler
+    func addNote(body: String) {
+        let p = Post(id: Store.uid("p"), kind: .note, author: "me", at: Store.now(), body: body)
+        state.posts.insert(p, at: 0)
     }
-}
 
-// MARK: - Seed data (mirrors the web build's season)
+    func addReview(club: String, stars: Int, note: String) {
+        let p = Post(id: Store.uid("p"), kind: .review, author: "me", at: Store.now(),
+                     club: club, stars: max(1, min(5, stars)), note: note)
+        state.posts.insert(p, at: 0)
+    }
 
-enum Seed {
-    static let curlers: [Curler] = [
-        Curler(id: "sam", initials: "SR", name: "Sam Reid", role: "Skip", club: "Vernon CC", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "21–9", win: "70%", clubs: 9, mutual: 3,
-               sharedClubs: ["Kelowna", "Vernon", "+4 more"],
-               form: [GameLine(label: "A-final · Kelowna", score: "8–5", res: "W"),
-                      GameLine(label: "Semi · Kelowna", score: "7–6", res: "W")]),
-        Curler(id: "jo", initials: "JM", name: "Jo Mara", role: "Lead · Spare", club: "In roster", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: true,
-               record: "15–11", win: "58%", clubs: 7, mutual: 5,
-               sharedClubs: ["Kelowna", "Kamloops", "+2 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "6–4", res: "W"),
-                      GameLine(label: "Tie-break · Vernon", score: "5–7", res: "L")]),
-        Curler(id: "dee", initials: "DT", name: "Dee Tan", role: "Lead", club: "Glenmore CC", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "12–10", win: "55%", clubs: 6, mutual: 2,
-               sharedClubs: ["Kelowna", "Glenmore", "+1 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
-                      GameLine(label: "Pool · Kelowna", score: "4–8", res: "L")]),
-        Curler(id: "carter", initials: "BC", name: "Bryn Carter", role: "Skip", club: "Sage Valley CC", prov: "AB",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "18–12", win: "60%", clubs: 8, mutual: 1,
-               sharedClubs: ["Kelowna", "Calgary", "+3 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "4–8", res: "L"),
-                      GameLine(label: "Final · Calgary", score: "9–7", res: "W")]),
-        Curler(id: "lind", initials: "EL", name: "Erik Lindqvist", role: "Third", club: "Granite City CC", prov: "MB",
-               metAt: "Kelowna · Jan 2026", following: true,
-               record: "24–8", win: "75%", clubs: 11, mutual: 2,
-               sharedClubs: ["Kelowna", "Winnipeg", "+5 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
-                      GameLine(label: "Final · Winnipeg", score: "6–5", res: "W")])
-    ]
+    // MARK: Stop-detail contributions
 
-    static let stops: [Stop] = [
-        Stop(id: "kamloops", code: "KAM", name: "Kamloops Cashspiel", club: "Kamloops Curling Club", prov: "BC",
-             dates: "HERE NOW", record: "—", here: true, x: 86, y: 54, big: true,
-             iceSpeed: "Fast", iceSpeedSec: "23.6s", iceCurl: "4–5", iceRec: "—",
-             games: [], met: []),
-        Stop(id: "kelowna", code: "KEL", name: "Kelowna Bonspiel", club: "Kelowna Curling Club", prov: "BC",
-             dates: "JAN 9–11", record: "3–1", x: 70, y: 32, plus: "+3",
-             iceSpeed: "Fast", iceSpeedSec: "24.1s", iceCurl: "5–6", iceRec: "3–1",
-             games: [GameLine(label: "vs Carter", score: "8–4", res: "W"),
-                     GameLine(label: "vs Lindqvist", score: "5–7", res: "L")],
-             met: ["sam", "jo", "dee"]),
-        Stop(id: "vernon", code: "VER", name: "Vernon Cashspiel", club: "Vernon Curling Club", prov: "BC",
-             dates: "DEC 2", record: "2–1", x: 50, y: 68, plus: "+2",
-             iceSpeed: "Medium", iceSpeedSec: "25.0s", iceCurl: "4–5", iceRec: "2–1",
-             games: [GameLine(label: "vs Reid", score: "6–8", res: "L"),
-                     GameLine(label: "vs Mara", score: "7–5", res: "W")],
-             met: ["sam", "jo"]),
-        Stop(id: "calgary", code: "CAL", name: "Sage Valley Open", club: "Sage Valley CC", prov: "AB",
-             dates: "NOV 14–16", record: "2–2", x: 30, y: 39,
-             iceSpeed: "Keen", iceSpeedSec: "23.2s", iceCurl: "6–7", iceRec: "2–2",
-             games: [GameLine(label: "vs Carter", score: "9–7", res: "W"),
-                     GameLine(label: "vs Park", score: "4–9", res: "L")],
-             met: ["carter"]),
-        Stop(id: "winnipeg", code: "WPG", name: "Granite City Classic", club: "Granite City CC", prov: "MB",
-             dates: "OCT 24–26", record: "3–0", x: 14, y: 64,
-             iceSpeed: "Fast", iceSpeedSec: "24.4s", iceCurl: "5–6", iceRec: "3–0",
-             games: [GameLine(label: "vs Lindqvist", score: "6–5", res: "W"),
-                     GameLine(label: "vs Olsen", score: "8–3", res: "W")],
-             met: ["lind"])
-    ]
+    func visits(_ stopID: String) -> [VisitEntry] { state.visits[stopID] ?? [] }
+    func iceReads(_ stopID: String) -> [IceReadEntry] { state.iceReads[stopID] ?? [] }
+    func reviews(_ stopID: String) -> [ReviewEntry] { state.reviews[stopID] ?? [] }
 
-    static let spiels: [Spiel] = [
-        Spiel(id: "sp1", name: "Brier Patch Open", whereText: "Kamloops, BC", whenText: "FEB 14–16",
-              status: "You're in", going: ["sam", "jo", "lind"]),
-        Spiel(id: "sp2", name: "Okanagan Classic", whereText: "Kelowna, BC", whenText: "MAR 6–8",
-              status: "Watching", going: ["dee", "carter"]),
-        Spiel(id: "sp3", name: "Prairie Cashspiel", whereText: "Winnipeg, MB", whenText: "MAR 27–29",
-              status: "Invite", going: ["lind"])
-    ]
+    func addVisit(_ stopID: String, date: String, note: String) {
+        state.visits[stopID, default: []].insert(VisitEntry(date: date.isEmpty ? "Today" : date, note: note, at: Store.now()), at: 0)
+    }
+    func addIceRead(_ stopID: String, speed: String, curl: String, note: String) {
+        state.iceReads[stopID, default: []].insert(IceReadEntry(speed: speed.isEmpty ? "Medium" : speed, curl: curl, note: note, at: Store.now()), at: 0)
+    }
+    func addStopReview(_ stopID: String, stars: Int, note: String) {
+        state.reviews[stopID, default: []].insert(ReviewEntry(stars: max(1, min(5, stars)), note: note, at: Store.now()), at: 0)
+    }
 
-    static let feed: [FeedItem] = [
-        .result(ResultPost(author: "sam", time: "2H",
-                           body: "Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
-                           scoreFor: 8, scoreAgainst: 5, res: "WIN", vs: "vs Northern",
-                           likes: 24, comments: 6)),
-        .spiel(SpielPost(title: "5 curlers you follow are headed to", spielName: "Brier Patch Open",
-                         whereText: "KAMLOOPS", whenText: "FEB 14–16", who: ["sam", "jo", "lind"])),
-        .review(ReviewPost(author: "jo", time: "5H", club: "Granite City CC", stars: 4,
-                           note: "fast, 5–6 ft of curl"))
-    ]
+    // MARK: Messaging
+
+    func thread(_ curlerID: String) -> [Message] { state.threads[curlerID] ?? [] }
+    func sendMessage(_ curlerID: String, text: String) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return }
+        state.threads[curlerID, default: []].append(Message(from: "me", text: t, at: Store.now()))
+    }
+
+    // MARK: Auth actions (the backend-ready seam — see docs; local-first for now)
+
+    enum AuthResult { case ok, error(String) }
+
+    func exploreDemo() {
+        setSession("demo")
+    }
+
+    func signUp(name: String, email: String, pass: String, club: String, role: String, prov: String) -> AuthResult {
+        let n = name.trimmingCharacters(in: .whitespaces)
+        let e = email.trimmingCharacters(in: .whitespaces).lowercased()
+        if n.isEmpty { return .error("Add your name") }
+        if !Store.validEmail(e) { return .error("Enter a valid email") }
+        if pass.count < 6 { return .error("Password needs 6+ characters") }
+        if auth.users.contains(where: { $0.email == e }) { return .error("That email already has an account") }
+        let u = Account(id: Store.uid("u"), name: n, email: e, passHash: Store.hash(pass),
+                        club: club.trimmingCharacters(in: .whitespaces).isEmpty ? "Independent" : club.trimmingCharacters(in: .whitespaces),
+                        role: role.isEmpty ? "Skip" : role,
+                        prov: prov.trimmingCharacters(in: .whitespaces))
+        auth.users.append(u)
+        setSession(u.id)
+        return .ok
+    }
+
+    func signIn(email: String, pass: String) -> AuthResult {
+        let e = email.trimmingCharacters(in: .whitespaces).lowercased()
+        guard let u = auth.users.first(where: { $0.email == e }), u.passHash == Store.hash(pass) else {
+            return .error("Email or password is incorrect")
+        }
+        setSession(u.id)
+        return .ok
+    }
+
+    func signOut() { setSession(nil) }
+
+    /// Switch identity: persist current, repoint the key, load that account's state.
+    private func setSession(_ session: String?) {
+        auth.session = session
+        state = Store.loadState(key: stateKey)
+    }
+
+    // MARK: Persistence
+
+    private func persistAuth() {
+        if let d = try? JSONEncoder().encode(auth) { Store.defaults.set(d, forKey: Store.authKey) }
+    }
+    private func persistState() {
+        if let d = try? JSONEncoder().encode(state) { Store.defaults.set(d, forKey: stateKey) }
+    }
+    private static func loadAuth(_ key: String) -> AuthState {
+        guard let d = Store.defaults.data(forKey: key),
+              let a = try? JSONDecoder().decode(AuthState.self, from: d) else { return AuthState() }
+        return a
+    }
+    private static func loadState(key: String) -> AppState {
+        guard let d = Store.defaults.data(forKey: key),
+              let s = try? JSONDecoder().decode(AppState.self, from: d) else { return AppState() }
+        return s
+    }
+
+    /// Migrate the pre-parity global arrays (cp.curlers/spiels/feed.v1) into the demo bucket,
+    /// once. Best-effort: seed items are dropped; only user additions carry over.
+    private static func migrateLegacyIfNeeded(session: String?) {
+        let d = Store.defaults
+        let demoKey = "cp.state.v2:demo"
+        guard d.data(forKey: demoKey) == nil else { return }
+        let hadLegacy = d.data(forKey: "cp.curlers.v1") != nil
+            || d.data(forKey: "cp.spiels.v1") != nil
+            || d.data(forKey: "cp.feed.v1") != nil
+        guard hadLegacy else { return }
+        var migrated = AppState()
+        let seedCurlerIDs = Set(Seed.curlers.map { $0.id })
+        let seedSpielIDs = Set(Seed.spiels.map { $0.id })
+        if let cd = d.data(forKey: "cp.curlers.v1"), let cs = try? JSONDecoder().decode([Curler].self, from: cd) {
+            migrated.addedCurlers = cs.filter { !seedCurlerIDs.contains($0.id) }
+        }
+        if let sd = d.data(forKey: "cp.spiels.v1"), let ss = try? JSONDecoder().decode([Spiel].self, from: sd) {
+            migrated.addedSpiels = ss.filter { !seedSpielIDs.contains($0.id) }
+        }
+        // Legacy feed used a different (enum) shape; new Post won't decode it — safe to drop.
+        if let data = try? JSONEncoder().encode(migrated) { d.set(data, forKey: demoKey) }
+        d.removeObject(forKey: "cp.curlers.v1")
+        d.removeObject(forKey: "cp.spiels.v1")
+        d.removeObject(forKey: "cp.feed.v1")
+    }
+
+    // MARK: Utilities
+
+    static func now() -> Double { Date().timeIntervalSince1970 }
+    static func uid(_ prefix: String) -> String { prefix + "-" + UUID().uuidString.prefix(8).lowercased() }
+    static func initials(_ name: String) -> String {
+        let parts = name.split(separator: " ").filter { !$0.isEmpty }
+        guard let first = parts.first?.first else { return "··" }
+        let last = parts.count > 1 ? (parts.last?.first).map(String.init) ?? "" : ""
+        return (String(first) + last).uppercased()
+    }
+    static func validEmail(_ s: String) -> Bool {
+        let r = #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#
+        return s.range(of: r, options: .regularExpression) != nil
+    }
+    /// SHA-256 hex. Better than the web demo's djb2, but still local-only — real auth
+    /// belongs on the backend seam (see docs/engineering policy).
+    static func hash(_ s: String) -> String {
+        SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 }

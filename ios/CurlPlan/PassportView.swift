@@ -14,12 +14,7 @@ struct PassportView: View {
                     telemetry
                     SeasonMap()
                     SectionHeader(title: "Recent stops", action: "All")
-                    ForEach(store.recentStops) { stop in
-                        NavigationLink(value: Route.stop(stop.id)) {
-                            RecentStopTile(stop: stop)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    recentStops
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
@@ -60,42 +55,64 @@ struct PassportView: View {
     }
 
     private var telemetry: some View {
-        HStack(spacing: 0) {
-            StatCell(value: "\(store.me.clubs)", label: "CLUBS")
+        let s = store.me.stats
+        return HStack(spacing: 0) {
+            StatCell(value: "\(s.clubs)", label: "CLUBS")
             VRule()
-            StatCell(value: "\(store.me.prov)", label: "PROV")
+            StatCell(value: "\(s.prov)", label: "PROV")
             VRule()
-            StatCell(value: "\(store.me.games)", label: "GAMES")
+            StatCell(value: "\(s.games)", label: "GAMES")
             VRule()
-            StatCell(value: "\(store.me.win)%", label: "WIN", accent: true)
+            StatCell(value: "\(s.win)%", label: "WIN", accent: true)
         }
         .padding(.vertical, 13)
         .cpCard()
     }
+
+    // Real accounts see the stops they've logged (with a visit count + empty state);
+    // demo keeps the seed record + met-people chrome.
+    @ViewBuilder private var recentStops: some View {
+        if store.isRealAccount {
+            let mine = store.visitedStops()
+            if mine.isEmpty {
+                Text("No stops logged yet — tap a pin, then “Log visit,” to start your season map.")
+                    .font(.grotesk(13)).foregroundStyle(settings.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .cpCard()
+            } else {
+                ForEach(mine) { entry in
+                    NavigationLink(value: Route.stop(entry.stop.id)) {
+                        VisitedStopTile(stop: entry.stop, count: entry.count)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        } else {
+            ForEach(store.recentStops) { stop in
+                NavigationLink(value: Route.stop(stop.id)) {
+                    RecentStopTile(stop: stop)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
 }
 
-// MARK: - Recent stop tile
+// MARK: - Recent stop tile (demo: record + met-people)
 
 struct RecentStopTile: View {
     @EnvironmentObject var settings: AppSettings
-    @EnvironmentObject var store: Store
     let stop: Stop
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(stop.code)
-                .font(.mono(12, .semibold))
-                .foregroundStyle(settings.accent)
-                .frame(width: 42, height: 42)
-                .background(settings.panel)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
+            StopCode(stop.code)
             VStack(alignment: .leading, spacing: 2) {
                 Text(stop.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
                 Text("\(stop.prov) · \(stop.dates)").font(.mono(11, .medium)).foregroundStyle(settings.muted)
             }
             Spacer(minLength: 8)
-
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
                 AvatarStack(initials: stop.met.prefix(2).map { _ in "" }, size: 20, plus: stop.plus)
@@ -106,19 +123,62 @@ struct RecentStopTile: View {
     }
 }
 
+// MARK: - Visited stop tile (real account: visit count)
+
+struct VisitedStopTile: View {
+    @EnvironmentObject var settings: AppSettings
+    let stop: Stop
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            StopCode(stop.code)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(stop.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
+                Text("\(stop.prov) · \(stop.club)").font(.mono(11, .medium)).foregroundStyle(settings.muted)
+            }
+            Spacer(minLength: 8)
+            Text("\(count) \(count == 1 ? "visit" : "visits")").font(.serif(17)).foregroundStyle(settings.ink)
+        }
+        .padding(12)
+        .cpCard()
+    }
+}
+
+private struct StopCode: View {
+    @EnvironmentObject var settings: AppSettings
+    let code: String
+    init(_ code: String) { self.code = code }
+    var body: some View {
+        Text(code)
+            .font(.mono(12, .semibold))
+            .foregroundStyle(settings.accent)
+            .frame(width: 42, height: 42)
+            .background(settings.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
 // MARK: - Season map
 
 struct SeasonMap: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
 
+    private var mapMeta: String {
+        if store.isRealAccount {
+            let n = store.visitedStops().count
+            if n == 0 { return "NEW SEASON" }
+            return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
+        }
+        return "12 STOPS · 2,400 KM"
+    }
+
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack {
                 settings.panel
-
-                // grid
                 Path { p in
                     for fy in [14.0, 28, 42] {
                         let y = h * fy / 56
@@ -132,7 +192,6 @@ struct SeasonMap: View {
                 .stroke(settings.line, lineWidth: 1)
                 .opacity(0.7)
 
-                // dashed route (decorative)
                 Path { p in
                     let pts: [(Double, Double)] = [(14, 36), (30, 22), (50, 38), (70, 18), (86, 30)]
                     for (i, pt) in pts.enumerated() {
@@ -145,11 +204,10 @@ struct SeasonMap: View {
 
                 PebbleOverlay(opacity: settings.pebbleOpacity)
 
-                // pins
                 ForEach(store.stops) { s in
                     NavigationLink(value: Route.stop(s.id)) {
                         HouseRing(size: s.big ? 21 : 13)
-                            .overlay(Circle().strokeBorder(.white.opacity(s.here ? 0.85 : 0), lineWidth: 3))
+                            .overlay(Circle().strokeBorder(.white.opacity(s.here && !store.isRealAccount ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     }
                     .buttonStyle(.plain)
@@ -161,19 +219,22 @@ struct SeasonMap: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
-            HStack(spacing: 7) {
-                Circle().fill(settings.accent).frame(width: 7, height: 7)
-                Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+            // "here now" is a demo cue — a real account has no current location
+            if !store.isRealAccount {
+                HStack(spacing: 7) {
+                    Circle().fill(settings.accent).frame(width: 7, height: 7)
+                    Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                }
+                .padding(.vertical, 5)
+                .padding(.horizontal, 11)
+                .background(settings.card)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+                .padding(13)
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 11)
-            .background(settings.card)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
-            .padding(13)
         }
         .overlay(alignment: .bottomTrailing) {
-            Text("12 STOPS · 2,400 KM")
+            Text(mapMeta)
                 .font(.mono(10, .medium))
                 .tracking(1)
                 .foregroundStyle(settings.ink)

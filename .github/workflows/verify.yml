@@ -7,14 +7,36 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Seed is up to date (web + iOS generated from data/season-seed.json)
+        run: node scripts/gen-seed.js --check
       - name: Verify root Hi-Fi app
         run: node scripts/verify-app.js
       - name: Verify archived classic app
         run: node scripts/verify-split.js
+      - name: Cross-platform parity checklist
+        run: node scripts/verify-parity.js
+
+  ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Regenerate Xcode project (auto-wires all Swift files)
+        run: node ios/generate-xcodeproj.js
+      - name: Build CurlPlan (iOS Simulator)
+        run: |
+          cd ios
+          xcodebuild build \
+            -project CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO

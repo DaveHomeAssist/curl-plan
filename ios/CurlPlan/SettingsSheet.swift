@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SettingsSheet: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -44,14 +46,38 @@ struct SettingsSheet: View {
                     .tint(settings.accent)
             }
 
+            settingRow(title: "Account", sub: accountMeta) {
+                Button {
+                    store.signOut()
+                    dismiss()
+                } label: {
+                    Text("Sign out")
+                        .font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
+                        .padding(.horizontal, 14).padding(.vertical, 6.5)
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(settings.ink, lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+            }
+
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 22)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.height(380)])
+        .presentationDetents([.height(452)])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
+    }
+
+    // Canonical team identity: "{Club short} · {Skip}" (see terminology page).
+    private var accountMeta: String {
+        guard let u = store.currentUser() else { return "SIGNED OUT" }
+        let team = clubShort(u.club) + " · " + u.name
+        return (u.isDemo ? "DEMO SESSION · " : (u.email + " · ")) + team
+    }
+    private func clubShort(_ club: String) -> String {
+        club.replacingOccurrences(of: #"\s+(Curling Club|CC)$"#, with: "", options: .regularExpression)
     }
 
     private func settingRow<Control: View>(title: String, sub: String,

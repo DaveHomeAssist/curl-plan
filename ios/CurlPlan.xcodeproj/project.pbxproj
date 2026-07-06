@@ -7,34 +7,44 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		000000000000000000000011 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* Components.swift */; };
-		000000000000000000000013 /* CurlPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* CurlPlanApp.swift */; };
-		000000000000000000000015 /* CurlerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* CurlerProfileView.swift */; };
-		000000000000000000000017 /* LockerRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* LockerRoomView.swift */; };
-		000000000000000000000019 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* Models.swift */; };
-		00000000000000000000001B /* PassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* PassportView.swift */; };
-		00000000000000000000001D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* RootView.swift */; };
-		00000000000000000000001F /* RosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* RosterView.swift */; };
-		000000000000000000000021 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* SettingsSheet.swift */; };
-		000000000000000000000023 /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* SpielsView.swift */; };
-		000000000000000000000025 /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* StopDetailView.swift */; };
-		000000000000000000000027 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* Theme.swift */; };
+		000000000000000000000011 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* AuthView.swift */; };
+		000000000000000000000013 /* Clubs.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* Clubs.generated.swift */; };
+		000000000000000000000015 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* Components.swift */; };
+		000000000000000000000017 /* ComposeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* ComposeSheet.swift */; };
+		000000000000000000000019 /* CurlPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* CurlPlanApp.swift */; };
+		00000000000000000000001B /* CurlerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* CurlerProfileView.swift */; };
+		00000000000000000000001D /* LockerRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* LockerRoomView.swift */; };
+		00000000000000000000001F /* MessageThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* MessageThreadView.swift */; };
+		000000000000000000000021 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* Models.swift */; };
+		000000000000000000000023 /* PassportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* PassportView.swift */; };
+		000000000000000000000025 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* RootView.swift */; };
+		000000000000000000000027 /* RosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* RosterView.swift */; };
+		000000000000000000000029 /* Seed.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000028 /* Seed.generated.swift */; };
+		00000000000000000000002B /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002A /* SettingsSheet.swift */; };
+		00000000000000000000002D /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002C /* SpielsView.swift */; };
+		00000000000000000000002F /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002E /* StopDetailView.swift */; };
+		000000000000000000000031 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* Theme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		000000000000000000000006 /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000010 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
-		000000000000000000000012 /* CurlPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanApp.swift"; sourceTree = "<group>"; };
-		000000000000000000000014 /* CurlerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlerProfileView.swift"; sourceTree = "<group>"; };
-		000000000000000000000016 /* LockerRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LockerRoomView.swift"; sourceTree = "<group>"; };
-		000000000000000000000018 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
-		00000000000000000000001A /* PassportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PassportView.swift"; sourceTree = "<group>"; };
-		00000000000000000000001C /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
-		00000000000000000000001E /* RosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RosterView.swift"; sourceTree = "<group>"; };
-		000000000000000000000020 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsSheet.swift"; sourceTree = "<group>"; };
-		000000000000000000000022 /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
-		000000000000000000000024 /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
-		000000000000000000000026 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+		000000000000000000000010 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AuthView.swift"; sourceTree = "<group>"; };
+		000000000000000000000012 /* Clubs.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Clubs.generated.swift"; sourceTree = "<group>"; };
+		000000000000000000000014 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components.swift"; sourceTree = "<group>"; };
+		000000000000000000000016 /* ComposeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ComposeSheet.swift"; sourceTree = "<group>"; };
+		000000000000000000000018 /* CurlPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanApp.swift"; sourceTree = "<group>"; };
+		00000000000000000000001A /* CurlerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlerProfileView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001C /* LockerRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LockerRoomView.swift"; sourceTree = "<group>"; };
+		00000000000000000000001E /* MessageThreadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MessageThreadView.swift"; sourceTree = "<group>"; };
+		000000000000000000000020 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
+		000000000000000000000022 /* PassportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PassportView.swift"; sourceTree = "<group>"; };
+		000000000000000000000024 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
+		000000000000000000000026 /* RosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RosterView.swift"; sourceTree = "<group>"; };
+		000000000000000000000028 /* Seed.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Seed.generated.swift"; sourceTree = "<group>"; };
+		00000000000000000000002A /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsSheet.swift"; sourceTree = "<group>"; };
+		00000000000000000000002C /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
+		00000000000000000000002E /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
+		000000000000000000000030 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,18 +69,23 @@
 		000000000000000000000004 /* CurlPlan */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000010 /* Components.swift */,
-				000000000000000000000012 /* CurlPlanApp.swift */,
-				000000000000000000000014 /* CurlerProfileView.swift */,
-				000000000000000000000016 /* LockerRoomView.swift */,
-				000000000000000000000018 /* Models.swift */,
-				00000000000000000000001A /* PassportView.swift */,
-				00000000000000000000001C /* RootView.swift */,
-				00000000000000000000001E /* RosterView.swift */,
-				000000000000000000000020 /* SettingsSheet.swift */,
-				000000000000000000000022 /* SpielsView.swift */,
-				000000000000000000000024 /* StopDetailView.swift */,
-				000000000000000000000026 /* Theme.swift */,
+				000000000000000000000010 /* AuthView.swift */,
+				000000000000000000000012 /* Clubs.generated.swift */,
+				000000000000000000000014 /* Components.swift */,
+				000000000000000000000016 /* ComposeSheet.swift */,
+				000000000000000000000018 /* CurlPlanApp.swift */,
+				00000000000000000000001A /* CurlerProfileView.swift */,
+				00000000000000000000001C /* LockerRoomView.swift */,
+				00000000000000000000001E /* MessageThreadView.swift */,
+				000000000000000000000020 /* Models.swift */,
+				000000000000000000000022 /* PassportView.swift */,
+				000000000000000000000024 /* RootView.swift */,
+				000000000000000000000026 /* RosterView.swift */,
+				000000000000000000000028 /* Seed.generated.swift */,
+				00000000000000000000002A /* SettingsSheet.swift */,
+				00000000000000000000002C /* SpielsView.swift */,
+				00000000000000000000002E /* StopDetailView.swift */,
+				000000000000000000000030 /* Theme.swift */,
 			);
 			path = CurlPlan;
 			sourceTree = "<group>";
@@ -151,18 +166,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000011 /* Components.swift in Sources */,
-				000000000000000000000013 /* CurlPlanApp.swift in Sources */,
-				000000000000000000000015 /* CurlerProfileView.swift in Sources */,
-				000000000000000000000017 /* LockerRoomView.swift in Sources */,
-				000000000000000000000019 /* Models.swift in Sources */,
-				00000000000000000000001B /* PassportView.swift in Sources */,
-				00000000000000000000001D /* RootView.swift in Sources */,
-				00000000000000000000001F /* RosterView.swift in Sources */,
-				000000000000000000000021 /* SettingsSheet.swift in Sources */,
-				000000000000000000000023 /* SpielsView.swift in Sources */,
-				000000000000000000000025 /* StopDetailView.swift in Sources */,
-				000000000000000000000027 /* Theme.swift in Sources */,
+				000000000000000000000011 /* AuthView.swift in Sources */,
+				000000000000000000000013 /* Clubs.generated.swift in Sources */,
+				000000000000000000000015 /* Components.swift in Sources */,
+				000000000000000000000017 /* ComposeSheet.swift in Sources */,
+				000000000000000000000019 /* CurlPlanApp.swift in Sources */,
+				00000000000000000000001B /* CurlerProfileView.swift in Sources */,
+				00000000000000000000001D /* LockerRoomView.swift in Sources */,
+				00000000000000000000001F /* MessageThreadView.swift in Sources */,
+				000000000000000000000021 /* Models.swift in Sources */,
+				000000000000000000000023 /* PassportView.swift in Sources */,
+				000000000000000000000025 /* RootView.swift in Sources */,
+				000000000000000000000027 /* RosterView.swift in Sources */,
+				000000000000000000000029 /* Seed.generated.swift in Sources */,
+				00000000000000000000002B /* SettingsSheet.swift in Sources */,
+				00000000000000000000002D /* SpielsView.swift in Sources */,
+				00000000000000000000002F /* StopDetailView.swift in Sources */,
+				000000000000000000000031 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
