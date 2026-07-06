@@ -1,0 +1,72 @@
+{
+  "$schema": "curlplan-merge-fixtures",
+  "note": "Cross-platform merge vectors. Both src/merge.js and ios/CurlPlan/Merge.swift must reproduce `expected` from mergeState(a, b). Empty buckets are treated as present-empty when comparing. Every case must also be commutative and idempotent (checked by the runners).",
+  "cases": [
+    {
+      "name": "empty ∪ empty",
+      "a": {},
+      "b": {},
+      "expected": {}
+    },
+    {
+      "name": "LWW follow: later timestamp wins",
+      "a": { "follows": { "sam": { "v": true, "at": 100 } } },
+      "b": { "follows": { "sam": { "v": false, "at": 200 } } },
+      "expected": { "follows": { "sam": { "v": false, "at": 200 } } }
+    },
+    {
+      "name": "LWW: disjoint keys union across buckets",
+      "a": { "follows": { "sam": { "v": true, "at": 100 } }, "likes": { "p1": { "v": true, "at": 50 } } },
+      "b": { "follows": { "jo": { "v": true, "at": 120 } }, "joins": { "sp1": { "v": "You're in", "at": 70 } } },
+      "expected": {
+        "follows": { "sam": { "v": true, "at": 100 }, "jo": { "v": true, "at": 120 } },
+        "likes": { "p1": { "v": true, "at": 50 } },
+        "joins": { "sp1": { "v": "You're in", "at": 70 } }
+      }
+    },
+    {
+      "name": "LWW tie: equal at → larger value wins (true > false)",
+      "a": { "likes": { "p1": { "v": true, "at": 100 } } },
+      "b": { "likes": { "p1": { "v": false, "at": 100 } } },
+      "expected": { "likes": { "p1": { "v": true, "at": 100 } } }
+    },
+    {
+      "name": "OR-Set posts: union sorted at desc",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ] },
+      "b": { "posts": [ { "id": "p2", "at": 200, "body": "two" } ] },
+      "expected": { "posts": [ { "id": "p2", "at": 200, "body": "two" }, { "id": "p1", "at": 100, "body": "one" } ] }
+    },
+    {
+      "name": "OR-Set posts: duplicate id deduped",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "x" } ] },
+      "b": { "posts": [ { "id": "p1", "at": 100, "body": "x" }, { "id": "p3", "at": 90, "body": "y" } ] },
+      "expected": { "posts": [ { "id": "p1", "at": 100, "body": "x" }, { "id": "p3", "at": 90, "body": "y" } ] }
+    },
+    {
+      "name": "map-of-OR-Sets visits: union per stop",
+      "a": { "visits": { "kelowna": [ { "id": "v1", "at": 10 } ] } },
+      "b": { "visits": { "kelowna": [ { "id": "v2", "at": 20 } ], "vernon": [ { "id": "v3", "at": 5 } ] } },
+      "expected": {
+        "visits": {
+          "kelowna": [ { "id": "v2", "at": 20 }, { "id": "v1", "at": 10 } ],
+          "vernon": [ { "id": "v3", "at": 5 } ]
+        }
+      }
+    },
+    {
+      "name": "threads: union sorted at desc, tie broken by id asc",
+      "a": { "threads": { "sam": [ { "id": "m1", "at": 10, "from": "me", "text": "hi" } ] } },
+      "b": { "threads": { "sam": [ { "id": "m2", "at": 10, "from": "me", "text": "yo" } ] } },
+      "expected": { "threads": { "sam": [ { "id": "m1", "at": 10, "from": "me", "text": "hi" }, { "id": "m2", "at": 10, "from": "me", "text": "yo" } ] } }
+    },
+    {
+      "name": "addedSpiels + addedCurlers OR-Set union",
+      "a": { "addedSpiels": [ { "id": "sp-a", "name": "A", "at": 5 } ], "addedCurlers": [ { "id": "c-a", "name": "Ada" } ] },
+      "b": { "addedSpiels": [ { "id": "sp-b", "name": "B", "at": 9 } ] },
+      "expected": {
+        "addedSpiels": [ { "id": "sp-b", "name": "B", "at": 9 }, { "id": "sp-a", "name": "A", "at": 5 } ],
+        "addedCurlers": [ { "id": "c-a", "name": "Ada" } ]
+      }
+    }
+  ]
+}
