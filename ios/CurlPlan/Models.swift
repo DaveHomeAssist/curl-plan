@@ -69,6 +69,12 @@ struct MeStats { let clubs: Int; let prov: Int; let games: Int; let win: Int }
 
 struct VisitedStop: Identifiable { let stop: Stop; let count: Int; let at: Double; var id: String { stop.id } }
 
+// Navigation routes for the per-tab NavigationStacks.
+enum Route: Hashable {
+    case stop(String)
+    case curler(String)
+}
+
 struct MeInfo {
     let name: String
     let initials: String
@@ -169,16 +175,17 @@ struct AppState: Codable {
     // in a later version never wipes an existing account's saved state (web-parity resilience).
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        if let v = try? c.decodeIfPresent([Curler].self, forKey: .addedCurlers), let x = v { addedCurlers = x }
-        if let v = try? c.decodeIfPresent([Spiel].self, forKey: .addedSpiels), let x = v { addedSpiels = x }
-        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .follows), let x = v { follows = x }
-        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .likes), let x = v { likes = x }
-        if let v = try? c.decodeIfPresent([String: String].self, forKey: .joins), let x = v { joins = x }
-        if let v = try? c.decodeIfPresent([Post].self, forKey: .posts), let x = v { posts = x }
-        if let v = try? c.decodeIfPresent([String: [VisitEntry]].self, forKey: .visits), let x = v { visits = x }
-        if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews), let x = v { reviews = x }
-        if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads), let x = v { iceReads = x }
-        if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads), let x = v { threads = x }
+        // try? flattens the optional from decodeIfPresent, so a single bind is correct.
+        if let v = try? c.decodeIfPresent([Curler].self, forKey: .addedCurlers) { addedCurlers = v }
+        if let v = try? c.decodeIfPresent([Spiel].self, forKey: .addedSpiels) { addedSpiels = v }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .follows) { follows = v }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .likes) { likes = v }
+        if let v = try? c.decodeIfPresent([String: String].self, forKey: .joins) { joins = v }
+        if let v = try? c.decodeIfPresent([Post].self, forKey: .posts) { posts = v }
+        if let v = try? c.decodeIfPresent([String: [VisitEntry]].self, forKey: .visits) { visits = v }
+        if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews) { reviews = v }
+        if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads) { iceReads = v }
+        if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
     }
 }
 
