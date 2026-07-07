@@ -24,6 +24,8 @@ jobs:
         run: node scripts/verify-parity.js
       - name: CRDT merge algebra (fixtures + laws)
         run: node scripts/verify-merge.js
+      - name: Sync API handler (routes, merge, auth, isolation)
+        run: node scripts/verify-api.js
 
   ios:
     runs-on: macos-14

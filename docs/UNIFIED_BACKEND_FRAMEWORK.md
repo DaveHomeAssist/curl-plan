@@ -297,5 +297,23 @@ live apps for no user-facing benefit yet):
 - Bump both live stores to schema **v3** (map buckets → `{v, at}`) + migrations
   (`migrateLegacyStore` / `migrateLegacyIfNeeded`), and route reads through merged data.
 
-Phases B–D (Clerk swap, Worker+D1 sync loop, realtime+migration) require Cloudflare and
-Clerk credentials/keys and a deploy target — they come after.
+### Phase C server — SCAFFOLDED (2026-07-07), inert until deployed
+The sync API is fully written and unit-tested under Node — it just isn't deployed:
+- ✅ `api/src/handler.js` — pure, dependency-injected handler: `GET /health`,
+  `GET/POST /v1/state`, CRDT merge-on-write (imports `src/merge.js`), sanitize, CORS.
+- ✅ `api/src/auth.js` — Clerk JWT verification against the public JWKS (no secret key).
+- ✅ `api/src/index.js` — Worker entry wiring the D1 binding + verifier.
+- ✅ `api/wrangler.toml`, `api/schema.sql`, `api/README.md`, `api/package.json` (placeholders).
+- ✅ `scripts/verify-api.js` (in CI) — exercises routes, merge convergence, per-user
+  isolation, LWW, size caps, CORS with an in-memory D1 + stub auth. The real crypto path
+  runs only against a live Clerk instance.
+
+Remaining for Phase C (needs credentials + a deploy):
+- Provision Clerk + Cloudflare, `wrangler d1 create` + `deploy` (see `api/README.md`).
+- Client sync loop (web `SyncClient` + iOS `SyncClient.swift`) behind a feature flag,
+  pointing at the Worker URL.
+- The live **v3 schema swap** (map buckets → `{v, at}`) + migrations, landed together
+  with the client sync wiring.
+
+Phases B (Clerk auth swap on both clients) and D (realtime + migration UX) follow, and
+also require the live Clerk/Cloudflare setup.

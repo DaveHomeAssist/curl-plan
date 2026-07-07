@@ -1,0 +1,15 @@
+{
+  "name": "curlplan-sync",
+  "private": true,
+  "type": "module",
+  "description": "CurlPlan unified-sync Worker (Cloudflare Workers + D1 + Clerk JWT).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute curlplan --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute curlplan --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.0"
+  }
+}

@@ -1,0 +1,16 @@
+name = "curlplan-sync"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# --- fill in after `wrangler d1 create curlplan` ---
+[[d1_databases]]
+binding = "DB"
+database_name = "curlplan"
+database_id = "<DATABASE_ID>"   # paste the id printed by `wrangler d1 create curlplan`
+
+[vars]
+# Your Clerk instance issuer, e.g. https://your-app.clerk.accounts.dev
+# (the Worker verifies JWTs against <issuer>/.well-known/jwks.json — public, no secret).
+CLERK_ISSUER = ""
+# Web origin allowed for CORS, e.g. https://davehomeassist.github.io  ("*" only for local dev).
+CORS_ORIGIN = "*"
