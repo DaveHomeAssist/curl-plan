@@ -3,6 +3,7 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @EnvironmentObject var router: Router
     @State private var showSettings = false
 
     var body: some View {
@@ -13,7 +14,7 @@ struct PassportView: View {
                     hero
                     telemetry
                     SeasonMap()
-                    SectionHeader(title: "Recent stops", action: "All")
+                    SectionHeader(title: "Recent stops", action: "All") { router.tab = .spiels }
                     recentStops
                 }
                 .padding(.horizontal, 20)

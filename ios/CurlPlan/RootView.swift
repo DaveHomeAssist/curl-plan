@@ -1,11 +1,17 @@
 import SwiftUI
 
+// Shared tab selection so any screen (e.g. Passport's "All → Spiels") can switch tabs,
+// and so deep-link / migration flows have a single place to drive navigation.
+final class Router: ObservableObject {
+    @Published var tab: RootView.Tab = .passport
+}
+
 struct RootView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @EnvironmentObject var router: Router
 
     enum Tab: String, CaseIterable { case passport, locker, spiels, roster }
-    @State private var tab: Tab = .passport
 
     var body: some View {
         Group {
@@ -30,15 +36,15 @@ struct RootView: View {
                 pane(.roster) { RosterView() }
             }
 
-            CPTabBar(tab: $tab)
+            CPTabBar(tab: $router.tab)
         }
     }
 
     private func pane<Content: View>(_ t: Tab, @ViewBuilder content: @escaping () -> Content) -> some View {
         TabStack(content: content)
-            .opacity(tab == t ? 1 : 0)
-            .allowsHitTesting(tab == t)
-            .accessibilityHidden(tab != t)
+            .opacity(router.tab == t ? 1 : 0)
+            .allowsHitTesting(router.tab == t)
+            .accessibilityHidden(router.tab != t)
     }
 }
 

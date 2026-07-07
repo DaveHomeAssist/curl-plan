@@ -8,12 +8,14 @@ import SwiftUI
 struct CurlPlanApp: App {
     @StateObject private var settings = AppSettings()
     @StateObject private var store = Store()
+    @StateObject private var router = Router()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(settings)
                 .environmentObject(store)
+                .environmentObject(router)
                 .tint(settings.accent)
                 .preferredColorScheme(settings.isArena ? .dark : .light)
         }

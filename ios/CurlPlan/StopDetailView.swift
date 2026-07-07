@@ -22,7 +22,7 @@ struct StopDetailView: View {
                             gamesHere(stop)
                             yourVisits
                             reviews
-                            SectionHeader(title: "People you met here", action: "+ All")
+                            SectionHeader(title: "People you met here")
                             people(stop)
                         }
                         .padding(.horizontal, 20)

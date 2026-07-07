@@ -160,6 +160,7 @@ struct SectionHeader: View {
     @EnvironmentObject var settings: AppSettings
     let title: String
     var action: String? = nil
+    var onTap: (() -> Void)? = nil     // when set, the action label becomes a real control
 
     var body: some View {
         HStack {
@@ -169,9 +170,14 @@ struct SectionHeader: View {
                 .foregroundStyle(settings.muted)
             Spacer()
             if let action {
-                Text(action)
-                    .font(.grotesk(12, .semibold))
-                    .foregroundStyle(settings.accent)
+                if let onTap {
+                    Button(action: onTap) {
+                        Text(action).font(.grotesk(12, .semibold)).foregroundStyle(settings.accent)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(action).font(.grotesk(12, .semibold)).foregroundStyle(settings.accent)
+                }
             }
         }
     }
