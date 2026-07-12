@@ -4,7 +4,9 @@ Date: 2026-06-28
 
 Target surface: `ios/CurlPlan.xcodeproj`
 
-Status: future backend-backed roadmap. The current app remains a local season journal and must not claim account, cloud, public, remote social, or moderation behavior until the matching phase is implemented and verified.
+Status: the local season journal remains the production truth. Phase 1 account behavior is implemented against a private Tailscale development service, but production account, cloud, public, remote social, and moderation claims remain gated until their matching phases are implemented and verified.
+
+Last verified: 2026-07-11. The private development service passed deployed AS 01 through AS 03 at `http://dominic.tailae148c.ts.net:8787`; Release and Archive remain unconfigured.
 
 ## Goal
 
@@ -23,11 +25,11 @@ Move CurlPlan from a truthful local season journal to a truthful account-backed 
 
 ## Current Truth Boundary
 
-Today, CurlPlan has a proven local `AppData` season document, local `Curler.following`, local attendance, local scorecards, local export/import, and no deployed account service. That means these claims remain blocked:
+Today, CurlPlan has a proven local `AppData` season document, local roster membership, local attendance, local scorecards, and local export/import. It also has a deployed private development account service for credential sign-in, account-scoped season import and restore, sign-out, export, and deletion. That service is not public production infrastructure. The following production claims remain blocked:
 
 | Blocked claim | Missing authority |
 | --- | --- |
-| Sign in, sign out, account restore | Auth, session, account-scoped season data |
+| Production sign in, sign out, account restore | Public TLS endpoint, rate limiting, production release configuration, password recovery, and retained in-app screenflow proof |
 | Cloud sync | Sync API, versioning, offline queue, conflict state |
 | Public profile or public roster | Profile visibility API, search/discovery rules, permission checks |
 | Remote follow/friend/team graph | Relationship graph API and block enforcement |
@@ -37,7 +39,7 @@ Today, CurlPlan has a proven local `AppData` season document, local `Curler.foll
 
 ## Executable Contract Progress
 
-The repo now includes a SwiftPM contract seam and a local Node backend verifier for the future backend domain. This is not a deployed backend and does not make account or social claims shippable.
+The repo now includes a SwiftPM contract seam, a local Node backend verifier, and a private deployed development service. These prove the Phase 1 account contract but do not make production account, cloud, or social claims shippable.
 
 | Artifact | Purpose |
 | --- | --- |
@@ -55,7 +57,7 @@ The repo now includes a SwiftPM contract seam and a local Node backend verifier 
 
 Authentication is now credential based, not identifier based. Account creation takes a handle, display name, home club, and a password of at least eight characters. Sign in requires the handle and password, so a second device can authenticate with what the user knows rather than an opaque account ID. The deployable backend stores a scrypt salt and hash; the in-app contract mirror stores a salted SHA-256 hash. Neither stores the plaintext, both reject the wrong password, and both return a generic `INVALID_CREDENTIALS` so a wrong handle and a wrong password are indistinguishable. The app persists only the account ID, handle, and device ID; it never persists the password or the bearer session token, so restore, export, and delete require an explicit signed-in session.
 
-The local Node backend is verification infrastructure, not production infrastructure. Product copy must still treat account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to a deployed account service and the matching screenflow passes are green.
+The local Node backend and private Tailscale deployment are verification infrastructure, not production infrastructure. Product copy must still treat production account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to public production services and the matching screenflow passes are green.
 
 ## System Overview
 
@@ -131,15 +133,15 @@ Use stable server IDs for remote objects and preserve local IDs for migration re
 
 Build real account claims: sign in, sign out, delete account, export data, restore on a second device.
 
-Current status (2026-06-28): credential authentication (handle + password) is implemented and verified, and the account service is deployed.
+Current status (verified 2026-07-11): credential authentication (handle + password) is implemented and verified against a private deployed development service.
 
-- The service runs on the `dominic` Tailscale host as a Docker container (`node:20-alpine`, `--restart unless-stopped`, persistent named volume `curlplan-account-data` at `/data`), reachable from the Mac and iOS Simulator at `http://dominic:8787`. Deploy with `scripts/deploy-account-backend-dominic.sh` (re-run to ship updates).
+- The service runs on the `dominic` Tailscale host as a Docker container (`node:20-alpine`, `--restart unless-stopped`, persistent named volume `curlplan-account-data` at `/data`), reachable from the Mac and iOS Simulator at `http://dominic.tailae148c.ts.net:8787`. Deploy with `scripts/deploy-account-backend-dominic.sh` (re-run to ship updates).
 - AS 01, AS 02, and AS 03 pass over real HTTP against the deployed URL via `scripts/verify-account-remote.mjs` (create, wrong-password rejection, device-A session, season import, sign-out revocation, device-B restore by handle and password, delete revokes sessions and blocks future sign in). Account season also survives a container restart (volume persistence verified).
-- The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
+- The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic.tailae148c.ts.net:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
 
-In-app screenflow: a UI test (`testAccountCredentialScreenflowCreateSignInDeleteAgainstBackend`) drives create -> sign out -> sign in (restore) -> delete against the deployed backend. It compiles and is opt-in (skipped unless `CURLPLAN_RUN_ACCOUNT_UI=1`) so the default UI suite stays green. It does not yet pass end-to-end because App Transport Security blocks the app's cleartext `http://` calls to the tailnet backend. Unblocking needs one of: (a) a dev-only ATS exception (weakens the app's transport security; the project currently uses an auto-generated Info.plist with default ATS), or (b) TLS on the deployed backend. Option (b) is the same work as public exposure, so the in-app screenflow is effectively gated on the TLS/public-host decision.
+In-app screenflow: a UI test (`testAccountCredentialScreenflowCreateSignInDeleteAgainstBackend`) drives create -> sign out -> sign in (restore) -> delete against the deployed backend. It is opt-in (skipped unless `CURLPLAN_RUN_ACCOUNT_UI=1`) so the default UI suite does not depend on the private service. `ios/CurlPlan/Info.plist` now carries a hostname-scoped cleartext ATS exception for `dominic.tailae148c.ts.net`, and the generated Xcode project preserves that plist. The remaining proof gap is a clean, retained successful run of the opt-in screenflow; the exception is development-only and is not a substitute for public TLS.
 
-Remaining for Phase 1 ship: decide ATS-exception-vs-TLS and turn the in-app screenflow green; move the service off a private tailnet to a public host with TLS and rate limiting before non-tailnet devices can use it; add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
+Remaining for Phase 1 ship: turn the opt-in in-app screenflow green with retained evidence; move the service off the private tailnet to a public host with TLS and rate limiting before non-tailnet devices can use it; configure the production release deliberately; and add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
 
 Deliverables:
 
