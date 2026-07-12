@@ -4,7 +4,9 @@ Date: 2026-06-28
 
 Target surface: `ios/CurlPlan.xcodeproj`
 
-Status: future backend-backed roadmap. The current app remains a local season journal and must not claim account, cloud, public, remote social, or moderation behavior until the matching phase is implemented and verified.
+Status: the local season journal remains the production truth. Phase 1 account behavior is implemented against a private Tailscale development service, but production account, cloud, public, remote social, and moderation claims remain gated until their matching phases are implemented and verified.
+
+Last verified: 2026-07-11. The private development service passed deployed AS 01 through AS 03 at `http://dominic.tailae148c.ts.net:8787`; Release and Archive remain unconfigured.
 
 ## Goal
 
@@ -23,11 +25,11 @@ Move CurlPlan from a truthful local season journal to a truthful account-backed 
 
 ## Current Truth Boundary
 
-Today, CurlPlan has a proven local `AppData` season document, local `Curler.following`, local attendance, local scorecards, local export/import, and no deployed account service. That means these claims remain blocked:
+Today, CurlPlan has a proven local `AccountSeasonPayload` season document, local roster membership, local attendance, local scorecards, and local export/import. It also has a deployed private development account service for credential sign-in, account-scoped season import and restore, sign-out, export, and deletion. That service is not public production infrastructure. The following production claims remain blocked:
 
 | Blocked claim | Missing authority |
 | --- | --- |
-| Sign in, sign out, account restore | Auth, session, account-scoped season data |
+| Production sign in, sign out, account restore | Public TLS endpoint, rate limiting, production release configuration, password recovery, and retained in-app screenflow proof |
 | Cloud sync | Sync API, versioning, offline queue, conflict state |
 | Public profile or public roster | Profile visibility API, search/discovery rules, permission checks |
 | Remote follow/friend/team graph | Relationship graph API and block enforcement |
@@ -37,7 +39,7 @@ Today, CurlPlan has a proven local `AppData` season document, local `Curler.foll
 
 ## Executable Contract Progress
 
-The repo now includes a SwiftPM contract seam and a local Node backend verifier for the future backend domain. This is not a deployed backend and does not make account or social claims shippable.
+The repo now includes a SwiftPM contract seam, a local Node backend verifier, and a private deployed development service. These prove the Phase 1 account contract but do not make production account, cloud, or social claims shippable.
 
 | Artifact | Purpose |
 | --- | --- |
@@ -55,7 +57,7 @@ The repo now includes a SwiftPM contract seam and a local Node backend verifier 
 
 Authentication is now credential based, not identifier based. Account creation takes a handle, display name, home club, and a password of at least eight characters. Sign in requires the handle and password, so a second device can authenticate with what the user knows rather than an opaque account ID. The deployable backend stores a scrypt salt and hash; the in-app contract mirror stores a salted SHA-256 hash. Neither stores the plaintext, both reject the wrong password, and both return a generic `INVALID_CREDENTIALS` so a wrong handle and a wrong password are indistinguishable. The app persists only the account ID, handle, and device ID; it never persists the password or the bearer session token, so restore, export, and delete require an explicit signed-in session.
 
-The local Node backend is verification infrastructure, not production infrastructure. Product copy must still treat account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to a deployed account service and the matching screenflow passes are green.
+The local Node backend and private Tailscale deployment are verification infrastructure, not production infrastructure. Product copy must still treat production account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to public production services and the matching screenflow passes are green.
 
 ## System Overview
 
@@ -84,7 +86,7 @@ The backend becomes the source of truth for account identity, cloud sync, public
 | --- | --- | --- | --- | --- |
 | Auth service | Prove account identity and issue revocable sessions | Sign-in credentials, passkey/OAuth callback, refresh token | Account ID, access token, session state | Backend |
 | Account API | Manage profile, settings, deletion, export, device sessions | Authenticated requests | Account profile, privacy settings, export package, deletion status | Backend |
-| Migration adapter | Attach existing local `AppData` to an account without corrupting local state | Local export JSON, account ID, schema version | Account-scoped season document and migration receipt | App + backend |
+| Migration adapter | Attach existing local `AccountSeasonPayload` to an account without corrupting local state | Local export JSON, account ID, schema version | Account-scoped season document and migration receipt | App + backend |
 | Sync engine | Replicate account-scoped season state across devices | Local changes, server changes, version vector | Synced document, pending queue, conflict receipts | App + backend |
 | Public identity service | Control handles, public profile, searchability, home club display | Profile settings, privacy flags | Search index rows and profile payloads | Backend |
 | Relationship graph | Store follows, friend requests, team links, blocks, invitations | Account IDs, target IDs, relationship action | Relationship edge, request state, block state | Backend |
@@ -102,7 +104,7 @@ Use stable server IDs for remote objects and preserve local IDs for migration re
 | `Account` | `id`, `createdAt`, `status`, `deletedAt` | Status supports active, suspended, deletion_pending, deleted |
 | `Session` | `id`, `accountID`, `deviceID`, `createdAt`, `expiresAt`, `revokedAt` | Logout revokes server-side session |
 | `AccountProfile` | `accountID`, `handle`, `displayName`, `homeClub`, `avatarURL`, `visibility`, `searchable` | Handle uniqueness enforced server-side |
-| `SeasonDocument` | `id`, `accountID`, `schemaVersion`, `version`, `body`, `updatedAt` | `body` starts as current `AppData`; normalize before write |
+| `SeasonDocument` | `id`, `accountID`, `schemaVersion`, `version`, `body`, `updatedAt` | `body` starts as current `AccountSeasonPayload`; normalize before write |
 | `SeasonChange` | `id`, `seasonID`, `actorID`, `baseVersion`, `patch`, `createdAt`, `clientMutationID` | Enables receipts, retry, and conflict explanation |
 | `RelationshipEdge` | `id`, `actorID`, `targetID`, `type`, `state`, `createdAt` | Types: follow, friend_request, teammate, block, invite |
 | `SharedObject` | `id`, `type`, `ownerID`, `visibility`, `seasonLinkID`, `createdAt` | Types: spiel, bonspiel, team, roster, lineup, scorecard |
@@ -131,11 +133,11 @@ Use stable server IDs for remote objects and preserve local IDs for migration re
 
 Build real account claims: sign in, sign out, delete account, export data, restore on a second device.
 
-Current status (2026-06-28): credential authentication (handle + password) is implemented and verified, and the account service is deployed.
+Current status (verified 2026-07-11): credential authentication (handle + password) is implemented and verified against a private deployed development service.
 
-- The service runs on the `dominic` Tailscale host as a Docker container (`node:20-alpine`, `--restart unless-stopped`, persistent named volume `curlplan-account-data` at `/data`), reachable from the Mac and iOS Simulator at `http://dominic:8787`. Deploy with `scripts/deploy-account-backend-dominic.sh` (re-run to ship updates).
+- The service runs on the `dominic` Tailscale host as a Docker container (`node:20-alpine`, `--restart unless-stopped`, persistent named volume `curlplan-account-data` at `/data`), reachable from the Mac and iOS Simulator at `http://dominic.tailae148c.ts.net:8787`. Deploy with `scripts/deploy-account-backend-dominic.sh` (re-run to ship updates).
 - AS 01, AS 02, and AS 03 pass over real HTTP against the deployed URL via `scripts/verify-account-remote.mjs` (create, wrong-password rejection, device-A session, season import, sign-out revocation, device-B restore by handle and password, delete revokes sessions and blocks future sign in). Account season also survives a container restart (volume persistence verified).
-- The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
+- The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic.tailae148c.ts.net:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
 
 Remaining for Phase 1 ship: drive the in-app create and sign-in screenflow against the deployed backend as an iOS UI proof, move the service off a private tailnet to a public host before non-tailnet devices can use it, add TLS and rate limiting for public exposure, and add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
 
@@ -143,7 +145,7 @@ Deliverables:
 
 1. Auth provider integration with revocable sessions.
 2. `AccountProfile` and account-scoped `SeasonDocument`.
-3. Local `AppData` migration adapter with schema validation and migration receipt.
+3. Local `AccountSeasonPayload` migration adapter with schema validation and migration receipt.
 4. Settings account surface: signed out, signed in, sync unavailable, export, delete account, sign out.
 5. Two-device restore test fixture.
 
@@ -311,7 +313,7 @@ Definition of done:
 | --- | --- |
 | Auth tests | session creation, refresh, revocation, expiry, rate limit, deleted account denial |
 | Authorization tests | owner/member/blocked/private checks on every endpoint |
-| Migration tests | valid local `AppData`, invalid schema, duplicate import, existing remote season, idempotent retry |
+| Migration tests | valid local `AccountSeasonPayload`, invalid schema, duplicate import, existing remote season, idempotent retry |
 | Sync tests | base version, conflict, retry, dedupe by `clientMutationID`, cross-device propagation |
 | Graph tests | follow, unfollow, friend request, invite, block, unblock, graph cache invalidation |
 | Shared object tests | object visibility, role checks, member-only reads, stale version denial |
