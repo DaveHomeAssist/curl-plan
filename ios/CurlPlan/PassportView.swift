@@ -104,6 +104,7 @@ struct PassportView: View {
 
 struct RecentStopTile: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
     let stop: Stop
 
     var body: some View {
@@ -116,7 +117,7 @@ struct RecentStopTile: View {
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { _ in "" }, size: 20, plus: stop.plus)
+                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
             }
         }
         .padding(12)
@@ -172,7 +173,8 @@ struct SeasonMap: View {
             if n == 0 { return "NEW SEASON" }
             return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
         }
-        return "12 STOPS · 2,400 KM"
+        let n = store.stops.count
+        return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
     }
 
     var body: some View {
@@ -221,10 +223,10 @@ struct SeasonMap: View {
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
             // "here now" is a demo cue — a real account has no current location
-            if !store.isRealAccount {
+            if !store.isRealAccount, let here = store.stops.first(where: { $0.here }) {
                 HStack(spacing: 7) {
                     Circle().fill(settings.accent).frame(width: 7, height: 7)
-                    Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                    Text("\(shortName(here)) · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
                 }
                 .padding(.vertical, 5)
                 .padding(.horizontal, 11)
@@ -245,5 +247,9 @@ struct SeasonMap: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .padding(12)
         }
+    }
+
+    private func shortName(_ stop: Stop) -> String {
+        stop.club.split(separator: " ").first.map(String.init) ?? stop.name
     }
 }
