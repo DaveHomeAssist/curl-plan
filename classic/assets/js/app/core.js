@@ -42,7 +42,7 @@ const demoState = () => ({
       type: "league",
       date: "2026-03-19",
       time: "19:00",
-      rink: "Main Rink",
+      rink: "Main Club",
       team: "",
       opponent: "",
       position: "Third",
@@ -68,7 +68,7 @@ const demoState = () => ({
       type: "practice",
       date: "2026-03-22",
       time: "06:30",
-      rink: "Main Rink",
+      rink: "Main Club",
       team: "",
       opponent: "",
       position: "Lead",
@@ -85,7 +85,7 @@ const demoState = () => ({
       them: 3,
       result: "W",
       position: "Third",
-      rink: "Main Rink",
+      rink: "Main Club",
       keyShot: "Draw to button",
       notes: "Strong hammer game",
       shotPct: 82
@@ -111,7 +111,7 @@ const demoState = () => ({
       them: 5,
       result: "D",
       position: "Second",
-      rink: "Main Rink",
+      rink: "Main Club",
       keyShot: "Freeze on shot rock",
       notes: "Extra end, came up light",
       shotPct: 76
@@ -147,7 +147,7 @@ const demoState = () => ({
     {
       id: createId(),
       date: "2026-03-19",
-      rink: "Main Rink",
+      rink: "Main Club",
       speed: 4,
       curl: "Moderate",
       notes: "Sheet 3 curls late. Rocks 4 and 7 run light."
@@ -155,7 +155,7 @@ const demoState = () => ({
     {
       id: createId(),
       date: "2026-03-12",
-      rink: "Main Rink",
+      rink: "Main Club",
       speed: 3,
       curl: "Big Finish",
       notes: "Fresh pebble, draw weight longer than usual"
@@ -180,7 +180,7 @@ const demoState = () => ({
       eventId: "",
       date: "2026-03-19",
       time: "19:00",
-      rink: "Main Rink",
+      rink: "Main Club",
       rinkId: "",
       sheet: "3",
       sheetId: "",

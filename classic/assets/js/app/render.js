@@ -71,7 +71,7 @@ function renderSeasonStats() {
   if (topRink) {
     cards.push(`
     <div class="insight-card">
-      <div class="insight-kicker">Top Rink Split</div>
+      <div class="insight-kicker">Top Club Split</div>
       <div class="insight-value">${escapeHtml(`${topRink.winPct}%`)}</div>
       <div class="insight-meta">${escapeHtml(`${topRink.name} • ${topRink.wins}-${topRink.losses}-${topRink.draws}`)}</div>
       ${buildSparkline(rinkValues, 220, 44, "sparkline-soft")}
@@ -181,12 +181,12 @@ function renderStateStrip(kind, title, copy, primary) {
   `;
 }
 
-function renderRinkProfileCard(profile, rinkName, sheetLabel = "", emptyLabel = "No rink memory yet") {
+function renderRinkProfileCard(profile, rinkName, sheetLabel = "", emptyLabel = "No club memory yet") {
   if (!profile) {
     return `
       <div class="card-sm rink-profile-card">
         <div class="summary-row">
-          <span class="summary-name">Rink profile</span>
+          <span class="summary-name">Club profile</span>
           <span class="summary-count">${escapeHtml(emptyLabel)}</span>
         </div>
       </div>
@@ -199,7 +199,7 @@ function renderRinkProfileCard(profile, rinkName, sheetLabel = "", emptyLabel = 
     <div class="card-sm rink-profile-card">
       <div class="card-head">
         <div>
-          <h3 class="card-title">${escapeHtml(rinkName || "Rink profile")}</h3>
+          <h3 class="card-title">${escapeHtml(rinkName || "Club profile")}</h3>
           <div class="muted">${escapeHtml(sheetLabel ? `Sheet ${sheetLabel}` : "Venue level profile")}</div>
         </div>
         <div class="pill-row">
@@ -604,7 +604,7 @@ function renderSelectedEvent() {
       </div>
       <div class="stack">
         <div><strong>Date:</strong> ${escapeHtml(fmtDate(item.date))}${item.time ? ` at ${escapeHtml(fmtTime(item.time))}` : ""}</div>
-        <div><strong>Rink:</strong> ${escapeHtml(item.rink || "—")}</div>
+        <div><strong>Club:</strong> ${escapeHtml(item.rink || "—")}</div>
         <div><strong>Team:</strong> ${escapeHtml(item.team || "—")}</div>
         <div><strong>Opponent:</strong> ${escapeHtml(item.opponent || "—")}</div>
         <div><strong>Sheet:</strong> ${escapeHtml(item.sheet || "—")}</div>
@@ -641,7 +641,7 @@ function renderSelectedEvent() {
     </div>
     ${renderBonspielCard(item)}
     ${renderLineupEditorCard(item, linkedLineup)}
-    ${renderRinkProfileCard(rinkProfile, item.rink || getRinkById(item.rinkId)?.name || "Rink profile", item.sheet, "No rink memory yet for this venue")}
+    ${renderRinkProfileCard(rinkProfile, item.rink || getRinkById(item.rinkId)?.name || "Club profile", item.sheet, "No club memory yet for this venue")}
   `;
 }
 
@@ -678,7 +678,7 @@ function renderDashboard() {
         ${plannerEntry.checklist && plannerEntry.checklist.some(item => item.checked) ? `<div class="muted" style="margin-top:8px;">Checklist complete: ${escapeHtml(String(plannerEntry.checklist.filter(item => item.checked).length))}/${escapeHtml(String(plannerEntry.checklist.length))}</div>` : ""}
         ${getPlannerReviewStatus(plannerEntry) !== "none" ? `<div class="muted" style="margin-top:8px;">${escapeHtml(plannerEntry.nextFocus || plannerEntry.keyTakeaways || plannerEntry.reflection || "Review captured for this event.")}</div>` : ""}
       </div>
-      ${plannerProfile ? renderRinkProfileCard(plannerProfile, plannerEntry.rink || plannerLinkedEvent?.rink || "Rink profile", plannerEntry.sheet || plannerLinkedEvent?.sheet, "No rink memory yet") : ""}
+      ${plannerProfile ? renderRinkProfileCard(plannerProfile, plannerEntry.rink || plannerLinkedEvent?.rink || "Club profile", plannerEntry.sheet || plannerLinkedEvent?.sheet, "No club memory yet") : ""}
     `
     : renderEmpty("note", "No planner entries saved yet.", null, "No planner entries yet");
 
@@ -707,7 +707,7 @@ function renderDashboard() {
       <div class="card-sm">
         <div class="card-head">
           <div>
-            <h3 class="card-title">${escapeHtml(latestIce.rink || "Unknown Rink")}</h3>
+            <h3 class="card-title">${escapeHtml(latestIce.rink || "Unknown Club")}</h3>
             <div class="muted">${escapeHtml(fmtDate(latestIce.date))}</div>
           </div>
           <div class="pill-row">
@@ -717,7 +717,7 @@ function renderDashboard() {
         </div>
         <div class="event-notes">${escapeHtml(latestIce.notes || "No note text saved.")}</div>
       </div>
-      ${latestProfile ? renderRinkProfileCard(latestProfile, latestIce.rink || getRinkById(latestIce.rinkId)?.name || "Rink profile", latestIce.sheet, "No rink memory yet") : ""}
+      ${latestProfile ? renderRinkProfileCard(latestProfile, latestIce.rink || getRinkById(latestIce.rinkId)?.name || "Club profile", latestIce.sheet, "No club memory yet") : ""}
     `
     : renderEmpty("ice", "No ice notes saved yet.", { modal: "ice", label: "Add Ice Notes" }, "No ice notes yet");
 }
@@ -752,7 +752,7 @@ function renderGames() {
     tbody.innerHTML = items.map(item => `
       <tr class="log-row${expandedGameId === item.id ? " is-expanded" : ""}" tabindex="0" role="button" data-action="toggle-game-expand" data-id="${escapeHtml(item.id)}" aria-expanded="${expandedGameId === item.id ? "true" : "false"}">
         <td class="mono">${escapeHtml(fmtDate(item.date))}</td>
-        <td><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No rink saved")}</span><br /><span class="mobile-row-hint">Tap to expand</span></td>
+        <td><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No club saved")}</span><br /><span class="mobile-row-hint">Tap to expand</span></td>
         <td>${(item.us !== null && item.them !== null) ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.shotPct !== null ? `<span class="badge mono">${escapeHtml(String(item.shotPct))}%</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.result ? `<span class="result-badge ${resultClass(item.result)}">${escapeHtml(item.result)}</span>` : '<span class="muted">—</span>'}</td>
@@ -873,7 +873,7 @@ function renderIce() {
       <div class="card-sm">
         <div class="card-head">
           <div>
-            <h3 class="card-title">${escapeHtml(item.rink || "Unknown Rink")}</h3>
+            <h3 class="card-title">${escapeHtml(item.rink || "Unknown Club")}</h3>
             <div class="muted">${escapeHtml(fmtDate(item.date))}${item.sheet ? ` • Sheet ${escapeHtml(item.sheet)}` : ""}</div>
           </div>
           <div class="inline-actions">
@@ -895,7 +895,7 @@ function renderIce() {
 
   const byRink = {};
   items.forEach(item => {
-    const name = item.rink || "Unknown Rink";
+    const name = item.rink || "Unknown Club";
     byRink[name] = (byRink[name] || 0) + 1;
   });
   const summary = Object.entries(byRink).sort((a, b) => b[1] - a[1]);
@@ -909,7 +909,7 @@ function renderIce() {
       ${recentTimeline.map((entry) => `
         <div class="card-sm rink-timeline-card">
           <div class="summary-row">
-            <span class="summary-name">${escapeHtml(getRinkById(entry.rinkId)?.name || "Unknown Rink")}</span>
+            <span class="summary-name">${escapeHtml(getRinkById(entry.rinkId)?.name || "Unknown Club")}</span>
             <span class="summary-count">${escapeHtml(fmtDate(String(entry.recordedAt).slice(0, 10), false))}</span>
           </div>
           <div class="pill-row">
@@ -926,7 +926,7 @@ function renderIce() {
         </div>
       `).join("")}
     `
-    : renderEmpty("ice", "Start logging rink behavior to build memory.", null, "Rink memory starts here");
+    : renderEmpty("ice", "Start logging club behavior to build memory.", null, "Club memory starts here");
 }
 
 function severityClass(severity) {
@@ -1061,7 +1061,7 @@ function renderPlannerStateStrip(hasSavedEntry) {
   const reviewLabel = entry ? getPlannerReviewLabel(entry) : "Review pending";
   target.innerHTML = hasSavedEntry
     ? renderStateStrip("active", "Planner entry in progress", `${reviewLabel}. Changes save in the background while you edit this date.`, { label: "Save Snapshot", attr: 'id="plannerStateSaveCopy" data-save-planner-inline="true"' })
-    : renderStateStrip("empty", "Start this planner entry", "Defaults pulled from matching event timing and your recent rink memory.", { label: "Use Today", attr: 'data-action="planner-jump" data-date="' + escapeHtml(todayStr()) + '"' });
+    : renderStateStrip("empty", "Start this planner entry", "Defaults pulled from matching event timing and your recent club memory.", { label: "Use Today", attr: 'data-action="planner-jump" data-date="' + escapeHtml(todayStr()) + '"' });
 }
 
 function renderPlannerRinkProfile() {
@@ -1078,9 +1078,9 @@ function renderPlannerRinkProfile() {
   }
   target.innerHTML = renderRinkProfileCard(
     profile,
-    plannerEntry.rink || linkedEvent?.rink || getRinkById(rinkId)?.name || "Rink profile",
+    plannerEntry.rink || linkedEvent?.rink || getRinkById(rinkId)?.name || "Club profile",
     plannerEntry.sheet || linkedEvent?.sheet || "",
-    "No rink memory yet for this planner"
+    "No club memory yet for this planner"
   );
 }
 
@@ -1110,7 +1110,7 @@ function renderGameDayBanner() {
     if (existingGame) {
       bridge.innerHTML = renderStateStrip("completed", "Game already in the log", "Use the game log to edit the saved result or print a report.", { label: "Open Game Log", attr: 'data-view="games"' });
     } else if (plannerHasBridge) {
-      bridge.innerHTML = renderStateStrip("active", "Ready to log this game", "Use your planner date, opponent, rink, and position as the starting point.", { label: "Log This Game", attr: `data-action="planner-log-game" data-date="${escapeHtml(plannerDate)}"` });
+      bridge.innerHTML = renderStateStrip("active", "Ready to log this game", "Use your planner date, opponent, club, and position as the starting point.", { label: "Log This Game", attr: `data-action="planner-log-game" data-date="${escapeHtml(plannerDate)}"` });
     }
   }
 }
@@ -1253,7 +1253,7 @@ function printGameReport(gameId) {
           <h3>Ice Read</h3>
           ${iceEntries.length ? `
             <div class="report-lines">
-              ${iceEntries.map(item => `<div><strong>${escapeHtml(item.rink || "Unknown Rink")}</strong> • ${escapeHtml(speedText(item.speed))}${item.curl ? ` • ${escapeHtml(item.curl)}` : ""}</div><div class="report-note">${escapeHtml(item.notes || "No note text saved.")}</div>`).join("")}
+              ${iceEntries.map(item => `<div><strong>${escapeHtml(item.rink || "Unknown Club")}</strong> • ${escapeHtml(speedText(item.speed))}${item.curl ? ` • ${escapeHtml(item.curl)}` : ""}</div><div class="report-note">${escapeHtml(item.notes || "No note text saved.")}</div>`).join("")}
             </div>
           ` : '<div class="report-note">No matching ice notes for this date.</div>'}
         </div>

@@ -87,7 +87,7 @@
       <div class="brand">
         <div class="brand-kicker">Personal Curling Command Center</div>
         <h1 class="brand-name">Curl<span>Plan</span></h1>
-        <p class="brand-copy">Calendar, game prep, practice logging, and rink memory in one working file. <span class="brand-proof-inline">Yours. Fast. In one place.</span></p>
+        <p class="brand-copy">Calendar, game prep, practice logging, and club memory in one working file. <span class="brand-proof-inline">Yours. Fast. In one place.</span></p>
       </div>
       <div class="topbar-actions">
         <div class="today-chip" id="todayChip" role="status">Loading...</div>
@@ -248,7 +248,7 @@
                 <option value="bonspiel">Bonspiel</option>
                 <option value="other">Other</option>
               </select>
-              <input id="searchInput" class="toolbar-input" type="search" placeholder="Search team, rink, notes..." aria-label="Search events" />
+              <input id="searchInput" class="toolbar-input" type="search" placeholder="Search team, club, notes..." aria-label="Search events" />
             </div>
           </div>
 
@@ -287,7 +287,7 @@
           <div class="section-header">
             <div>
               <h2 class="section-title">Game Planner</h2>
-              <p class="section-copy">Planner entries now follow the event workflow so prep, rink memory, and review stay in one place.</p>
+              <p class="section-copy">Planner entries now follow the event workflow so prep, club memory, and review stay in one place.</p>
             </div>
             <div class="planner-nav">
               <button type="button" class="btn btn-ghost btn-sm" data-planner-dir="-1">Previous</button>
@@ -311,8 +311,8 @@
               </div>
               <div class="form-grid-2">
                 <div class="form-row">
-                  <label class="form-label" for="pg-rink">Rink</label>
-                  <input type="text" id="pg-rink" placeholder="Club or rink name" />
+                  <label class="form-label" for="pg-rink">Club</label>
+                  <input type="text" id="pg-rink" placeholder="Club name" />
                 </div>
                 <div class="form-row">
                   <label class="form-label" for="pg-position">Position</label>
@@ -486,7 +486,7 @@
                   <p class="card-copy">Edit or delete any row from the action column.</p>
                 </div>
                 <div class="toolbar-group">
-                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, rink, notes..." aria-label="Search games" />
+                  <input id="gameSearchInput" class="toolbar-input" type="search" placeholder="Search opponent, club, notes..." aria-label="Search games" />
                   <select id="gameSortSelect" class="toolbar-input" aria-label="Sort games">
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
@@ -591,7 +591,7 @@
           <div class="section-header">
             <div>
               <h2 class="section-title">Ice Notes</h2>
-              <p class="section-copy">Capture speed, curl, and rink-specific memory without losing edit and export support.</p>
+              <p class="section-copy">Capture speed, curl, and club-specific memory without losing edit and export support.</p>
             </div>
             <button type="button" class="btn btn-primary" id="addNoteBtn" data-open-modal="ice">+ Add Ice Notes</button>
           </div>
@@ -604,7 +604,7 @@
                   <p class="card-copy">Every entry stays editable and exportable.</p>
                 </div>
                 <div class="toolbar-group">
-                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search rink, curl, notes..." aria-label="Search ice notes" />
+                  <input id="iceSearchInput" class="toolbar-input" type="search" placeholder="Search club, curl, notes..." aria-label="Search ice notes" />
                   <select id="iceSortSelect" class="toolbar-input" aria-label="Sort ice notes">
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
@@ -616,7 +616,7 @@
                 <div class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-ice"></use></svg></div>
                 <div class="empty-copy">
                   <strong>No ice notes saved yet</strong>
-                  <span>Start building rink memory for speed, finish, and the odd sheet quirk.</span>
+                  <span>Start building club memory for speed, finish, and the odd sheet quirk.</span>
                 </div>
                 <div class="empty-actions">
                   <button type="button" class="btn btn-ghost btn-sm empty-cta" data-open-modal="ice">+ Add Ice Notes</button>
@@ -627,7 +627,7 @@
             <div class="card">
               <div class="card-head">
                 <div>
-                  <h3 class="card-title">Rink Memory</h3>
+                  <h3 class="card-title">Club Memory</h3>
                   <p class="card-copy">Quick tally of which clubs you have notes on most often.</p>
                 </div>
               </div>
@@ -742,7 +742,7 @@
       <div class="form-grid-2">
         <div class="form-row">
           <label class="form-label" for="ev-location">Location</label>
-          <input type="text" id="ev-location" placeholder="Club or rink name" />
+          <input type="text" id="ev-location" placeholder="Club name" />
         </div>
         <div class="form-row">
           <label class="form-label" for="ev-sheet">Sheet</label>
@@ -848,8 +848,8 @@
         </div>
       </div>
       <div class="form-row">
-        <label class="form-label" for="gm-rink">Rink</label>
-        <input type="text" id="gm-rink" placeholder="Club or rink name" />
+        <label class="form-label" for="gm-rink">Club</label>
+        <input type="text" id="gm-rink" placeholder="Club name" />
       </div>
       <div class="form-row">
         <label class="form-label" for="gm-keyshot">Key Shot</label>
@@ -925,7 +925,7 @@
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="iceModalTitle">Add Ice Notes</h2>
-          <p class="modal-copy">Record speed, curl, and rink behavior without sacrificing later edits.</p>
+          <p class="modal-copy">Record speed, curl, and club behavior without sacrificing later edits.</p>
         </div>
         <button type="button" class="modal-close" aria-label="Close ice modal" data-close-modal="modal-ice">✕</button>
       </div>
@@ -935,8 +935,8 @@
           <input type="date" id="ice-date" required aria-required="true" />
         </div>
         <div class="form-row">
-          <label class="form-label" for="ice-rink">Rink</label>
-          <input type="text" id="ice-rink" placeholder="Club or rink name" />
+          <label class="form-label" for="ice-rink">Club</label>
+          <input type="text" id="ice-rink" placeholder="Club name" />
         </div>
       </div>
       <div class="form-grid-2">

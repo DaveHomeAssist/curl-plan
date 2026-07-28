@@ -985,7 +985,7 @@ function renderImportPreview() {
       <div class="summary-row"><span class="summary-name">Games</span><span class="summary-count">${pendingImportState.summary.games}</span></div>
       <div class="summary-row"><span class="summary-name">Practice Sessions</span><span class="summary-count">${pendingImportState.summary.practice}</span></div>
       <div class="summary-row"><span class="summary-name">Ice Notes</span><span class="summary-count">${pendingImportState.summary.ice}</span></div>
-      <div class="summary-row"><span class="summary-name">Rinks</span><span class="summary-count">${pendingImportState.summary.rinks}</span></div>
+      <div class="summary-row"><span class="summary-name">Clubs</span><span class="summary-count">${pendingImportState.summary.rinks}</span></div>
       <div class="summary-row"><span class="summary-name">Sheets</span><span class="summary-count">${pendingImportState.summary.sheets}</span></div>
       <div class="summary-row"><span class="summary-name">Condition Entries</span><span class="summary-count">${pendingImportState.summary.rinkConditionEntries}</span></div>
       <div class="summary-row"><span class="summary-name">Issues</span><span class="summary-count">${pendingImportState.summary.issues}</span></div>
