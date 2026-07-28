@@ -1128,21 +1128,27 @@ function migrateLegacyStore(){
 }
 var store = defaultStore(); // hydrated by refreshStore() at boot and on every auth change
 
+var STORE_SCHEMA = 3; // v3: LWW maps carry {v, at} so the CRDT merge (src/merge.js) can converge
 function defaultStore(){
   return {
-    v:1,
-    follows:{},   // curlerId -> bool (overrides seed `following`)
-    likes:{},     // postId -> bool (liked by me)
-    joins:{},     // spielId -> status string ("You're in" | "Watching" | "Invite")
-    posts:[],     // user-authored feed items, newest-first
-    visits:{},    // stopId -> [ {date, note, at} ]
-    reviews:{},   // stopId -> [ {stars, note, at} ]
-    iceReads:{},  // stopId -> [ {speed, curl, note, at} ]
-    threads:{},   // curlerId -> [ {from:"me"|"them", text, at} ]
-    addedSpiels:[],  // user-created spiels, newest-first (seed + these = allSpiels())
-    addedCurlers:[]  // user-created curlers, newest-first (seed + these = allCurlers())
+    v:STORE_SCHEMA,
+    // LWW-Register per key — entry = { v, at } so two devices' edits merge by max at
+    follows:{},   // curlerId -> { v:bool,   at }  (overrides seed `following`)
+    likes:{},     // postId   -> { v:bool,   at }  (liked by me)
+    joins:{},     // spielId  -> { v:status, at }  ("You're in" | "Watching" | "Invite")
+    posts:[],     // OR-Set by id — user-authored feed items, newest-first
+    visits:{},    // stopId -> OR-Set [ {id?, date, note, at} ]
+    reviews:{},   // stopId -> OR-Set [ {id?, stars, note, at} ]
+    iceReads:{},  // stopId -> OR-Set [ {id?, speed, curl, note, at} ]
+    threads:{},   // curlerId -> OR-Set [ {id?, from, text, at} ]
+    addedSpiels:[],  // OR-Set by id — user-created spiels (seed + these = allSpiels())
+    addedCurlers:[]  // OR-Set by id — user-created curlers (seed + these = allCurlers())
   };
 }
+/* wrap a bare v1/v2 LWW value (bool/string) as a v3 timestamped entry;
+   at:0 so any later explicit action always wins the merge */
+function lwwEntry(v, at){ return { v:v, at:(at || 0) }; }
+function lwwVal(entry){ return (entry && typeof entry === "object" && "v" in entry) ? entry.v : entry; }
 function loadStore(){
   var d = defaultStore();
   var raw = readJSON(storeKey());
@@ -1170,13 +1176,42 @@ function sanitizeStore(d){
   });
   d.addedSpiels = d.addedSpiels.filter(function(s){ return s && typeof s === "object" && s.id && s.name; });
   d.addedCurlers = d.addedCurlers.filter(function(c){ return c && typeof c === "object" && c.id && c.name; });
+  // schema v3 migration: normalize LWW maps to { v, at } (bare v1/v2 bool/string
+  // values become at:0 so a later explicit action wins); drop malformed entries
+  ["follows","likes","joins"].forEach(function(k){
+    var m = d[k];
+    Object.keys(m).forEach(function(key){
+      var e = m[key];
+      if(e && typeof e === "object" && "v" in e) m[key] = { v:e.v, at:+e.at || 0 };
+      else if(typeof e === "boolean" || typeof e === "string" || typeof e === "number") m[key] = lwwEntry(e, 0);
+      else delete m[key];
+    });
+  });
+  d.v = STORE_SCHEMA;
   return d;
 }
 /* derived collections: user additions (per-account) + seed baseline */
 function allSpiels(){ return store.addedSpiels.concat(spiels); }
 function allCurlers(){ return store.addedCurlers.concat(curlers); }
-function saveStore(){ writeJSON(storeKey(), store); }
-function refreshStore(){ store = loadStore(); }
+/* Persistence. Content writes (posts, visits, reviews, messages, joins, added*)
+   stay synchronous — durable immediately. Hot high-frequency writes (likes,
+   follows) debounce via saveStoreSoon to avoid a full stringify per tap. The
+   pending write captures its target key, so a flush after a sign-out can never
+   land in the next account's bucket. */
+var _hotTimer = null, _hotPending = null;
+function saveStore(){ flushStoreSoon(); writeJSON(storeKey(), store); }
+function saveStoreSoon(){
+  _hotPending = { key:storeKey(), obj:store };
+  if(_hotTimer) return;
+  _hotTimer = setTimeout(flushStoreSoon, 500);
+}
+function flushStoreSoon(){
+  if(_hotTimer){ clearTimeout(_hotTimer); _hotTimer = null; }
+  if(!_hotPending) return;
+  writeJSON(_hotPending.key, _hotPending.obj);
+  _hotPending = null;
+}
+function refreshStore(){ flushStoreSoon(); store = loadStore(); } // drain before switching accounts
 function uid(prefix){ return prefix + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random()*1e4).toString(36); }
 
 /* a person record for rendering — seed curlers or "me" */
@@ -1199,22 +1234,22 @@ function initialsOf(name){
 /* ---- derivations: seed baseline + user overrides ---- */
 function isFollowing(c){
   if(!c) return false;
-  return store.follows.hasOwnProperty(c.id) ? !!store.follows[c.id] : !!c.following;
+  return store.follows.hasOwnProperty(c.id) ? !!lwwVal(store.follows[c.id]) : !!c.following;
 }
-function setFollowing(id, val){ store.follows[id] = val; saveStore(); }
+function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); saveStoreSoon(); }
 
-function isLiked(postId){ return !!store.likes[postId]; }
+function isLiked(postId){ return !!lwwVal(store.likes[postId]); }
 function likeCount(p){ return (p.likes || 0) + (isLiked(p.id) ? 1 : 0); }
-function toggleLike(postId){ store.likes[postId] = !store.likes[postId]; saveStore(); }
+function toggleLike(postId){ store.likes[postId] = lwwEntry(!isLiked(postId), Date.now()); saveStoreSoon(); }
 
-function spielStatus(sp){ return store.joins[sp.id] || sp.status; }
-function setSpielStatus(id, status){ store.joins[id] = status; saveStore(); }
+function spielStatus(sp){ return lwwVal(store.joins[sp.id]) || sp.status; }
+function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); saveStore(); }
 function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
 function withdrawSpiel(id){
   var sp = spielById(id);
   // dropping the override reverts to the seed status (e.g. back to "Invite");
   // when the seed itself is "You're in", only an explicit override can leave
-  if(sp && sp.status === "You're in") store.joins[id] = "Watching";
+  if(sp && sp.status === "You're in") store.joins[id] = lwwEntry("Watching", Date.now());
   else delete store.joins[id];
   saveStore();
 }
@@ -1418,7 +1453,7 @@ function viewAuth(){
     fields +=
       '<div class="field"><label>Name</label><input id="au-name" placeholder="Dana Mercer" autocomplete="name" value="' + esc(authDraft.name) + '"></div>' +
       '<div class="field split">' +
-        '<div><label>Home club</label><input id="au-club" placeholder="Kamloops CC" value="' + esc(authDraft.club) + '"></div>' +
+        '<div><label>Home club</label><input id="au-club" placeholder="Kamloops CC" list="club-list" autocomplete="off" value="' + esc(authDraft.club) + '">' + clubDatalist() + '</div>' +
         '<div><label>Position</label><select id="au-role">' + roles + '</select></div>' +
       '</div>';
   }
@@ -2306,6 +2341,12 @@ migrateLegacyStore();
 refreshStore();
 refreshMe();
 render();
+
+/* durability: flush any debounced hot write (likes/follows) before the page
+   goes away — pagehide covers reload/close/bfcache; visibilitychange covers
+   mobile backgrounding where pagehide is unreliable */
+window.addEventListener("pagehide", flushStoreSoon);
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden") flushStoreSoon(); });
 
 /* offline support — network-first SW (purges any older CurlPlan cache) */
 if("serviceWorker" in navigator){
