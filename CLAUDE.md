@@ -86,8 +86,17 @@ they exist to prevent naming collisions across clubs, teams, and events.
   `Broomstones · Hsllo`. Disambiguate by appending `· {Season}` / `· {Event}` / `· {Team ID}`.
   Helper: `teamLabel(club, skip)` in `index.html`.
 - **Migration note:** older copy used "rink" to mean the venue. The root app now uses
-  **Club** for venue and reserves **Rink** for the lineup. The classic app's legacy
-  "rink memory" (per-venue ice notes) predates this canon — rename when next touched.
+  **Club** for venue and reserves **Rink** for the lineup. The classic app's **user-facing
+  terminology is now canon-aligned** (2026-07): venue-sense "rink" → **Club** across labels,
+  placeholders, headings ("Rink Memory" → "Club Memory"), search copy, empty states, the
+  "Top Club Split" insight, and the demo seed venue name — audited per-site so the
+  lineup/sheet senses were preserved. **Internal identifiers are deliberately retained**
+  (`rinkId`, `rinks`, `rinkConditionEntries`, `getRinkById`, element ids `pg-rink`/`gm-rink`/
+  `ice-rink`, CSS `rink-profile-card`): they are foreign-key-bearing schema fields exercised
+  by import/export round-trips in an **archived** app, so renaming them would need a
+  `SCHEMA_VERSION` 5 migration with real data-loss risk for zero user-facing benefit. That
+  schema-field rename is intentionally **deferred** — do it as a dedicated, fixture-tested
+  change if the classic app is ever un-archived, not bundled into a terminology pass.
 
 ## Single source of truth (season seed)
 
@@ -155,7 +164,7 @@ All collections share one localStorage key as a single JSON blob.
 2. **Calendar** — event queue, month snapshot (placeholder), event detail
 3. **Games** — game log + performance stats
 4. **Practice** — session log + drill focus summary
-5. **Ice Notes** — rink condition log + rink memory
+5. **Ice Notes** — club condition log + club memory (canon: venue = Club)
 6. **Daily Planner** — pre-game planning and post-game reflection
 
 ## Conventions
@@ -224,6 +233,10 @@ All collections share one localStorage key as a single JSON blob.
 [2026-07-03] [CurlPlan] [refactor] Web polish pass: scroll-preserving render({keepScroll}) + in-place like toggle, sendMessage appends a bubble (no sheet rebuild), loadStore sanitization (clamped stars, array guards), postHead/postActions/starsRow/submissionCard/addStopEntry/readJSON dedup, viewAuth added to verify-app required tokens
 [2026-07-03] [CurlPlan] [perf] iOS: PebbleOverlay draws one accumulated Path (was ~1k fills per redraw); RootView keeps all four tab NavigationStacks alive (opacity-switched) so pushed routes + scroll survive tab changes — needs an Xcode compile pass (authored on Windows)
 [2026-07-03] [CurlPlan] [fix] Passport personalized for real accounts (isRealAccount): recent stops derive from own visits (visitedStops) with an empty state; "here now" chip + here-pin dropped; map tally reads "N STOP(S) LOGGED"/"NEW SEASON" — demo session keeps the seed map
+[2026-07-06] [CurlPlan] [perf] Web store: hot writes (likes/follows) debounce via saveStoreSoon (key captured at enqueue, flushed on account switch + pagehide/visibilitychange); content writes stay synchronous
+[2026-07-06] [CurlPlan] [feat] Web store schema v3: LWW maps (follows/likes/joins) carry {v,at} so the shared CRDT merge (src/merge.js) converges; loadStore migrates flat v1/v2 entries (at:0) — proven commutative/idempotent + LWW/OR-set correct against the real merge
+[2026-07-06] [CurlPlan] [feat] Sign-up Home club wired to the 166-club datalist (CLUB_SUGGESTIONS from data/curling-clubs.json) — autocomplete, still free-text
+[2026-07-06] [CurlPlan] [refactor] Classic app terminology → canon: venue-sense "rink" → Club across UI (labels, placeholders, Rink→Club Memory, Top Club Split, empty states, demo seed venue); lineup/sheet senses + FK schema identifiers (rinkId/rinks/rinkConditionEntries) deliberately retained (see Migration note)
 [2026-07-06] [CurlPlan] [build] Phase 0 — single source of truth: data/season-seed.json + scripts/gen-seed.js generate both apps (Seed.generated.swift + web SEED block) and a shared club vocab (Clubs.generated.swift + CLUBS block) from data/curling-clubs.json; CI gains seed --check staleness gate, verify-parity.js, and a macOS iOS build job
 [2026-07-06] [CurlPlan] [feat] Phase 1 — iOS state/data-layer rebuild: unified Post model, per-account AppState (follows/likes/joins/posts/visits/reviews/iceReads/threads) with tolerant Codable, identity/auth (SHA-256, backend-ready seam), derived stats, timestamps, spielId, legacy-blob migration, UserDefaults.defaults test seam
 [2026-07-06] [CurlPlan] [feat] Phase 2 — iOS StopDetailView contributions: log visit / ice read / write review sheets + community lists, follow state routed through the store
