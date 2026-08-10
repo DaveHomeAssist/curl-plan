@@ -40,15 +40,12 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(Store().spielStatus("sp2") == "You're in")
     }
 
-    func testDerivedStatsFromLog() {
-        let s = Store()
-        _ = s.signUp(name: "Test Curler", email: "t@x.co", pass: "secret", club: "Test CC", role: "Skip", prov: "BC")
-        XCTAssertTrue(s.isRealAccount)
-        XCTAssertEqual(s.me.stats.games, 0)                // new account, empty log
+    func testDerivedStatsFromDemoLog() {
+        let s = Store(); s.exploreDemo()
         s.addResult(body: "", scoreFor: 8, scoreAgainst: 4, vs: "Northern")  // WIN
         s.addResult(body: "", scoreFor: 3, scoreAgainst: 9, vs: "South")     // LOSS
         s.addVisit("kelowna", date: "Today", note: "")
-        let st = s.me.stats
+        let st = s.derivedStats()
         XCTAssertEqual(st.games, 2)
         XCTAssertEqual(st.win, 50)
         XCTAssertEqual(st.clubs, 1)
@@ -85,14 +82,14 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(s.spiels.count, baseSpiels + 1)
     }
 
-    func testPerAccountIsolation() {
-        let s = Store()
-        _ = s.signUp(name: "Ada", email: "a@x.co", pass: "secret", club: "A CC", role: "Skip", prov: "")
-        s.addNote(body: "account A note")
+    func testDemoStateSurvivesSignOutAndReturn() {
+        let s = Store(); s.exploreDemo()
+        s.addNote(body: "demo note")
         XCTAssertEqual(s.allPosts.filter { $0.author == "me" }.count, 1)
         s.signOut()
-        _ = s.signUp(name: "Bea", email: "b@x.co", pass: "secret", club: "B CC", role: "Skip", prov: "")
-        XCTAssertEqual(s.allPosts.filter { $0.author == "me" }.count, 0)   // B sees none of A's posts
+        XCTAssertFalse(s.isSignedIn)
+        s.exploreDemo()
+        XCTAssertEqual(s.allPosts.filter { $0.author == "me" }.count, 1)
     }
 
     func testPostCarriesTimestamp() {
@@ -101,16 +98,13 @@ final class StoreTests: XCTestCase {
         XCTAssertNotNil(s.allPosts.first?.at)
     }
 
-    func testSignUpValidation() {
+    func testLegacyCredentialRecordIsPurged() {
+        let legacy = #"{"users":[{"id":"legacy","name":"Ada","email":"a@x.co","passHash":"unsafe","club":"A","role":"Skip","prov":"BC"}],"session":"legacy"}"#
+        Store.defaults.set(Data(legacy.utf8), forKey: "cp.auth.v1")
         let s = Store()
-        if case .ok = s.signUp(name: "X", email: "not-an-email", pass: "secret", club: "", role: "Skip", prov: "") {
-            XCTFail("invalid email should not succeed")
-        }
-        if case .ok = s.signUp(name: "X", email: "ok@x.co", pass: "123", club: "", role: "Skip", prov: "") {
-            XCTFail("short password should not succeed")
-        }
-        if case .error = s.signUp(name: "X", email: "ok@x.co", pass: "longenough", club: "", role: "Skip", prov: "") {
-            XCTFail("valid signup should succeed")
-        }
+        XCTAssertFalse(s.isSignedIn)
+        let stored = Store.defaults.data(forKey: "cp.auth.v1").flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        XCTAssertFalse(stored.contains("passHash"))
+        XCTAssertFalse(stored.contains("a@x.co"))
     }
 }

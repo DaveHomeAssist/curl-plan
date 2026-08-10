@@ -28,6 +28,13 @@ A single HTML file today, web fonts only — with a build step, dependencies, an
 - **Deep links**: `#locker`, `#spiels`, `#roster`, `#stop/<id>`, `#curler/<id>`
 - **Shareable themed links**: `?theme=arena&accent=House%20blue&pebble=0`
 
+### Account status
+
+The public web build is a credential-free product preview. It opens a demo
+season and stores demo changes in the current browser only. Account creation,
+cloud sync, recovery, and cross-device restore stay unavailable until the Clerk
+and D1 backend is configured and verified end to end.
+
 ### Quick start
 
 Open `index.html` in a browser, or serve the repo from any static host.
@@ -94,5 +101,5 @@ macOS that regenerates the Xcode project and runs `xcodebuild build`).
 ## Tech
 
 - Single-file root app today (dependencies + backend welcome as it grows)
-- localStorage for appearance prefs; service worker for offline shell
+- localStorage for demo data and appearance prefs; service worker for offline shell
 - Responsive: device frame on desktop, full-bleed on phones

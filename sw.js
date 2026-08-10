@@ -5,8 +5,8 @@
 // (the pre-promote root app) while preserving the archived classic app's own cache.
 // NOTE: CacheStorage is per-origin, not per-SW-scope, so the classic worker
 // (scope /classic/) shares this keyspace; KEEP must list its cache too, and the
-// classic worker reciprocally keeps "curlplan-hifi-v1".
-const CACHE_NAME = "curlplan-hifi-v1";
+// classic worker reciprocally keeps "curlplan-hifi-v2".
+const CACHE_NAME = "curlplan-hifi-v2";
 const KEEP = [CACHE_NAME, "curlplan-classic-v6"];
 
 const PRECACHE_URLS = ["./", "./index.html"];

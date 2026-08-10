@@ -71,11 +71,11 @@ struct SettingsSheet: View {
     }
 
     // Canonical team identity: "{Club short} · {Skip}" (see terminology page).
-    private var accountMeta: String {
-        guard let u = store.currentUser() else { return "SIGNED OUT" }
-        let team = clubShort(u.club) + " · " + u.name
-        return (u.isDemo ? "DEMO SESSION · " : (u.email + " · ")) + team
-    }
+  private var accountMeta: String {
+    guard let u = store.currentUser() else { return "SIGNED OUT" }
+    let team = clubShort(u.club) + " · " + u.name
+    return "DEMO SESSION · " + team
+  }
     private func clubShort(_ club: String) -> String {
         club.replacingOccurrences(of: #"\s+(Curling Club|CC)$"#, with: "", options: .regularExpression)
     }

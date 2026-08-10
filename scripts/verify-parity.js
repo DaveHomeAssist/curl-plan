@@ -29,12 +29,12 @@ const CAPABILITIES = [
   { name: "Messaging threads",                web: ["openThread(", "function sendMessage("], ios: ["MessageThreadView", "func sendMessage("] },
   { name: "Stop contributions",               web: ["submitVisit", "submitIceRead", "submitReview"], ios: ["func addVisit(", "func addIceRead(", "func addStopReview("] },
   { name: "Spiel registration unified (spielId)", web: ["spielById(p.spielId)"],             ios: ["spielId", "func spielStatus("] },
-  { name: "Accounts & auth",                  web: ["function signIn(", "function signUp("], ios: ["struct AuthView", "func signIn(", "func signUp("] },
+  { name: "Credential-free demo gate",        web: ["Demo only.", 'data-action="auth-demo"'], ios: ["Demo only.", "func exploreDemo("] },
   { name: "Personalized Passport / derived stats", web: ["function derivedStats(", "function visitedStops("], ios: ["func derivedStats(", "func visitedStops("] },
   { name: "Functional search (Locker+Roster)", web: ["function lockerPosts(", "function rosterRows("], ios: ["func postMatches(", "SearchField"] },
   { name: "Create spiel / curler",            web: ["function submitNewSpiel(", "function submitNewCurler("], ios: ["func addSpiel(", "func addCurler(", "NewSpielSheet", "NewCurlerSheet"] },
   { name: "Following / Discover filter",       web: ["lockerTab", 'data-action="locker-tab"'], ios: ["lockerTab", "enum LockerTab"] },
-  { name: "Per-account state scoping",        web: ["storeKey(", "curlplan-hifi-state-v1"],  ios: ["stateKey", "cp.state.v2"] },
+  { name: "Demo state scoping",               web: ["storeKey(", "curlplan-hifi-state-v1"],  ios: ["stateKey", "cp.state.v2"] },
 ];
 
 let failed = 0;

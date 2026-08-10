@@ -40,13 +40,18 @@ const swPath = path.join(root, "sw.js");
 assert(fs.existsSync(swPath), "sw.js must exist at repo root.");
 const sw = fs.readFileSync(swPath, "utf8");
 new Function(sw); // parse-only smoke check (identifiers need not resolve)
-assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v1"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v1.");
+assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v2"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v2.");
 assert(/caches\.keys\(\)/.test(sw) && /caches\.delete\(/.test(sw), "sw.js must purge old caches on activate.");
 
-// 6. Inline favicon present.
+// 6. Public preview must not collect credentials until real backend auth is live.
+assert(!/type="password"/.test(html), "Public preview must not render a password field.");
+assert(!/data-action="submit-sign(?:in|up)"/.test(html), "Public preview must not expose local sign-in/sign-up actions.");
+assert(/Demo only\./.test(html) && /No credentials are collected or transmitted\./.test(html), "Demo-only disclosure missing.");
+
+// 7. Inline favicon present.
 assert(/rel="icon"[^>]*data:image\/svg\+xml/.test(html), "Inline SVG favicon missing.");
 
-// 7. Root shell must not reference the archived classic/ asset tree.
+// 8. Root shell must not reference the archived classic/ asset tree.
 assert(!/assets\/js\/app\//.test(html), "Root app should not reference classic split JS assets.");
 
 console.log("verify-app: ok (root index.html + sw.js)");

@@ -39,13 +39,12 @@ Two coexisting apps in one repo:
   `allPosts` derive seed + store). Posts stamp `author:"me"` + `at:Date.now()`; the store
   is rehydrated (`refreshStore()`) on every auth change. Real accounts derive Passport
   telemetry live from their own store (`derivedStats()`); demo stats stay with the demo.
-- Accounts/auth under `curlplan-hifi-auth-v1` (`{users, session}`). `currentUser()` /
-  `signUp` / `signIn` / `signOut` are the backend-ready seam — swap them for a real API or
-  the connected Clerk instance without touching views. `render()` gates on `currentUser()`;
-  `activeMe()` derives `me` (identity) from the signed-in user. A `"demo"` session maps to
-  `defaultMe`. Demo passwords use a non-cryptographic hash (`hashPass`) — **not secure**,
-  placeholder until real auth lands.
-- Service worker (`sw.js`, cache `curlplan-hifi-v1`): network-first navigations, purges legacy caches
+- Public auth is deliberately demo-only: `curlplan-hifi-auth-v1` stores only a
+  demo session and migrates away any legacy local password records. The live
+  preview does not collect email or password. Real accounts must use the Clerk +
+  D1 backend and prove create, restore, delete, and cross-device isolation before
+  the UI exposes account actions.
+- Service worker (`sw.js`, cache `curlplan-hifi-v2`): network-first navigations, purges legacy caches
 - Inline SVG favicon (house ring); seed data drives all screens
 - XSS safety via `esc()` on all rendered content
 - Verified by `scripts/verify-app.js`

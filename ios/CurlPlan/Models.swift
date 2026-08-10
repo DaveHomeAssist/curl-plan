@@ -1,12 +1,11 @@
 import SwiftUI
-import CryptoKit
 
 // ============================================================
 // CurlPlan — data models + Store.
 // Seed baseline lives in Seed.generated.swift (from data/season-seed.json).
-// This file owns the mutable, per-account state layer, identity/auth, and the
-// derivations that mirror the web Hi-Fi app (index.html). Parity target: the web
-// `curlplan-hifi-state-v1:<userId|demo>` store + `curlplan-hifi-auth-v1`.
+// This file owns the mutable demo state layer and the derivations that mirror
+// the web Hi-Fi app (index.html). Public credential collection remains disabled
+// until the real account backend is configured and verified.
 // ============================================================
 
 // MARK: - Value models
@@ -139,20 +138,17 @@ struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: Str
 struct Account: Identifiable, Codable, Hashable {
     let id: String
     let name: String
-    let email: String
-    let passHash: String
     let club: String
     let role: String
     let prov: String
     var isDemo: Bool { id == "demo" }
 
-    static let demo = Account(id: "demo", name: Seed.me.name, email: "demo@curlplan.app",
-                              passHash: "", club: Seed.me.club, role: Seed.me.role, prov: Seed.me.prov)
+    static let demo = Account(id: "demo", name: Seed.me.name,
+                              club: Seed.me.club, role: Seed.me.role, prov: Seed.me.prov)
 }
 
 struct AuthState: Codable {
-    var users: [Account] = []
-    var session: String? = nil     // userId | "demo" | nil (signed out)
+    var session: String? = nil     // "demo" | nil
 }
 
 // MARK: - Per-account mutable state (the "store" blob)
@@ -243,19 +239,11 @@ final class Store: ObservableObject {
     // MARK: Identity
 
     func currentUser() -> Account? {
-        guard let s = auth.session else { return nil }
-        if s == "demo" { return .demo }
-        return auth.users.first { $0.id == s }
+        auth.session == "demo" ? .demo : nil
     }
     var isSignedIn: Bool { auth.session != nil }
-    var isRealAccount: Bool { if let u = currentUser() { return !u.isDemo }; return false }
-
-    var me: MeInfo {
-        guard let u = currentUser(), !u.isDemo else { return Seed.me }
-        return MeInfo(name: u.name, initials: Store.initials(u.name), role: u.role,
-                      club: u.club, prov: u.prov, season: "Your season · in progress",
-                      stats: derivedStats())
-    }
+    var isRealAccount: Bool { false }
+    var me: MeInfo { Seed.me }
 
     /// Live telemetry for a real account, computed from their own log (demo keeps seed numbers).
     func derivedStats() -> MeStats {
@@ -372,37 +360,10 @@ final class Store: ObservableObject {
         state.threads[curlerID, default: []].append(Message(from: "me", text: t, at: Store.now()))
     }
 
-    // MARK: Auth actions (the backend-ready seam — see docs; local-first for now)
-
-    enum AuthResult { case ok, error(String) }
+    // MARK: Demo session
 
     func exploreDemo() {
         setSession("demo")
-    }
-
-    func signUp(name: String, email: String, pass: String, club: String, role: String, prov: String) -> AuthResult {
-        let n = name.trimmingCharacters(in: .whitespaces)
-        let e = email.trimmingCharacters(in: .whitespaces).lowercased()
-        if n.isEmpty { return .error("Add your name") }
-        if !Store.validEmail(e) { return .error("Enter a valid email") }
-        if pass.count < 6 { return .error("Password needs 6+ characters") }
-        if auth.users.contains(where: { $0.email == e }) { return .error("That email already has an account") }
-        let u = Account(id: Store.uid("u"), name: n, email: e, passHash: Store.hash(pass),
-                        club: club.trimmingCharacters(in: .whitespaces).isEmpty ? "Independent" : club.trimmingCharacters(in: .whitespaces),
-                        role: role.isEmpty ? "Skip" : role,
-                        prov: prov.trimmingCharacters(in: .whitespaces))
-        auth.users.append(u)
-        setSession(u.id)
-        return .ok
-    }
-
-    func signIn(email: String, pass: String) -> AuthResult {
-        let e = email.trimmingCharacters(in: .whitespaces).lowercased()
-        guard let u = auth.users.first(where: { $0.email == e }), u.passHash == Store.hash(pass) else {
-            return .error("Email or password is incorrect")
-        }
-        setSession(u.id)
-        return .ok
     }
 
     func signOut() { setSession(nil) }
@@ -423,8 +384,12 @@ final class Store: ObservableObject {
     }
     private static func loadAuth(_ key: String) -> AuthState {
         guard let d = Store.defaults.data(forKey: key),
-              let a = try? JSONDecoder().decode(AuthState.self, from: d) else { return AuthState() }
-        return a
+              let decoded = try? JSONDecoder().decode(AuthState.self, from: d) else { return AuthState() }
+        let sanitized = AuthState(session: decoded.session == "demo" ? "demo" : nil)
+        if let replacement = try? JSONEncoder().encode(sanitized) {
+            Store.defaults.set(replacement, forKey: key)
+        }
+        return sanitized
     }
     private static func loadState(key: String) -> AppState {
         guard let d = Store.defaults.data(forKey: key),
@@ -467,14 +432,5 @@ final class Store: ObservableObject {
         guard let first = parts.first?.first else { return "··" }
         let last = parts.count > 1 ? (parts.last?.first).map(String.init) ?? "" : ""
         return (String(first) + last).uppercased()
-    }
-    static func validEmail(_ s: String) -> Bool {
-        let r = #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#
-        return s.range(of: r, options: .regularExpression) != nil
-    }
-    /// SHA-256 hex. Better than the web demo's djb2, but still local-only — real auth
-    /// belongs on the backend seam (see docs/engineering policy).
-    static func hash(_ s: String) -> String {
-        SHA256.hash(data: Data(s.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -4,7 +4,7 @@
 // purge the genuinely-stale v5 cache without touching the live classic cache.
 // CacheStorage is per-origin, so KEEP also preserves the root app's cache.
 const CACHE_NAME = "curlplan-classic-v6";
-const KEEP = [CACHE_NAME, "curlplan-hifi-v1"];
+const KEEP = [CACHE_NAME, "curlplan-hifi-v2"];
 
 const PRECACHE_URLS = [
   "./",
