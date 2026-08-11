@@ -59,5 +59,6 @@ assert(!/assets\/js\/app\//.test(html), "Root app should not reference classic s
 assert(/Content-Security-Policy/.test(html), "Content Security Policy missing.");
 assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP object/base restrictions missing.");
 assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
+assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmark missing.");
 
 console.log("verify-app: ok (root index.html + sw.js)");
