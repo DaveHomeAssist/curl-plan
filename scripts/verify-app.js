@@ -54,4 +54,10 @@ assert(/rel="icon"[^>]*data:image\/svg\+xml/.test(html), "Inline SVG favicon mis
 // 8. Root shell must not reference the archived classic/ asset tree.
 assert(!/assets\/js\/app\//.test(html), "Root app should not reference classic split JS assets.");
 
+// 9. The static preview still needs browser-enforced boundaries around its
+// inline shell and explicitly approved font hosts.
+assert(/Content-Security-Policy/.test(html), "Content Security Policy missing.");
+assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP object/base restrictions missing.");
+assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
+
 console.log("verify-app: ok (root index.html + sw.js)");
