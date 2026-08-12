@@ -24,7 +24,7 @@ const ios = fs.readdirSync(iosDir)
 // Each capability: tokens that must appear in the web corpus AND the iOS corpus.
 const CAPABILITIES = [
   { name: "Shared seed source of truth",     web: ["SEED:START", "CLUBS:START"],            ios: ["enum Seed", "enum Clubs"] },
-  { name: "Interactive likes (persisted)",    web: ["toggleLike("],                          ios: ["func toggleLike(", "store.toggleLike("] },
+  { name: "No unbacked social actions", webAbsent: ["function toggleLike(", 'data-action="like"', "function postActions("], iosAbsent: ["store.toggleLike(", "PostActions(post:"] },
   { name: "Compose note/result/review",       web: ["openCompose(", 'type === "review"'],    ios: ["ComposeSheet", "func addNote(", "func addReview(", "func addResult("] },
   { name: "Messaging threads",                web: ["openThread(", "function sendMessage("], ios: ["MessageThreadView", "func sendMessage("] },
   { name: "Stop contributions",               web: ["submitVisit", "submitIceRead", "submitReview"], ios: ["func addVisit(", "func addIceRead(", "func addStopReview("] },
@@ -39,13 +39,17 @@ const CAPABILITIES = [
 
 let failed = 0;
 for (const cap of CAPABILITIES) {
-  const missWeb = cap.web.filter(t => !web.includes(t));
-  const missIos = cap.ios.filter(t => !ios.includes(t));
-  if (missWeb.length || missIos.length) {
+  const missWeb = (cap.web || []).filter(t => !web.includes(t));
+  const missIos = (cap.ios || []).filter(t => !ios.includes(t));
+  const forbiddenWeb = (cap.webAbsent || []).filter(t => web.includes(t));
+  const forbiddenIos = (cap.iosAbsent || []).filter(t => ios.includes(t));
+  if (missWeb.length || missIos.length || forbiddenWeb.length || forbiddenIos.length) {
     failed++;
     console.error(`✗ ${cap.name}`);
     if (missWeb.length) console.error(`    web missing:  ${missWeb.join(", ")}`);
     if (missIos.length) console.error(`    iOS missing:  ${missIos.join(", ")}`);
+    if (forbiddenWeb.length) console.error(`    web forbidden:  ${forbiddenWeb.join(", ")}`);
+    if (forbiddenIos.length) console.error(`    iOS forbidden:  ${forbiddenIos.join(", ")}`);
   } else {
     console.log(`✓ ${cap.name}`);
   }

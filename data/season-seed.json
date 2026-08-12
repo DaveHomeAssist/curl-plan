@@ -67,7 +67,7 @@
   "stops": [
     {
       "id": "kamloops", "code": "KAM", "name": "Kamloops Cashspiel", "club": "Kamloops Curling Club", "prov": "BC",
-      "dates": "HERE NOW", "record": "—", "here": true, "x": 86, "y": 54, "big": true,
+      "dates": "SAMPLE STOP", "record": "—", "here": true, "x": 86, "y": 54, "big": true,
       "ice": { "speed": "Fast", "speedSec": "23.6s", "curl": "4–5", "rec": "—" },
       "games": [], "met": []
     },

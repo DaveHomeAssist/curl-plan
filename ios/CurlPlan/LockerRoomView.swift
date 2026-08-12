@@ -189,29 +189,6 @@ private struct PostHead: View {
     }
 }
 
-// Like + comment + share action bar (interactive like, persisted).
-private struct PostActions: View {
-    @EnvironmentObject var settings: AppSettings
-    @EnvironmentObject var store: Store
-    let post: Post
-    var body: some View {
-        HStack(spacing: 20) {
-            Button { store.toggleLike(post.id) } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: store.isLiked(post.id) ? "heart.fill" : "heart")
-                    Text("\(store.likeCount(post))")
-                }
-                .foregroundStyle(store.isLiked(post.id) ? settings.accent : settings.muted)
-            }
-            .buttonStyle(.plain)
-            Label("\(post.comments)", systemImage: "bubble.right").foregroundStyle(settings.muted)
-            Spacer()
-            Image(systemName: "arrowshape.turn.up.right").foregroundStyle(settings.muted)
-        }
-        .font(.grotesk(13, .semibold))
-    }
-}
-
 private func displayTime(_ p: Post) -> String {
     if let at = p.at { return RelativeTime.ago(at) }
     return p.time ?? ""
@@ -242,7 +219,6 @@ private struct ResultCard: View {
             .padding(.vertical, 10).padding(.horizontal, 13)
             .background(settings.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            PostActions(post: post)
         }
         .padding(14)
         .cpCard(radius: 18)
@@ -256,7 +232,6 @@ private struct NoteCard: View {
         VStack(alignment: .leading, spacing: 11) {
             PostHead(post: post)
             Text(post.body ?? "").font(.grotesk(15)).foregroundStyle(settings.ink).lineSpacing(2)
-            PostActions(post: post)
         }
         .padding(14)
         .cpCard(radius: 18)

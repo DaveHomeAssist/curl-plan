@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0e1316">
 <meta name="description" content="CurlPlan — your season, your circle. A curling-native app: map your season, stay close to your circle.">
 <meta name="robots" content="index,follow">
@@ -18,15 +18,35 @@
 <meta name="twitter:description" content="Your season, your circle. Map your curling season and stay close to your circle.">
 <title>CurlPlan</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='13.6' fill='%232f6f93'/%3E%3Ccircle cx='16' cy='16' r='11.2' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='8.4' fill='%23c0402c'/%3E%3Ccircle cx='16' cy='16' r='5.6' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='2.9' fill='%23c0402c'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/instrument-serif-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* ============================================================
    CurlPlan — Hi-Fi Concept implementation
    Single file today (dependencies, a build step, and a backend are all welcome). Faithful to the
    "Passport + Locker Room" design concept; made navigable.
    ============================================================ */
+
+@font-face{
+  font-family:'Hanken Grotesk'; font-style:normal; font-weight:400 800; font-display:swap;
+  src:url('fonts/hanken-grotesk-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Instrument Serif'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('fonts/instrument-serif-400-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Instrument Serif'; font-style:italic; font-weight:400; font-display:swap;
+  src:url('fonts/instrument-serif-400-italic-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'DM Mono'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('fonts/dm-mono-400-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'DM Mono'; font-style:normal; font-weight:500; font-display:swap;
+  src:url('fonts/dm-mono-500-latin.woff2') format('woff2');
+}
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
@@ -319,7 +339,7 @@ body{
 }
 .sheet.open{ transform:translateY(0); }
 .sheet .grab{ width:38px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 14px; }
-.sheet h3{ font:400 24px 'Instrument Serif'; color:var(--ink); margin:0 0 2px; }
+.sheet h2{ font:400 24px 'Instrument Serif'; color:var(--ink); margin:0 0 2px; }
 .sheet .sub{ font:400 13px 'Hanken Grotesk'; color:var(--muted); margin:0 0 18px; }
 .set-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-top:1px solid var(--line); }
 .set-row .k{ font:600 14px 'Hanken Grotesk'; color:var(--ink); }
@@ -395,13 +415,27 @@ body{
 .auth-wrap::-webkit-scrollbar{ width:0; }
 .auth-head{ text-align:center; }
 .auth-head .ring{ width:46px; height:46px; display:inline-block; margin-bottom:10px; box-shadow:0 2px 8px rgba(10,15,18,.3); }
-.auth-head h2{ font:400 32px 'Instrument Serif'; color:var(--ink); margin:0; line-height:1.05; }
+.auth-head h1{ font:400 32px 'Instrument Serif'; color:var(--ink); margin:0; line-height:1.05; }
 .auth-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 14px 34px -22px rgba(15,20,24,.4); }
 .auth-alt{ text-align:center; font:500 14px 'Hanken Grotesk'; color:var(--muted); }
 .auth-alt b{ color:var(--accent); cursor:pointer; }
 .auth-notice{ margin:0; color:var(--ink); font:600 14px/1.5 'Hanken Grotesk'; }
 .auth-notice strong{ color:var(--accent); }
 .auth-footnote{ margin:12px 0 0; color:var(--muted); font:500 13px/1.45 'Hanken Grotesk'; }
+
+/* Keyboard and touch affordances stay consistent across the app shell. */
+button, [role="button"]{ touch-action:manipulation; }
+button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+}
+.pill-btn, .backbtn, .hero-back, .seg button, .seg-type button, .swatch, .toggle, .stars-pick button{
+  min-width:44px; min-height:44px;
+}
+.map-pin::after{ content:""; position:absolute; inset:-12px; }
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after{ scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; }
+}
 </style>
 </head>
 <body>
@@ -415,7 +449,7 @@ body{
     <div class="sheet-scrim" id="scrim" data-action="close-settings"></div>
     <div class="sheet" id="sheet" role="dialog" aria-label="Appearance">
       <div class="grab"></div>
-      <h3>Appearance</h3>
+      <h2>Appearance</h2>
       <p class="sub">Same season, your circle — tune the ice.</p>
       <div class="set-row">
         <div class="k">Theme<small>ICE / ARENA</small></div>
@@ -703,7 +737,7 @@ var stops = [
     "name": "Kamloops Cashspiel",
     "club": "Kamloops Curling Club",
     "prov": "BC",
-    "dates": "HERE NOW",
+    "dates": "SAMPLE STOP",
     "record": "—",
     "here": true,
     "x": 86,
@@ -1246,10 +1280,6 @@ function isFollowing(c){
 }
 function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); saveStoreSoon(); }
 
-function isLiked(postId){ return !!lwwVal(store.likes[postId]); }
-function likeCount(p){ return (p.likes || 0) + (isLiked(p.id) ? 1 : 0); }
-function toggleLike(postId){ store.likes[postId] = lwwEntry(!isLiked(postId), Date.now()); saveStoreSoon(); }
-
 function spielStatus(sp){ return lwwVal(store.joins[sp.id]) || sp.status; }
 function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); saveStore(); }
 function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
@@ -1343,11 +1373,6 @@ function avatarStack(ids){
   }).join("") + '</div>';
 }
 function resColor(res){ return res === "W" ? "var(--accent)" : "var(--muted)"; }
-function likeBtn(p){
-  var liked = isLiked(p.id);
-  return '<span data-action="like" data-id="' + esc(p.id) + '"' + (liked ? ' style="color:var(--accent);"' : '') + '>' +
-    (liked ? "♥" : "♡") + ' ' + likeCount(p) + '</span>';
-}
 function starsRow(n){
   n = Math.max(0, Math.min(5, parseInt(n, 10) || 0));
   return '<span style="font-size:13px; letter-spacing:2px; color:var(--accent);">' + "★".repeat(n) + '</span>' +
@@ -1364,9 +1389,6 @@ function postHead(p, o){
     '<div class="meta"' + (o.metaSize ? ' style="font-size:' + o.metaSize + 'px;"' : '') + '>' + meta + '</div></div>' +
     (o.noMenu ? '' : '<span style="font-size:18px; color:var(--muted);">⋯</span>') +
   '</div>';
-}
-function postActions(p){
-  return '<div class="actions">' + likeBtn(p) + '<span>💬 ' + (p.comments || 0) + '</span><span style="margin-left:auto;">↗</span></div>';
 }
 /* titled .glist card for the stop-detail submission lists; "" when empty */
 function submissionCard(title, items, rowFn){
@@ -1401,13 +1423,13 @@ function viewAuth(){
     '<div class="auth-wrap">' +
       '<div class="auth-head">' +
         '<span class="ring"></span>' +
-        '<h2>Your season, your circle</h2>' +
+        '<h1>Your season, your circle</h1>' +
         '<div class="eyebrow" style="margin-top:6px;">A working CurlPlan product preview</div>' +
       '</div>' +
       '<div class="auth-card">' +
-        '<p class="auth-notice"><strong>Demo only.</strong> Accounts and cloud sync are not live yet, so CurlPlan will never ask for your email or password in this preview.</p>' +
+        '<p class="auth-notice" id="demo-notice"><strong>Demo only.</strong> Accounts and cloud sync are not live yet, so CurlPlan will never ask for your email or password in this preview.</p>' +
         '<div class="sheet-actions" style="margin-top:4px;">' +
-          '<button class="b solid" style="flex:1;" data-action="auth-demo">Explore the demo</button>' +
+          '<button class="b solid" style="flex:1;" data-action="auth-demo" aria-describedby="demo-notice">Explore the demo</button>' +
         '</div>' +
         '<p class="auth-footnote">Demo changes stay in this browser and can be cleared with site data. Real account recovery, deletion, and cross-device restore will ship only with the verified backend.</p>' +
       '</div>' +
@@ -1420,7 +1442,7 @@ function viewPassport(){
   var real = isRealAccount();
   var pins = stops.map(function(st){
     var sz = st.big ? 21 : 13;
-    // "here now" highlight is a demo cue — a real account has no current location
+    // The highlighted stop is explicit sample data, not a live or verified location.
     return '<button class="map-pin' + ((st.here && !real) ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
       'style="left:' + st.x + '%; top:' + st.y + '%; width:' + sz + 'px; height:' + sz + 'px;" aria-label="' + esc(st.name) + '"></button>';
   }).join("");
@@ -1458,9 +1480,9 @@ function viewPassport(){
       '</div>';
     }).join("");
   }
-  // map chrome: the "here now" chip and stop/KM tally are demo flavor; a real
+  // Map chrome: the sample-stop chip and stop/KM tally are demo flavor; a real
   // account gets a tally derived from its own visits (no fabricated distance)
-  var hereChip = real ? '' : '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>';
+  var hereChip = real ? '' : '<div class="map-chip"><span class="dot"></span><span>Kamloops · sample stop</span></div>';
   var nVisited = visitedStops().length;
   var mapMeta = real
     ? (nVisited ? nVisited + (nVisited === 1 ? ' STOP LOGGED' : ' STOPS LOGGED') : 'NEW SEASON')
@@ -1531,13 +1553,11 @@ function renderPostCard(p){
       '<div class="scorebar"><span class="big">' + esc(p.score.for) + '<span style="color:var(--muted);"> – </span>' + esc(p.score.ag) + '</span>' +
         '<span class="win-chip">' + esc(p.score.res) + '</span>' +
         '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
-      postActions(p) +
     '</div>';
   }
   if(p.type === "note"){
     return '<div class="card post">' + postHead(p) +
       '<div class="body">' + esc(p.body) + '</div>' +
-      postActions(p) +
     '</div>';
   }
   if(p.type === "spiel"){
@@ -1936,7 +1956,7 @@ function openCompose(type){
     body = '<div class="field"><label>What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
   }
 
-  openSheet('<h3>Share</h3><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
+  openSheet('<h2>Share</h2><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
     '<div class="seg-type">' + seg + '</div>' + body +
     '<div class="sheet-actions">' +
       '<button class="b outline" data-action="close-sheet">Cancel</button>' +
@@ -1970,7 +1990,7 @@ function submitCompose(type){
 /* ---- stop detail submissions ---- */
 function openVisit(stopId){
   var st = stop(stopId); if(!st) return;
-  openSheet('<h3>Log a visit</h3><p class="sub">' + esc(st.name) + '</p>' +
+  openSheet('<h2>Log a visit</h2><p class="sub">' + esc(st.name) + '</p>' +
     '<div class="field"><label>Date</label><input id="f-date" placeholder="Today"></div>' +
     '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
@@ -1988,7 +2008,7 @@ function submitVisit(stopId){
 function openIceRead(stopId){
   var st = stop(stopId); if(!st) return;
   var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h3>Add an ice read</h3><p class="sub">' + esc(st.name) + '</p>' +
+  openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + '</p>' +
     '<div class="field split"><div><label>Speed</label><select id="f-speed">' + opts + '</select></div>' +
       '<div><label>Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
     '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
@@ -2003,7 +2023,7 @@ function submitIceRead(stopId){
 function openReview(stopId){
   var st = stop(stopId); if(!st) return;
   formStars = 5;
-  openSheet('<h3>Write a review</h3><p class="sub">' + esc(st.name) + '</p>' +
+  openSheet('<h2>Write a review</h2><p class="sub">' + esc(st.name) + '</p>' +
     '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
     '<div class="field"><label>Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
@@ -2022,7 +2042,7 @@ function openThread(curlerId){
         '<span class="ts">' + fmtTime(m.at) + '</span></div>';
     }).join("") + '</div>'
     : '<div class="thread-empty">No messages yet. Say hello to ' + esc(c.name.split(" ")[0]) + '.</div>';
-  openSheet('<h3>' + esc(c.name) + '</h3><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
+  openSheet('<h2>' + esc(c.name) + '</h2><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
     body +
     '<div class="composer"><textarea id="f-msg" placeholder="Message…"></textarea>' +
       '<button class="pill-btn" data-action="send-msg" data-id="' + curlerId + '">Send</button></div>');
@@ -2047,7 +2067,7 @@ function sendMessage(curlerId){
 /* ---- create a spiel (backported from the iOS port) ---- */
 function openNewSpiel(){
   var statusOpts = ["You're in","Watching","Invite"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h3>New spiel</h3><p class="sub">Add a bonspiel to your season ahead.</p>' +
+  openSheet('<h2>New spiel</h2><p class="sub">Add a bonspiel to your season ahead.</p>' +
     '<div class="field"><label>Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
     '<div class="field"><label>Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
     '<div class="field"><label>Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
@@ -2069,7 +2089,7 @@ function submitNewSpiel(){
 /* ---- create a curler (backported from the iOS port) ---- */
 function openNewCurler(){
   var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
-  openSheet('<h3>Add to roster</h3><p class="sub">Add a curler to your circle.</p>' +
+  openSheet('<h2>Add to roster</h2><p class="sub">Add a curler to your circle.</p>' +
     '<div class="field"><label>Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
     '<div class="field split"><div><label>Position</label><select id="f-role">' + roles + '</select></div>' +
       '<div><label>Province</label><input id="f-prov" placeholder="BC"></div></div>' +
@@ -2159,16 +2179,6 @@ el("screen").addEventListener("click", function(e){
       if(c){ var nv = !isFollowing(c); setFollowing(id, nv); render({keepScroll:true}); toast(nv ? "Following " + c.name : "Unfollowed " + c.name); }
       break;
     }
-    case "like": {
-      if(id){
-        toggleLike(id);
-        var lp = allPosts().filter(function(x){ return x.id === id; })[0];
-        if(lp) t.outerHTML = likeBtn(lp); // patch the heart in place — no re-render, no scroll jump
-        else render({keepScroll:true});
-      }
-      break;
-    }
-
     // bonspiel registration
     case "join-spiel": {
       if(id){ setSpielStatus(id, "You're in"); render({keepScroll:true}); toast("You're registered"); }

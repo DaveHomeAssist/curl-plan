@@ -153,7 +153,7 @@ struct AuthState: Codable {
 
 // MARK: - Per-account mutable state (the "store" blob)
 
-struct AppState: Codable {
+struct AppState: Codable, Hashable {
     var addedCurlers: [Curler] = []
     var addedSpiels: [Spiel] = []
     var follows: [String: Bool] = [:]        // curlerId -> override
