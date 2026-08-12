@@ -67,6 +67,9 @@ while IFS= read -r path; do
     ios/CurlPlan/Models.swift)
       add_rows FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
       ;;
+    ios/CurlPlan/Seed.generated.swift|ios/CurlPlan/Clubs.generated.swift)
+      add_rows build-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-CLAIMS
+      ;;
     ios/CurlPlan/CurlPlanApp.swift)
       add_rows FR-SETUP FR-SETTINGS FR-A11Y FR-CLAIMS
       ;;
@@ -223,7 +226,7 @@ fi
 echo
 echo "Claim scan:"
 claim_failed=0
-claim_matches=$(rg -in '"[^"\n]*(likes|comments|public roster|here now|GPS verification|official result)[^"\n]*"' ios/CurlPlan \
+claim_matches=$(rg -in '"[^"]*(likes|comments|public roster|here now|GPS verification|official result)[^"]*"' ios/CurlPlan \
   -g '*View.swift' -g '*Sheet.swift' -g 'Components.swift' -g 'CurlPlanApp.swift' -g 'Seed.generated.swift' 2>/dev/null \
   | rg -iv 'not live|not yet|local|demo|sample|unavailable|allowed:|banned:' || true)
 if [ -n "$claim_matches" ]; then
