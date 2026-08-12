@@ -691,7 +691,7 @@ function requiredSeason(body) {
     throw new BackendError(422, "VALIDATION_FAILED", "season.schemaVersion must be an integer.");
   }
   if (season.schemaVersion > 4) {
-    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "CurlPlan account backend accepts AppData schema 4 or earlier.");
+    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "CurlPlan account backend accepts account season payload schema 4 or earlier.");
   }
   return season;
 }

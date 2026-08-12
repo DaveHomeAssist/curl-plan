@@ -20,8 +20,8 @@ final class AccountHTTPBackendTests: XCTestCase {
                                       createdAt: "now",
                                       expiresAt: "later",
                                       state: .active)
-        var season = Seed.appData(setupComplete: true)
-        season.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
+        var season = AccountSeasonPayload()
+        season.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
         let document = AccountSeasonDocument(id: "season-1",
                                              accountID: account.id,
                                              schemaVersion: season.schemaVersion,
@@ -86,8 +86,8 @@ final class AccountHTTPBackendTests: XCTestCase {
     func testHTTPTransportMapsQueryPathsErrorEnvelopeAndNetworkFailure() async throws {
         let loader = RecordingAccountHTTPDataLoader()
         let transport = AccountHTTPBackendTransport(baseURL: URL(string: "https://api.curlplan.test/root")!, loader: loader)
-        var season = Seed.appData(setupComplete: true)
-        season.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
+        var season = AccountSeasonPayload()
+        season.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
 
         loader.enqueue(status: 409,
                        error: AccountAPIError(status: 409,

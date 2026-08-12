@@ -7,8 +7,8 @@ final class AccountBackendAPITests: XCTestCase {
         let deviceA = AccountBackendClient(transport: transport)
         let account = try deviceA.createAccount(handle: "dana", displayName: "Dana Mercer", homeClub: "Calgary Granite CC", password: "api-pass-87")
         try deviceA.signIn(handle: "dana", password: "api-pass-87", deviceID: "device-a")
-        var season = Seed.appData(setupComplete: true)
-        season.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
+        var season = AccountSeasonPayload()
+        season.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
         try deviceA.importLocalSeason(season)
 
         try deviceA.signOut()
@@ -30,11 +30,11 @@ final class AccountBackendAPITests: XCTestCase {
         let client = AccountBackendClient(transport: transport)
         let account = try client.createAccount(handle: "dana", displayName: "Dana Mercer", homeClub: "Calgary Granite CC", password: "api-pass-87")
         let session = try client.signIn(handle: "dana", password: "api-pass-87", deviceID: "device-a")
-        try client.importLocalSeason(Seed.appData(setupComplete: true))
+        try client.importLocalSeason(AccountSeasonPayload())
         let baseVersion = try client.season().version
 
         var update = try client.season().body
-        update.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
+        update.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
         let receipt = try client.applySeasonChange(baseVersion: baseVersion,
                                                    updatedBody: update,
                                                    domains: [.profile],

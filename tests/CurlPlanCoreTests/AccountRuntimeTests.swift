@@ -11,7 +11,7 @@ final class AccountRuntimeTests: XCTestCase {
 
         let result = await runtime.createAccount(handle: "dana",
                                                  password: "runtime-pass-87",
-                                                 season: Seed.appData(setupComplete: true))
+                                                 season: AccountSeasonPayload())
 
         XCTAssertEqual(runtime.state.kind, .unconfigured)
         XCTAssertTrue(result.message.contains("local season data only"))
@@ -24,8 +24,8 @@ final class AccountRuntimeTests: XCTestCase {
         let runtime = AccountRuntime(baseURL: URL(string: "http://127.0.0.1:8787")!,
                                      defaults: defaults,
                                      loader: loader)
-        var season = Seed.appData(setupComplete: true)
-        season.profile = PlayerProfile.blank(name: "Dana Mercer",
+        var season = AccountSeasonPayload()
+        season.profile = AccountSeasonProfile.blank(name: "Dana Mercer",
                                              homeClub: "Calgary Granite CC",
                                              province: "AB")
         let account = CurlPlanAccount(id: "acct-runtime",

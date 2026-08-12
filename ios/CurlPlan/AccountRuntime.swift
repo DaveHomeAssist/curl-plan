@@ -66,7 +66,7 @@ struct AccountRuntimeState: Equatable {
 
 struct AccountRuntimeResult: Equatable {
     var message: String
-    var restoredSeason: AppData?
+    var restoredSeason: AccountSeasonPayload?
 }
 
 @MainActor
@@ -119,7 +119,7 @@ final class AccountRuntime: ObservableObject {
         return nil
     }
 
-    func createAccount(handle: String, password: String, season: AppData) async -> AccountRuntimeResult {
+    func createAccount(handle: String, password: String, season: AccountSeasonPayload) async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
         let normalizedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         state = .working("Creating account, opening a backend session, and importing this local season.", accountID: savedAccountID)

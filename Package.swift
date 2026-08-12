@@ -17,10 +17,14 @@ let package = Package(
             exclude: [
                 "Assets.xcassets",
                 "Components.swift",
+                "ComposeSheet.swift",
                 "CurlPlanApp.swift",
                 "CurlerProfileView.swift",
-                "LiveMapView.swift",
+                "Clubs.generated.swift",
+                "AuthView.swift",
                 "LockerRoomView.swift",
+                "Merge.swift",
+                "MessageThreadView.swift",
                 "PassportView.swift",
                 "PrivacyInfo.xcprivacy",
                 "RootView.swift",
@@ -35,7 +39,8 @@ let package = Package(
                 "AccountHTTPBackend.swift",
                 "AccountRuntime.swift",
                 "AccountSocialContracts.swift",
-                "Models.swift"
+                "Models.swift",
+                "Seed.generated.swift"
             ]
         ),
         .testTarget(

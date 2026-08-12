@@ -16,8 +16,8 @@ final class AccountBackendPersistenceTests: XCTestCase {
                                                     homeClub: "Calgary Granite CC",
                                                     password: password)
         try firstDevice.signIn(handle: "dana", password: password, deviceID: "device-a")
-        var season = Seed.appData(setupComplete: true)
-        season.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
+        var season = AccountSeasonPayload()
+        season.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
         try firstDevice.importLocalSeason(season)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: storageURL.path))

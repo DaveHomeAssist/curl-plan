@@ -12,8 +12,8 @@ final class AccountFoundationContractTests: XCTestCase {
             XCTAssertEqual(error as? AccountBackendError, .invalidCredentials)
         }
 
-        var localSeason = Seed.appData(setupComplete: true)
-        localSeason.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
+        var localSeason = AccountSeasonPayload()
+        localSeason.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Calgary Granite CC", province: "AB")
 
         try backend.importLocalSeason(sessionID: deviceA.id, season: localSeason)
         backend.signOut(sessionID: deviceA.id)
@@ -43,11 +43,11 @@ final class CloudSyncContractTests: XCTestCase {
         let backend = AccountSocialContractStore()
         let account = try backend.createAccount(handle: "dana", displayName: "Dana Mercer", homeClub: "Calgary Granite CC", password: "contract-pass-8")
         let session = try backend.signIn(handle: "dana", password: "contract-pass-8", deviceID: "device-a")
-        try backend.importLocalSeason(sessionID: session.id, season: Seed.appData(setupComplete: true))
+        try backend.importLocalSeason(sessionID: session.id, season: AccountSeasonPayload())
         let firstVersion = try backend.season(sessionID: session.id).version
 
         var updated = try backend.season(sessionID: session.id).body
-        updated.profile = PlayerProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
+        updated.profile = AccountSeasonProfile.blank(name: "Dana Mercer", homeClub: "Granite Curling Club", province: "AB")
 
         let receipt = try backend.applySeasonChange(sessionID: session.id,
                                                     baseVersion: firstVersion,
