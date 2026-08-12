@@ -25,6 +25,11 @@ The credential backend remains a development verifier. It is not a public
 production authentication authority and its presence does not make account,
 cloud-sync, social, or App Store claims production-ready.
 
+The integration also removes visible like/comment controls and the demo-only
+“here now” cue from the retained main-line UI. Compatibility fields remain in
+the stored schema, but no social or live-location authority is presented until
+the corresponding backend and trust-and-safety gates are complete.
+
 ## Semantic slice disposition
 
 | Original commit | Decision | Result |

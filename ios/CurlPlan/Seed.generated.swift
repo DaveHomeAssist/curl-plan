@@ -55,7 +55,7 @@ enum Seed {
 
     static let stops: [Stop] = [
         Stop(id: "kamloops", code: "KAM", name: "Kamloops Cashspiel", club: "Kamloops Curling Club", prov: "BC",
-             dates: "HERE NOW", record: "—", here: true, x: 86, y: 54, big: true, plus: nil,
+             dates: "SAMPLE STOP", record: "—", here: true, x: 86, y: 54, big: true, plus: nil,
              iceSpeed: "Fast", iceSpeedSec: "23.6s", iceCurl: "4–5", iceRec: "—",
              games: [],
              met: []),

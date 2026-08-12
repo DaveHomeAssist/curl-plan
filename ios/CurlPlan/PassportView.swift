@@ -220,11 +220,11 @@ struct SeasonMap: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
-            // "here now" is a demo cue — a real account has no current location
+            // This is an explicit sample cue, not a live or verified location.
             if !store.isRealAccount {
                 HStack(spacing: 7) {
                     Circle().fill(settings.accent).frame(width: 7, height: 7)
-                    Text("Kamloops · here now").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                    Text("Kamloops · sample stop").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
                 }
                 .padding(.vertical, 5)
                 .padding(.horizontal, 11)

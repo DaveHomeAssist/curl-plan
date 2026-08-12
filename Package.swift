@@ -20,6 +20,7 @@ let package = Package(
                 "ComposeSheet.swift",
                 "CurlPlanApp.swift",
                 "CurlerProfileView.swift",
+                "Info.plist",
                 "Clubs.generated.swift",
                 "AuthView.swift",
                 "LockerRoomView.swift",
