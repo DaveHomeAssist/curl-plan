@@ -77,4 +77,19 @@ assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore i
 assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
   "Modal Tab containment missing.");
 
+// 11. The four primary tabs must retain the portfolio's 44px target floor.
+const tabRule = html.match(/\.tab\{([\s\S]*?)\}/);
+assert(tabRule, "Primary tab CSS rule missing.");
+assert(/min-width:\s*44px/.test(tabRule[1]) && /min-height:\s*44px/.test(tabRule[1]),
+  "Primary tabs must provide at least a 44px by 44px hit area.");
+const tabOrder = ['id:"passport"', 'id:"locker"', 'id:"spiels"', 'id:"roster"'];
+let previousTab = -1;
+tabOrder.forEach(token => {
+  const currentTab = html.indexOf(token, previousTab + 1);
+  assert(currentTab > previousTab, `Primary tab order missing or changed: ${token}`);
+  previousTab = currentTab;
+});
+assert(/button:focus-visible[\s\S]*?outline:\s*3px solid var\(--accent\)/.test(html),
+  "Primary tabs must retain the shared visible keyboard focus treatment.");
+
 console.log("verify-app: ok (root index.html + sw.js)");
