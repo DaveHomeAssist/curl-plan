@@ -2,6 +2,12 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## 2026-08-13
+
+### Fixed
+
+- Removed closed Appearance and action sheets from the keyboard focus order, added initial hidden/inert dialog state, meaningful opening focus, Escape and scrim dismissal, modal Tab containment, and focus restoration to the invoking control.
+
 ## 2026-08-12
 
 ### Added

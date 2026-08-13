@@ -61,4 +61,20 @@ assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP obje
 assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
 assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmark missing.");
 
+// 10. Closed dialogs must not leak controls into the initial keyboard order,
+// and the shared lifecycle must provide the expected keyboard behavior.
+["sheet", "sheet2"].forEach(id => {
+  const dialog = html.match(new RegExp(`<div class="sheet" id="${id}"[^>]*>`));
+  assert(dialog, `Dialog ${id} missing.`);
+  assert(/aria-modal="true"/.test(dialog[0]), `Dialog ${id} must be modal.`);
+  assert(/aria-hidden="true"/.test(dialog[0]) && /\bhidden\b/.test(dialog[0]) && /\binert\b/.test(dialog[0]),
+    `Dialog ${id} must start hidden and inert.`);
+});
+assert(/function openManagedSheet\(/.test(html) && /function closeManagedSheet\(/.test(html),
+  "Managed sheet lifecycle missing.");
+assert(/e\.key === "Escape"/.test(html), "Escape must close the active sheet.");
+assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore invoking-control focus.");
+assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
+  "Modal Tab containment missing.");
+
 console.log("verify-app: ok (root index.html + sw.js)");
