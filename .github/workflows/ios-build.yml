@@ -1,0 +1,46 @@
+name: iOS Build
+
+# Modeled on prompt-lab/.github/workflows/ipad-prototype.yml.
+# Builds the native CurlPlan app for the iOS Simulator so iOS breakage is
+# visible in CI (the Verify workflow covers only the web/API surfaces).
+# The scheme has UI tests only, so this is build-only.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ios/**
+      - .github/workflows/ios-build.yml
+  pull_request:
+    paths:
+      - ios/**
+      - .github/workflows/ios-build.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-build:
+    name: Native build (iOS Simulator)
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: xcodebuild -version
+
+      - name: Build CurlPlan
+        run: >-
+          xcodebuild build
+          -project ios/CurlPlan.xcodeproj
+          -scheme CurlPlan
+          -destination "generic/platform=iOS Simulator"
+          CODE_SIGNING_ALLOWED=NO
