@@ -10,6 +10,6 @@
     "db:init:remote": "wrangler d1 execute curlplan --remote --file=./schema.sql"
   },
   "devDependencies": {
-    "wrangler": "^3.60.0"
+    "wrangler": "^4.123.0"
   }
 }
