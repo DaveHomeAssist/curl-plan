@@ -43,7 +43,20 @@ new Function(sw); // parse-only smoke check (identifiers need not resolve)
 assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v2"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v2.");
 assert(/caches\.keys\(\)/.test(sw) && /caches\.delete\(/.test(sw), "sw.js must purge old caches on activate.");
 
-// 6. Public preview must not collect credentials until real backend auth is live.
+// 6. PWA installability: manifest linked, present, valid, icons on disk and precached.
+assert(/<link rel="manifest" href="manifest\.webmanifest">/.test(html), "Web app manifest not linked from index.html.");
+const manifestPath = path.join(root, "manifest.webmanifest");
+assert(fs.existsSync(manifestPath), "manifest.webmanifest must exist at repo root.");
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+assert(manifest.name === "CurlPlan", "Manifest name must be CurlPlan.");
+assert(manifest.display === "standalone", "Manifest display must be standalone.");
+assert(Array.isArray(manifest.icons) && manifest.icons.some(i => i.sizes === "192x192") &&
+  manifest.icons.some(i => i.sizes === "512x512"), "Manifest must declare 192x192 and 512x512 icons.");
+manifest.icons.forEach(i => assert(fs.existsSync(path.join(root, i.src)), `Manifest icon missing on disk: ${i.src}`));
+["./manifest.webmanifest", "./icons/icon-192.png"].forEach(u =>
+  assert(sw.includes(`"${u}"`), `Service worker must precache ${u}.`));
+
+// 7. Public preview must not collect credentials until real backend auth is live.
 assert(!/type="password"/.test(html), "Public preview must not render a password field.");
 assert(!/data-action="submit-sign(?:in|up)"/.test(html), "Public preview must not expose local sign-in/sign-up actions.");
 assert(/Demo only\./.test(html) && /No credentials are collected or transmitted\./.test(html), "Demo-only disclosure missing.");
