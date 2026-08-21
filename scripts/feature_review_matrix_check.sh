@@ -103,6 +103,9 @@ while IFS= read -r path; do
     ios/CurlPlan/Components.swift|ios/CurlPlan/Theme.swift)
       add_rows FR-A11Y FR-CLAIMS
       ;;
+    ios/CurlPlan/Merge.swift)
+      add_rows FR-SYNC FR-CLAIMS
+      ;;
     ios/CurlPlan/Assets.xcassets/*|ios/CurlPlan/Info.plist|ios/CurlPlan/PrivacyInfo.xcprivacy|ios/CurlPlan.xcodeproj/*)
       add_rows build-support
       ;;
