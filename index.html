@@ -155,6 +155,10 @@ body{
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.08); font-family:'Hanken Grotesk'; font-weight:700;
   border:0; cursor:pointer;
 }
+.appearance-trigger{
+  width:44px; height:44px; padding:5px; border:0; border-radius:99px; background:transparent;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;
+}
 
 /* ---------- type helpers ---------- */
 .eyebrow{ font:500 11px 'DM Mono',monospace; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
@@ -234,7 +238,11 @@ body{
   display:flex; justify-content:space-around; padding:11px 8px max(26px, env(safe-area-inset-bottom));
   z-index:20;
 }
-.tab{ display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:0; cursor:pointer; opacity:.5; }
+.tab{
+  min-width:44px; min-height:44px; padding:0 4px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  background:none; border:0; cursor:pointer; opacity:.5;
+}
 .tab.active{ opacity:1; }
 .tab .glyph{ font-size:18px; line-height:.9; color:var(--ink); }
 .tab.active .glyph{ color:var(--accent); }
@@ -446,8 +454,8 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
     <div id="view" style="display:flex; flex-direction:column; flex:1; min-height:0;"></div>
 
     <!-- settings sheet -->
-    <div class="sheet-scrim" id="scrim" data-action="close-settings"></div>
-    <div class="sheet" id="sheet" role="dialog" aria-label="Appearance">
+    <div class="sheet-scrim" id="scrim" data-action="close-settings" aria-hidden="true" hidden></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Appearance" aria-hidden="true" tabindex="-1" hidden inert>
       <div class="grab"></div>
       <h2>Appearance</h2>
       <p class="sub">Same season, your circle — tune the ice.</p>
@@ -473,8 +481,8 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
     </div>
 
     <!-- generic action sheet (compose / submissions / messaging) -->
-    <div class="sheet-scrim" id="scrim2" data-action="close-sheet"></div>
-    <div class="sheet" id="sheet2" role="dialog" aria-label="Action">
+    <div class="sheet-scrim" id="scrim2" data-action="close-sheet" aria-hidden="true" hidden></div>
+    <div class="sheet" id="sheet2" role="dialog" aria-modal="true" aria-label="Action" aria-hidden="true" tabindex="-1" hidden inert>
       <div class="grab"></div>
       <div id="sheet-body"></div>
     </div>
@@ -1366,6 +1374,11 @@ function avatar(initials, size, cls){
   return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="width:' + s + 'px;height:' + s + 'px;' +
     'font-size:' + Math.round(s*0.36) + 'px;">' + esc(initials) + '</span>';
 }
+function appearanceButton(initials){
+  return '<button type="button" class="appearance-trigger"' +
+    ' data-action="settings" aria-label="Appearance" aria-haspopup="dialog" aria-controls="sheet" aria-expanded="false">' +
+    '<span class="avatar" style="width:34px;height:34px;font-size:12px;">' + esc(initials) + '</span></button>';
+}
 function avatarStack(ids){
   return '<div class="stack">' + ids.map(function(id){
     var c = curler(id);
@@ -1491,7 +1504,7 @@ function viewPassport(){
   return statusbar(false) +
     '<div class="appbar">' +
       '<div class="brand"><span class="ring"></span><b>CurlPlan</b></div>' +
-      avatar(me.initials, 34) .replace('class="avatar"','class="avatar" data-action="settings" aria-label="Appearance"') +
+      appearanceButton(me.initials) +
     '</div>' +
     '<div class="scroll">' +
       '<div>' +
@@ -1848,6 +1861,60 @@ function applyHash(){
 /* ============================================================
    Settings sheet
    ============================================================ */
+var activeSheet = null;
+var currentActionTrigger = null;
+var sheetFocusable = 'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function visibleSheetControls(sheet){
+  return Array.prototype.filter.call(sheet.querySelectorAll(sheetFocusable), function(node){
+    return !node.hidden && node.type !== "hidden" && node.getAttribute("aria-hidden") !== "true" && node.getClientRects().length > 0;
+  });
+}
+function openManagedSheet(sheetId, scrimId, trigger){
+  var sheet = el(sheetId), scrim = el(scrimId);
+  if(activeSheet && activeSheet.sheet !== sheet) closeManagedSheet(false);
+  if(!activeSheet){
+    activeSheet = { sheet:sheet, scrim:scrim, trigger:trigger && trigger.isConnected ? trigger : document.activeElement };
+  }
+  sheet.hidden = false;
+  scrim.hidden = false;
+  sheet.removeAttribute("inert");
+  sheet.setAttribute("aria-hidden", "false");
+  scrim.setAttribute("aria-hidden", "false");
+  if(activeSheet.trigger && activeSheet.trigger.getAttribute("aria-controls") === sheetId){
+    activeSheet.trigger.setAttribute("aria-expanded", "true");
+  }
+  // Commit the un-hidden state before adding the transition class so the
+  // opening motion remains visible while focus moves deterministically now.
+  void sheet.offsetWidth;
+  sheet.classList.add("open");
+  scrim.classList.add("open");
+  var controls = visibleSheetControls(sheet);
+  try{ (controls[0] || sheet).focus(); }catch(e){}
+}
+function closeManagedSheet(restoreFocus){
+  if(!activeSheet) return;
+  var closing = activeSheet;
+  activeSheet = null;
+  closing.sheet.classList.remove("open");
+  closing.scrim.classList.remove("open");
+  closing.sheet.setAttribute("inert", "");
+  closing.sheet.setAttribute("aria-hidden", "true");
+  closing.scrim.setAttribute("aria-hidden", "true");
+  if(closing.trigger && closing.trigger.getAttribute("aria-controls") === closing.sheet.id){
+    closing.trigger.setAttribute("aria-expanded", "false");
+  }
+  window.setTimeout(function(){
+    if(!closing.sheet.classList.contains("open")){
+      closing.sheet.hidden = true;
+      closing.scrim.hidden = true;
+    }
+  }, 270);
+  if(restoreFocus !== false && closing.trigger && closing.trigger.isConnected){
+    try{ closing.trigger.focus(); }catch(e){}
+  }
+}
+
 function buildSettings(){
   // accent swatches
   el("seg-accent").innerHTML = ACCENTS.map(function(a){
@@ -1864,7 +1931,7 @@ function syncSettings(){
   });
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
 }
-function openSettings(){
+function openSettings(trigger){
   var u = currentUser(), m = el("acct-meta");
   if(m){
     // canonical team identity: "{Club short} · {Skip}" (see terminology page)
@@ -1872,9 +1939,11 @@ function openSettings(){
       ? (u.demo ? "Demo session · " + teamLabel(me.club, me.name) : u.email + " · " + teamLabel(me.club, me.name))
       : "Signed out";
   }
-  el("scrim").classList.add("open"); el("sheet").classList.add("open");
+  openManagedSheet("sheet", "scrim", trigger);
 }
-function closeSettings(){ el("scrim").classList.remove("open"); el("sheet").classList.remove("open"); }
+function closeSettings(){
+  if(activeSheet && activeSheet.sheet === el("sheet")) closeManagedSheet(true);
+}
 
 /* ============================================================
    Toast
@@ -1895,12 +1964,11 @@ var formStars = 0; // shared picker state — only one sheet is open at a time
 
 function openSheet(html){
   el("sheet-body").innerHTML = html;
-  el("scrim2").classList.add("open");
-  el("sheet2").classList.add("open");
-  var first = el("sheet2").querySelector("input, textarea, select");
-  if(first) try{ first.focus(); }catch(e){}
+  openManagedSheet("sheet2", "scrim2", currentActionTrigger);
 }
-function closeSheet(){ el("scrim2").classList.remove("open"); el("sheet2").classList.remove("open"); }
+function closeSheet(){
+  if(activeSheet && activeSheet.sheet === el("sheet2")) closeManagedSheet(true);
+}
 function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
 
 function starPicker(){
@@ -2131,6 +2199,7 @@ el("screen").addEventListener("click", function(e){
 
   if(!t) return;
   var action = t.getAttribute("data-action");
+  currentActionTrigger = t;
   var id = t.getAttribute("data-id");
   var type = t.getAttribute("data-type");
 
@@ -2139,7 +2208,7 @@ el("screen").addEventListener("click", function(e){
     case "stop":     push("stop", id); break;
     case "curler":   push("curler", id); break;
     case "back":     back(); break;
-    case "settings": openSettings(); break;
+    case "settings": openSettings(t); break;
     case "close-settings": closeSettings(); break;
     case "close-sheet":    closeSheet(); break;
 
@@ -2214,6 +2283,21 @@ el("screen").addEventListener("click", function(e){
 
     default: break;
   }
+});
+
+document.addEventListener("keydown", function(e){
+  if(!activeSheet) return;
+  if(e.key === "Escape"){
+    e.preventDefault();
+    if(activeSheet.sheet === el("sheet")) closeSettings(); else closeSheet();
+    return;
+  }
+  if(e.key !== "Tab") return;
+  var controls = visibleSheetControls(activeSheet.sheet);
+  if(!controls.length){ e.preventDefault(); activeSheet.sheet.focus(); return; }
+  var first = controls[0], last = controls[controls.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
 });
 
 /* live search: re-render only the results list so the input keeps focus */

@@ -61,4 +61,35 @@ assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP obje
 assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
 assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmark missing.");
 
+// 10. Closed dialogs must not leak controls into the initial keyboard order,
+// and the shared lifecycle must provide the expected keyboard behavior.
+["sheet", "sheet2"].forEach(id => {
+  const dialog = html.match(new RegExp(`<div class="sheet" id="${id}"[^>]*>`));
+  assert(dialog, `Dialog ${id} missing.`);
+  assert(/aria-modal="true"/.test(dialog[0]), `Dialog ${id} must be modal.`);
+  assert(/aria-hidden="true"/.test(dialog[0]) && /\bhidden\b/.test(dialog[0]) && /\binert\b/.test(dialog[0]),
+    `Dialog ${id} must start hidden and inert.`);
+});
+assert(/function openManagedSheet\(/.test(html) && /function closeManagedSheet\(/.test(html),
+  "Managed sheet lifecycle missing.");
+assert(/e\.key === "Escape"/.test(html), "Escape must close the active sheet.");
+assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore invoking-control focus.");
+assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
+  "Modal Tab containment missing.");
+
+// 11. The four primary tabs must retain the portfolio's 44px target floor.
+const tabRule = html.match(/\.tab\{([\s\S]*?)\}/);
+assert(tabRule, "Primary tab CSS rule missing.");
+assert(/min-width:\s*44px/.test(tabRule[1]) && /min-height:\s*44px/.test(tabRule[1]),
+  "Primary tabs must provide at least a 44px by 44px hit area.");
+const tabOrder = ['id:"passport"', 'id:"locker"', 'id:"spiels"', 'id:"roster"'];
+let previousTab = -1;
+tabOrder.forEach(token => {
+  const currentTab = html.indexOf(token, previousTab + 1);
+  assert(currentTab > previousTab, `Primary tab order missing or changed: ${token}`);
+  previousTab = currentTab;
+});
+assert(/button:focus-visible[\s\S]*?outline:\s*3px solid var\(--accent\)/.test(html),
+  "Primary tabs must retain the shared visible keyboard focus treatment.");
+
 console.log("verify-app: ok (root index.html + sw.js)");

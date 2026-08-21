@@ -2,6 +2,13 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## 2026-08-13
+
+### Fixed
+
+- Raised all four primary web tab targets to a 44 by 44 CSS-pixel minimum at mobile and reflow viewports, while preserving tab order, selected styling, visible keyboard focus, and overflow behavior.
+- Removed closed Appearance and action sheets from the keyboard focus order, added initial hidden/inert dialog state, meaningful opening focus, Escape and scrim dismissal, modal Tab containment, and focus restoration to the invoking control.
+
 ## 2026-08-12
 
 ### Added
