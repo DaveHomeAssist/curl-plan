@@ -1,10 +1,15 @@
 import Foundation
 
 // ============================================================
-// Merge.swift — Swift port of src/merge.js (sync schema v3 CRDT merge).
+// Merge.swift — Swift port of src/merge.js (sync schema v4 CRDT merge).
 // Operates on a generic JSON value so it is cross-tested against the SAME
 // data/merge-fixtures.json the JS reference uses (see MergeTests.swift).
 // Pure, commutative, idempotent, associative → convergent sync.
+//
+// v4 removal semantics (LWW-element-set): tombstones[bucket][id] = deletedAt,
+// merged by max(deletedAt); after the OR-Set union an item is dropped iff a
+// tombstone exists for its id with deletedAt >= item.at (ties favor delete).
+// See docs/curlplan-tombstone-design-2026-08-21.md.
 //
 // Not yet wired into the live Store — that happens in Phase C of the unified
 // backend (docs/UNIFIED_BACKEND_FRAMEWORK.md). This proves the algebra matches
@@ -84,6 +89,7 @@ enum Merge {
     static let lwwMaps = ["follows", "likes", "joins"]
     static let orsetLists = ["posts", "addedCurlers", "addedSpiels"]
     static let orsetMapLists = ["visits", "reviews", "iceReads", "threads"]
+    static let tombstoneBuckets = orsetLists + orsetMapLists
 
     // LWW: later `at` wins; tie → larger stable-stringified value (symmetric).
     static func pickLWW(_ x: JSONValue?, _ y: JSONValue?) -> JSONValue {
@@ -137,11 +143,45 @@ enum Merge {
         return .object(out)
     }
 
+    // Tombstones: per-bucket { itemId: deletedAt }. Merge = per-id max(deletedAt).
+    // Empty per-bucket maps are omitted so the canonical form is stable.
+    static func mergeTombstones(_ a: JSONValue?, _ b: JSONValue?) -> JSONValue {
+        let ao = a?.asObject ?? [:], bo = b?.asObject ?? [:]
+        var out: [String: JSONValue] = [:]
+        for n in tombstoneBuckets {
+            let ta = ao[n]?.asObject ?? [:], tb = bo[n]?.asObject ?? [:]
+            var m: [String: JSONValue] = [:]
+            for id in Set(ta.keys).union(tb.keys) {
+                let x = ta[id]?.asNumber ?? 0, y = tb[id]?.asNumber ?? 0
+                m[id] = .number(max(x, y))
+            }
+            if !m.isEmpty { out[n] = .object(m) }
+        }
+        return .object(out)
+    }
+
+    // An item is dead iff a tombstone exists for its id with deletedAt >= item.at.
+    private static func isDead(_ tomb: [String: JSONValue]?, _ item: JSONValue) -> Bool {
+        guard let tomb = tomb, let key = idOf(item), let t = tomb[key]?.asNumber else { return false }
+        return t >= (item["at"]?.asNumber ?? 0)
+    }
+
+    private static func dropDead(_ list: JSONValue, _ tomb: [String: JSONValue]?) -> JSONValue {
+        guard tomb != nil, let items = list.asArray else { return list }
+        return .array(items.filter { !isDead(tomb, $0) })
+    }
+
     static func state(_ a: JSONValue, _ b: JSONValue) -> JSONValue {
         var out: [String: JSONValue] = [:]
+        let tombs = mergeTombstones(a["tombstones"], b["tombstones"]).asObject ?? [:]
         for n in lwwMaps { out[n] = mergeLWWMap(a[n], b[n]) }
-        for n in orsetLists { out[n] = mergeORSet(a[n], b[n]) }
-        for n in orsetMapLists { out[n] = mergeMapOfORSets(a[n], b[n]) }
+        for n in orsetLists { out[n] = dropDead(mergeORSet(a[n], b[n]), tombs[n]?.asObject) }
+        for n in orsetMapLists {
+            var m = mergeMapOfORSets(a[n], b[n]).asObject ?? [:]
+            for k in m.keys { m[k] = dropDead(m[k]!, tombs[n]?.asObject) }
+            out[n] = .object(m)
+        }
+        out["tombstones"] = .object(tombs)
         return .object(out)
     }
 }

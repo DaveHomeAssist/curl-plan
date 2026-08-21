@@ -28,6 +28,8 @@ export function sanitizeState(raw) {
   if (!raw || typeof raw !== "object") return s;
   LWW.concat(MAPS).forEach(k => { if (raw[k] && typeof raw[k] === "object" && !Array.isArray(raw[k])) s[k] = raw[k]; });
   LISTS.forEach(k => { if (Array.isArray(raw[k])) s[k] = raw[k]; });
+  // v4 removal layer: per-bucket { itemId: deletedAt } maps (see src/merge.js).
+  if (raw.tombstones && typeof raw.tombstones === "object" && !Array.isArray(raw.tombstones)) s.tombstones = raw.tombstones;
   return s;
 }
 

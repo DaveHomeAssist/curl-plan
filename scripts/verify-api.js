@@ -58,6 +58,16 @@ const { pathToFileURL } = require("url");
   j = await r.json();
   ok(j.state.follows.sam.v === true, "LWW: stale (older) write does not override newer");
 
+  r = await call("POST", "/v1/state", { user: "u1", body: { state: { tombstones: { posts: { p1: 300 } } } } });
+  j = await r.json();
+  ok(j.state.posts.length === 1 && j.state.posts[0].id === "p2" && j.state.tombstones.posts.p1 === 300,
+    "tombstone delete survives sanitize and removes the item (v4)");
+
+  r = await call("GET", "/v1/state", { user: "u1" });
+  j = await r.json();
+  ok(j.state.posts.every(p => p.id !== "p1") && j.state.tombstones.posts.p1 === 300,
+    "deleted item stays dead on read-back (no resurrection)");
+
   const big = { state: { posts: Array.from({ length: 20000 }, (_, i) => ({ id: "x" + i, at: i, body: "padpadpadpadpadpad" })) } };
   r = await call("POST", "/v1/state", { user: "u1", body: big });
   ok(r.status === 413, "oversized document → 413");

@@ -67,6 +67,36 @@
         "addedSpiels": [ { "id": "sp-b", "name": "B", "at": 9 }, { "id": "sp-a", "name": "A", "at": 5 } ],
         "addedCurlers": [ { "id": "c-a", "name": "Ada" } ]
       }
+    },
+    {
+      "name": "tombstone: delete-then-merge propagates (v4)",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ] },
+      "b": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ], "tombstones": { "posts": { "p1": 200 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "p1": 200 } } }
+    },
+    {
+      "name": "tombstone: concurrent add/delete at equal timestamp — delete wins (v4)",
+      "a": { "posts": [ { "id": "p2", "at": 150, "body": "race" } ] },
+      "b": { "tombstones": { "posts": { "p2": 150 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "p2": 150 } } }
+    },
+    {
+      "name": "tombstone: re-add after delete — newer item.at survives (v4)",
+      "a": { "tombstones": { "posts": { "p3": 100 } } },
+      "b": { "posts": [ { "id": "p3", "at": 200, "body": "back" } ] },
+      "expected": { "posts": [ { "id": "p3", "at": 200, "body": "back" } ], "tombstones": { "posts": { "p3": 100 } } }
+    },
+    {
+      "name": "tombstone: map-of-OR-Sets visit delete empties the stop list (v4)",
+      "a": { "visits": { "kelowna": [ { "id": "v1", "at": 10 } ] } },
+      "b": { "tombstones": { "visits": { "v1": 20 } } },
+      "expected": { "visits": { "kelowna": [] }, "tombstones": { "visits": { "v1": 20 } } }
+    },
+    {
+      "name": "tombstone: union takes max deletedAt — later delete beats earlier survivor (v4)",
+      "a": { "posts": [ { "id": "pX", "at": 200, "body": "alive in a" } ], "tombstones": { "posts": { "pX": 100 } } },
+      "b": { "tombstones": { "posts": { "pX": 300 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "pX": 300 } } }
     }
   ]
 }

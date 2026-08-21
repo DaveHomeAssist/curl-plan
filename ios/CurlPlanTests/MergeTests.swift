@@ -28,6 +28,7 @@ final class MergeTests: XCTestCase {
         for k in Merge.lwwMaps where o[k] == nil { o[k] = .object([:]) }
         for k in Merge.orsetMapLists where o[k] == nil { o[k] = .object([:]) }
         for k in Merge.orsetLists where o[k] == nil { o[k] = .array([]) }
+        if o["tombstones"] == nil { o["tombstones"] = .object([:]) }
         return .object(o)
     }
     private func canon(_ v: JSONValue) -> String { fill(v).stableString() }

@@ -23,6 +23,7 @@ function fill(s) {
   LWW.forEach(k => o[k] = s[k] || {});
   LISTS.forEach(k => o[k] = s[k] || []);
   MAPS.forEach(k => o[k] = s[k] || {});
+  o.tombstones = s.tombstones || {};
   return o;
 }
 const canon = (s) => stableStringify(fill(s));
