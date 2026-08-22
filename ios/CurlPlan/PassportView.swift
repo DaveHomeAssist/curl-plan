@@ -173,7 +173,7 @@ struct SeasonMap: View {
             if n == 0 { return "NEW SEASON" }
             return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
         }
-        let n = store.stops.count
+        let n = store.demoLoggedStops.count
         return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
     }
 

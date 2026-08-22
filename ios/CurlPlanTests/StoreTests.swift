@@ -53,6 +53,13 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(st.prov, 1)
     }
 
+    func testDemoLoggedStopsExcludeSampleLocationPin() {
+        let s = Store(); s.exploreDemo()
+        XCTAssertEqual(s.demoLoggedStops.count, 4)
+        XCTAssertTrue(s.demoLoggedStops.allSatisfy { !$0.here })
+        XCTAssertEqual(s.stops.filter(\.here).count, 1)
+    }
+
     func testStopContributionsClampAndPersist() {
         let s = Store(); s.exploreDemo()
         s.addVisit("vernon", date: "Today", note: "hi")
