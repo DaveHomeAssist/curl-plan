@@ -114,7 +114,8 @@ enum Merge {
         return nil
     }
 
-    // OR-Set by id: union; dup ids → lexicographically-smaller item. Order: at desc, id asc.
+    // OR-Set by id: union; dup ids → newest item, then lexicographically-smaller
+    // representation for an equal-time tie. Order: at desc, id asc.
     static func mergeORSet(_ a: JSONValue?, _ b: JSONValue?) -> JSONValue {
         let items = (a?.asArray ?? []) + (b?.asArray ?? [])
         var byId: [String: JSONValue] = [:]
@@ -122,7 +123,11 @@ enum Merge {
         for item in items {
             guard let key = idOf(item) else { continue }
             if let prev = byId[key] {
-                byId[key] = item.stableString() <= prev.stableString() ? item : prev
+                let itemAt = item["at"]?.asNumber ?? 0
+                let prevAt = prev["at"]?.asNumber ?? 0
+                if itemAt > prevAt || (itemAt == prevAt && item.stableString() <= prev.stableString()) {
+                    byId[key] = item
+                }
             } else {
                 byId[key] = item
                 order.append(key)

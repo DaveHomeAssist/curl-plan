@@ -39,8 +39,11 @@ makes tombstone compaction more dangerous).
   across stop/thread keys — no nesting needed).
 - **Merge rule (tombstones):** per id, `max(deletedAt)` across both documents.
   Empty per-bucket maps are omitted from the canonical form.
-- **Merge rule (items):** after the normal OR-Set union, drop any item whose id
-  has a tombstone with `deletedAt >= item.at`. **Ties favor the delete.**
+- **Merge rule (items):** union by id, keeping the representation with the
+  greatest `item.at` (stable serialized order breaks equal-time ties), then drop
+  any item whose id has a tombstone with `deletedAt >= item.at`. **Ties favor the
+  delete.** Selecting the newest same-id item before filtering is required for
+  associativity when a stale replica meets a delete and a deliberate re-add.
 - **Re-add:** an item whose `at` is *newer* than the tombstone survives. In
   practice re-adds mint a fresh uid anyway; this rule just makes the algebra
   total and lets a deliberate same-id restore work.
@@ -50,12 +53,13 @@ makes tombstone compaction more dangerous).
 ### Why the laws still hold
 
 Both the item set and the tombstone set propagate through every merge, so the
-final document is (union of all items) filtered by (per-id max of all
+final document is (per-id maximum of all items) filtered by (per-id max of all
 tombstones) — independent of merge order or repetition. Commutativity,
 associativity, and idempotence are enforced by `scripts/verify-merge.js` and
 `MergeTests.swift` over the shared fixtures, which now include delete-then-merge,
 concurrent add/delete (tie), re-add-after-delete, map-of-OR-Set delete, and
-max-deletedAt cases.
+max-deletedAt cases, plus a three-replica stale-item/delete/newer-re-add
+associativity regression.
 
 ## Compaction
 
@@ -84,7 +88,8 @@ read-back (no resurrection) at the handler level.
   `mergeState`, `compactTombstones`, `TOMBSTONE_BUCKETS` export.
 - `ios/CurlPlan/Merge.swift` — identical port; `MergeTests.swift` canonical fill
   updated. Same fixture file is the single test source for both platforms.
-- `data/merge-fixtures.json` — 5 new tombstone cases (14 total).
+- `data/merge-fixtures.json` — 5 tombstone pair cases (14 total) plus a shared
+  three-replica associativity regression.
 - `api/src/handler.js` — sanitize passes `tombstones`; `scripts/verify-api.js`
   gains delete-propagation + no-resurrection checks.
 

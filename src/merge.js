@@ -60,8 +60,9 @@ function mergeLWWMap(a, b) {
   return out;
 }
 
-// OR-Set by item id: union; duplicate ids resolve to the lexicographically-smaller
-// item (deterministic — items are immutable in practice). Canonical order: at desc, id asc.
+// OR-Set by item id: union; duplicate ids resolve to the newest item, with the
+// lexicographically-smaller representation as a deterministic equal-time tie-break.
+// Canonical order: at desc, id asc.
 function mergeORSet(a, b) {
   a = Array.isArray(a) ? a : []; b = Array.isArray(b) ? b : [];
   var byId = {};
@@ -69,7 +70,13 @@ function mergeORSet(a, b) {
     if (!item || item.id == null) return;
     var key = String(item.id);
     if (!byId[key]) byId[key] = item;
-    else byId[key] = stableStringify(item) <= stableStringify(byId[key]) ? item : byId[key];
+    else {
+      var itemAt = +item.at || 0, currentAt = +byId[key].at || 0;
+      if (itemAt > currentAt ||
+          (itemAt === currentAt && stableStringify(item) <= stableStringify(byId[key]))) {
+        byId[key] = item;
+      }
+    }
   });
   return Object.keys(byId).map(function (k) { return byId[k]; }).sort(function (p, q) {
     var ap = +p.at || 0, aq = +q.at || 0;

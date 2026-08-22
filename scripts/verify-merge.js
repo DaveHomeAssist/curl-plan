@@ -50,7 +50,16 @@ for (let i = 0; i + 2 < states.length; i += 3) {
 }
 console.log("  ✓ associativity across fixture states");
 
-// 3. Idempotency of the full seed of states
+// 3. Explicit three-replica associativity regressions.
+for (const c of fixtures.associativityCases || []) {
+  const left = mergeState(mergeState(c.a, c.b), c.c);
+  const right = mergeState(c.a, mergeState(c.b, c.c));
+  check(eq(left, right), `${c.name}: merge groupings diverged\n      left:  ${canon(left)}\n      right: ${canon(right)}`);
+  check(eq(left, c.expected), `${c.name}: converged result != expected\n      got:      ${canon(left)}\n      expected: ${canon(c.expected)}`);
+  if (eq(left, right) && eq(left, c.expected)) console.log(`  ✓ ${c.name}`);
+}
+
+// 4. Idempotency of the full seed of states
 for (const s of states) check(eq(mergeState(s, {}), mergeState(mergeState(s, {}), mergeState(s, {}))), "idempotency (canonicalized) failed");
 console.log("  ✓ idempotency (canonicalized) across fixture states");
 
@@ -58,4 +67,4 @@ if (failed) {
   console.error(`\nverify-merge: ${failed} check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nverify-merge: ${fixtures.cases.length} fixtures + commutativity/idempotency/associativity all pass ✓`);
+console.log(`\nverify-merge: ${fixtures.cases.length} pair fixtures + ${(fixtures.associativityCases || []).length} associativity regressions all pass ✓`);

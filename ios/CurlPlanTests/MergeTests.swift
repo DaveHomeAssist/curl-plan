@@ -6,19 +6,38 @@ import XCTest
 final class MergeTests: XCTestCase {
 
     struct Case { let name: String; let a: JSONValue; let b: JSONValue; let expected: JSONValue }
+    struct AssociativityCase {
+        let name: String
+        let a: JSONValue
+        let b: JSONValue
+        let c: JSONValue
+        let expected: JSONValue
+    }
 
-    private func loadCases() throws -> [Case] {
+    private func loadDocument() throws -> JSONValue {
         // repo root = up 3 from ios/CurlPlanTests/MergeTests.swift
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let url = root.appendingPathComponent("data/merge-fixtures.json")
         let data = try Data(contentsOf: url)
-        let doc = try JSONDecoder().decode(JSONValue.self, from: data)
-        let cases = doc["cases"]?.asArray ?? []
+        return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
+
+    private func loadCases() throws -> [Case] {
+        let cases = try loadDocument()["cases"]?.asArray ?? []
         return cases.map { c in
             Case(name: c["name"]?.asString ?? "?",
                  a: c["a"] ?? .object([:]), b: c["b"] ?? .object([:]),
                  expected: c["expected"] ?? .object([:]))
+        }
+    }
+
+    private func loadAssociativityCases() throws -> [AssociativityCase] {
+        let cases = try loadDocument()["associativityCases"]?.asArray ?? []
+        return cases.map { c in
+            AssociativityCase(name: c["name"]?.asString ?? "?",
+                              a: c["a"] ?? .object([:]), b: c["b"] ?? .object([:]),
+                              c: c["c"] ?? .object([:]), expected: c["expected"] ?? .object([:]))
         }
     }
 
@@ -53,6 +72,17 @@ final class MergeTests: XCTestCase {
                            canon(Merge.state(a, Merge.state(b, c))),
                            "associativity failed at \(i)")
             i += 3
+        }
+    }
+
+    func testAssociativityRegressions() throws {
+        let cases = try loadAssociativityCases()
+        XCTAssertGreaterThan(cases.count, 0, "no associativity regressions loaded")
+        for c in cases {
+            let left = Merge.state(Merge.state(c.a, c.b), c.c)
+            let right = Merge.state(c.a, Merge.state(c.b, c.c))
+            XCTAssertEqual(canon(left), canon(right), "\(c.name): merge groupings diverged")
+            XCTAssertEqual(canon(left), canon(c.expected), "\(c.name): converged result != expected")
         }
     }
 }
