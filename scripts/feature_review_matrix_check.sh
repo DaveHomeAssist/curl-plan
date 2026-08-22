@@ -103,6 +103,9 @@ while IFS= read -r path; do
     ios/CurlPlan/Components.swift|ios/CurlPlan/Theme.swift)
       add_rows FR-A11Y FR-CLAIMS
       ;;
+    ios/CurlPlan/Merge.swift)
+      add_rows FR-SYNC FR-CLAIMS
+      ;;
     ios/CurlPlan/Assets.xcassets/*|ios/CurlPlan/Info.plist|ios/CurlPlan/PrivacyInfo.xcprivacy|ios/CurlPlan.xcodeproj/*)
       add_rows build-support
       ;;
@@ -111,6 +114,9 @@ while IFS= read -r path; do
       ;;
     ios/CurlPlanUITests/*.swift|ios/CurlPlanUITests/*/*.swift)
       add_rows test-support FR-A11Y FR-CLAIMS
+      ;;
+    ios/CurlPlanTests/MergeTests.swift)
+      add_rows test-support FR-SYNC FR-CLAIMS
       ;;
     tests/CurlPlanCoreTests/AccountBackendAPITests.swift|tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|tests/CurlPlanCoreTests/AccountRuntimeTests.swift|tests/CurlPlanCoreTests/AccountSocialContractTests.swift|Tests/CurlPlanCoreTests/AccountBackendAPITests.swift|Tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|Tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|Tests/CurlPlanCoreTests/AccountRuntimeTests.swift|Tests/CurlPlanCoreTests/AccountSocialContractTests.swift)
       add_rows test-support FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
