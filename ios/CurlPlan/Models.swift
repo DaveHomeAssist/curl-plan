@@ -236,6 +236,10 @@ final class Store: ObservableObject {
 
     var recentStops: [Stop] { Seed.recentStopIDs.compactMap { stop($0) } }
 
+    /// Demo map pins that represent completed stops. The `here` seed entry is
+    /// an explicit sample-location cue, so it must not inflate logged totals.
+    var demoLoggedStops: [Stop] { stops.filter { !$0.here } }
+
     // MARK: Identity
 
     func currentUser() -> Account? {

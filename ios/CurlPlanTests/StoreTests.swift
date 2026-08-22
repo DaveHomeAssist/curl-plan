@@ -4,9 +4,10 @@ import XCTest
 // Unit tests for the Store derivation + persistence + identity layer (Phase 1 core).
 //
 // NOTE: these live OUTSIDE ios/CurlPlan/ so generate-xcodeproj.js (which globs the app
-// target) does not compile them into the app. To run them, add a Unit Testing target in
-// Xcode with this file, or extend generate-xcodeproj.js to emit a test target. Each test
-// isolates persistence via an ephemeral UserDefaults suite (Store.defaults seam).
+// target) does not compile them into the app. The generator emits a CurlPlanTests
+// unit-test target for this directory, and CI runs it via `xcodebuild test` on an
+// iOS Simulator (see .github/workflows/verify.yml). Each test isolates persistence
+// via an ephemeral UserDefaults suite (Store.defaults seam).
 final class StoreTests: XCTestCase {
 
     override func setUp() {
@@ -50,6 +51,13 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(st.win, 50)
         XCTAssertEqual(st.clubs, 1)
         XCTAssertEqual(st.prov, 1)
+    }
+
+    func testDemoLoggedStopsExcludeSampleLocationPin() {
+        let s = Store(); s.exploreDemo()
+        XCTAssertEqual(s.demoLoggedStops.count, 4)
+        XCTAssertTrue(s.demoLoggedStops.allSatisfy { !$0.here })
+        XCTAssertEqual(s.stops.filter(\.here).count, 1)
     }
 
     func testStopContributionsClampAndPersist() {

@@ -2,6 +2,20 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## 2026-08-21
+
+### Fixed
+
+- Passport recent-stop avatars now resolve met curlers through the store and render real initials instead of blank circles (iOS); the demo season-map tally and sample-stop label derive from seed data instead of hardcoded copy.
+
+### Changed
+
+- Open-PR triage: merged the dependabot bumps (actions/checkout v7.0.1, actions/setup-node v7.0.0, wrangler 4.x in /api); closed the conflicting draft Passport fix in favor of a re-land on current main.
+
+### Verified
+
+- Confirmed the iOS CI test gate is live end to end: `generate-xcodeproj.js` emits the CurlPlanTests target and the macOS job executes MergeTests and StoreTests on an iOS Simulator on every push and pull request.
+
 ## 2026-08-13
 
 ### Fixed
