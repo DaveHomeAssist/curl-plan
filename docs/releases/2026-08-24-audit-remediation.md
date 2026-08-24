@@ -7,7 +7,7 @@ Status: P0 locally verified; P1 through P5 and all external release gates remain
 - Repository: `DaveHomeAssist/curl-plan`
 - Audited baseline: `541695dce342ce44fab7d0f4c76e5ea7dfb21357`
 - Local branch: `codex/curlplan-audit-remediation-20260824`
-- P0 change commit: `Open` until the local checkpoint is committed
+- P0 change commit: `73523784ed6bb0eb0350b6feea481fd9620d1c45`
 - Release owner: Dave Robertson
 - Evidence date: 2026-08-24 EDT
 
@@ -66,8 +66,8 @@ Status: P0 locally verified; P1 through P5 and all external release gates remain
 
 | Phase | Status | Remaining gate |
 |---|---|---|
-| P0 Honest release baseline | Closed locally | Commit this checkpoint; hosted CI remains an operational release gate, not a P0 code gate |
-| P1 Classic workflows and recovery | Open | Depends on P0 checkpoint |
+| P0 Honest release baseline | Closed locally | Hosted CI remains an operational release gate, not a P0 code gate |
+| P1 Classic workflows and recovery | In progress | Implement and verify the Classic browser, recovery, modal, contrast, and policy gates |
 | P2 Root web and offline boundaries | Open | Depends on P0 checkpoint |
 | P3 Atomic data ownership | Open | Depends on P0 checkpoint and architecture decision |
 | P4 Identity and abuse boundaries | Open | Depends on P3 |
