@@ -12,5 +12,8 @@ database_id = "<DATABASE_ID>"   # paste the id printed by `wrangler d1 create cu
 # Your Clerk instance issuer, e.g. https://your-app.clerk.accounts.dev
 # (the Worker verifies JWTs against <issuer>/.well-known/jwks.json — public, no secret).
 CLERK_ISSUER = ""
-# Web origin allowed for CORS, e.g. https://davehomeassist.github.io  ("*" only for local dev).
-CORS_ORIGIN = "*"
+# Required `aud` claim for CurlPlan API tokens.
+CLERK_AUDIENCE = ""
+# Exact web origin allowed for credentialed CORS, e.g. https://davehomeassist.github.io.
+# Wildcards fail closed; use a separate local wrangler environment for development.
+CORS_ORIGIN = ""

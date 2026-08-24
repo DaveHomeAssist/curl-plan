@@ -119,6 +119,44 @@ final class PublicIdentityAndRelationshipContractTests: XCTestCase {
 }
 
 final class SharedObjectsAndSafetyContractTests: XCTestCase {
+    func testBlockRevokesSharedAccessAndPreventsDirectMutationAndReinvite() throws {
+        let backend = AccountSocialContractStore()
+        let dana = try backend.createAccount(handle: "dana", displayName: "Dana Mercer", homeClub: "Calgary Granite CC", password: "contract-pass-8")
+        let jo = try backend.createAccount(handle: "jo", displayName: "Jo Mara", homeClub: "Kelowna CC", password: "contract-pass-8")
+        let danaSession = try backend.signIn(handle: "dana", password: "contract-pass-8", deviceID: "dana-phone")
+        let joSession = try backend.signIn(handle: "jo", password: "contract-pass-8", deviceID: "jo-phone")
+        let scorecard = try backend.createSharedObject(sessionID: danaSession.id, kind: .scorecard, title: "Sheet 4")
+
+        try backend.addMember(sessionID: danaSession.id, objectID: scorecard.id, accountID: jo.id, role: .admin)
+        try backend.updateSharedObjectTitle(sessionID: joSession.id, objectID: scorecard.id, title: "Jo edit")
+
+        try backend.block(sessionID: danaSession.id, targetID: jo.id)
+
+        XCTAssertFalse(backend.memberships.contains {
+            $0.objectID == scorecard.id && $0.accountID == jo.id && $0.state == .accepted
+        })
+        XCTAssertThrowsError(try backend.updateSharedObjectTitle(sessionID: joSession.id,
+                                                                 objectID: scorecard.id,
+                                                                 title: "Blocked direct edit")) { error in
+            XCTAssertTrue(error as? AccountBackendError == .blocked || error as? AccountBackendError == .insufficientRole)
+        }
+        XCTAssertThrowsError(try backend.createInteraction(sessionID: joSession.id,
+                                                           objectID: scorecard.id,
+                                                           kind: .comment,
+                                                           body: "blocked message")) { error in
+            XCTAssertTrue(error as? AccountBackendError == .blocked || error as? AccountBackendError == .notMember)
+        }
+        XCTAssertThrowsError(try backend.addMember(sessionID: danaSession.id,
+                                                   objectID: scorecard.id,
+                                                   accountID: jo.id,
+                                                   role: .viewer)) { error in
+            XCTAssertEqual(error as? AccountBackendError, .blocked)
+        }
+        XCTAssertFalse(backend.relationships.contains {
+            $0.kind == .follow && (($0.actorID == dana.id && $0.targetID == jo.id) || ($0.actorID == jo.id && $0.targetID == dana.id))
+        })
+    }
+
     func testSharedObjectMembershipControlsReadAndEditPermissions() throws {
         let backend = AccountSocialContractStore()
         let dana = try backend.createAccount(handle: "dana", displayName: "Dana Mercer", homeClub: "Calgary Granite CC", password: "contract-pass-8")

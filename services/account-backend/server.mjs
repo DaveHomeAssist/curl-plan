@@ -1,8 +1,9 @@
 import { createServer } from "node:http";
-import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { createHash, randomUUID, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { mkdir, readFile, readdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 const MAX_JSON_BYTES = 1_000_000;
 const MAX_SEASON_BYTES = 512 * 1024;
@@ -18,6 +19,13 @@ const OBJECT_RECORD_COLLECTIONS = [
 const ARRAY_RECORD_COLLECTIONS = ["relationships", "memberships", "reports"];
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const DEFAULT_STORAGE_PATH = resolve("/tmp/curlplan-account-backend-state.json");
+const scryptAsync = promisify(scrypt);
+const DUMMY_CREDENTIAL = {
+  algorithm: "scrypt-v1",
+  normalization: "NFKC",
+  salt: "c2f70854895a16e68e841710bcb85dcb",
+  hash: "00".repeat(64)
+};
 
 class BackendError extends Error {
   constructor(status, code, message) {
@@ -123,6 +131,7 @@ class AccountBackendStore {
     try {
       await writeFile(backupTempPath, serialized);
       await rename(backupTempPath, `${this.storagePath}.bak`);
+      await pruneUnreferencedRecords(recordsDirectory, new Set(Object.values(records)));
     } catch {
       // The atomically-renamed primary is the commit authority. A backup refresh
       // failure must not roll a successful commit back in memory.
@@ -149,20 +158,49 @@ class AccountBackendStore {
   }
 }
 
-export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH, mode = "quarantined", commitHook = null } = {}) {
+export function createAccountBackendServer({
+  storagePath = DEFAULT_STORAGE_PATH,
+  mode = "quarantined",
+  commitHook = null,
+  allowedOrigins = [],
+  trustProxy = false,
+  signInLimit = 5,
+  signInWindowMs = 15 * 60 * 1000,
+  maxRateBuckets = 10_000,
+  maxAccounts = 10_000,
+  maxSessionsPerAccount = 5,
+  sessionTtlMs = 30 * 24 * 60 * 60 * 1000,
+  requestTimeoutMs = 15_000,
+  logger = () => {}
+} = {}) {
   const store = new AccountBackendStore(storagePath, commitHook);
+  const limiter = new Map();
+  const config = {
+    allowedOrigins: new Set(allowedOrigins),
+    trustProxy,
+    signInLimit: Math.max(1, signInLimit),
+    signInWindowMs: Math.max(1_000, signInWindowMs),
+    maxRateBuckets: Math.max(100, maxRateBuckets),
+    maxAccounts: Math.max(1, maxAccounts),
+    maxSessionsPerAccount: Math.max(1, maxSessionsPerAccount),
+    sessionTtlMs: Math.max(1, sessionTtlMs),
+    logger,
+    limiter
+  };
 
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     const requestID = randomUUID();
     setBaseHeaders(response);
 
-    if (request.method === "OPTIONS") {
-      response.writeHead(204);
-      response.end();
-      return;
-    }
-
     try {
+      applyCORS(request, response, config.allowedOrigins);
+      if (request.method === "OPTIONS") {
+        validatePreflight(request);
+        response.removeHeader("Content-Type");
+        response.writeHead(204);
+        response.end();
+        return;
+      }
       await store.load();
       const url = new URL(request.url ?? "/", "http://localhost");
       if (request.method === "GET" && url.pathname === "/health") {
@@ -178,7 +216,7 @@ export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH,
       if (mode !== "development") {
         throw new BackendError(503, "PLANE_QUARANTINED", "The custom account service is not a production write authority.");
       }
-      await store.runExclusive(() => routeRequest({ request, response, store, url, requestID }));
+      await store.runExclusive(() => routeRequest({ request, response, store, url, requestID, config }));
     } catch (error) {
       if (error instanceof BackendError) {
         sendError(response, error.status, error.code, error.message, requestID);
@@ -187,10 +225,18 @@ export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH,
       sendError(response, 500, "INTERNAL_ERROR", "Unexpected account backend failure.", requestID);
     }
   });
+  server.requestTimeout = requestTimeoutMs;
+  server.headersTimeout = Math.min(requestTimeoutMs, 10_000);
+  return server;
 }
 
-export async function startAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH, port = 0, hostname = "127.0.0.1", mode = "quarantined", commitHook = null } = {}) {
-  const server = createAccountBackendServer({ storagePath, mode, commitHook });
+export async function startAccountBackendServer(options = {}) {
+  const {
+    storagePath = DEFAULT_STORAGE_PATH,
+    port = 0,
+    hostname = "127.0.0.1"
+  } = options;
+  const server = createAccountBackendServer(options);
   await new Promise((resolveListen, rejectListen) => {
     server.once("error", rejectListen);
     server.listen(port, hostname, () => {
@@ -215,19 +261,22 @@ export async function startAccountBackendServer({ storagePath = DEFAULT_STORAGE_
   };
 }
 
-async function routeRequest({ request, response, store, url, requestID }) {
+async function routeRequest({ request, response, store, url, requestID, config }) {
   const method = request.method ?? "GET";
   const path = url.pathname;
 
   if (method === "POST" && path === "/v1/accounts") {
     const body = await readJSON(request);
-    const handle = requiredText(body, "handle").toLowerCase();
+    const handle = normalizeHandle(requiredText(body, "handle"));
     const displayName = requiredText(body, "displayName");
     const homeClub = requiredText(body, "homeClub");
     const password = requiredPassword(body, "password");
-    const handleTaken = Object.values(store.state.profiles).some((profile) => profile.handle.toLowerCase() === handle);
+    const handleTaken = Object.values(store.state.profiles).some((profile) => normalizeHandle(profile.handle) === handle);
     if (handleTaken) {
       throw new BackendError(409, "HANDLE_TAKEN", "That handle is already reserved.");
+    }
+    if (Object.keys(store.state.accounts).length >= config.maxAccounts) {
+      throw new BackendError(507, "ACCOUNT_QUOTA_EXCEEDED", "Development account storage quota is full.");
     }
     const account = {
       id: store.nextID("acct"),
@@ -236,7 +285,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
       deletedAt: null
     };
     store.state.accounts[account.id] = account;
-    store.state.credentials[account.id] = hashPassword(password);
+    store.state.credentials[account.id] = await hashPassword(password.normalized);
     store.state.profiles[account.id] = {
       accountID: account.id,
       handle,
@@ -253,25 +302,57 @@ async function routeRequest({ request, response, store, url, requestID }) {
 
   if (method === "POST" && path === "/v1/auth/sign-in") {
     const body = await readJSON(request);
-    const handle = requiredText(body, "handle").toLowerCase();
-    const password = requiredText(body, "password");
+    const handle = normalizeHandle(requiredText(body, "handle"));
+    const password = passwordField(body, "password");
     const deviceID = requiredText(body, "deviceID");
-    const profile = Object.values(store.state.profiles).find((entry) => entry.handle.toLowerCase() === handle);
+    const limiterKey = signInLimiterKey(handle, request, config.trustProxy);
+    const attempts = activeAttempts(config.limiter.get(limiterKey), config.signInWindowMs);
+    if (!config.limiter.has(limiterKey) && config.limiter.size >= config.maxRateBuckets) {
+      config.limiter.delete(config.limiter.keys().next().value);
+    }
+    config.limiter.set(limiterKey, attempts);
+    if (attempts.length >= config.signInLimit) {
+      logSecurityEvent(config.logger, "sign_in_rate_limited", handle, request, config.trustProxy);
+      throw new BackendError(429, "SIGN_IN_RATE_LIMITED", "Too many sign in attempts. Try again later.");
+    }
+    const profile = Object.values(store.state.profiles).find((entry) => normalizeHandle(entry.handle) === handle);
     const accountID = profile?.accountID;
     const account = accountID ? store.state.accounts[accountID] : null;
+    const credential = accountID ? store.state.credentials[accountID] : null;
+    const verification = await verifyPassword(password, credential);
     // Generic credential failure: never reveal whether the handle exists.
-    if (!account || account.status === "deleted" || !verifyPassword(password, store.state.credentials[accountID])) {
+    if (!account || account.status === "deleted" || !verification.matches) {
+      attempts.push(Date.now());
+      config.limiter.set(limiterKey, attempts);
+      logSecurityEvent(config.logger, "sign_in_failed", handle, request, config.trustProxy);
       throw new BackendError(401, "INVALID_CREDENTIALS", "Handle or password is incorrect.");
+    }
+    config.limiter.delete(limiterKey);
+    if (verification.migrate) {
+      store.state.credentials[accountID] = await hashPassword(password.normalized);
+    }
+    const activeSessions = Object.values(store.state.sessions)
+      .filter((session) => session.accountID === accountID && session.state === "active")
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+    while (activeSessions.length >= config.maxSessionsPerAccount) {
+      const revoked = activeSessions.shift();
+      store.state.sessions[revoked.id] = { ...revoked, state: "revoked" };
     }
     const session = {
       id: store.nextID("sess"),
       accountID,
       deviceID,
       createdAt: now(),
-      expiresAt: expiresAt(),
+      expiresAt: expiresAt(config.sessionTtlMs),
       state: "active"
     };
     store.state.sessions[session.id] = session;
+    const olderSessions = Object.values(store.state.sessions)
+      .filter((entry) => entry.accountID === accountID && entry.id !== session.id)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    for (const stale of olderSessions.slice(config.maxSessionsPerAccount - 1)) {
+      delete store.state.sessions[stale.id];
+    }
     await store.save();
     sendJSON(response, 200, session);
     return;
@@ -484,6 +565,12 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const targetID = requiredText(body, "targetID");
     requireActiveAccount(store.state, targetID);
     store.state.relationships = store.state.relationships.filter((edge) => !samePair(edge, accountID, targetID));
+    store.state.memberships = store.state.memberships.filter((membership) => {
+      const object = store.state.sharedObjects[membership.objectID];
+      if (!object) return true;
+      return !((object.ownerID === accountID && membership.accountID === targetID) ||
+        (object.ownerID === targetID && membership.accountID === accountID));
+    });
     const edge = {
       id: store.nextID("rel"),
       actorID: accountID,
@@ -534,7 +621,8 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const body = await readJSON(request);
     const memberAccountID = requiredText(body, "accountID");
     requireActiveAccount(store.state, memberAccountID);
-    if (isBlockedBetween(store.state, accountID, memberAccountID)) {
+    if (isBlockedBetween(store.state, accountID, memberAccountID) ||
+        isBlockedBetween(store.state, object.ownerID, memberAccountID)) {
       throw new BackendError(403, "BLOCKED", "Blocked accounts cannot be added as members.");
     }
     const role = requiredEnum(body, "role", ["owner", "admin", "teammate", "viewer"]);
@@ -603,6 +691,9 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const interactionID = decodeURIComponent(interactionRoute[1]);
     const interaction = requireInteraction(store.state, interactionID);
     const object = requireSharedObject(store.state, interaction.objectID);
+    if (interaction.actorID !== accountID && isBlockedBetween(store.state, accountID, object.ownerID)) {
+      throw new BackendError(403, "BLOCKED", "Blocked accounts cannot administer interactions.");
+    }
     if (interaction.actorID !== accountID && !canAdminSharedObject(store.state, object, accountID)) {
       throw new BackendError(403, "INSUFFICIENT_ROLE", "Only the author or object admin can delete this interaction.");
     }
@@ -616,7 +707,11 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const { accountID } = requireSession(store, request);
     const body = await readJSON(request);
     const interactionID = requiredText(body, "interactionID");
-    requireInteraction(store.state, interactionID);
+    const interaction = requireInteraction(store.state, interactionID);
+    const object = requireSharedObject(store.state, interaction.objectID);
+    if (isBlockedBetween(store.state, accountID, object.ownerID)) {
+      throw new BackendError(403, "BLOCKED", "Blocked accounts cannot report through this shared object.");
+    }
     const report = {
       id: store.nextID("report"),
       reporterID: accountID,
@@ -747,6 +842,10 @@ function requiredText(body, key) {
   return body[key].trim();
 }
 
+function normalizeHandle(value) {
+  return value.normalize("NFKC").toLocaleLowerCase("en-US");
+}
+
 function requiredInteger(body, key) {
   if (!Number.isInteger(body?.[key])) {
     throw new BackendError(422, "VALIDATION_FAILED", `${key} must be an integer.`);
@@ -757,26 +856,43 @@ function requiredInteger(body, key) {
 const MIN_PASSWORD_LENGTH = 8;
 
 function requiredPassword(body, key) {
-  const value = body?.[key];
-  if (typeof value !== "string" || value.length < MIN_PASSWORD_LENGTH) {
+  const password = passwordField(body, key);
+  if (password.normalized.length < MIN_PASSWORD_LENGTH) {
     throw new BackendError(422, "WEAK_PASSWORD", `${key} must be at least ${MIN_PASSWORD_LENGTH} characters.`);
   }
-  return value;
+  return password;
 }
 
-function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return { salt, hash };
-}
-
-function verifyPassword(password, credential) {
-  if (!credential || typeof credential.salt !== "string" || typeof credential.hash !== "string") {
-    return false;
+function passwordField(body, key) {
+  const raw = body?.[key];
+  if (typeof raw !== "string") {
+    throw new BackendError(422, "VALIDATION_FAILED", `${key} is required.`);
   }
-  const expected = Buffer.from(credential.hash, "hex");
-  const actual = scryptSync(password, credential.salt, expected.length);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  return { raw, normalized: raw.normalize("NFKC") };
+}
+
+async function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = (await scryptAsync(password, salt, 64)).toString("hex");
+  return { algorithm: "scrypt-v1", normalization: "NFKC", salt, hash };
+}
+
+async function verifyPassword(password, credential) {
+  const validCredential = credential &&
+    typeof credential.salt === "string" &&
+    typeof credential.hash === "string" &&
+    /^[a-f0-9]{128}$/i.test(credential.hash)
+    ? credential
+    : DUMMY_CREDENTIAL;
+  const legacy = !validCredential.algorithm;
+  const candidate = legacy ? password.raw : password.normalized;
+  const expected = Buffer.from(validCredential.hash, "hex");
+  const actual = await scryptAsync(candidate, validCredential.salt, expected.length);
+  const matches = expected.length === actual.length && timingSafeEqual(expected, actual);
+  return {
+    matches: credential != null && validCredential === credential && matches,
+    migrate: legacy && matches
+  };
 }
 
 function requiredObject(body, key) {
@@ -887,6 +1003,13 @@ function stableStringify(value) {
   return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
 }
 
+async function pruneUnreferencedRecords(recordsDirectory, retained) {
+  const entries = await readdir(recordsDirectory);
+  await Promise.all(entries
+    .filter(entry => /^[a-f0-9]{64}\.json$/.test(entry) && !retained.has(entry))
+    .map(entry => unlink(`${recordsDirectory}/${entry}`)));
+}
+
 function requireActiveAccount(state, accountID) {
   const account = state.accounts[accountID];
   if (!account || account.status !== "active") {
@@ -912,6 +1035,9 @@ function requireInteraction(state, interactionID) {
 }
 
 function requireSharedObjectAdmin(state, object, accountID) {
+  if (isBlockedBetween(state, accountID, object.ownerID)) {
+    throw new BackendError(403, "BLOCKED", "Blocked accounts cannot administer this shared object.");
+  }
   if (!canAdminSharedObject(state, object, accountID)) {
     throw new BackendError(403, "INSUFFICIENT_ROLE", "Admin or owner role is required.");
   }
@@ -942,6 +1068,67 @@ function isBlockedBetween(state, accountID, targetID) {
 function samePair(edge, accountID, targetID) {
   return (edge.actorID === accountID && edge.targetID === targetID) ||
     (edge.actorID === targetID && edge.targetID === accountID);
+}
+
+const CORS_METHODS = new Set(["GET", "POST", "PATCH", "DELETE", "OPTIONS"]);
+const CORS_HEADERS = new Set(["authorization", "content-type"]);
+
+function applyCORS(request, response, allowedOrigins) {
+  const origin = request.headers.origin;
+  if (!origin) return;
+  if (!allowedOrigins.has(origin)) {
+    throw new BackendError(403, "ORIGIN_NOT_ALLOWED", "Request origin is not allowed.");
+  }
+  response.setHeader("Access-Control-Allow-Origin", origin);
+  response.setHeader("Access-Control-Allow-Credentials", "true");
+  response.setHeader("Access-Control-Allow-Methods", [...CORS_METHODS].join(", "));
+  response.setHeader("Access-Control-Allow-Headers", [...CORS_HEADERS].map(value => value.replace(/^./, char => char.toUpperCase())).join(", "));
+  response.setHeader("Access-Control-Max-Age", "600");
+  response.setHeader("Vary", "Origin");
+}
+
+function validatePreflight(request) {
+  const method = request.headers["access-control-request-method"]?.toUpperCase();
+  const headers = (request.headers["access-control-request-headers"] ?? "")
+    .split(",")
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean);
+  if (!request.headers.origin || !method || !CORS_METHODS.has(method) || headers.some(header => !CORS_HEADERS.has(header))) {
+    throw new BackendError(403, "PREFLIGHT_NOT_ALLOWED", "CORS preflight is not allowed.");
+  }
+}
+
+function activeAttempts(attempts = [], windowMs) {
+  const cutoff = Date.now() - windowMs;
+  return attempts.filter(timestamp => timestamp > cutoff);
+}
+
+function sourceAddress(request, trustProxy) {
+  if (trustProxy && typeof request.headers["x-forwarded-for"] === "string") {
+    return request.headers["x-forwarded-for"].split(",", 1)[0].trim().slice(0, 128);
+  }
+  return String(request.socket?.remoteAddress || "unknown").slice(0, 128);
+}
+
+function securityHash(value) {
+  return createHash("sha256").update(value).digest("hex").slice(0, 24);
+}
+
+function signInLimiterKey(handle, request, trustProxy) {
+  return `${securityHash(handle)}:${securityHash(sourceAddress(request, trustProxy))}`;
+}
+
+function logSecurityEvent(logger, event, handle, request, trustProxy) {
+  try {
+    logger({
+      event,
+      accountHash: securityHash(handle),
+      sourceHash: securityHash(sourceAddress(request, trustProxy)),
+      at: now()
+    });
+  } catch {
+    // Security telemetry must never change the authentication result.
+  }
 }
 
 function setBaseHeaders(response) {
@@ -976,10 +1163,8 @@ function now() {
   return new Date().toISOString();
 }
 
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-function expiresAt() {
-  return new Date(Date.now() + SESSION_TTL_MS).toISOString();
+function expiresAt(sessionTtlMs) {
+  return new Date(Date.now() + sessionTtlMs).toISOString();
 }
 
 async function main() {
@@ -987,7 +1172,12 @@ async function main() {
   const port = Number.parseInt(process.env.PORT || "8787", 10);
   const hostname = process.env.HOST || "127.0.0.1";
   const mode = process.env.CURLPLAN_ACCOUNT_BACKEND_MODE || "quarantined";
-  const started = await startAccountBackendServer({ storagePath, port, hostname, mode });
+  const allowedOrigins = (process.env.CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map(value => value.trim())
+    .filter(Boolean);
+  const trustProxy = process.env.CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY === "true";
+  const started = await startAccountBackendServer({ storagePath, port, hostname, mode, allowedOrigins, trustProxy });
   console.log(`CurlPlan account backend listening on ${started.baseURL}`);
   console.log(`Storage: ${started.storagePath}`);
 

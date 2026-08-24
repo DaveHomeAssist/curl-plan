@@ -22,6 +22,15 @@ deterministic current-state envelope. The final canonical document, not only the
 incoming fragment, is capped at 512 KiB.
 
 `user_id` is taken from the verified token's `sub` — never from the request body.
+The verifier requires an RS256 signing key and complete `iss`, `aud`, `sub`,
+`exp`, `nbf`, and `iat` claims. It allows 30 seconds of clock skew, caps token
+age at one hour, honors the configured JWKS cache, and performs exactly one
+no-cache refresh for an unknown key id before failing closed.
+
+Browser access is credentialed and origin-specific. `CORS_ORIGIN` must be one
+exact HTTPS origin; wildcard and unlisted origins fail closed. Preflights allow
+only the documented methods plus `Authorization` and `Content-Type`, and all
+origin-dependent responses carry `Vary: Origin`.
 
 ## Layout
 - `src/index.js` — Worker entry; wires the D1 binding + Clerk verifier into the handler.
@@ -42,7 +51,8 @@ npm run db:init:remote           # apply schema.sql to the remote D1
 
 # set config in wrangler.toml [vars]:
 #   CLERK_ISSUER = "https://<your-app>.clerk.accounts.dev"
-#   CORS_ORIGIN  = "https://davehomeassist.github.io"
+#   CLERK_AUDIENCE = "curlplan-api"
+#   CORS_ORIGIN    = "https://davehomeassist.github.io"
 npm run deploy                   # → note the *.workers.dev URL (becomes the clients' API base)
 ```
 
@@ -50,11 +60,21 @@ For an existing original-schema database, take a backup/export and row count,
 then run `npm run db:migrate:v4:remote` exactly once instead of reapplying the
 fresh schema. No migration or deployment is performed by repository verification.
 
+Before exposure, deploy to a controlled TLS staging hostname, configure the
+same issuer, audience, and origin as the staging client, and run the negative
+token, key-rotation, CORS, size, concurrency, export, restore, and deletion
+suite against that boundary. Cloudflare owns TLS termination and request
+timeouts for the Worker; the handler independently caps request and final
+document size. The release owner is responsible for Clerk key or audience
+incidents, Cloudflare Worker/D1 rollback, and restoring D1 from the
+pre-migration export. Do not run a live migration without a row-counted backup,
+a rollback decision, and explicit deployment authority.
+
 ## What I still need from you to go live
 1. **Clerk** (non-secret): publishable key + instance issuer URL.
 2. **Cloudflare**: run the commands above; give me the **database_id** and the deployed
    **Worker URL**.
-3. Confirm the **web origin** and **iOS bundle id** for CORS / allowed origins.
+3. Confirm the **token audience**, exact **web origin**, and **iOS bundle id**.
 
 Then the client sync loop (web + iOS, behind a feature flag) points at the Worker URL and
 sync is live. No client code needs your secrets.

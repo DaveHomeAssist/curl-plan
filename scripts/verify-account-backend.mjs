@@ -1,21 +1,59 @@
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { scryptSync } from "node:crypto";
 import { startAccountBackendServer } from "../services/account-backend/server.mjs";
 
 const tempDir = await mkdtemp(join(tmpdir(), "curlplan-account-backend-"));
 const storagePath = join(tempDir, "state.json");
 let failNextCommit = false;
+const telemetry = [];
 const commitHook = async () => {
   if (!failNextCommit) return;
   failNextCommit = false;
   throw new Error("intentional commit failure");
 };
-let service = await startAccountBackendServer({ storagePath, port: 0, mode: "development", commitHook });
+const developmentOptions = {
+  storagePath,
+  port: 0,
+  mode: "development",
+  commitHook,
+  allowedOrigins: ["https://app.example.test"],
+  trustProxy: true,
+  signInLimit: 4,
+  signInWindowMs: 60_000,
+  maxAccounts: 100,
+  maxSessionsPerAccount: 3,
+  logger: event => telemetry.push(event)
+};
+let service = await startAccountBackendServer(developmentOptions);
 
 try {
   await request("GET", "/health", { expected: 200 });
   pass("health endpoint responds");
+
+  const allowedPreflight = await requestUnchecked("OPTIONS", "/v1/auth/sign-in", {
+    headers: {
+      Origin: "https://app.example.test",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+  assert(allowedPreflight.status === 204 &&
+    allowedPreflight.headers["access-control-allow-origin"] === "https://app.example.test" &&
+    allowedPreflight.headers["access-control-allow-credentials"] === "true" &&
+    allowedPreflight.headers.vary.includes("Origin"),
+  "allowed preflight should emit credentialed origin-specific CORS");
+  const deniedPreflight = await requestUnchecked("OPTIONS", "/v1/auth/sign-in", {
+    headers: {
+      Origin: "https://evil.example.test",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+  assert(deniedPreflight.status === 403 && !deniedPreflight.headers["access-control-allow-origin"],
+    "disallowed preflight should fail without CORS authority");
+  pass("CORS preflight is explicit, credentialed, origin-allowlisted, and fail-closed");
 
   const danaPassword = "granite-rocks-87";
   const account = await request("POST", "/v1/accounts", {
@@ -52,6 +90,27 @@ try {
   });
   assert(wrongPassword.error.code === "INVALID_CREDENTIALS", "wrong password should be rejected");
   pass("AS 01 rejects sign in with the wrong password");
+
+  const unicodePassword = "curling-\u212b-87";
+  await request("POST", "/v1/accounts", {
+    expected: 201,
+    body: {
+      handle: "h\u212bndle",
+      displayName: "Unicode Password",
+      homeClub: "Normalization CC",
+      password: unicodePassword
+    }
+  });
+  const unicodeSession = await request("POST", "/v1/auth/sign-in", {
+    expected: 200,
+    body: {
+      handle: "hA\u030andle",
+      password: "curling-A\u030a-87",
+      deviceID: "unicode-phone"
+    }
+  });
+  assert(unicodeSession.state === "active", "canonically equivalent password should sign in");
+  pass("handle and password normalization are identical at creation and sign in");
 
   const sessionA = await request("POST", "/v1/auth/sign-in", {
     expected: 200,
@@ -279,6 +338,56 @@ try {
   assert(oversizedImport.error.code === "SEASON_TOO_LARGE", "oversized season should be rejected");
   pass("account season import rejects hostile, unknown, deep, key-heavy, and oversized documents before storage");
 
+  const timingPassword = "timing-hammer-87";
+  await request("POST", "/v1/accounts", {
+    expected: 201,
+    body: {
+      handle: "timing",
+      displayName: "Timing Probe",
+      homeClub: "Timing CC",
+      password: timingPassword
+    }
+  });
+  const measureSignIn = async (handle, password, source) => {
+    const started = performance.now();
+    const result = await requestUnchecked("POST", "/v1/auth/sign-in", {
+      headers: { "X-Forwarded-For": source },
+      body: { handle, password, deviceID: "timing-device" }
+    });
+    return { status: result.status, elapsed: performance.now() - started };
+  };
+  const wrongTiming = await Promise.all([
+    measureSignIn("timing", "wrong-timing-1", "198.51.100.10"),
+    measureSignIn("timing", "wrong-timing-2", "198.51.100.11")
+  ]);
+  const unknownTiming = await Promise.all([
+    measureSignIn("missing-a", "wrong-timing-1", "198.51.100.12"),
+    measureSignIn("missing-b", "wrong-timing-2", "198.51.100.13")
+  ]);
+  const mean = values => values.reduce((total, value) => total + value.elapsed, 0) / values.length;
+  const timingRatio = Math.max(mean(wrongTiming), mean(unknownTiming)) / Math.max(1, Math.min(mean(wrongTiming), mean(unknownTiming)));
+  assert(wrongTiming.every(result => result.status === 401) && unknownTiming.every(result => result.status === 401) && timingRatio < 3,
+    `known/unknown handle timing ratio should remain bounded, got ${timingRatio.toFixed(2)}`);
+  pass("handle enumeration timing performs equivalent asynchronous password work");
+
+  const limitedAttempts = [];
+  for (let index = 0; index < 5; index += 1) {
+    limitedAttempts.push(await requestUnchecked("POST", "/v1/auth/sign-in", {
+      headers: { "X-Forwarded-For": "203.0.113.20" },
+      body: { handle: "timing", password: `rate-wrong-${index}`, deviceID: "rate-device" }
+    }));
+  }
+  assert(limitedAttempts.slice(0, 4).every(result => result.status === 401) && limitedAttempts[4].status === 429,
+    "fifth same-account/source attempt should be rate-limited");
+  const alternateSource = await requestUnchecked("POST", "/v1/auth/sign-in", {
+    headers: { "X-Forwarded-For": "203.0.113.21" },
+    body: { handle: "timing", password: "rate-wrong-other", deviceID: "rate-device" }
+  });
+  assert(alternateSource.status === 401, "different source should retain an independent limiter bucket");
+  assert(telemetry.length > 0 && !JSON.stringify(telemetry).includes("timing") && !JSON.stringify(telemetry).includes(timingPassword),
+    "abuse telemetry should be present without raw handles or passwords");
+  pass("sign in is rate-limited by account and trusted source with abuse-safe telemetry");
+
   const samPassword = "vernon-hammer-12";
   const joPassword = "kelowna-skip-34";
   const sam = await request("POST", "/v1/accounts", {
@@ -450,6 +559,42 @@ try {
   });
   pass("AS 11 and AS 12 interactions support create, delete, report, and moderation hide");
 
+  await request("POST", `/v1/shared-objects/${scorecard.id}/members`, {
+    expected: 204,
+    token: sessionB.id,
+    body: { accountID: jo.id, role: "admin" }
+  });
+  await request("PATCH", `/v1/shared-objects/${scorecard.id}`, {
+    expected: 204,
+    token: joSession.id,
+    body: { title: "Authorized before block" }
+  });
+  await request("POST", "/v1/blocks", {
+    expected: 204,
+    token: sessionB.id,
+    body: { targetID: jo.id }
+  });
+  const staleAdmin = await request("PATCH", `/v1/shared-objects/${scorecard.id}`, {
+    expected: 403,
+    token: joSession.id,
+    body: { title: "Stale admin bypass" }
+  });
+  assert(staleAdmin.error.code === "BLOCKED" || staleAdmin.error.code === "INSUFFICIENT_ROLE",
+    "blocked stale admin should lose direct mutation authority");
+  const blockedMessage = await request("POST", "/v1/interactions", {
+    expected: 403,
+    token: joSession.id,
+    body: { objectID: scorecard.id, kind: "message", body: "direct bypass" }
+  });
+  assert(blockedMessage.error.code === "BLOCKED", "blocked member should not message through direct API");
+  const blockedReinvite = await request("POST", `/v1/shared-objects/${scorecard.id}/members`, {
+    expected: 403,
+    token: sessionB.id,
+    body: { accountID: jo.id, role: "viewer" }
+  });
+  assert(blockedReinvite.error.code === "BLOCKED", "blocked account should not be re-invited");
+  pass("block revokes membership and stale roles, messaging, direct mutations, and future invitations in both directions");
+
   await request("DELETE", "/v1/me", {
     expected: 204,
     token: sessionB.id
@@ -478,7 +623,7 @@ try {
   pass("AS 03 delete account removes owned shared object access");
 
   await service.close();
-  service = await startAccountBackendServer({ storagePath, port: 0, mode: "development", commitHook });
+  service = await startAccountBackendServer(developmentOptions);
   const persistedDelete = await request("POST", "/v1/auth/sign-in", {
     expected: 401,
     body: {
@@ -494,11 +639,13 @@ try {
   const recordBlobs = await readdir(`${storagePath}.records`);
   assert(manifest.format === "curlplan-account-records-v1" && Object.keys(manifest.records).length > 3 && recordBlobs.length > 3,
     "development persistence should use a manifest and content-addressed record blobs");
+  assert(recordBlobs.length === new Set(Object.values(manifest.records)).size,
+    "unreferenced content-addressed records should be pruned after primary and backup commit");
   pass("development storage commits per-record blobs behind an atomic manifest instead of rewriting one system document");
 
   await service.close();
   await writeFile(storagePath, "{corrupt-primary", "utf8");
-  service = await startAccountBackendServer({ storagePath, port: 0, mode: "development", commitHook });
+  service = await startAccountBackendServer(developmentOptions);
   const recoveredDelete = await request("POST", "/v1/auth/sign-in", {
     expected: 401,
     body: {
@@ -525,21 +672,110 @@ try {
   });
   assert(quarantinedWrite.error.code === "PLANE_QUARANTINED", "rejected plane must fail closed for writes");
   pass("rejected custom plane cannot accept production writes");
+
+  await service.close();
+  const legacyStoragePath = join(tempDir, "legacy-state.json");
+  const legacyPassword = "legacy-\u212b-87";
+  const legacySalt = "00112233445566778899aabbccddeeff";
+  await writeFile(legacyStoragePath, JSON.stringify({
+    accounts: {
+      "acct-legacy": { id: "acct-legacy", createdAt: new Date().toISOString(), status: "active", deletedAt: null }
+    },
+    credentials: {
+      "acct-legacy": { salt: legacySalt, hash: scryptSync(legacyPassword, legacySalt, 64).toString("hex") }
+    },
+    profiles: {
+      "acct-legacy": {
+        accountID: "acct-legacy",
+        handle: "legacy",
+        displayName: "Legacy Credential",
+        homeClub: "Migration CC",
+        avatarURL: null,
+        visibility: "private",
+        searchable: false
+      }
+    }
+  }), "utf8");
+  service = await startAccountBackendServer({ ...developmentOptions, storagePath: legacyStoragePath });
+  await request("POST", "/v1/auth/sign-in", {
+    expected: 200,
+    body: { handle: "legacy", password: legacyPassword, deviceID: "legacy-device" }
+  });
+  await service.close();
+  const legacyManifest = JSON.parse(await readFile(legacyStoragePath, "utf8"));
+  const legacyCredentialBlob = legacyManifest.records[`credentials/${encodeURIComponent("acct-legacy")}`];
+  const migratedCredential = JSON.parse(await readFile(`${legacyStoragePath}.records/${legacyCredentialBlob}`, "utf8"));
+  assert(migratedCredential.algorithm === "scrypt-v1" && migratedCredential.normalization === "NFKC",
+    "successful legacy sign in should migrate the credential scheme deliberately");
+  service = await startAccountBackendServer({ ...developmentOptions, storagePath: legacyStoragePath });
+  await request("POST", "/v1/auth/sign-in", {
+    expected: 200,
+    body: { handle: "legacy", password: "legacy-A\u030a-87", deviceID: "migrated-device" }
+  });
+  pass("legacy raw-password scrypt records migrate once to versioned NFKC credentials");
+
+  await service.close();
+  service = await startAccountBackendServer({
+    ...developmentOptions,
+    storagePath: join(tempDir, "session-state.json"),
+    maxSessionsPerAccount: 2,
+    sessionTtlMs: 10
+  });
+  await request("POST", "/v1/accounts", {
+    expected: 201,
+    body: { handle: "session", displayName: "Session Bounds", homeClub: "Session CC", password: "session-pass-87" }
+  });
+  const boundedSessions = [];
+  for (let index = 0; index < 3; index += 1) {
+    boundedSessions.push(await request("POST", "/v1/auth/sign-in", {
+      expected: 200,
+      body: { handle: "session", password: "session-pass-87", deviceID: `session-device-${index}` }
+    }));
+  }
+  const revokedByQuota = await request("POST", "/v1/me/export", {
+    expected: 401,
+    token: boundedSessions[0].id
+  });
+  assert(revokedByQuota.error.code === "SESSION_INVALID", "oldest active session should be revoked at the quota");
+  await new Promise(resolve => setTimeout(resolve, 20));
+  const expiredSession = await request("POST", "/v1/me/export", {
+    expected: 401,
+    token: boundedSessions[2].id
+  });
+  assert(expiredSession.error.code === "SESSION_EXPIRED", "session expiry should be enforced on every request");
+  pass("active session count and server-side expiry are bounded and enforced");
+
+  await service.close();
+  service = await startAccountBackendServer({
+    ...developmentOptions,
+    storagePath: join(tempDir, "quota-state.json"),
+    maxAccounts: 1
+  });
+  await request("POST", "/v1/accounts", {
+    expected: 201,
+    body: { handle: "quota-a", displayName: "Quota A", homeClub: "Quota CC", password: "quota-pass-87" }
+  });
+  const quota = await request("POST", "/v1/accounts", {
+    expected: 507,
+    body: { handle: "quota-b", displayName: "Quota B", homeClub: "Quota CC", password: "quota-pass-87" }
+  });
+  assert(quota.error.code === "ACCOUNT_QUOTA_EXCEEDED", "account quota should bound persistent growth");
+  pass("account and session quotas bound rejected-plane storage growth");
 } finally {
   await service.close().catch(() => {});
   await rm(tempDir, { recursive: true, force: true });
 }
 
-async function request(method, path, { expected, token, body } = {}) {
-  const result = await requestUnchecked(method, path, { token, body });
+async function request(method, path, { expected, token, body, headers } = {}) {
+  const result = await requestUnchecked(method, path, { token, body, headers });
   if (result.status !== expected) {
     throw new Error(`${method} ${path} returned ${result.status}, expected ${expected}: ${result.text}`);
   }
   return result.body;
 }
 
-async function requestUnchecked(method, path, { token, body } = {}) {
-  const headers = {};
+async function requestUnchecked(method, path, { token, body, headers: suppliedHeaders = {} } = {}) {
+  const headers = { ...suppliedHeaders };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -557,7 +793,8 @@ async function requestUnchecked(method, path, { token, body } = {}) {
   return {
     status: response.status,
     text,
-    body: text ? JSON.parse(text) : null
+    body: text ? JSON.parse(text) : null,
+    headers: Object.fromEntries(response.headers.entries())
   };
 }
 

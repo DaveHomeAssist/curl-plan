@@ -1,6 +1,6 @@
 // CurlPlan sync Worker (Cloudflare Workers, modules format).
 // Thin adapter: wires the D1 binding + Clerk verifier into the pure handler.
-// Deploy: see api/README.md. Config: api/wrangler.toml (D1 binding, CLERK_ISSUER, CORS_ORIGIN).
+// Deploy: see api/README.md. Config: api/wrangler.toml (D1 binding, Clerk claims, CORS origin).
 import { handleRequest } from "./handler.js";
 import { makeClerkVerifier } from "./auth.js";
 
@@ -58,13 +58,15 @@ export default {
       },
     };
 
-    const verifyAuth = makeClerkVerifier(env.CLERK_ISSUER);
+    const verifyAuth = makeClerkVerifier(env.CLERK_ISSUER, {
+      audience: env.CLERK_AUDIENCE,
+    });
 
     return handleRequest(request, {
       db,
       verifyAuth,
       now: () => Date.now(),
-      corsOrigin: env.CORS_ORIGIN || "*",
+      corsOrigin: env.CORS_ORIGIN || "",
     });
   },
 };

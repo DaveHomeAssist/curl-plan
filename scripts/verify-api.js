@@ -12,6 +12,7 @@ const { pathToFileURL } = require("url");
 
 (async () => {
   const { handleRequest } = await import(pathToFileURL(path.join(__dirname, "../api/src/handler.js")).href);
+  const { makeClerkVerifier } = await import(pathToFileURL(path.join(__dirname, "../api/src/auth.js")).href);
   const rows = new Map();
   const receipts = new Map();
   let readBarrier = null;
@@ -56,7 +57,7 @@ const { pathToFileURL } = require("url");
   const deps = { db, verifyAuth, now: () => 1720000000000, corsOrigin: "https://example.test" };
 
   const call = (method, pathname, opts = {}) => {
-    const headers = {};
+    const headers = { ...(opts.headers || {}) };
     if (opts.user) headers["x-test-user"] = opts.user;
     if (opts.body !== undefined || opts.rawBody !== undefined) headers["Content-Type"] = "application/json";
     return handleRequest(new Request("https://api.test" + pathname, {
@@ -81,6 +82,89 @@ const { pathToFileURL } = require("url");
 
   let response = await call("GET", "/health");
   ok(response.status === 200, "GET /health → 200");
+
+  const issuer = "https://clerk.example.test";
+  const audience = "curlplan-api";
+  const nowSeconds = 1_720_000_000;
+  const keyPairA = await crypto.subtle.generateKey(
+    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    true,
+    ["sign", "verify"]
+  );
+  const keyPairB = await crypto.subtle.generateKey(
+    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    true,
+    ["sign", "verify"]
+  );
+  const jwkA = { ...(await crypto.subtle.exportKey("jwk", keyPairA.publicKey)), kid: "key-a", alg: "RS256", use: "sig", key_ops: ["verify"] };
+  const jwkB = { ...(await crypto.subtle.exportKey("jwk", keyPairB.publicKey)), kid: "key-b", alg: "RS256", use: "sig", key_ops: ["verify"] };
+  const baseClaims = {
+    iss: issuer,
+    aud: audience,
+    sub: "user-auth",
+    exp: nowSeconds + 300,
+    nbf: nowSeconds - 5,
+    iat: nowSeconds - 5,
+  };
+  const encodePart = value => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const makeToken = async ({ keyPair = keyPairA, kid = "key-a", header = {}, claims = {} } = {}) => {
+    const protectedHeader = encodePart({ alg: "RS256", typ: "JWT", kid, ...header });
+    const payload = encodePart({ ...baseClaims, ...claims });
+    const signed = `${protectedHeader}.${payload}`;
+    const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", keyPair.privateKey, new TextEncoder().encode(signed));
+    return `${signed}.${Buffer.from(signature).toString("base64url")}`;
+  };
+  const authRequest = token => new Request("https://api.test/v1/state", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const verifierFor = (responses, observations = []) => {
+    let fetchIndex = 0;
+    const verifier = makeClerkVerifier(issuer, {
+      audience,
+      now: () => nowSeconds * 1000,
+      fetch: async (url, options) => {
+        observations.push({ url, options });
+        const keys = responses[Math.min(fetchIndex, responses.length - 1)];
+        fetchIndex += 1;
+        return new Response(JSON.stringify({ keys }), {
+          status: 200,
+          headers: { "Cache-Control": "public, max-age=60", "Content-Type": "application/json" },
+        });
+      },
+    });
+    return { verifier, fetchCount: () => fetchIndex };
+  };
+  const validVerifier = verifierFor([[jwkA]]).verifier;
+  ok((await validVerifier(authRequest(await makeToken())))?.userId === "user-auth",
+    "valid RS256 token with complete claims and signing-use key is accepted");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { exp: nowSeconds - 31 } }))) === null,
+    "expired token outside bounded skew fails closed");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { nbf: nowSeconds + 31 } }))) === null,
+    "premature token outside bounded skew fails closed");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { iss: "https://wrong.example.test" } }))) === null,
+    "wrong issuer fails closed");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { aud: "wrong-audience" } }))) === null,
+    "wrong audience fails closed");
+  ok(await validVerifier(authRequest(await makeToken({ header: { alg: "HS256" } }))) === null,
+    "wrong algorithm fails before signature verification");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { sub: "" } }))) === null,
+    "missing subject fails closed");
+  ok(await validVerifier(authRequest(await makeToken({ claims: { exp: undefined } }))) === null &&
+      await validVerifier(authRequest(await makeToken({ claims: { nbf: undefined } }))) === null &&
+      await validVerifier(authRequest(await makeToken({ claims: { iat: undefined } }))) === null,
+  "expiry, not-before, and issued-at are mandatory");
+  const constrainedKey = { ...jwkA, use: "enc" };
+  ok(await verifierFor([[constrainedKey]]).verifier(authRequest(await makeToken())) === null,
+    "JWK signing-use constraints fail closed");
+  const rotationObservations = [];
+  const rotation = verifierFor([[jwkA], [jwkA, jwkB]], rotationObservations);
+  ok((await rotation.verifier(authRequest(await makeToken({ keyPair: keyPairB, kid: "key-b" }))))?.userId === "user-auth" &&
+      rotation.fetchCount() === 2 && rotationObservations[1].options.headers["Cache-Control"] === "no-cache",
+  "unknown key triggers one no-cache JWKS refresh and accepts legitimate rotation");
+  const staleJWKS = verifierFor([[jwkA], [jwkA]]);
+  ok(await staleJWKS.verifier(authRequest(await makeToken({ keyPair: keyPairB, kid: "key-b" }))) === null &&
+      staleJWKS.fetchCount() === 2,
+  "unknown key after one bounded refresh fails closed");
 
   const schemaSQL = fs.readFileSync(path.join(__dirname, "../api/schema.sql"), "utf8");
   const migrationSQL = fs.readFileSync(path.join(__dirname, "../api/migrations/0002_atomic_sync_v4.sql"), "utf8");
@@ -257,9 +341,26 @@ const { pathToFileURL } = require("url");
   ok(response.status === 200 && body.rev === 2 && rows.get("lifecycle-user").rev === 2,
     "deletion retry is idempotent");
 
-  response = await call("OPTIONS", "/v1/state");
-  ok(response.status === 204 && response.headers.get("Access-Control-Allow-Origin") === "https://example.test",
-    "OPTIONS preflight → 204 with configured CORS origin");
+  response = await call("OPTIONS", "/v1/state", {
+    headers: {
+      Origin: "https://example.test",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "authorization, content-type",
+    },
+  });
+  ok(response.status === 204 && response.headers.get("Access-Control-Allow-Origin") === "https://example.test" &&
+      response.headers.get("Access-Control-Allow-Credentials") === "true" &&
+      response.headers.get("Vary")?.includes("Origin"),
+    "OPTIONS preflight → 204 with explicit credentialed allowlisted CORS");
+  response = await call("OPTIONS", "/v1/state", {
+    headers: {
+      Origin: "https://evil.example.test",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "authorization",
+    },
+  });
+  ok(response.status === 403 && !response.headers.has("Access-Control-Allow-Origin"),
+    "disallowed Worker origin fails closed without CORS authority");
 
   response = await call("GET", "/v1/nope", { user: "u1" });
   ok(response.status === 404, "unknown route → 404");

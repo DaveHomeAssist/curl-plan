@@ -45,8 +45,10 @@ function canonicalState(raw) {
 }
 
 function corsHeaders(origin) {
+  if (!origin) return {};
   return {
-    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Max-Age": "86400",
@@ -230,31 +232,50 @@ export async function handleRequest(request, deps) {
   const { db, verifyAuth, now, corsOrigin } = deps;
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, "") || "/";
+  const requestOrigin = request.headers.get("Origin");
+  const allowedOrigin = requestOrigin && corsOrigin && corsOrigin !== "*" && requestOrigin === corsOrigin
+    ? requestOrigin
+    : null;
 
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(corsOrigin) });
+  if (requestOrigin && !allowedOrigin) {
+    return json(errorBody("ORIGIN_NOT_ALLOWED", "Request origin is not allowed."), 403, null);
+  }
+  if (request.method === "OPTIONS") {
+    const requestedMethod = request.headers.get("Access-Control-Request-Method")?.toUpperCase();
+    const requestedHeaders = (request.headers.get("Access-Control-Request-Headers") || "")
+      .split(",")
+      .map(value => value.trim().toLowerCase())
+      .filter(Boolean);
+    const methods = new Set(["GET", "POST", "DELETE"]);
+    const headers = new Set(["authorization", "content-type"]);
+    if (!allowedOrigin || !methods.has(requestedMethod) || requestedHeaders.some(value => !headers.has(value))) {
+      return json(errorBody("PREFLIGHT_NOT_ALLOWED", "CORS preflight is not allowed."), 403, null);
+    }
+    return new Response(null, { status: 204, headers: corsHeaders(allowedOrigin) });
+  }
   if (request.method === "GET" && path === "/health") {
-    return json({ ok: true, schemaVersion: CANONICAL_SCHEMA_VERSION, ts: now() }, 200, corsOrigin);
+    return json({ ok: true, schemaVersion: CANONICAL_SCHEMA_VERSION, ts: now() }, 200, allowedOrigin);
   }
 
   const protectedRoute = path === "/v1/state" || path === "/v1/export" || path === "/v1/restore";
-  if (!protectedRoute) return json(errorBody("NOT_FOUND", "Route was not found."), 404, corsOrigin);
+  if (!protectedRoute) return json(errorBody("NOT_FOUND", "Route was not found."), 404, allowedOrigin);
 
   const auth = await verifyAuth(request);
-  if (!auth?.userId) return json(errorBody("UNAUTHORIZED", "A valid bearer token is required."), 401, corsOrigin);
+  if (!auth?.userId) return json(errorBody("UNAUTHORIZED", "A valid bearer token is required."), 401, allowedOrigin);
   const userId = auth.userId;
 
   if (request.method === "GET" && (path === "/v1/state" || path === "/v1/export")) {
-    return json(currentEnvelope(await db.get(userId)), 200, corsOrigin);
+    return json(currentEnvelope(await db.get(userId)), 200, allowedOrigin);
   }
 
   if ((request.method === "POST" && (path === "/v1/state" || path === "/v1/restore")) ||
       (request.method === "DELETE" && path === "/v1/state")) {
     const parsed = await readJSON(request);
-    if (parsed.error) return json(parsed.error, parsed.status, corsOrigin);
+    if (parsed.error) return json(parsed.error, parsed.status, allowedOrigin);
     const operation = request.method === "DELETE" ? "delete" : path === "/v1/restore" ? "restore" : "merge";
     const result = await writeState({ db, userId, body: parsed.value, operation, now });
-    return json(result.body, result.status, corsOrigin);
+    return json(result.body, result.status, allowedOrigin);
   }
 
-  return json(errorBody("METHOD_NOT_ALLOWED", "Method is not allowed for this route."), 405, corsOrigin);
+  return json(errorBody("METHOD_NOT_ALLOWED", "Method is not allowed for this route."), 405, allowedOrigin);
 }

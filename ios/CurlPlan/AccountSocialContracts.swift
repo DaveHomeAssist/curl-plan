@@ -526,6 +526,11 @@ final class AccountSocialContractStore {
         let actorID = try requireAccount(sessionID: sessionID)
         guard accounts[targetID] != nil else { throw AccountBackendError.accountNotFound }
         relationships.removeAll { ($0.actorID == actorID && $0.targetID == targetID) || ($0.actorID == targetID && $0.targetID == actorID) }
+        memberships.removeAll { membership in
+            guard let object = sharedObjects[membership.objectID] else { return false }
+            return (object.ownerID == actorID && membership.accountID == targetID) ||
+                (object.ownerID == targetID && membership.accountID == actorID)
+        }
         relationships.append(RelationshipEdge(id: nextID("rel"),
                                               actorID: actorID,
                                               targetID: targetID,
@@ -560,8 +565,10 @@ final class AccountSocialContractStore {
                    accountID: String,
                    role: MembershipRole) throws {
         let actorID = try requireAccount(sessionID: sessionID)
+        guard let object = sharedObjects[objectID] else { throw AccountBackendError.notFound }
         guard canAdministerObject(accountID: actorID, objectID: objectID) else { throw AccountBackendError.insufficientRole }
-        guard !isBlocked(between: actorID, and: accountID) else { throw AccountBackendError.blocked }
+        guard !isBlocked(between: actorID, and: accountID),
+              !isBlocked(between: object.ownerID, and: accountID) else { throw AccountBackendError.blocked }
         memberships.append(SharedMembership(id: nextID("member"),
                                             objectID: objectID,
                                             accountID: accountID,
@@ -571,8 +578,9 @@ final class AccountSocialContractStore {
 
     func updateSharedObjectTitle(sessionID: String, objectID: String, title: String) throws {
         let actorID = try requireAccount(sessionID: sessionID)
-        guard canEditObject(accountID: actorID, objectID: objectID) else { throw AccountBackendError.insufficientRole }
         guard var object = sharedObjects[objectID] else { throw AccountBackendError.notFound }
+        guard !isBlocked(between: actorID, and: object.ownerID) else { throw AccountBackendError.blocked }
+        guard canEditObject(accountID: actorID, objectID: objectID) else { throw AccountBackendError.insufficientRole }
         object.title = title
         object.version += 1
         sharedObjects[objectID] = object
@@ -584,6 +592,8 @@ final class AccountSocialContractStore {
                            kind: InteractionKind,
                            body: String) throws -> SocialInteraction {
         let actorID = try requireAccount(sessionID: sessionID)
+        guard let object = sharedObjects[objectID] else { throw AccountBackendError.notFound }
+        guard !isBlocked(between: actorID, and: object.ownerID) else { throw AccountBackendError.blocked }
         guard canReadObject(accountID: actorID, objectID: objectID) else { throw AccountBackendError.notMember }
         let existingCount = interactions.values.filter { $0.actorID == actorID && $0.objectID == objectID && $0.state == .active }.count
         guard existingCount < 10 else { throw AccountBackendError.rateLimited }
@@ -611,7 +621,9 @@ final class AccountSocialContractStore {
                            interactionID: String,
                            reason: String) throws -> ContentReport {
         let reporterID = try requireAccount(sessionID: sessionID)
-        guard interactions[interactionID] != nil else { throw AccountBackendError.notFound }
+        guard let interaction = interactions[interactionID],
+              let object = sharedObjects[interaction.objectID] else { throw AccountBackendError.notFound }
+        guard !isBlocked(between: reporterID, and: object.ownerID) else { throw AccountBackendError.blocked }
         let report = ContentReport(id: nextID("report"),
                                    reporterID: reporterID,
                                    targetID: interactionID,
@@ -660,6 +672,7 @@ final class AccountSocialContractStore {
 
     private func canReadObject(accountID: String, objectID: String) -> Bool {
         guard let object = sharedObjects[objectID] else { return false }
+        guard !isBlocked(between: accountID, and: object.ownerID) else { return false }
         if object.visibility == .publicObject { return true }
         return memberships.contains { $0.objectID == objectID && $0.accountID == accountID && $0.state == .accepted }
     }
