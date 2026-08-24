@@ -9,7 +9,8 @@ RUN mkdir -p /data && chown node:node /data
 
 ENV PORT=8787 \
     HOST=0.0.0.0 \
-    CURLPLAN_ACCOUNT_BACKEND_STORE=/data/state.json
+    CURLPLAN_ACCOUNT_BACKEND_STORE=/data/state.json \
+    CURLPLAN_ACCOUNT_BACKEND_MODE=quarantined
 
 EXPOSE 8787
 VOLUME ["/data"]

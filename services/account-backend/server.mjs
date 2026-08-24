@@ -1,10 +1,22 @@
 import { createServer } from "node:http";
-import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MAX_JSON_BYTES = 1_000_000;
+const MAX_SEASON_BYTES = 512 * 1024;
+const MAX_SEASON_DEPTH = 32;
+const MAX_SEASON_KEYS = 25_000;
+const MAX_SEASON_ITEMS = 25_000;
+const CANONICAL_SEASON_SCHEMA = 4;
+const RECORD_STORE_FORMAT = "curlplan-account-records-v1";
+const OBJECT_RECORD_COLLECTIONS = [
+  "accounts", "credentials", "sessions", "profiles", "seasons",
+  "seasonReceipts", "sharedObjects", "interactions"
+];
+const ARRAY_RECORD_COLLECTIONS = ["relationships", "memberships", "reports"];
+const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const DEFAULT_STORAGE_PATH = resolve("/tmp/curlplan-account-backend-state.json");
 
 class BackendError extends Error {
@@ -16,10 +28,12 @@ class BackendError extends Error {
 }
 
 class AccountBackendStore {
-  constructor(storagePath = DEFAULT_STORAGE_PATH) {
+  constructor(storagePath = DEFAULT_STORAGE_PATH, commitHook = null) {
     this.storagePath = storagePath;
     this.state = emptyState();
     this.loaded = false;
+    this.queue = Promise.resolve();
+    this.commitHook = commitHook;
   }
 
   async load() {
@@ -27,22 +41,106 @@ class AccountBackendStore {
       return;
     }
     try {
-      const raw = await readFile(this.storagePath, "utf8");
-      this.state = normalizeState(JSON.parse(raw));
-    } catch (error) {
-      if (error?.code !== "ENOENT") {
-        throw error;
+      this.state = await this.readSnapshot(this.storagePath);
+    } catch (primaryError) {
+      try {
+        this.state = await this.readSnapshot(`${this.storagePath}.bak`);
+        await this.save();
+      } catch (backupError) {
+        if (primaryError?.code !== "ENOENT" || backupError?.code !== "ENOENT") throw primaryError;
+        this.state = emptyState();
       }
-      this.state = emptyState();
     }
     this.loaded = true;
   }
 
+  async readSnapshot(path) {
+    const raw = await readFile(path, "utf8");
+    const decoded = JSON.parse(raw);
+    if (decoded?.format !== RECORD_STORE_FORMAT) return normalizeState(decoded);
+    const state = emptyState();
+    const recordsDirectory = `${this.storagePath}.records`;
+    for (const [logicalKey, blobName] of Object.entries(decoded.records || {})) {
+      if (typeof blobName !== "string" || !/^[a-f0-9]{64}\.json$/.test(blobName)) {
+        throw new Error("Invalid account record manifest.");
+      }
+      const payload = JSON.parse(await readFile(`${recordsDirectory}/${blobName}`, "utf8"));
+      const separator = logicalKey.indexOf("/");
+      const collection = separator < 0 ? logicalKey : logicalKey.slice(0, separator);
+      const encodedID = separator < 0 ? "" : logicalKey.slice(separator + 1);
+      if (OBJECT_RECORD_COLLECTIONS.includes(collection) && encodedID) {
+        const id = decodeURIComponent(encodedID);
+        if (DANGEROUS_KEYS.has(id)) throw new Error("Invalid account record key.");
+        state[collection][id] = payload;
+      } else if (ARRAY_RECORD_COLLECTIONS.includes(collection) && encodedID === "all" && Array.isArray(payload)) {
+        state[collection] = payload;
+      } else if (logicalKey === "counter" && Number.isInteger(payload)) {
+        state.counter = payload;
+      } else {
+        throw new Error("Invalid account record collection.");
+      }
+    }
+    return normalizeState(state);
+  }
+
   async save() {
     await mkdir(dirname(this.storagePath), { recursive: true });
+    const recordsDirectory = `${this.storagePath}.records`;
+    await mkdir(recordsDirectory, { recursive: true });
+    const payloads = new Map();
+    for (const collection of OBJECT_RECORD_COLLECTIONS) {
+      for (const [id, value] of Object.entries(this.state[collection])) {
+        payloads.set(`${collection}/${encodeURIComponent(id)}`, value);
+      }
+    }
+    for (const collection of ARRAY_RECORD_COLLECTIONS) {
+      payloads.set(`${collection}/all`, this.state[collection]);
+    }
+    payloads.set("counter", this.state.counter);
+
+    const records = {};
+    for (const [logicalKey, value] of [...payloads.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+      const serializedRecord = `${JSON.stringify(value, null, 2)}\n`;
+      const blobName = `${createHash("sha256").update(serializedRecord).digest("hex")}.json`;
+      records[logicalKey] = blobName;
+      try {
+        await writeFile(`${recordsDirectory}/${blobName}`, serializedRecord, { flag: "wx" });
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+      }
+    }
+
     const tempPath = `${this.storagePath}.${process.pid}.${Date.now()}.tmp`;
-    await writeFile(tempPath, `${JSON.stringify(this.state, null, 2)}\n`);
+    const serialized = `${JSON.stringify({
+      format: RECORD_STORE_FORMAT,
+      schemaVersion: CANONICAL_SEASON_SCHEMA,
+      records
+    }, null, 2)}\n`;
+    await writeFile(tempPath, serialized);
+    if (this.commitHook) await this.commitHook();
     await rename(tempPath, this.storagePath);
+    const backupTempPath = `${this.storagePath}.${process.pid}.${Date.now()}.bak.tmp`;
+    try {
+      await writeFile(backupTempPath, serialized);
+      await rename(backupTempPath, `${this.storagePath}.bak`);
+    } catch {
+      // The atomically-renamed primary is the commit authority. A backup refresh
+      // failure must not roll a successful commit back in memory.
+    }
+  }
+
+  async runExclusive(operation) {
+    const run = this.queue.then(async () => {
+      const published = structuredClone(this.state);
+      try {
+        return await operation();
+      } catch (error) {
+        this.state = published;
+        throw error;
+      }
+    });
+    this.queue = run.catch(() => {});
+    return run;
   }
 
   nextID(prefix) {
@@ -51,8 +149,8 @@ class AccountBackendStore {
   }
 }
 
-export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH } = {}) {
-  const store = new AccountBackendStore(storagePath);
+export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH, mode = "quarantined", commitHook = null } = {}) {
+  const store = new AccountBackendStore(storagePath, commitHook);
 
   return createServer(async (request, response) => {
     const requestID = randomUUID();
@@ -67,7 +165,20 @@ export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH 
     try {
       await store.load();
       const url = new URL(request.url ?? "/", "http://localhost");
-      await routeRequest({ request, response, store, url, requestID });
+      if (request.method === "GET" && url.pathname === "/health") {
+        sendJSON(response, 200, {
+          ok: true,
+          plane: "custom-account-development-verifier",
+          mode,
+          writable: mode === "development",
+          schemaVersion: CANONICAL_SEASON_SCHEMA
+        });
+        return;
+      }
+      if (mode !== "development") {
+        throw new BackendError(503, "PLANE_QUARANTINED", "The custom account service is not a production write authority.");
+      }
+      await store.runExclusive(() => routeRequest({ request, response, store, url, requestID }));
     } catch (error) {
       if (error instanceof BackendError) {
         sendError(response, error.status, error.code, error.message, requestID);
@@ -78,8 +189,8 @@ export function createAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH 
   });
 }
 
-export async function startAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH, port = 0, hostname = "127.0.0.1" } = {}) {
-  const server = createAccountBackendServer({ storagePath });
+export async function startAccountBackendServer({ storagePath = DEFAULT_STORAGE_PATH, port = 0, hostname = "127.0.0.1", mode = "quarantined", commitHook = null } = {}) {
+  const server = createAccountBackendServer({ storagePath, mode, commitHook });
   await new Promise((resolveListen, rejectListen) => {
     server.once("error", rejectListen);
     server.listen(port, hostname, () => {
@@ -107,11 +218,6 @@ export async function startAccountBackendServer({ storagePath = DEFAULT_STORAGE_
 async function routeRequest({ request, response, store, url, requestID }) {
   const method = request.method ?? "GET";
   const path = url.pathname;
-
-  if (method === "GET" && path === "/health") {
-    sendJSON(response, 200, { ok: true });
-    return;
-  }
 
   if (method === "POST" && path === "/v1/accounts") {
     const body = await readJSON(request);
@@ -204,6 +310,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
     store.state.accounts[accountID] = { ...account, status: "deleted", deletedAt: now() };
     delete store.state.profiles[accountID];
     delete store.state.seasons[accountID];
+    delete store.state.seasonReceipts[accountID];
     delete store.state.credentials[accountID];
     for (const objectID of ownedObjectIDs) {
       delete store.state.sharedObjects[objectID];
@@ -263,9 +370,18 @@ async function routeRequest({ request, response, store, url, requestID }) {
       throw new BackendError(404, "SEASON_MISSING", "Account does not have a season document.");
     }
     const baseVersion = requiredInteger(body, "baseVersion");
-    const updatedBody = requiredObject(body, "updatedBody");
+    const updatedBody = validateSeasonDocument(requiredObject(body, "updatedBody"));
     const clientMutationID = requiredText(body, "clientMutationID");
     const domains = requiredStringArray(body, "domains");
+    const mutationFingerprint = stableStringify({ baseVersion, updatedBody, domains });
+    const priorMutation = store.state.seasonReceipts[accountID]?.[clientMutationID];
+    if (priorMutation) {
+      if (priorMutation.fingerprint !== mutationFingerprint) {
+        throw new BackendError(409, "IDEMPOTENCY_KEY_REUSED", "clientMutationID was already used for a different change.");
+      }
+      sendJSON(response, 200, priorMutation.receipt);
+      return;
+    }
     if (document.version !== baseVersion) {
       throw new BackendError(409, "VERSION_CONFLICT", `Current version is ${document.version}.`);
     }
@@ -286,6 +402,11 @@ async function routeRequest({ request, response, store, url, requestID }) {
       serverVersion: nextVersion,
       clientMutationID,
       domains
+    };
+    store.state.seasonReceipts[accountID] ??= {};
+    store.state.seasonReceipts[accountID][clientMutationID] = {
+      fingerprint: mutationFingerprint,
+      receipt
     };
     await store.save();
     sendJSON(response, 200, receipt);
@@ -539,6 +660,7 @@ function emptyState() {
     sessions: {},
     profiles: {},
     seasons: {},
+    seasonReceipts: {},
     relationships: [],
     sharedObjects: {},
     memberships: [],
@@ -557,6 +679,7 @@ function normalizeState(raw) {
     sessions: raw?.sessions ?? {},
     profiles: raw?.profiles ?? {},
     seasons: raw?.seasons ?? {},
+    seasonReceipts: raw?.seasonReceipts ?? {},
     relationships: raw?.relationships ?? [],
     sharedObjects: raw?.sharedObjects ?? {},
     memberships: raw?.memberships ?? [],
@@ -686,14 +809,82 @@ function requiredEnum(body, key, allowed) {
 }
 
 function requiredSeason(body) {
-  const season = requiredObject(body, "season");
-  if (!Number.isInteger(season.schemaVersion)) {
-    throw new BackendError(422, "VALIDATION_FAILED", "season.schemaVersion must be an integer.");
+  return validateSeasonDocument(requiredObject(body, "season"));
+}
+
+function validateSeasonDocument(season) {
+  const issue = validateBoundedStructure(season);
+  if (issue) throw new BackendError(422, "INVALID_SEASON_DOCUMENT", issue);
+  if (Buffer.byteLength(JSON.stringify(season), "utf8") > MAX_SEASON_BYTES) {
+    throw new BackendError(413, "SEASON_TOO_LARGE", "Season document exceeds 512 KiB.");
   }
-  if (season.schemaVersion > 4) {
-    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "CurlPlan account backend accepts account season payload schema 4 or earlier.");
+  const allowedSeasonKeys = new Set(["schemaVersion", "profile", "state"]);
+  const allowedProfileKeys = new Set(["name", "homeClub", "province"]);
+  const stateShape = {
+    addedCurlers: "array",
+    addedSpiels: "array",
+    follows: "object",
+    likes: "object",
+    joins: "object",
+    posts: "array",
+    visits: "object",
+    reviews: "object",
+    iceReads: "object",
+    threads: "object"
+  };
+  const unknownSeasonKey = Object.keys(season).find(key => !allowedSeasonKeys.has(key));
+  if (unknownSeasonKey) throw new BackendError(422, "INVALID_SEASON_DOCUMENT", `Unknown season field ${unknownSeasonKey}.`);
+  if (season.schemaVersion !== CANONICAL_SEASON_SCHEMA) {
+    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "Development imports require canonical season schema 4.");
+  }
+  if (!season.profile || typeof season.profile !== "object" || Array.isArray(season.profile) ||
+      Object.keys(season.profile).some(key => !allowedProfileKeys.has(key)) ||
+      ["name", "homeClub", "province"].some(key => typeof season.profile[key] !== "string")) {
+    throw new BackendError(422, "INVALID_SEASON_DOCUMENT", "Season profile must contain only name, homeClub, and province strings.");
+  }
+  if (!season.state || typeof season.state !== "object" || Array.isArray(season.state) ||
+      Object.keys(season.state).some(key => !Object.hasOwn(stateShape, key))) {
+    throw new BackendError(422, "INVALID_SEASON_DOCUMENT", "Season state contains unknown or missing structure.");
+  }
+  for (const [key, kind] of Object.entries(stateShape)) {
+    const value = season.state[key];
+    const valid = kind === "array" ? Array.isArray(value) : value && typeof value === "object" && !Array.isArray(value);
+    if (!valid) throw new BackendError(422, "INVALID_SEASON_DOCUMENT", `Season state field ${key} must be an ${kind}.`);
   }
   return season;
+}
+
+function validateBoundedStructure(value) {
+  let keys = 0;
+  let items = 0;
+  const visit = (entry, depth) => {
+    if (depth > MAX_SEASON_DEPTH) return "Season document nesting is too deep.";
+    if (!entry || typeof entry !== "object") return null;
+    if (Array.isArray(entry)) {
+      items += entry.length;
+      if (items > MAX_SEASON_ITEMS) return "Season document contains too many collection items.";
+      for (const item of entry) {
+        const issue = visit(item, depth + 1);
+        if (issue) return issue;
+      }
+      return null;
+    }
+    for (const key of Object.keys(entry)) {
+      if (DANGEROUS_KEYS.has(key)) return `Dangerous season key ${key} is not allowed.`;
+      keys += 1;
+      if (keys > MAX_SEASON_KEYS) return "Season document contains too many object keys.";
+      const issue = visit(entry[key], depth + 1);
+      if (issue) return issue;
+    }
+    return null;
+  };
+  return visit(value, 0);
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
 }
 
 function requireActiveAccount(state, accountID) {
@@ -795,7 +986,8 @@ async function main() {
   const storagePath = process.env.CURLPLAN_ACCOUNT_BACKEND_STORE || process.argv[2] || DEFAULT_STORAGE_PATH;
   const port = Number.parseInt(process.env.PORT || "8787", 10);
   const hostname = process.env.HOST || "127.0.0.1";
-  const started = await startAccountBackendServer({ storagePath, port, hostname });
+  const mode = process.env.CURLPLAN_ACCOUNT_BACKEND_MODE || "quarantined";
+  const started = await startAccountBackendServer({ storagePath, port, hostname, mode });
   console.log(`CurlPlan account backend listening on ${started.baseURL}`);
   console.log(`Storage: ${started.storagePath}`);
 

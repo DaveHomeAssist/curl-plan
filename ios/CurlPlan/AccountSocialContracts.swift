@@ -19,7 +19,7 @@ struct AccountSeasonPayload: Hashable, Codable {
     var profile: AccountSeasonProfile
     var state: AppState
 
-    init(schemaVersion: Int = 3,
+    init(schemaVersion: Int = 4,
          profile: AccountSeasonProfile = .blank(name: "CurlPlan Curler", homeClub: "", province: ""),
          state: AppState = AppState()) {
         self.schemaVersion = schemaVersion
@@ -326,6 +326,20 @@ final class AccountSocialContractStore {
                               interactions: interactions,
                               reports: reports,
                               counter: counter)
+    }
+
+    func restore(_ snapshot: AccountSocialSnapshot) {
+        accounts = snapshot.accounts
+        credentials = snapshot.credentials
+        sessions = snapshot.sessions
+        profiles = snapshot.profiles
+        seasons = snapshot.seasons
+        relationships = snapshot.relationships
+        sharedObjects = snapshot.sharedObjects
+        memberships = snapshot.memberships
+        interactions = snapshot.interactions
+        reports = snapshot.reports
+        counter = snapshot.counter
     }
 
     @discardableResult

@@ -402,6 +402,7 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
     let store: AccountSocialContractStore
     private let transport: InMemoryAccountBackendTransport
     private let persistence: AccountBackendStatePersistence
+    private let transactionLock = NSRecursiveLock()
     private var requestCounter = 0
 
     convenience init(storageURL: URL) throws {
@@ -415,15 +416,15 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
     }
 
     func createAccount(handle: String, displayName: String, homeClub: String, password: String) -> AccountAPIResponse<CurlPlanAccount> {
-        persist(transport.createAccount(handle: handle, displayName: displayName, homeClub: homeClub, password: password))
+        transact { $0.createAccount(handle: handle, displayName: displayName, homeClub: homeClub, password: password) }
     }
 
     func signIn(handle: String, password: String, deviceID: String) -> AccountAPIResponse<AccountSession> {
-        persist(transport.signIn(handle: handle, password: password, deviceID: deviceID))
+        transact { $0.signIn(handle: handle, password: password, deviceID: deviceID) }
     }
 
     func signOut(sessionID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.signOut(sessionID: sessionID))
+        transact { $0.signOut(sessionID: sessionID) }
     }
 
     func exportAccountData(sessionID: String) -> AccountAPIResponse<[String]> {
@@ -431,11 +432,11 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
     }
 
     func deleteAccount(sessionID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.deleteAccount(sessionID: sessionID))
+        transact { $0.deleteAccount(sessionID: sessionID) }
     }
 
     func importLocalSeason(sessionID: String, season: AccountSeasonPayload) -> AccountAPIResponse<AccountSeasonDocument> {
-        persist(transport.importLocalSeason(sessionID: sessionID, season: season))
+        transact { $0.importLocalSeason(sessionID: sessionID, season: season) }
     }
 
     func season(sessionID: String) -> AccountAPIResponse<AccountSeasonDocument> {
@@ -447,17 +448,17 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
                            updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) -> AccountAPIResponse<SeasonChangeReceipt> {
-        persist(transport.applySeasonChange(sessionID: sessionID,
-                                            baseVersion: baseVersion,
-                                            updatedBody: updatedBody,
-                                            domains: domains,
-                                            clientMutationID: clientMutationID))
+        transact { $0.applySeasonChange(sessionID: sessionID,
+                                        baseVersion: baseVersion,
+                                        updatedBody: updatedBody,
+                                        domains: domains,
+                                        clientMutationID: clientMutationID) }
     }
 
     func updateProfile(sessionID: String,
                        visibility: ProfileVisibility,
                        searchable: Bool) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.updateProfile(sessionID: sessionID, visibility: visibility, searchable: searchable))
+        transact { $0.updateProfile(sessionID: sessionID, visibility: visibility, searchable: searchable) }
     }
 
     func searchProfiles(sessionID: String, query: String) -> AccountAPIResponse<[AccountProfile]> {
@@ -465,64 +466,72 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
     }
 
     func follow(sessionID: String, targetID: String) -> AccountAPIResponse<RelationshipEdge> {
-        persist(transport.follow(sessionID: sessionID, targetID: targetID))
+        transact { $0.follow(sessionID: sessionID, targetID: targetID) }
     }
 
     func unfollow(sessionID: String, targetID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.unfollow(sessionID: sessionID, targetID: targetID))
+        transact { $0.unfollow(sessionID: sessionID, targetID: targetID) }
     }
 
     func block(sessionID: String, targetID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.block(sessionID: sessionID, targetID: targetID))
+        transact { $0.block(sessionID: sessionID, targetID: targetID) }
     }
 
     func createSharedObject(sessionID: String,
                             kind: SharedObjectKind,
                             title: String,
                             visibility: SharedVisibility) -> AccountAPIResponse<SharedCurlingObject> {
-        persist(transport.createSharedObject(sessionID: sessionID, kind: kind, title: title, visibility: visibility))
+        transact { $0.createSharedObject(sessionID: sessionID, kind: kind, title: title, visibility: visibility) }
     }
 
     func addMember(sessionID: String,
                    objectID: String,
                    accountID: String,
                    role: MembershipRole) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.addMember(sessionID: sessionID, objectID: objectID, accountID: accountID, role: role))
+        transact { $0.addMember(sessionID: sessionID, objectID: objectID, accountID: accountID, role: role) }
     }
 
     func updateSharedObjectTitle(sessionID: String,
                                  objectID: String,
                                  title: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.updateSharedObjectTitle(sessionID: sessionID, objectID: objectID, title: title))
+        transact { $0.updateSharedObjectTitle(sessionID: sessionID, objectID: objectID, title: title) }
     }
 
     func createInteraction(sessionID: String,
                            objectID: String,
                            kind: InteractionKind,
                            body: String) -> AccountAPIResponse<SocialInteraction> {
-        persist(transport.createInteraction(sessionID: sessionID, objectID: objectID, kind: kind, body: body))
+        transact { $0.createInteraction(sessionID: sessionID, objectID: objectID, kind: kind, body: body) }
     }
 
     func deleteInteraction(sessionID: String, interactionID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.deleteInteraction(sessionID: sessionID, interactionID: interactionID))
+        transact { $0.deleteInteraction(sessionID: sessionID, interactionID: interactionID) }
     }
 
     func reportInteraction(sessionID: String,
                            interactionID: String,
                            reason: String) -> AccountAPIResponse<ContentReport> {
-        persist(transport.reportInteraction(sessionID: sessionID, interactionID: interactionID, reason: reason))
+        transact { $0.reportInteraction(sessionID: sessionID, interactionID: interactionID, reason: reason) }
     }
 
     func hideReportedInteraction(reportID: String) -> AccountAPIResponse<AccountEmptyResponse> {
-        persist(transport.hideReportedInteraction(reportID: reportID))
+        transact { $0.hideReportedInteraction(reportID: reportID) }
     }
 
-    private func persist<Body: Equatable>(_ response: AccountAPIResponse<Body>) -> AccountAPIResponse<Body> {
+    private func transact<Body: Equatable>(_ operation: (InMemoryAccountBackendTransport) -> AccountAPIResponse<Body>) -> AccountAPIResponse<Body> {
+        transactionLock.lock()
+        defer { transactionLock.unlock() }
+
+        let stagedStore = AccountSocialContractStore(snapshot: store.snapshot())
+        let stagedTransport = InMemoryAccountBackendTransport(store: stagedStore)
+        let response = operation(stagedTransport)
         guard response.succeeded else {
             return response
         }
         do {
-            try persistence.saveSnapshot(store.snapshot())
+            let stagedSnapshot = stagedStore.snapshot()
+            try persistence.saveSnapshot(stagedSnapshot)
+            store.restore(stagedSnapshot)
             return response
         } catch {
             requestCounter += 1

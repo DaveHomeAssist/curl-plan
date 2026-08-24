@@ -35,6 +35,11 @@ season and stores demo changes in the current browser only. Account creation,
 cloud sync, recovery, and cross-device restore stay unavailable until the Clerk
 and D1 backend is configured and verified end to end.
 
+The production ownership decision is locked to the Clerk + Worker/D1 plane in
+[`docs/architecture/identity-and-data-ownership.md`](docs/architecture/identity-and-data-ownership.md).
+The custom credential backend is a quarantined development verifier and is not
+a production account authority.
+
 ### Quick start
 
 Open `index.html` in a browser, or serve the repo from any static host.

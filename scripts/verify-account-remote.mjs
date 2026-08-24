@@ -17,7 +17,9 @@ const handle = `verify-${stamp}`;
 const password = `verify-pass-${stamp}`;
 
 try {
-  await request("GET", "/health", { expected: 200 });
+  const health = await request("GET", "/health", { expected: 200 });
+  assert(health.plane === "custom-account-development-verifier" && health.mode === "development" && health.writable === true,
+    "remote mutation verifier only runs against the explicit development plane");
   pass(`health endpoint responds at ${baseURL}`);
 
   const account = await request("POST", "/v1/accounts", {
@@ -99,19 +101,23 @@ async function request(method, path, { expected, token, body } = {}) {
 function seasonFixture(name, homeClub) {
   return {
     schemaVersion: 4,
-    setupComplete: true,
     profile: {
       name,
-      initials: "RV",
       homeClub,
-      homeProvince: "AB",
-      season: "Season 2025-26 - remote verifier",
-      demoMode: false,
-      baseGames: 0,
-      baseWins: 0
+      province: "AB"
     },
-    curlers: [], stops: [], visits: [], spiels: [],
-    attendance: [], results: [], feed: [], bonspiels: []
+    state: {
+      addedCurlers: [],
+      addedSpiels: [],
+      follows: {},
+      likes: {},
+      joins: {},
+      posts: [],
+      visits: {},
+      reviews: {},
+      iceReads: {},
+      threads: {}
+    }
   };
 }
 

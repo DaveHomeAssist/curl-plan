@@ -1,6 +1,6 @@
 #!/bin/sh
-# Deploy the CurlPlan account backend to the dominic Tailscale host as a Docker
-# container with a persistent named volume. Idempotent: re-run to ship updates.
+# Deploy the rejected CurlPlan account verifier to the private dominic Tailscale
+# host in explicit development mode. This script is not a production deploy path.
 #
 # Requires: SSH access to `dominic` (see ~/.ssh/config) and Docker usable there
 # without sudo. Node is NOT required on the host; the service runs in node:20-alpine.
@@ -32,6 +32,7 @@ docker run -d \
   --restart unless-stopped \
   -p $PORT:8787 \
   -v '$VOLUME':/data \
+  -e CURLPLAN_ACCOUNT_BACKEND_MODE=development \
   '$IMAGE'
 sleep 1
 docker ps --filter "name=$CONTAINER" --format 'running: {{.Names}} {{.Status}} {{.Ports}}'

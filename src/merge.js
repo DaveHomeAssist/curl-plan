@@ -30,6 +30,20 @@ var LWW_MAPS = ["follows", "likes", "joins"];
 var ORSET_LISTS = ["posts", "addedCurlers", "addedSpiels"];
 var ORSET_MAP_LISTS = ["visits", "reviews", "iceReads", "threads"];
 var TOMBSTONE_BUCKETS = ORSET_LISTS.concat(ORSET_MAP_LISTS);
+var HOSTILE_KEYS = Object.freeze(["__proto__", "constructor", "prototype"]);
+
+function safeKey(k) {
+  return HOSTILE_KEYS.indexOf(String(k)) === -1;
+}
+
+function safeKeys(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.keys(value).filter(safeKey);
+}
+
+function dictionary() {
+  return Object.create(null);
+}
 
 // Canonical, key-sorted serialization — used for deterministic tie-breaks only.
 function stableStringify(v) {
@@ -51,8 +65,8 @@ function pickLWW(x, y) {
 
 function mergeLWWMap(a, b) {
   a = a || {}; b = b || {};
-  var out = {}, seen = {};
-  Object.keys(a).concat(Object.keys(b)).forEach(function (k) {
+  var out = dictionary(), seen = dictionary();
+  safeKeys(a).concat(safeKeys(b)).forEach(function (k) {
     if (seen[k]) return;
     seen[k] = 1;
     out[k] = pickLWW(a[k], b[k]);
@@ -65,10 +79,11 @@ function mergeLWWMap(a, b) {
 // Canonical order: at desc, id asc.
 function mergeORSet(a, b) {
   a = Array.isArray(a) ? a : []; b = Array.isArray(b) ? b : [];
-  var byId = {};
+  var byId = dictionary();
   a.concat(b).forEach(function (item) {
     if (!item || item.id == null) return;
     var key = String(item.id);
+    if (!safeKey(key)) return;
     if (!byId[key]) byId[key] = item;
     else {
       var itemAt = +item.at || 0, currentAt = +byId[key].at || 0;
@@ -88,8 +103,8 @@ function mergeORSet(a, b) {
 
 function mergeMapOfORSets(a, b) {
   a = a || {}; b = b || {};
-  var out = {}, seen = {};
-  Object.keys(a).concat(Object.keys(b)).forEach(function (k) {
+  var out = dictionary(), seen = dictionary();
+  safeKeys(a).concat(safeKeys(b)).forEach(function (k) {
     if (seen[k]) return;
     seen[k] = 1;
     out[k] = mergeORSet(a[k], b[k]);
@@ -101,10 +116,10 @@ function mergeMapOfORSets(a, b) {
 // Empty per-bucket maps are omitted so the canonical form is stable.
 function mergeTombstones(a, b) {
   a = a || {}; b = b || {};
-  var out = {};
+  var out = dictionary();
   TOMBSTONE_BUCKETS.forEach(function (n) {
-    var ta = a[n] || {}, tb = b[n] || {}, m = {}, any = false;
-    Object.keys(ta).concat(Object.keys(tb)).forEach(function (id) {
+    var ta = a[n] || {}, tb = b[n] || {}, m = dictionary(), any = false;
+    safeKeys(ta).concat(safeKeys(tb)).forEach(function (id) {
       m[id] = Math.max(+ta[id] || 0, +tb[id] || 0);
       any = true;
     });
@@ -129,7 +144,7 @@ function dropDead(list, tomb) {
 // Merge two AppState (v4) documents into one canonical converged document.
 function mergeState(a, b) {
   a = a || {}; b = b || {};
-  var out = {};
+  var out = dictionary();
   var tombs = mergeTombstones(a.tombstones, b.tombstones);
   LWW_MAPS.forEach(function (n) { out[n] = mergeLWWMap(a[n], b[n]); });
   ORSET_LISTS.forEach(function (n) { out[n] = dropDead(mergeORSet(a[n], b[n]), tombs[n]); });
@@ -148,18 +163,18 @@ function mergeState(a, b) {
 function compactTombstones(state, now, maxAgeMs) {
   if (!state || !state.tombstones) return state;
   var cutoff = (+now || 0) - (maxAgeMs == null ? 180 * 24 * 60 * 60 * 1000 : +maxAgeMs);
-  var tombs = {};
+  var tombs = dictionary();
   TOMBSTONE_BUCKETS.forEach(function (n) {
     var t = state.tombstones[n];
     if (!t) return;
-    var m = {}, any = false;
-    Object.keys(t).forEach(function (id) {
+    var m = dictionary(), any = false;
+    safeKeys(t).forEach(function (id) {
       if (+t[id] >= cutoff) { m[id] = t[id]; any = true; }
     });
     if (any) tombs[n] = m;
   });
-  var out = {};
-  Object.keys(state).forEach(function (k) { if (k !== "tombstones") out[k] = state[k]; });
+  var out = dictionary();
+  safeKeys(state).forEach(function (k) { if (k !== "tombstones") out[k] = state[k]; });
   out.tombstones = tombs;
   return out;
 }

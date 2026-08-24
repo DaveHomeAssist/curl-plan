@@ -2,6 +2,32 @@ import XCTest
 @testable import CurlPlanCore
 
 final class AccountBackendPersistenceTests: XCTestCase {
+    func testFailedDurableWriteDoesNotPublishStagedState() throws {
+        let persistence = ControllableAccountPersistence()
+        let backend = try PersistentAccountBackendTransport(persistence: persistence)
+
+        persistence.shouldFail = true
+        let failed = backend.createAccount(handle: "dana",
+                                           displayName: "Dana Mercer",
+                                           homeClub: "Calgary Granite CC",
+                                           password: "persist-pass-87")
+
+        XCTAssertEqual(failed.status, 500)
+        XCTAssertEqual(failed.error?.code, "PERSISTENCE_FAILED")
+        XCTAssertTrue(backend.store.accounts.isEmpty)
+        XCTAssertTrue(backend.store.profiles.isEmpty)
+        XCTAssertEqual(backend.store.snapshot(), .empty)
+
+        persistence.shouldFail = false
+        let committed = backend.createAccount(handle: "dana",
+                                              displayName: "Dana Mercer",
+                                              homeClub: "Calgary Granite CC",
+                                              password: "persist-pass-87")
+
+        XCTAssertEqual(committed.status, 201)
+        XCTAssertEqual(backend.store.snapshot(), persistence.snapshot)
+    }
+
     func testPersistentTransportRestoresSeasonAfterBackendRestartAndPersistsDeletion() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("CurlPlanAccountBackendPersistenceTests-\(UUID().uuidString)")
@@ -80,5 +106,21 @@ final class AccountBackendPersistenceTests: XCTestCase {
         XCTAssertEqual(restartedBackend.store.sharedObjects[scorecard.id]?.title, "Sheet 4")
         XCTAssertEqual(restartedBackend.store.interactions[comment.id]?.state, .hiddenByModeration)
         XCTAssertEqual(restartedBackend.store.reports.first(where: { $0.id == report.id })?.state, .actioned)
+    }
+}
+
+private final class ControllableAccountPersistence: AccountBackendStatePersistence {
+    var snapshot: AccountSocialSnapshot?
+    var shouldFail = false
+
+    func loadSnapshot() throws -> AccountSocialSnapshot? {
+        snapshot
+    }
+
+    func saveSnapshot(_ snapshot: AccountSocialSnapshot) throws {
+        if shouldFail {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        self.snapshot = snapshot
     }
 }

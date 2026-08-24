@@ -63,6 +63,36 @@ for (const c of fixtures.associativityCases || []) {
 for (const s of states) check(eq(mergeState(s, {}), mergeState(mergeState(s, {}), mergeState(s, {}))), "idempotency (canonicalized) failed");
 console.log("  ✓ idempotency (canonicalized) across fixture states");
 
+// 5. Hostile JavaScript object keys must never become accumulator state or
+// mutate Object.prototype. JSON.parse is intentional: object literals treat
+// __proto__ specially and would not reproduce an imported document.
+const hostile = JSON.parse(`{
+  "follows": {
+    "__proto__": { "v": { "polluted": true }, "at": 10 },
+    "constructor": { "v": true, "at": 10 },
+    "prototype": { "v": true, "at": 10 },
+    "safe": { "v": true, "at": 10 }
+  },
+  "visits": {
+    "__proto__": [{ "id": "hostile", "at": 10 }],
+    "safe-stop": [{ "id": "visit-safe", "at": 10 }]
+  },
+  "posts": [{ "id": "__proto__", "at": 10 }, { "id": "post-safe", "at": 10 }],
+  "tombstones": { "posts": { "constructor": 10, "safe-old": 10 } }
+}`);
+const hostileMerged = mergeState(hostile, {});
+check(Object.prototype.polluted === undefined, "hostile merge polluted Object.prototype");
+check(!Object.hasOwn(hostileMerged.follows, "__proto__") &&
+      !Object.hasOwn(hostileMerged.follows, "constructor") &&
+      !Object.hasOwn(hostileMerged.follows, "prototype"),
+"hostile LWW keys were retained");
+check(!Object.hasOwn(hostileMerged.visits, "__proto__"), "hostile map key was retained");
+check(hostileMerged.posts.every(item => item.id !== "__proto__"), "hostile item id was retained");
+check(!Object.hasOwn(hostileMerged.tombstones.posts || {}, "constructor"), "hostile tombstone id was retained");
+check(hostileMerged.follows.safe.v === true && hostileMerged.visits["safe-stop"].length === 1,
+  "safe data was lost while filtering hostile keys");
+console.log("  ✓ hostile keys cannot enter merge accumulators or pollute prototypes");
+
 if (failed) {
   console.error(`\nverify-merge: ${failed} check(s) failed.`);
   process.exit(1);
