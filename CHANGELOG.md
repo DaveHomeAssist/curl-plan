@@ -10,6 +10,8 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added a real-browser Playwright harness, a Classic Ice Notes regression fixture, and a demonstrated intentional-failure gate.
 - Added the authoritative dated release-evidence ledger and dependency-ordered remediation roadmap.
 - Added durable Classic storage-recovery and pre-reset restore notices plus automated light/dark accessibility coverage for every overlay.
+- Added root create/edit/delete/reload coverage, structured storage-failure recovery, correction-state accessibility checks, and stable user-created record identifiers.
+- Added product-scoped manifests and isolated root/Classic service-worker upgrade and offline-shell browser tests.
 
 ### Changed
 
@@ -18,11 +20,15 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Pinned the account backend container base to a multi-architecture Node 22 Alpine digest.
 - Stabilized Classic Ice Notes create/edit/reload and failed-write behavior, made overlays single-owner hidden/inert dialogs with focus restoration, aligned calendar detail with active filters, and scoped planner saves to affected views.
 - Defined Classic as a retained, supported local-first planner whose canonical route and storage boundary remain distinct from the root product preview.
+- Replaced non-semantic root controls with named keyboard-operable controls, added tab and rating state semantics, repaired form naming and validation focus, and established contrast-safe accents in both themes.
+- Isolated root and Classic cache ownership, constrained navigation fallbacks to each product scope, tightened both web CSPs, and bounded Classic imports by bytes, records, depth, and keys before merge.
+- Replaced all six cleartext club website records with verified HTTPS destinations and made the verifier reject new cleartext records.
 
 ### Verified locally
 
 - All P0 local application, parity, merge, API, account-backend, stress, Worker lifecycle, and browser gates passed.
 - All P1 Classic CRUD, recovery, modal, calendar, control-semantics, focus, contrast, and automated accessibility gates passed locally in Chromium.
+- All P2 root semantics, keyboard, CRUD/reload, storage recovery, theme/contrast, correction-state, install asset, service-worker isolation, wrong-shell, import-bound, CSP, and HTTPS gates passed locally; the browser suite is 25 of 25 green.
 - Hosted CI, staging, deployment, monitoring, rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
 
 ## 2026-08-21

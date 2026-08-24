@@ -1,6 +1,6 @@
 # 2026-08-24 audit remediation evidence
 
-Status: P0 and P1 locally verified; P2 through P5 and all external release gates remain open.
+Status: P0 through P2 locally verified; P3 through P5 and all external release gates remain open.
 
 ## Authority
 
@@ -9,6 +9,7 @@ Status: P0 and P1 locally verified; P2 through P5 and all external release gates
 - Local branch: `codex/curlplan-audit-remediation-20260824`
 - P0 change commit: `73523784ed6bb0eb0350b6feea481fd9620d1c45`
 - P1 change commit: `6749e1e46e77b4420c680eea56227eeaf3b6fffc`
+- P2 change commit: `f659a2914291034e04b846818c088925f296eb16`
 - Release owner: Dave Robertson
 - Evidence date: 2026-08-24 EDT
 
@@ -52,14 +53,29 @@ Status: P0 and P1 locally verified; P2 through P5 and all external release gates
 | `npm run test:browser` | 0 | 14 Chromium journeys passed: Ice Notes CRUD/failure/reload, corrupt and unavailable storage, durable reset restore, modal and scrim ownership, calendar filtering, scoped planner rendering, native controls, stress, and both-theme accessibility |
 | `make feature-review CHANGED_FILES='<P1 allowlist>'` | 0 | The bounded review matrix accepted its in-scope support paths and the unsupported-authority claim scan passed |
 
+## P2 command evidence
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `node scripts/gen-seed.js --check` | 0 | Swift SHA-256 remained `3a5d67f746b8b90c67e5d38c2d0809c23e0ad8cfb7af2537a8383aee834885f9` before and after |
+| `node scripts/verify-app.js` | 0 | Root semantics, persistence contract, CSP, manifest, service-worker ownership, and HTTPS club URL checks passed |
+| `node scripts/verify-split.js` | 0 | Classic source, manifest, CSP, bounded import, cache ownership, schema, and parseability checks passed |
+| `node scripts/verify-parity.js` | 0 | All 12 cross-platform capability checks passed after the root edit-flow update |
+| `node tests/run-stress.js` | 0 | All 70 stress assertions passed |
+| `npm run test:browser` | 0 | All 25 Chromium journeys passed, including root keyboard/name/CRUD/reload, failed-storage recovery, both-theme Axe coverage, 200 percent mobile-equivalent reflow, manifest assets, offline shell isolation, upgrade ownership, wrong-shell rejection, CSP, bounded imports, and HTTPS data |
+| `make feature-review CHANGED_FILES='<P2 allowlist>'` | 0 | The bounded support-path review and unsupported-authority claim scan passed; this is not runtime product proof |
+| `git diff --cached --check` | 0 | The exact P2 implementation allowlist contained no whitespace errors before commit |
+
 ## Browser and accessibility proof
 
 - `Closed`: Chromium executes the repaired browser stress page without a literal closing-script parse break.
 - `Closed`: the intentional failing fixture makes the Playwright gate return nonzero.
 - `Closed (P1)`: Classic Ice Notes create/edit/invalid/storage-failure/reload and reset/restore journeys pass in Chromium.
 - `Closed (P1)`: automated Axe scans report no violations on the base page or any of seven overlays in light and dark themes; keyboard tests cover modal ownership, focus containment and restoration, Escape, scrim close, tabs, and the Ice speed radio group.
-- `Open (P2)`: root preview accessibility journeys and 200 percent web zoom.
-- `Open (P5)`: VoiceOver, Dynamic Type accessibility sizes, orientation, keyboard, and reduced-motion device evidence.
+- `Closed (P2)`: root tab, radio, native-control, naming, validation, correction, create/edit/delete/reload, and failed-storage recovery journeys pass in Chromium.
+- `Closed (P2)`: automated Axe scans report no violations in both themes with every accent across Passport, Locker, contribution, correction-list, and edit-sheet states.
+- `Closed with automated equivalent (P2)`: the root layout reflows without horizontal overflow or clipped controls at a 195 by 406 CSS-pixel viewport, equivalent to a 390-pixel mobile viewport at 200 percent browser zoom.
+- `Open (P5)`: manual VoiceOver web proof plus VoiceOver, Dynamic Type accessibility sizes, orientation, keyboard, and reduced-motion native-device evidence.
 
 ## Operational and release gates
 
@@ -72,7 +88,7 @@ Status: P0 and P1 locally verified; P2 through P5 and all external release gates
 | Deployment smoke | Open | Deployment is explicitly unauthorized in this program run |
 | Monitoring | Open | No deployed candidate exists |
 | Backup and restore drill | Open | Production data authority is not selected until P3 |
-| Rollback | Open | Candidate rollback is `git revert <P0 checkpoint>`; not exercised |
+| Rollback | Open | Candidate rollback is a revert of the local P2-to-P0 phase commits; not exercised |
 
 ## Phase status
 
@@ -80,7 +96,7 @@ Status: P0 and P1 locally verified; P2 through P5 and all external release gates
 |---|---|---|
 | P0 Honest release baseline | Closed locally | Hosted CI remains an operational release gate, not a P0 code gate |
 | P1 Classic workflows and recovery | Closed locally | Hosted CI remains an operational release gate; no push or deployment was authorized |
-| P2 Root web and offline boundaries | Open | Depends on P0 checkpoint |
+| P2 Root web and offline boundaries | Closed locally | Root semantics, durable recovery, bounded import, install assets, and cross-app offline/cache isolation pass locally; manual VoiceOver remains a final release gate |
 | P3 Atomic data ownership | Open | Depends on P0 checkpoint and architecture decision |
 | P4 Identity and abuse boundaries | Open | Depends on P3 |
 | P5 Native and release readiness | Open | Depends on P3 and P4 |
