@@ -4,6 +4,37 @@ import XCTest
 
 @MainActor
 final class AccountRuntimeTests: XCTestCase {
+    func testDevelopmentBackendURLRequiresExplicitFeatureFlag() {
+        let defaults = isolatedDefaults()
+        defaults.set("https://saved.example.test", forKey: "curlplan.account.backendURL")
+
+        XCTAssertNil(AccountRuntime.resolveDevelopmentBackendURL(
+            arguments: ["CurlPlan"],
+            environment: [AccountRuntime.backendURLEnvironmentKey: "https://environment.example.test"],
+            defaults: defaults
+        ))
+
+        XCTAssertEqual(AccountRuntime.resolveDevelopmentBackendURL(
+            arguments: ["CurlPlan"],
+            environment: [
+                AccountRuntime.developmentFeatureEnvironmentKey: "true",
+                AccountRuntime.backendURLEnvironmentKey: "https://environment.example.test"
+            ],
+            defaults: defaults
+        ), URL(string: "https://environment.example.test"))
+
+        XCTAssertEqual(AccountRuntime.resolveDevelopmentBackendURL(
+            arguments: [
+                "CurlPlan",
+                AccountRuntime.developmentFeatureArgumentKey,
+                AccountRuntime.backendURLArgumentKey,
+                "https://argument.example.test"
+            ],
+            environment: [:],
+            defaults: defaults
+        ), URL(string: "https://argument.example.test"))
+    }
+
     func testUnconfiguredRuntimeDoesNotSendAccountRequests() async throws {
         let defaults = isolatedDefaults()
         let loader = RecordingRuntimeHTTPDataLoader()

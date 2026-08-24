@@ -73,6 +73,9 @@ while IFS= read -r path; do
     ios/CurlPlan/CurlPlanApp.swift)
       add_rows FR-SETUP FR-SETTINGS FR-A11Y FR-CLAIMS
       ;;
+    ios/CurlPlan/AuthView.swift)
+      add_rows FR-ACCOUNT FR-SETTINGS FR-A11Y FR-CLAIMS
+      ;;
     ios/CurlPlan/RootView.swift)
       add_rows FR-SETUP FR-PASSPORT FR-LOCKER FR-ROSTER FR-A11Y FR-CLAIMS
       ;;

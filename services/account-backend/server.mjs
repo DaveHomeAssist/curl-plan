@@ -19,6 +19,8 @@ const OBJECT_RECORD_COLLECTIONS = [
 const ARRAY_RECORD_COLLECTIONS = ["relationships", "memberships", "reports"];
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 const DEFAULT_STORAGE_PATH = resolve("/tmp/curlplan-account-backend-state.json");
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const scryptAsync = promisify(scrypt);
 const DUMMY_CREDENTIAL = {
   algorithm: "scrypt-v1",
@@ -158,6 +160,49 @@ class AccountBackendStore {
   }
 }
 
+export function accountBackendOptionsFromEnvironment(environment = process.env, argumentsList = process.argv) {
+  return {
+    storagePath: environment.CURLPLAN_ACCOUNT_BACKEND_STORE || argumentsList[2] || DEFAULT_STORAGE_PATH,
+    port: boundedInteger(environment.PORT, 8787, 0, 65_535),
+    hostname: environment.HOST || "127.0.0.1",
+    mode: environment.CURLPLAN_ACCOUNT_BACKEND_MODE === "development" ? "development" : "quarantined",
+    allowedOrigins: exactOrigins(environment.CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS),
+    trustProxy: environment.CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY === "true",
+    requestTimeoutMs: boundedInteger(
+      environment.CURLPLAN_ACCOUNT_BACKEND_REQUEST_TIMEOUT_MS,
+      DEFAULT_REQUEST_TIMEOUT_MS,
+      1_000,
+      120_000
+    ),
+    sessionTtlMs: boundedInteger(
+      environment.CURLPLAN_ACCOUNT_BACKEND_SESSION_TTL_MS,
+      DEFAULT_SESSION_TTL_MS,
+      60_000,
+      90 * 24 * 60 * 60 * 1000
+    ),
+    signInLimit: boundedInteger(environment.CURLPLAN_ACCOUNT_BACKEND_SIGN_IN_LIMIT, 5, 1, 100),
+    signInWindowMs: boundedInteger(
+      environment.CURLPLAN_ACCOUNT_BACKEND_SIGN_IN_WINDOW_MS,
+      15 * 60 * 1000,
+      1_000,
+      24 * 60 * 60 * 1000
+    ),
+    maxRateBuckets: boundedInteger(
+      environment.CURLPLAN_ACCOUNT_BACKEND_MAX_RATE_BUCKETS,
+      10_000,
+      100,
+      1_000_000
+    ),
+    maxAccounts: boundedInteger(environment.CURLPLAN_ACCOUNT_BACKEND_MAX_ACCOUNTS, 10_000, 1, 1_000_000),
+    maxSessionsPerAccount: boundedInteger(
+      environment.CURLPLAN_ACCOUNT_BACKEND_MAX_SESSIONS_PER_ACCOUNT,
+      5,
+      1,
+      100
+    )
+  };
+}
+
 export function createAccountBackendServer({
   storagePath = DEFAULT_STORAGE_PATH,
   mode = "quarantined",
@@ -169,8 +214,8 @@ export function createAccountBackendServer({
   maxRateBuckets = 10_000,
   maxAccounts = 10_000,
   maxSessionsPerAccount = 5,
-  sessionTtlMs = 30 * 24 * 60 * 60 * 1000,
-  requestTimeoutMs = 15_000,
+  sessionTtlMs = DEFAULT_SESSION_TTL_MS,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   logger = () => {}
 } = {}) {
   const store = new AccountBackendStore(storagePath, commitHook);
@@ -1103,6 +1148,25 @@ function activeAttempts(attempts = [], windowMs) {
   return attempts.filter(timestamp => timestamp > cutoff);
 }
 
+function boundedInteger(rawValue, fallback, minimum, maximum) {
+  if (rawValue === undefined || rawValue === "") return fallback;
+  const value = Number(rawValue);
+  return Number.isSafeInteger(value) && value >= minimum && value <= maximum ? value : fallback;
+}
+
+function exactOrigins(rawValue = "") {
+  const origins = rawValue.split(",").map(value => value.trim()).filter(Boolean);
+  return [...new Set(origins.filter(value => {
+    try {
+      const url = new URL(value);
+      return (url.protocol === "https:" || url.protocol === "http:") &&
+        url.origin === value && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  }))];
+}
+
 function sourceAddress(request, trustProxy) {
   if (trustProxy && typeof request.headers["x-forwarded-for"] === "string") {
     return request.headers["x-forwarded-for"].split(",", 1)[0].trim().slice(0, 128);
@@ -1168,16 +1232,7 @@ function expiresAt(sessionTtlMs) {
 }
 
 async function main() {
-  const storagePath = process.env.CURLPLAN_ACCOUNT_BACKEND_STORE || process.argv[2] || DEFAULT_STORAGE_PATH;
-  const port = Number.parseInt(process.env.PORT || "8787", 10);
-  const hostname = process.env.HOST || "127.0.0.1";
-  const mode = process.env.CURLPLAN_ACCOUNT_BACKEND_MODE || "quarantined";
-  const allowedOrigins = (process.env.CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS || "")
-    .split(",")
-    .map(value => value.trim())
-    .filter(Boolean);
-  const trustProxy = process.env.CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY === "true";
-  const started = await startAccountBackendServer({ storagePath, port, hostname, mode, allowedOrigins, trustProxy });
+  const started = await startAccountBackendServer(accountBackendOptionsFromEnvironment());
   console.log(`CurlPlan account backend listening on ${started.baseURL}`);
   console.log(`Storage: ${started.storagePath}`);
 

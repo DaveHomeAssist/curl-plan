@@ -2,8 +2,13 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { scryptSync } from "node:crypto";
-import { startAccountBackendServer } from "../services/account-backend/server.mjs";
+import { fileURLToPath } from "node:url";
+import {
+  accountBackendOptionsFromEnvironment,
+  startAccountBackendServer
+} from "../services/account-backend/server.mjs";
 
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const tempDir = await mkdtemp(join(tmpdir(), "curlplan-account-backend-"));
 const storagePath = join(tempDir, "state.json");
 let failNextCommit = false;
@@ -29,8 +34,80 @@ const developmentOptions = {
 let service = await startAccountBackendServer(developmentOptions);
 
 try {
+  const configuredOptions = accountBackendOptionsFromEnvironment({
+    PORT: "9443",
+    HOST: "127.0.0.2",
+    CURLPLAN_ACCOUNT_BACKEND_STORE: "/tmp/curlplan-configured.json",
+    CURLPLAN_ACCOUNT_BACKEND_MODE: "development",
+    CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS: "https://one.example, https://two.example",
+    CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY: "true",
+    CURLPLAN_ACCOUNT_BACKEND_REQUEST_TIMEOUT_MS: "12000",
+    CURLPLAN_ACCOUNT_BACKEND_SESSION_TTL_MS: "60000",
+    CURLPLAN_ACCOUNT_BACKEND_SIGN_IN_LIMIT: "7",
+    CURLPLAN_ACCOUNT_BACKEND_SIGN_IN_WINDOW_MS: "90000",
+    CURLPLAN_ACCOUNT_BACKEND_MAX_RATE_BUCKETS: "500",
+    CURLPLAN_ACCOUNT_BACKEND_MAX_ACCOUNTS: "250",
+    CURLPLAN_ACCOUNT_BACKEND_MAX_SESSIONS_PER_ACCOUNT: "3"
+  });
+  assert(configuredOptions.port === 9443 && configuredOptions.hostname === "127.0.0.2",
+    "environment parser should own the listener boundary");
+  assert(configuredOptions.allowedOrigins.length === 2 && configuredOptions.trustProxy === true,
+    "environment parser should own exact CORS and trusted-proxy boundaries");
+  assert(configuredOptions.requestTimeoutMs === 12000 && configuredOptions.sessionTtlMs === 60000,
+    "environment parser should own timeout and session-expiry boundaries");
+  assert(configuredOptions.signInLimit === 7 && configuredOptions.signInWindowMs === 90000 &&
+    configuredOptions.maxRateBuckets === 500 && configuredOptions.maxAccounts === 250 &&
+    configuredOptions.maxSessionsPerAccount === 3,
+  "environment parser should own abuse and storage caps");
+  const boundedOptions = accountBackendOptionsFromEnvironment({
+    PORT: "70000",
+    CURLPLAN_ACCOUNT_BACKEND_MODE: "production",
+    CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS: "*, https://valid.example/path, https://valid.example",
+    CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY: "TRUE",
+    CURLPLAN_ACCOUNT_BACKEND_REQUEST_TIMEOUT_MS: "999999",
+    CURLPLAN_ACCOUNT_BACKEND_SESSION_TTL_MS: "0",
+    CURLPLAN_ACCOUNT_BACKEND_MAX_ACCOUNTS: "NaN"
+  });
+  assert(boundedOptions.port === 8787 && boundedOptions.requestTimeoutMs === 15000 &&
+    boundedOptions.sessionTtlMs === 30 * 24 * 60 * 60 * 1000 && boundedOptions.maxAccounts === 10000,
+  "invalid numeric boundaries should fail closed to documented defaults");
+  assert(boundedOptions.mode === "quarantined" && boundedOptions.trustProxy === false &&
+    boundedOptions.allowedOrigins.length === 1 && boundedOptions.allowedOrigins[0] === "https://valid.example",
+  "invalid modes, proxy flags, wildcards, and non-origin URLs should fail closed");
+  pass("runtime environment controls parse into bounded server options");
+
   await request("GET", "/health", { expected: 200 });
   pass("health endpoint responds");
+
+  const dockerfile = await readFile(join(repoRoot, "services/account-backend/Dockerfile"), "utf8");
+  const securityAuthority = await readFile(join(repoRoot, "docs/SECURITY.md"), "utf8").catch(() => "");
+  const authView = await readFile(join(repoRoot, "ios/CurlPlan/AuthView.swift"), "utf8");
+  const appEntry = await readFile(join(repoRoot, "ios/CurlPlan/CurlPlanApp.swift"), "utf8");
+  assert([
+    "CURLPLAN_ACCOUNT_BACKEND_ALLOWED_ORIGINS",
+    "CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY",
+    "CURLPLAN_ACCOUNT_BACKEND_REQUEST_TIMEOUT_MS",
+    "CURLPLAN_ACCOUNT_BACKEND_SESSION_TTL_MS"
+  ].every(token => dockerfile.includes(token)),
+  "container contract should expose CORS, trusted-proxy, timeout, and session boundaries");
+  assert([
+    "Production authority",
+    "TLS termination",
+    "Trusted proxy",
+    "Session expiry",
+    "Recovery",
+    "Incident owner"
+  ].every(token => securityAuthority.includes(token)),
+  "docs/SECURITY.md should own every P4 transport and incident boundary");
+  assert(authView.includes("@EnvironmentObject var accountRuntime") &&
+    authView.includes("SecureField") &&
+    authView.includes("Retry account setup") &&
+    authView.includes("Roll back partial account"),
+  "AuthView should expose password-gated retry and rollback only for partial account recovery");
+  assert(appEntry.includes("resolveDevelopmentBackendURL") &&
+    appEntry.includes(".environmentObject(accountRuntime)"),
+  "app entry should inject an explicitly enabled development account runtime");
+  pass("P4 native recovery and transport authority surfaces are wired explicitly");
 
   const allowedPreflight = await requestUnchecked("OPTIONS", "/v1/auth/sign-in", {
     headers: {

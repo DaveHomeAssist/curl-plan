@@ -3,6 +3,8 @@
 This zero-dependency service is a quarantined development verifier. It is not a
 production identity or data authority; the selected production boundary is the
 Clerk + Cloudflare Worker/D1 plane documented in `api/README.md`.
+The operational authority, TLS rules, recovery procedure, and incident response
+live in `docs/SECURITY.md`.
 
 Writes require `CURLPLAN_ACCOUNT_BACKEND_MODE=development`. Production-shaped
 defaults stay quarantined. Development runs should also set:
@@ -12,6 +14,8 @@ defaults stay quarantined. Development runs should also set:
 - `CURLPLAN_ACCOUNT_BACKEND_TRUST_PROXY=true` only when a known reverse proxy
   overwrites `X-Forwarded-For`. Otherwise the socket address owns rate limits.
 - a persistent `CURLPLAN_ACCOUNT_BACKEND_STORE` path with restricted access.
+- bounded timeout, session, limiter, account, and session-cap variables exposed
+  by the Dockerfile. Invalid or out-of-range values fall back to safe defaults.
 
 The service caps JSON requests at 1 MB, season documents at 512 KiB, structural
 depth and collection growth, account count, active sessions per account, and

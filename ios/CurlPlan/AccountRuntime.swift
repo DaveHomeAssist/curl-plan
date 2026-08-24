@@ -95,6 +95,8 @@ struct AccountRuntimeResult: Equatable {
 
 @MainActor
 final class AccountRuntime: ObservableObject {
+    nonisolated static let developmentFeatureEnvironmentKey = "CURLPLAN_ENABLE_DEVELOPMENT_ACCOUNT"
+    nonisolated static let developmentFeatureArgumentKey = "-curlplan-enable-development-account"
     nonisolated static let backendURLEnvironmentKey = "CURLPLAN_ACCOUNT_BACKEND_URL"
     nonisolated static let backendURLArgumentKey = "-curlplan-account-backend-url"
     nonisolated static let accountIDKey = "curlplan.account.backend.accountID"
@@ -109,7 +111,7 @@ final class AccountRuntime: ObservableObject {
     private let loader: AccountHTTPDataLoading
     private var client: AccountHTTPBackendClient?
 
-    init(baseURL: URL? = AccountRuntime.resolveBackendURL(),
+    init(baseURL: URL? = AccountRuntime.resolveDevelopmentBackendURL(),
          defaults: UserDefaults = .standard,
          loader: AccountHTTPDataLoading = URLSession.shared) {
         self.baseURL = baseURL
@@ -149,6 +151,20 @@ final class AccountRuntime: ObservableObject {
             return url
         }
         return nil
+    }
+
+    /// The custom handle/password service is a quarantined development verifier,
+    /// not CurlPlan's production identity plane. Ignore even a saved backend URL
+    /// unless the running process explicitly opts into that development surface.
+    nonisolated static func resolveDevelopmentBackendURL(arguments: [String] = ProcessInfo.processInfo.arguments,
+                                                         environment: [String: String] = ProcessInfo.processInfo.environment,
+                                                         defaults: UserDefaults = .standard) -> URL? {
+        let environmentEnabled = ["1", "true", "yes"].contains(
+            environment[developmentFeatureEnvironmentKey]?.lowercased() ?? ""
+        )
+        let argumentEnabled = arguments.contains(developmentFeatureArgumentKey)
+        guard environmentEnabled || argumentEnabled else { return nil }
+        return resolveBackendURL(arguments: arguments, environment: environment, defaults: defaults)
     }
 
     func createAccount(handle: String, password: String, season: AccountSeasonPayload) async -> AccountRuntimeResult {

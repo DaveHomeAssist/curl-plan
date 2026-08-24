@@ -78,6 +78,7 @@ These rows are not current app features. They are the required review contract b
 | `ios/CurlPlan/Models.swift` | `FR-SETUP`, `FR-PASSPORT`, `FR-STOPS`, `FR-RESULTS`, `FR-ROSTER`, `FR-CIRCLE`, `FR-LOCKER`, `FR-ATTENDANCE`, `FR-BONSPIEL-ROSTER`, `FR-BONSPIEL-LINEUP`, `FR-BONSPIEL-SCORE`, `FR-SETTINGS`, `FR-CLAIMS` |
 | `ios/CurlPlan/Seed.generated.swift`, `ios/CurlPlan/Clubs.generated.swift` | `build-support`, `FR-SETUP`, `FR-PASSPORT`, `FR-STOPS`, `FR-RESULTS`, `FR-ROSTER`, `FR-CIRCLE`, `FR-LOCKER`, `FR-ATTENDANCE`, `FR-CLAIMS` |
 | `ios/CurlPlan/CurlPlanApp.swift` | `FR-SETUP`, `FR-SETTINGS`, `FR-A11Y`, `FR-CLAIMS` |
+| `ios/CurlPlan/AuthView.swift` | `FR-ACCOUNT`, `FR-SETTINGS`, `FR-A11Y`, `FR-CLAIMS` |
 | `ios/CurlPlan/RootView.swift` | `FR-SETUP`, `FR-PASSPORT`, `FR-LOCKER`, `FR-ROSTER`, `FR-A11Y`, `FR-CLAIMS` |
 | `ios/CurlPlan/PassportView.swift` | `FR-PASSPORT`, `FR-STOPS`, `FR-RESULTS`, `FR-A11Y`, `FR-CLAIMS` |
 | `ios/CurlPlan/LiveMapView.swift` | `FR-STOPS`, `FR-PASSPORT`, `FR-A11Y`, `FR-CLAIMS` |

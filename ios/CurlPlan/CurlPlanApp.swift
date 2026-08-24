@@ -9,6 +9,9 @@ struct CurlPlanApp: App {
     @StateObject private var settings = AppSettings()
     @StateObject private var store = Store()
     @StateObject private var router = Router()
+    @StateObject private var accountRuntime = AccountRuntime(
+        baseURL: AccountRuntime.resolveDevelopmentBackendURL()
+    )
 
     var body: some Scene {
         WindowGroup {
@@ -16,6 +19,7 @@ struct CurlPlanApp: App {
                 .environmentObject(settings)
                 .environmentObject(store)
                 .environmentObject(router)
+                .environmentObject(accountRuntime)
                 .tint(settings.accent)
                 .preferredColorScheme(settings.isArena ? .dark : .light)
         }
