@@ -14,6 +14,8 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added product-scoped manifests and isolated root/Classic service-worker upgrade and offline-shell browser tests.
 - Added the canonical Clerk + Worker/D1 identity and season-ownership decision, schema 4 D1 migration, versioned export/restore/deletion endpoints, and persisted idempotency receipts.
 - Added concurrent CAS, hostile-key, merged-size, migration, lifecycle, rejected-plane, per-record recovery, and failed-Swift-persistence regression coverage.
+- Added complete Clerk JWT claim and JWKS-rotation checks, explicit credentialed CORS allowlists, abuse-safe authentication telemetry, and bounded account/session/rate storage controls.
+- Added resumable native account lifecycle checkpoints, crash-window recovery, idempotent retry, rollback, and block-revocation regression coverage.
 
 ### Changed
 
@@ -29,6 +31,10 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Replaced inherited-key-sensitive merge accumulators with null-prototype dictionaries and filtered dangerous keys before they can enter merge state.
 - Quarantined the custom credential service by default, retained explicit development mode only, serialized its mutations, validated schema 4 imports, and replaced whole-system snapshots with content-addressed records behind an atomic recoverable manifest.
 - Staged Swift account mutations in an isolated store and publish them only after durable persistence succeeds.
+- Made Worker authentication require issuer, audience, subject, expiry, not-before, issued-at, RS256, signing-use keys, bounded skew, and one fail-closed JWKS refresh for unknown keys.
+- Normalized custom-development handles and passwords consistently, moved scrypt work off the request thread, equalized unknown-handle work, migrated legacy credentials deliberately, and bounded sign-in attempts by account plus trusted source.
+- Made blocks revoke shared memberships and stale roles in both directions and recheck blocked ownership on every shared-object, messaging, reporting, and moderation mutation.
+- Persisted native setup and restore stages so retries cannot create a second account or publish a premature ready state, with an explicit backend rollback path.
 
 ### Verified locally
 
@@ -37,6 +43,8 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - All P2 root semantics, keyboard, CRUD/reload, storage recovery, theme/contrast, correction-state, install asset, service-worker isolation, wrong-shell, import-bound, CSP, and HTTPS gates passed locally; the browser suite is 25 of 25 green.
 - All P3 merge, atomic Worker/D1, migration, lifecycle, custom development-service, hostile-input, bounded-growth, and 19 Swift contract tests passed locally.
 - P3 Worker typecheck, lint, and direct esbuild passed; the current-revision Wrangler dry-run remains open because startup blocked on synchronous dependency reads under critical APFS capacity pressure.
+- P4 Worker token/JWKS/CORS checks, custom verifier authentication/authorization/abuse/session/quota/recovery checks, all 24 Swift package tests, and the unsigned iOS Simulator build passed locally.
+- P4 controlled TLS staging remains open because no deployment, credentials, or live-migration authority was granted; P5 was not started because its P4 dependency is unsatisfied.
 - Hosted CI, staging, deployment, monitoring, rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
 
 ## 2026-08-21

@@ -1,6 +1,6 @@
 # 2026-08-24 audit remediation evidence
 
-Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler lifecycle rerun, and all external release gates remain open.
+Status: P0 through P3 locally verified; the P4 implementation is locally verified but its controlled TLS staging exit remains open. P5, the current-revision Wrangler lifecycle rerun, and all external release gates remain open.
 
 ## Authority
 
@@ -11,6 +11,7 @@ Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler li
 - P1 change commit: `6749e1e46e77b4420c680eea56227eeaf3b6fffc`
 - P2 change commit: `f659a2914291034e04b846818c088925f296eb16`
 - P3 change commit: `af8ac0f33c8dd899573c373bc0f40599e9d0cb62`
+- P4 local implementation commit: `77908ad4addba038b28b59df7208e502db45d92a`
 - Release owner: Dave Robertson
 - Evidence date: 2026-08-24 EDT
 
@@ -85,6 +86,30 @@ Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler li
 | `make feature-review CHANGED_FILES='<P3 allowlist>'` | 0 | The bounded account/sync/trust-safety support-path review and unsupported-authority claim scan passed; this is not deployed-service proof |
 | `git diff --cached --check` | 0 | The exact P3 implementation allowlist contained no whitespace errors before commit |
 
+## P4 command evidence
+
+Red-first proof preceded implementation: the new Worker checks reported three
+JWT/JWKS failures; the custom verifier stopped at the credentialed CORS
+contract; and Swift failed because recovery state did not exist. Additional
+red checks rejected Worker origin handling, session expiry/quota enforcement,
+record pruning, and the native post-create crash window before each production
+change was made.
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `node scripts/verify-api.js` | 0 | Complete issuer/audience/subject/time claims, RS256 and signing-use constraints, expired/premature/wrong-claim negatives, unknown-key refresh, legitimate rotation, stale JWKS rejection, atomic sync, hostile keys, bounded documents, lifecycle, and explicit credentialed allowlisted CORS passed |
+| `node scripts/verify-account-backend.mjs` | 0 | NFKC handle/password parity, asynchronous equalized scrypt, legacy credential migration, account-plus-trusted-source rate limits, redacted telemetry, CORS, hostile input, quotas, session cap/expiry, direct block bypass, stale-role revocation, future-invitation denial, failed-commit rollback, record pruning, corrupt-primary recovery, and production quarantine passed |
+| `swift test --scratch-path /tmp/curlplan-p4-final-spm` | 0 | All 24 account, HTTP, runtime, sync, persistence, social, authorization, resumable setup, crash-window, retry, and rollback tests passed |
+| `cd api && npm run typecheck` | 0 | Worker JavaScript typecheck passed with required Clerk audience wiring |
+| `cd api && npm run lint` | 0 | All three Worker modules passed syntax and source-policy checks |
+| `cd api && ./node_modules/.bin/esbuild src/index.js --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js` | 0 | Direct Worker bundle completed at 23.5 kB |
+| `xcodebuild -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/curlplan-p4-derived CODE_SIGNING_ALLOWED=NO build` | 0 | The full native app, including resumable account runtime and block enforcement, compiled for arm64 and x86_64 Simulator architectures |
+| `node scripts/verify-merge.js` | 0 | All 14 pair fixtures, associativity, idempotency, tombstones, and hostile-key cases remained green |
+| `node scripts/gen-seed.js --check` | 0 | Generated Swift seed SHA-256 remained unchanged before and after check mode |
+| `node scripts/verify-app.js && node scripts/verify-split.js && node scripts/verify-parity.js` | 0 | Root, Classic, and all 12 cross-platform capability checks remained green |
+| `make feature-review CHANGED_FILES='<P4 allowlist>'` | 0 | Account, sync, settings recovery, identity, relationship, shared-object, social, trust-safety, and unsupported-authority claim gates passed |
+| `git diff --cached --check` | 0 | The exact P4 implementation allowlist contained no whitespace errors before commit |
+
 ## Browser and accessibility proof
 
 - `Closed`: Chromium executes the repaired browser stress page without a literal closing-script parse break.
@@ -101,14 +126,14 @@ Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler li
 | Gate | Status | Evidence or blocker |
 |---|---|---|
 | Hosted CI on the local phase commits | Open | Push is explicitly outside the authorized program scope |
-| Current-revision Wrangler dry-run | Open | Typecheck, lint, API behavior, and direct esbuild passed; repeated Wrangler 4.123.0 startup remained blocked in synchronous dependency reads on a 99-percent-full APFS data volume and was interrupted after bounded waits |
-| Xcode project tests | Open | Unsigned compile passed; unit/UI tests remain deferred to P5 dependency order |
+| Current-revision Wrangler dry-run | Open | Typecheck, lint, API behavior, and direct esbuild passed; the P4 Wrangler 4.123.0 attempt produced no output after 45 seconds beyond startup and was interrupted. APFS remained 99-percent full |
+| Xcode project tests | Open | The unsigned P4 simulator app build passed for arm64 and x86_64; Xcode unit/UI scheme execution remains deferred to P5 dependency order |
 | Signed archive resource inspection | Open | Requires P5 and signing authority |
 | Controlled TLS staging boundary | Open | No staging deployment or credential authority granted |
 | Deployment smoke | Open | Deployment is explicitly unauthorized in this program run |
 | Monitoring | Open | No deployed candidate exists |
 | Backup and restore drill | Open | The authority is selected, but no live D1 database or migration/deployment authority exists for a production drill |
-| Rollback | Open | Candidate rollback is a revert of the local P3-to-P0 phase commits; no D1 down-migration exists and no live migration was run |
+| Rollback | Open | Candidate rollback is a revert of the local P4-to-P0 phase commits; no D1 down-migration exists and no live migration was run |
 
 ## Phase status
 
@@ -118,7 +143,7 @@ Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler li
 | P1 Classic workflows and recovery | Closed locally | Hosted CI remains an operational release gate; no push or deployment was authorized |
 | P2 Root web and offline boundaries | Closed locally | Root semantics, durable recovery, bounded import, install assets, and cross-app offline/cache isolation pass locally; manual VoiceOver remains a final release gate |
 | P3 Atomic data ownership | Closed locally | Clerk + Worker/D1 is the sole production plane; schema 4 CAS/idempotency/lifecycle, hostile-key, bounded-growth, rejected-plane quarantine, per-record development commits, and Swift rollback pass locally. No D1 migration or live cutover was authorized |
-| P4 Identity and abuse boundaries | Open | Depends on P3 |
-| P5 Native and release readiness | Open | Depends on P3 and P4 |
+| P4 Identity and abuse boundaries | Local implementation verified; exit open | Token/JWKS, password, authorization, blocking, CORS, session, quota, telemetry, and resumable recovery pass locally. The required controlled TLS staging boundary was not created because deployment and credential authority were explicitly withheld |
+| P5 Native and release readiness | Not started | P4 has not met its controlled TLS staging exit, so strict dependency order blocks P5 |
 
 This record must not be used to claim the full remediation program or a production release is complete.
