@@ -8,6 +8,7 @@ Status: P0 and P1 locally verified; P2 through P5 and all external release gates
 - Audited baseline: `541695dce342ce44fab7d0f4c76e5ea7dfb21357`
 - Local branch: `codex/curlplan-audit-remediation-20260824`
 - P0 change commit: `73523784ed6bb0eb0350b6feea481fd9620d1c45`
+- P1 change commit: `6749e1e46e77b4420c680eea56227eeaf3b6fffc`
 - Release owner: Dave Robertson
 - Evidence date: 2026-08-24 EDT
 
