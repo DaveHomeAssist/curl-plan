@@ -32,7 +32,7 @@ const CAPABILITIES = [
   { name: "Credential-free demo gate",        web: ["Demo only.", 'data-action="auth-demo"'], ios: ["Demo only.", "func exploreDemo("] },
   { name: "Personalized Passport / derived stats", web: ["function derivedStats(", "function visitedStops("], ios: ["func derivedStats(", "func visitedStops("] },
   { name: "Functional search (Locker+Roster)", web: ["function lockerPosts(", "function rosterRows("], ios: ["func postMatches(", "SearchField"] },
-  { name: "Create spiel / curler",            web: ["function submitNewSpiel(", "function submitNewCurler("], ios: ["func addSpiel(", "func addCurler(", "NewSpielSheet", "NewCurlerSheet"] },
+  { name: "Create spiel / curler",            web: ["function submitSpiel(", "function submitCurler("], ios: ["func addSpiel(", "func addCurler(", "NewSpielSheet", "NewCurlerSheet"] },
   { name: "Following / Discover filter",       web: ["lockerTab", 'data-action="locker-tab"'], ios: ["lockerTab", "enum LockerTab"] },
   { name: "Demo state scoping",               web: ["storeKey(", "curlplan-hifi-state-v1"],  ios: ["stateKey", "cp.state.v2"] },
 ];

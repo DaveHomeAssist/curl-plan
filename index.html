@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0e1316">
 <meta name="description" content="CurlPlan — your season, your circle. A curling-native app: map your season, stay close to your circle.">
 <meta name="robots" content="index,follow">
@@ -51,6 +51,7 @@
 }
 
 *{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
 html,body{ height:100%; }
 body{
   margin:0;
@@ -66,7 +67,7 @@ body{
 
 /* ---------- theme tokens (Ice = light, Arena = dark) ---------- */
 :root{
-  --accent:#c0402c;
+  --accent:#a52f21;
   --accent-ink:#ffffff;
   --house-red:#c0402c;
   --house-blue:#2f6f93;
@@ -79,6 +80,8 @@ body{
   --pebble-o:0.6;
 }
 [data-theme="arena"]{
+  --accent:#ff9b87;
+  --accent-ink:#13181b;
   --ink:#eef3f6;
   --muted:#a7b0b6;
   --line:rgba(255,255,255,0.09);
@@ -177,7 +180,7 @@ body{
 .row{ display:flex; align-items:center; gap:12px; }
 .pill-btn{
   font:700 12px 'Hanken Grotesk'; border-radius:10px; padding:8px 14px; border:0; cursor:pointer;
-  background:var(--accent); color:#fff;
+  background:var(--accent); color:var(--accent-ink);
 }
 .pill-btn.ghost{ background:transparent; border:1.5px solid var(--ink); color:var(--ink); padding:6.5px 14px; }
 .tag{
@@ -218,10 +221,24 @@ body{
 /* ---------- section header ---------- */
 .sec-head{ display:flex; align-items:center; justify-content:space-between; }
 .sec-head .lab{ font:500 11px 'DM Mono'; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent); cursor:pointer; }
+.sec-head .act{
+  min-width:44px; min-height:44px; padding:6px; border:0; background:transparent;
+  font:700 12px 'Hanken Grotesk'; color:var(--accent); cursor:pointer;
+}
 
 /* ---------- list row (stops / games / people) ---------- */
-.tile{ padding:12px; cursor:pointer; }
+.tile{ padding:12px; cursor:pointer; width:100%; text-align:left; font:inherit; color:inherit; }
+.record-main{
+  flex:1; min-width:0; display:flex; align-items:center; gap:12px;
+  border:0; background:transparent; color:inherit; text-align:left; padding:0; cursor:pointer;
+}
+.record-actions{ display:flex; gap:6px; margin-top:10px; justify-content:flex-end; }
+.record-actions button{
+  min-width:44px; min-height:44px; border:1px solid var(--line); border-radius:9px;
+  background:var(--panel); color:var(--ink); font:700 12px 'Hanken Grotesk'; cursor:pointer;
+}
+.record-actions .danger{ color:#9b251c; }
+[data-theme="arena"] .record-actions .danger{ color:#ff9b87; }
 .tile .code{
   width:42px; height:42px; border-radius:12px; flex:none; background:var(--panel);
   display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent);
@@ -231,7 +248,7 @@ body{
 .score{ font:400 17px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
 .plus-badge{
   width:20px; height:20px; border-radius:99px; background:var(--accent);
-  display:flex; align-items:center; justify-content:center; font:700 8px 'Hanken Grotesk'; color:#fff;
+  display:flex; align-items:center; justify-content:center; font:700 8px 'Hanken Grotesk'; color:var(--accent-ink);
 }
 
 /* ---------- tab bar ---------- */
@@ -243,9 +260,10 @@ body{
 .tab{
   min-width:44px; min-height:44px; padding:0 4px;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  background:none; border:0; cursor:pointer; opacity:.5;
+  background:none; border:0; cursor:pointer; opacity:1;
 }
 .tab.active{ opacity:1; }
+.tab:not(.active) .glyph, .tab:not(.active) .lab{ color:var(--muted); }
 .tab .glyph{ font-size:18px; line-height:.9; color:var(--ink); }
 .tab.active .glyph{ color:var(--accent); }
 .tab .ring{ width:21px; height:21px; }
@@ -255,19 +273,20 @@ body{
 /* ---------- FAB ---------- */
 .fab{
   position:absolute; right:18px; bottom:104px; width:54px; height:54px; border-radius:99px;
-  background:var(--accent); border:0; cursor:pointer; color:#fff; font:300 30px 'Hanken Grotesk';
+  background:var(--accent); border:0; cursor:pointer; color:var(--accent-ink); font:300 30px 'Hanken Grotesk';
   display:flex; align-items:center; justify-content:center; box-shadow:0 12px 26px -8px rgba(192,64,44,.6); z-index:30;
 }
 
 /* ---------- feed ---------- */
 .post{ padding:14px; }
 .post .head{ display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+.post button.head{ width:100%; border:0; background:transparent; padding:0; color:inherit; text-align:left; cursor:pointer; }
 .post .name{ font:700 14px 'Hanken Grotesk'; color:var(--ink); }
 .post .meta{ font:500 11px 'DM Mono'; color:var(--muted); }
 .post .body{ font:400 15px/1.4 'Hanken Grotesk'; color:var(--ink); margin-bottom:11px; }
 .scorebar{ display:flex; align-items:center; gap:11px; background:var(--panel); border-radius:12px; padding:10px 13px; }
 .scorebar .big{ font:400 28px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
-.win-chip{ font:700 9px 'DM Mono'; letter-spacing:.12em; background:var(--accent); color:#fff; border-radius:6px; padding:4px 8px; }
+.win-chip{ font:700 9px 'DM Mono'; letter-spacing:.12em; background:var(--accent); color:var(--accent-ink); border-radius:6px; padding:4px 8px; }
 .post .actions{ display:flex; gap:20px; margin-top:11px; font:600 13px 'Hanken Grotesk'; color:var(--muted); }
 .post .actions span{ cursor:pointer; }
 .spiel{ border:1.5px solid var(--accent) !important; box-shadow:0 10px 26px -16px rgba(192,64,44,.45) !important; }
@@ -330,7 +349,7 @@ body{
 .metpill .d{ width:6px; height:6px; border-radius:99px; background:var(--accent); }
 .actions2{ display:flex; gap:10px; }
 .actions2 .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
-.actions2 .b.solid{ background:var(--accent); color:#fff; }
+.actions2 .b.solid{ background:var(--accent); color:var(--accent-ink); }
 .actions2 .b.outline{ border:1.5px solid var(--ink); color:var(--ink); background:transparent; padding:11.5px; }
 
 /* empty state */
@@ -359,7 +378,7 @@ body{
   font:600 12px 'Hanken Grotesk'; border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:9px; padding:7px 12px; cursor:pointer;
 }
-.seg button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.seg button.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 .swatch{ width:26px; height:26px; border-radius:8px; border:2px solid transparent; cursor:pointer; padding:0; }
 .swatch.on{ border-color:var(--ink); }
 .toggle{ width:46px; height:28px; border-radius:99px; background:var(--line); border:0; cursor:pointer; position:relative; transition:background .2s; }
@@ -371,9 +390,21 @@ body{
 .toast{
   position:absolute; left:50%; bottom:120px; transform:translateX(-50%) translateY(12px);
   background:var(--ink); color:var(--screen); font:600 12px 'Hanken Grotesk'; padding:10px 16px; border-radius:99px;
-  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:60; white-space:nowrap;
+  opacity:0; visibility:hidden; pointer-events:none; transition:transform .2s; z-index:60; white-space:nowrap;
 }
-.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.show{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
+.persistence-alert{
+  position:relative; z-index:75; flex:none; margin:0 14px 10px;
+  display:flex; align-items:center; gap:10px; padding:11px 12px;
+  border:2px solid var(--accent); border-radius:13px;
+  background:var(--card); color:var(--ink); box-shadow:0 12px 32px rgba(0,0,0,.24);
+  font:600 12px/1.35 'Hanken Grotesk';
+}
+.persistence-alert span{ flex:1; }
+.persistence-alert button{
+  flex:none; min-height:44px; border:0; border-radius:9px; padding:8px 10px;
+  background:var(--accent); color:var(--accent-ink); font:700 12px 'Hanken Grotesk'; cursor:pointer;
+}
 
 /* ---------- sheet forms (compose / submissions / messaging) ---------- */
 .seg-type{ display:flex; gap:6px; margin:2px 0 16px; }
@@ -381,7 +412,7 @@ body{
   flex:1; font:600 12px 'Hanken Grotesk'; border:1px solid var(--line); background:var(--panel); color:var(--ink);
   border-radius:9px; padding:9px 10px; cursor:pointer;
 }
-.seg-type button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.seg-type button.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 .field{ margin-bottom:13px; }
 .field > label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .field input, .field textarea, .field select{
@@ -397,7 +428,7 @@ body{
 .stars-pick button.on{ color:var(--accent); }
 .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
 .sheet-actions .b{ flex:1; min-height:44px; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
-.sheet-actions .b.solid{ background:var(--accent); color:#fff; }
+.sheet-actions .b.solid{ background:var(--accent); color:var(--accent-ink); }
 .sheet-actions .b.outline{ border:1.5px solid var(--ink); color:var(--ink); background:transparent; padding:11.5px; }
 
 /* ---------- message thread ---------- */
@@ -406,7 +437,7 @@ body{
 .bub{ max-width:78%; padding:9px 13px; border-radius:15px; font:500 14px/1.35 'Hanken Grotesk'; }
 .bub .ts{ display:block; font:500 9px 'DM Mono'; letter-spacing:.08em; margin-top:4px; opacity:.6; }
 .bub.them{ align-self:flex-start; background:var(--panel); color:var(--ink); border-bottom-left-radius:5px; }
-.bub.me{ align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:5px; }
+.bub.me{ align-self:flex-end; background:var(--accent); color:var(--accent-ink); border-bottom-right-radius:5px; }
 .thread-empty{ text-align:center; color:var(--muted); font:400 14px 'Hanken Grotesk'; padding:22px 10px; }
 .composer{ display:flex; gap:9px; align-items:flex-end; }
 .composer textarea{ flex:1; min-height:44px; max-height:120px; }
@@ -435,6 +466,11 @@ body{
 
 /* Keyboard and touch affordances stay consistent across the app shell. */
 button, [role="button"]{ touch-action:manipulation; }
+.sr-only{
+  position:absolute !important; width:1px !important; height:1px !important; padding:0 !important;
+  margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important; border:0 !important;
+}
 button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
   outline:3px solid var(--accent);
   outline-offset:3px;
@@ -452,6 +488,7 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
 <main class="phone">
   <div class="screen" id="screen">
     <div class="notch"></div>
+    <h1 class="sr-only">CurlPlan</h1>
     <!-- view content injected here -->
     <div id="view" style="display:flex; flex-direction:column; flex:1; min-height:0;"></div>
 
@@ -489,7 +526,11 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
       <div id="sheet-body"></div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="persistence-alert" id="persistence-alert" role="alert" hidden>
+      <span id="persistence-message"></span>
+      <button type="button" id="persistence-action" data-action="retry-persistence">Retry save</button>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
 </main>
 
@@ -504,17 +545,40 @@ function esc(s){
     .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function el(id){ return document.getElementById(id); }
-/* one localStorage-JSON idiom for prefs, store, and auth */
-function readJSON(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
-function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){} }
+/* Structured storage results keep every caller honest about malformed,
+   unavailable, and quota-limited browser storage. */
+function storageErrorKind(error){
+  if(error && (error.name === "QuotaExceededError" || error.code === 22 || error.code === 1014)) return "quota";
+  return "unavailable";
+}
+function readJSONResult(key){
+  var raw;
+  try{ raw = localStorage.getItem(key); }
+  catch(error){ return { ok:false, found:false, kind:storageErrorKind(error), error:error }; }
+  if(raw === null) return { ok:true, found:false, value:null };
+  try{ return { ok:true, found:true, value:JSON.parse(raw) }; }
+  catch(error){ return { ok:false, found:true, kind:"malformed", raw:raw, error:error }; }
+}
+function readJSON(key){
+  var result = readJSONResult(key);
+  return result.ok && result.found ? result.value : null;
+}
+function writeJSON(key, obj){
+  try{
+    localStorage.setItem(key, JSON.stringify(obj));
+    return { ok:true };
+  }catch(error){
+    return { ok:false, kind:storageErrorKind(error), error:error };
+  }
+}
 
 /* ============================================================
    Appearance prefs (the concept's props made real & persisted)
    ============================================================ */
 var ACCENTS = [
-  { key:"House red",  val:"#c0402c" },
-  { key:"House blue", val:"#2f6f93" },
-  { key:"Granite",    val:"#41505a" }
+  { key:"House red",  ice:"#a52f21", arena:"#ff9b87" },
+  { key:"House blue", ice:"#225b7d", arena:"#79ccff" },
+  { key:"Granite",    ice:"#3d4c56", arena:"#c1ccd3" }
 ];
 var PREFS_KEY = "curlplan-hifi-prefs-v1";
 var prefs = loadPrefs();
@@ -540,12 +604,16 @@ function applyQueryOverrides(){
     if(q.get("pebble")) prefs.pebble = !(q.get("pebble") === "0" || q.get("pebble") === "false");
   }catch(e){}
 }
-function accentVal(){ var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0]; return a ? a.val : "#c0402c"; }
+function accentVal(){
+  var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0] || ACCENTS[0];
+  return prefs.theme === "arena" ? a.arena : a.ice;
+}
 
 function applyPrefs(){
   var root = document.documentElement;
   root.setAttribute("data-theme", prefs.theme === "arena" ? "arena" : "ice");
   root.style.setProperty("--accent", accentVal());
+  root.style.setProperty("--accent-ink", prefs.theme === "arena" ? "#13181b" : "#ffffff");
   root.style.setProperty("--pebble-o", prefs.pebble ? "0.6" : "0");
   document.querySelector('meta[name="theme-color"]').setAttribute("content", prefs.theme === "arena" ? "#13181b" : "#eceff1");
 }
@@ -1179,6 +1247,9 @@ function migrateLegacyStore(){
   }catch(e){}
 }
 var store = defaultStore(); // hydrated by refreshStore() at boot and on every auth change
+var durableStore = null;
+var pendingStoreWrite = null;
+var bootStorageIssue = null;
 
 var STORE_SCHEMA = 3; // v3: LWW maps carry {v, at} so the CRDT merge (src/merge.js) can converge
 function defaultStore(){
@@ -1203,7 +1274,12 @@ function lwwEntry(v, at){ return { v:v, at:(at || 0) }; }
 function lwwVal(entry){ return (entry && typeof entry === "object" && "v" in entry) ? entry.v : entry; }
 function loadStore(){
   var d = defaultStore();
-  var raw = readJSON(storeKey());
+  var read = readJSONResult(storeKey());
+  if(!read.ok){
+    bootStorageIssue = read;
+    return d;
+  }
+  var raw = read.found ? read.value : null;
   if(raw && typeof raw === "object"){
     ["follows","likes","joins","visits","reviews","iceReads","threads"].forEach(function(k){
       if(raw[k] && typeof raw[k] === "object") d[k] = raw[k];
@@ -1245,25 +1321,91 @@ function sanitizeStore(d){
 /* derived collections: user additions (per-account) + seed baseline */
 function allSpiels(){ return store.addedSpiels.concat(spiels); }
 function allCurlers(){ return store.addedCurlers.concat(curlers); }
-/* Persistence. Content writes (posts, visits, reviews, messages, joins, added*)
-   stay synchronous — durable immediately. Hot high-frequency writes (likes,
-   follows) debounce via saveStoreSoon to avoid a full stringify per tap. The
-   pending write captures its target key, so a flush after a sign-out can never
-   land in the next account's bucket. */
-var _hotTimer = null, _hotPending = null;
-function saveStore(){ flushStoreSoon(); writeJSON(storeKey(), store); }
-function saveStoreSoon(){
-  _hotPending = { key:storeKey(), obj:store };
-  if(_hotTimer) return;
-  _hotTimer = setTimeout(flushStoreSoon, 500);
+/* Persistence is transactional: a failed write restores the last durable
+   in-memory state and retains the candidate for an explicit retry. */
+function copyStore(value){ return JSON.parse(JSON.stringify(value)); }
+function persistenceMessage(kind){
+  if(kind === "quota") return "CurlPlan could not be saved because browser storage is full.";
+  if(kind === "malformed") return "Your stored CurlPlan data is malformed. Safe defaults are loaded, and the stored value has not been replaced.";
+  return "CurlPlan could not be saved because browser storage is unavailable.";
 }
-function flushStoreSoon(){
-  if(_hotTimer){ clearTimeout(_hotTimer); _hotTimer = null; }
-  if(!_hotPending) return;
-  writeJSON(_hotPending.key, _hotPending.obj);
-  _hotPending = null;
+function showPersistenceAlert(message, action, label){
+  var alert = el("persistence-alert");
+  if(!alert) return;
+  el("persistence-message").textContent = message;
+  var button = el("persistence-action");
+  button.setAttribute("data-action", action || "retry-persistence");
+  button.textContent = label || "Retry save";
+  button.hidden = !action;
+  alert.hidden = false;
 }
-function refreshStore(){ flushStoreSoon(); store = loadStore(); } // drain before switching accounts
+function clearPersistenceAlert(){
+  var alert = el("persistence-alert");
+  if(alert) alert.hidden = true;
+}
+function persistStoreCandidate(key, candidate){
+  var result = writeJSON(key, candidate);
+  if(result.ok){
+    store = copyStore(candidate);
+    durableStore = copyStore(candidate);
+    pendingStoreWrite = null;
+    bootStorageIssue = null;
+    clearPersistenceAlert();
+    return true;
+  }
+  pendingStoreWrite = { key:key, candidate:copyStore(candidate), kind:result.kind };
+  store = copyStore(durableStore || defaultStore());
+  showPersistenceAlert(persistenceMessage(result.kind), "retry-persistence", "Retry save");
+  return false;
+}
+function saveStore(){
+  if(pendingStoreWrite){
+    store = copyStore(durableStore || defaultStore());
+    showPersistenceAlert("Retry the pending CurlPlan change before making another saved change.", "retry-persistence", "Retry save");
+    return false;
+  }
+  return persistStoreCandidate(storeKey(), copyStore(store));
+}
+function saveStoreSoon(){ return saveStore(); }
+function flushStoreSoon(){ return true; }
+function retryPersistence(){
+  if(!pendingStoreWrite) return false;
+  var pending = pendingStoreWrite;
+  var result = writeJSON(pending.key, pending.candidate);
+  if(!result.ok){
+    pending.kind = result.kind;
+    showPersistenceAlert(persistenceMessage(result.kind), "retry-persistence", "Retry save");
+    return false;
+  }
+  store = copyStore(pending.candidate);
+  durableStore = copyStore(pending.candidate);
+  pendingStoreWrite = null;
+  bootStorageIssue = null;
+  clearPersistenceAlert();
+  closeSheet();
+  render({keepScroll:true});
+  toast("Changes saved");
+  return true;
+}
+function replaceMalformedStore(){
+  var candidate = copyStore(store);
+  pendingStoreWrite = { key:storeKey(), candidate:candidate, kind:"malformed" };
+  return retryPersistence();
+}
+function reportBootStorageIssue(){
+  if(!bootStorageIssue) return;
+  if(bootStorageIssue.kind === "malformed"){
+    showPersistenceAlert(persistenceMessage("malformed"), "replace-malformed", "Use safe defaults");
+  }else{
+    showPersistenceAlert(persistenceMessage(bootStorageIssue.kind), "", "");
+  }
+}
+function refreshStore(){
+  bootStorageIssue = null;
+  pendingStoreWrite = null;
+  store = loadStore();
+  durableStore = copyStore(store);
+}
 function uid(prefix){ return prefix + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random()*1e4).toString(36); }
 
 /* a person record for rendering — seed curlers or "me" */
@@ -1288,10 +1430,10 @@ function isFollowing(c){
   if(!c) return false;
   return store.follows.hasOwnProperty(c.id) ? !!lwwVal(store.follows[c.id]) : !!c.following;
 }
-function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); saveStoreSoon(); }
+function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); return saveStoreSoon(); }
 
 function spielStatus(sp){ return lwwVal(store.joins[sp.id]) || sp.status; }
-function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); saveStore(); }
+function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); return saveStore(); }
 function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
 function withdrawSpiel(id){
   var sp = spielById(id);
@@ -1299,7 +1441,7 @@ function withdrawSpiel(id){
   // when the seed itself is "You're in", only an explicit override can leave
   if(sp && sp.status === "You're in") store.joins[id] = lwwEntry("Watching", Date.now());
   else delete store.joins[id];
-  saveStore();
+  return saveStore();
 }
 
 function allPosts(){ return store.posts.concat(feed); }
@@ -1399,11 +1541,12 @@ function postHead(p, o){
   var a = person(p.author) || { id:"", initials:"?", name:"Unknown curler", role:"CURLER", club:"—" };
   var nav = (!a.id || a.id === "me") ? "" : ' data-action="curler" data-id="' + esc(a.id) + '"';
   var meta = o.meta || (esc((a.role || "").toUpperCase()) + ' · ' + esc((a.club || "").toUpperCase()) + ' · ' + esc(postTime(p)));
-  return '<div class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
+  var tag = nav ? "button" : "div";
+  return '<' + tag + (nav ? ' type="button"' : '') + ' class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
     '<div style="flex:1;"><div class="name"' + (o.nameSize ? ' style="font-size:' + o.nameSize + 'px;"' : '') + '>' + esc(a.name) + '</div>' +
     '<div class="meta"' + (o.metaSize ? ' style="font-size:' + o.metaSize + 'px;"' : '') + '>' + meta + '</div></div>' +
     (o.noMenu ? '' : '<span style="font-size:18px; color:var(--muted);">⋯</span>') +
-  '</div>';
+  '</' + tag + '>';
 }
 /* titled .glist card for the stop-detail submission lists; "" when empty */
 function submissionCard(title, items, rowFn){
@@ -1419,12 +1562,14 @@ function tabbar(active){
     { id:"spiels",   lab:"Spiels",   glyph:"◇" },
     { id:"roster",   lab:"Roster",   glyph:"☺" }
   ];
-  return '<div class="tabbar">' + tabs.map(function(t){
+  return '<div class="tabbar" role="tablist" aria-label="Primary">' + tabs.map(function(t){
     var on = t.id === active;
     var icon = t.ring
       ? '<span class="ring"' + (on ? '' : ' style="filter:grayscale(.2);"') + '></span>'
       : '<span class="glyph">' + t.glyph + '</span>';
-    return '<button class="tab' + (on ? ' active' : '') + '" data-action="tab" data-tab="' + t.id + '">' +
+    return '<button type="button" role="tab" aria-selected="' + (on ? 'true' : 'false') +
+      '" tabindex="' + (on ? '0' : '-1') + '" class="tab' + (on ? ' active' : '') +
+      '" data-action="tab" data-tab="' + t.id + '">' +
       icon + '<span class="lab">' + t.lab + '</span></button>';
   }).join("") + '</div>';
 }
@@ -1468,12 +1613,12 @@ function viewPassport(){
     var mine = visitedStops();
     recents = mine.length ? mine.map(function(v){
       var st = stop(v.id);
-      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+      return '<button type="button" class="card tile row" data-action="stop" data-id="' + st.id + '">' +
         '<span class="code">' + esc(st.code) + '</span>' +
         '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
           '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
         '<span class="score">' + v.count + (v.count === 1 ? ' visit' : ' visits') + '</span>' +
-      '</div>';
+      '</button>';
     }).join("")
     : '<div class="card tile" style="text-align:center; color:var(--muted); font:500 13px \'Hanken Grotesk\'; padding:18px;">' +
         'No stops logged yet — tap a pin, then “Log visit,” to start your season map.</div>';
@@ -1483,7 +1628,7 @@ function viewPassport(){
       var avs = st.met.slice(0,2).map(function(m){
         return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
       }).join("");
-      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+      return '<button type="button" class="card tile row" data-action="stop" data-id="' + st.id + '">' +
         '<span class="code">' + esc(st.code) + '</span>' +
         '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
           '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
@@ -1492,7 +1637,7 @@ function viewPassport(){
           '<div class="stack">' + avs +
             (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
           '</div></div>' +
-      '</div>';
+      '</button>';
     }).join("");
   }
   // Map chrome: the sample-stop chip and stop/KM tally are demo flavor; a real
@@ -1533,7 +1678,7 @@ function viewPassport(){
         hereChip +
         '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
-      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" data-action="tab" data-tab="spiels">All</span></div>' +
+      '<div class="sec-head"><span class="lab">Recent stops</span><button type="button" class="act" data-action="tab" data-tab="spiels" aria-label="View all spiels">All</button></div>' +
       recents +
     '</div>' +
     tabbar("passport");
@@ -1610,9 +1755,11 @@ function lockerCards(){
 }
 function lockerTabLink(id, label){
   var on = ui.lockerTab === id;
-  return '<span data-action="locker-tab" data-tab="' + id + '" style="cursor:pointer; font:' +
+  return '<button type="button" role="tab" aria-selected="' + (on ? 'true' : 'false') +
+    '" tabindex="' + (on ? '0' : '-1') + '" data-action="locker-tab" data-tab="' + id +
+    '" style="cursor:pointer; border:0; background:transparent; font:' +
     (on ? '700' : '500') + ' 14px \'Hanken Grotesk\'; color:' + (on ? 'var(--ink)' : 'var(--muted)') +
-    '; padding-bottom:9px;' + (on ? ' border-bottom:2.5px solid var(--accent);' : '') + '">' + label + '</span>';
+    '; padding:9px 2px;' + (on ? ' border-bottom:2.5px solid var(--accent);' : '') + '">' + label + '</button>';
 }
 
 function viewLocker(){
@@ -1625,7 +1772,7 @@ function viewLocker(){
         '<div class="serif" style="font-size:28px; color:var(--ink);">Locker Room</div>' +
         '<button class="backbtn" data-action="toggle-locker-search" aria-label="Search" style="font-size:17px;">' + (ui.lockerSearch ? '✕' : '⌕') + '</button></div>' +
       searchRow +
-      '<div style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
+      '<div role="tablist" aria-label="Locker posts" style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
         lockerTabLink("following", "Following") + lockerTabLink("discover", "Discover") + '</div>' +
     '</div>' +
     '<div class="scroll" style="gap:13px;"><div id="locker-list" style="display:flex; flex-direction:column; gap:13px;">' + lockerCards() + '</div></div>' +
@@ -1637,9 +1784,13 @@ function viewSpiels(){
   var rows = allSpiels().map(function(sp){
     var status = spielStatus(sp);
     var solid = status === "You're in";
+    var owned = store.addedSpiels.some(function(item){ return item.id === sp.id; });
     var btn = solid
       ? '<button class="pill-btn ghost" style="margin-left:auto;" data-action="leave-spiel" data-id="' + sp.id + '">Withdraw</button>'
       : '<button class="pill-btn" style="margin-left:auto;" data-action="join-spiel" data-id="' + sp.id + '">Register</button>';
+    var corrections = owned ? '<div class="record-actions">' +
+      '<button type="button" data-action="edit-spiel" data-id="' + esc(sp.id) + '" aria-label="Edit ' + esc(sp.name) + '">Edit</button>' +
+      '<button type="button" class="danger" data-action="delete-spiel" data-id="' + esc(sp.id) + '" aria-label="Delete ' + esc(sp.name) + '">Delete</button></div>' : '';
     return '<div class="card" style="padding:14px;">' +
       '<div class="row" style="align-items:flex-start;">' +
         '<div style="flex:1; min-width:0;">' +
@@ -1651,7 +1802,7 @@ function viewSpiels(){
       '</div>' +
       '<div class="row" style="margin-top:12px;">' + avatarStack(sp.going) +
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
-        btn + '</div>' +
+        btn + '</div>' + corrections +
     '</div>';
   }).join("");
 
@@ -1673,12 +1824,18 @@ function rosterRows(){
   });
   if(!list.length) return '<div class="empty"><span class="ring"></span><h3>No matches</h3><p>No curlers match your search.</p></div>';
   return list.map(function(c){
-    return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
-      avatar(c.initials, 44, 'av') +
-      '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
-        '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+    var owned = store.addedCurlers.some(function(item){ return item.id === c.id; });
+    var corrections = owned ? '<div class="record-actions" style="width:100%;">' +
+      '<button type="button" data-action="edit-curler" data-id="' + esc(c.id) + '" aria-label="Edit ' + esc(c.name) + '">Edit</button>' +
+      '<button type="button" class="danger" data-action="delete-curler" data-id="' + esc(c.id) + '" aria-label="Delete ' + esc(c.name) + '">Delete</button></div>' : '';
+    return '<div class="card tile prow" style="flex-wrap:wrap;">' +
+      '<button type="button" class="record-main" data-action="curler" data-id="' + esc(c.id) + '" aria-label="Open ' + esc(c.name) + '">' +
+        avatar(c.initials, 44, 'av') +
+        '<span style="flex:1; min-width:0;"><span class="nm" style="display:block;">' + esc(c.name) + '</span>' +
+          '<span class="ro" style="display:block;">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</span></span></button>' +
       '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
         (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
+      corrections +
     '</div>';
   }).join("");
 }
@@ -1727,9 +1884,10 @@ function viewStop(id){
       ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
       : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
     return '<div class="prow">' +
-      '<span data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
-      '<div style="flex:1; min-width:0; cursor:pointer;" data-action="curler" data-id="' + c.id + '">' +
-        '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+      '<button type="button" class="record-main" data-action="curler" data-id="' + c.id + '" aria-label="Open ' + esc(c.name) + '">' +
+        avatar(c.initials, 40, 'av') +
+        '<span style="flex:1; min-width:0;"><span class="nm" style="display:block;">' + esc(c.name) + '</span>' +
+          '<span class="ro" style="display:block;">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</span></span></button>' +
       btn + '</div>';
   }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
 
@@ -1848,7 +2006,7 @@ function back(){ state.stack.pop(); render(); syncHash(); }
 function enterApp(){
   // after auth success: render whatever the boot deep link restored (default
   // state is the passport) instead of resetting to the passport
-  render(); syncHash();
+  render(); syncHash(); reportBootStorageIssue();
 }
 
 function applyHash(){
@@ -1920,18 +2078,27 @@ function closeManagedSheet(restoreFocus){
 function buildSettings(){
   // accent swatches
   el("seg-accent").innerHTML = ACCENTS.map(function(a){
-    return '<button class="swatch" data-accent="' + esc(a.key) + '" style="background:' + a.val + ';" aria-label="' + esc(a.key) + '"></button>';
+    return '<button class="swatch" data-accent="' + esc(a.key) + '" style="background:' +
+      (prefs.theme === "arena" ? a.arena : a.ice) + ';" aria-label="' + esc(a.key) + '"></button>';
   }).join("");
   syncSettings();
 }
 function syncSettings(){
   Array.prototype.forEach.call(el("seg-theme").children, function(b){
-    b.classList.toggle("on", b.getAttribute("data-theme-val") === prefs.theme);
+    var on = b.getAttribute("data-theme-val") === prefs.theme;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
   });
   Array.prototype.forEach.call(el("seg-accent").children, function(b){
-    b.classList.toggle("on", b.getAttribute("data-accent") === prefs.accent);
+    var key = b.getAttribute("data-accent");
+    var on = key === prefs.accent;
+    var option = ACCENTS.filter(function(a){ return a.key === key; })[0];
+    if(option) b.style.background = prefs.theme === "arena" ? option.arena : option.ice;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
   });
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
+  el("toggle-pebble").setAttribute("aria-pressed", prefs.pebble ? "true" : "false");
 }
 function openSettings(trigger){
   var u = currentUser(), m = el("acct-meta");
@@ -1965,7 +2132,21 @@ function toast(msg){
 var formStars = 0; // shared picker state — only one sheet is open at a time
 
 function openSheet(html){
+  if(bootStorageIssue && !pendingStoreWrite) clearPersistenceAlert();
   el("sheet-body").innerHTML = html;
+  var body = el("sheet-body");
+  var title = body.querySelector("h2");
+  if(title){
+    title.id = "active-sheet-title";
+    el("sheet2").setAttribute("aria-labelledby", title.id);
+    el("sheet2").removeAttribute("aria-label");
+  }
+  Array.prototype.forEach.call(body.querySelectorAll("label:not([for])"), function(label, index){
+    var field = label.parentElement && label.parentElement.querySelector("input, select, textarea");
+    if(!field) return;
+    if(!field.id) field.id = "sheet-field-" + index;
+    label.setAttribute("for", field.id);
+  });
   openManagedSheet("sheet2", "scrim2", currentActionTrigger);
 }
 function closeSheet(){
@@ -1976,9 +2157,11 @@ function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
 function starPicker(){
   var b = "";
   for(var i = 1; i <= 5; i++){
-    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i + '">★</button>';
+    b += '<button type="button" role="radio" aria-label="' + i + ' star' + (i === 1 ? '' : 's') +
+      '" aria-checked="' + (i === formStars ? 'true' : 'false') + '" tabindex="' + (i === formStars ? '0' : '-1') +
+      '" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i + '">★</button>';
   }
-  return '<div class="stars-pick" id="f-stars">' + b + '</div>';
+  return '<div class="stars-pick" id="f-stars" role="radiogroup" aria-label="Rating">' + b + '</div>';
 }
 function setStars(n){
   formStars = n;
@@ -1986,6 +2169,8 @@ function setStars(n){
   if(!wrap) return;
   Array.prototype.forEach.call(wrap.children, function(btn, i){
     btn.classList.toggle("on", (i + 1) <= n);
+    btn.setAttribute("aria-checked", (i + 1) === n ? "true" : "false");
+    btn.setAttribute("tabindex", (i + 1) === n ? "0" : "-1");
   });
 }
 function fmtTime(at){
@@ -2009,7 +2194,9 @@ function openCompose(type){
   formStars = type === "review" ? 5 : 0;
   var seg = ["note","result","review"].map(function(t){
     var lab = t === "note" ? "Note" : t === "result" ? "Result" : "Review";
-    return '<button type="button" class="' + (t === type ? "on" : "") + '" data-action="compose-type" data-type="' + t + '">' + lab + '</button>';
+    return '<button type="button" role="tab" aria-selected="' + (t === type ? 'true' : 'false') +
+      '" tabindex="' + (t === type ? '0' : '-1') + '" class="' + (t === type ? "on" : "") +
+      '" data-action="compose-type" data-type="' + t + '">' + lab + '</button>';
   }).join("");
 
   var body;
@@ -2027,7 +2214,7 @@ function openCompose(type){
   }
 
   openSheet('<h2>Share</h2><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
-    '<div class="seg-type">' + seg + '</div>' + body +
+    '<div class="seg-type" role="tablist" aria-label="Post type">' + seg + '</div>' + body +
     '<div class="sheet-actions">' +
       '<button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-compose" data-type="' + type + '">Post</button>' +
@@ -2051,7 +2238,7 @@ function submitCompose(type){
     post = { id:uid("p"), type:"note", author:"me", at:Date.now(), body:b, likes:0, comments:0 };
   }
   store.posts.unshift(post);
-  saveStore();
+  if(!saveStore()) return;
   closeSheet();
   gotoTab("locker");
   toast("Posted to your Locker Room");
@@ -2070,7 +2257,8 @@ function openVisit(stopId){
 /* shared tail for every stop-detail submission */
 function addStopEntry(kind, stopId, entry, msg){
   (store[kind][stopId] = store[kind][stopId] || []).unshift(entry);
-  saveStore(); closeSheet(); render({keepScroll:true}); toast(msg);
+  if(!saveStore()) return;
+  closeSheet(); render({keepScroll:true}); toast(msg + " and saved");
 }
 function submitVisit(stopId){
   addStopEntry("visits", stopId, { date:val("f-date") || "Today", note:val("f-note"), at:Date.now() }, "Visit logged");
@@ -2123,7 +2311,7 @@ function sendMessage(curlerId){
   if(!text) return;
   var msg = { from:"me", text:text, at:Date.now() };
   (store.threads[curlerId] = store.threads[curlerId] || []).push(msg);
-  saveStore();
+  if(!saveStore()) return;
   var th = el("f-thread");
   if(!th){ openThread(curlerId); return; } // first message: swap the empty state for a thread
   var bub = document.createElement("div"); // append one bubble — keeps composer focus and thread DOM
@@ -2134,50 +2322,124 @@ function sendMessage(curlerId){
   el("f-msg").value = "";
 }
 
-/* ---- create a spiel (backported from the iOS port) ---- */
-function openNewSpiel(){
-  var statusOpts = ["You're in","Watching","Invite"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h2>New spiel</h2><p class="sub">Add a bonspiel to your season ahead.</p>' +
-    '<div class="field"><label>Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
-    '<div class="field"><label>Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
-    '<div class="field"><label>Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
-    '<div class="field"><label>Your status</label><select id="f-status">' + statusOpts + '</select></div>' +
+/* ---- create, correct, and delete root-owned records ---- */
+function addedSpiel(id){
+  return store.addedSpiels.filter(function(item){ return item.id === id; })[0] || null;
+}
+function openSpielEditor(id){
+  var existing = id ? addedSpiel(id) : null;
+  if(id && !existing) return;
+  var selectedStatus = existing ? spielStatus(existing) : "You're in";
+  var statusOpts = ["You're in","Watching","Invite"].map(function(s){
+    return '<option' + (s === selectedStatus ? ' selected' : '') + '>' + s + '</option>';
+  }).join("");
+  openSheet('<h2>' + (existing ? 'Edit spiel' : 'New spiel') + '</h2><p class="sub">' +
+    (existing ? 'Correct this record without changing its stable identity.' : 'Add a bonspiel to your season ahead.') + '</p>' +
+    '<div class="field"><label for="f-name">Spiel name</label><input id="f-name" value="' + esc(existing ? existing.name : '') + '" placeholder="Brier Patch Open" required></div>' +
+    '<div class="field"><label for="f-where">Spiel location</label><input id="f-where" value="' + esc(existing ? existing.where : '') + '" placeholder="Kamloops, BC" list="club-list"></div>' +
+    '<div class="field"><label for="f-when">Spiel dates</label><input id="f-when" value="' + esc(existing ? existing.when : '') + '" placeholder="FEB 14–16"></div>' +
+    '<div class="field"><label for="f-status">Spiel status</label><select id="f-status">' + statusOpts + '</select></div>' +
     clubDatalist() +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-new-spiel">Add spiel</button></div>');
+      '<button class="b solid" data-action="submit-spiel" data-id="' + esc(id || '') + '">' +
+        (existing ? 'Save spiel' : 'Add spiel') + '</button></div>');
 }
-function submitNewSpiel(){
+function openNewSpiel(){ openSpielEditor(""); }
+function markInvalid(id, message){
+  var field = el(id);
+  if(field){
+    field.setAttribute("aria-invalid", "true");
+    try{ field.focus(); }catch(e){}
+  }
+  toast(message);
+}
+function submitSpiel(id){
   var name = val("f-name");
-  if(!name){ toast("Name the spiel"); return; }
-  var sp = { id:uid("sp"), name:name, where:val("f-where") || "TBD",
+  if(!name){ markInvalid("f-name", "Name the spiel"); return; }
+  var existing = id ? addedSpiel(id) : null;
+  if(id && !existing) return;
+  var sp = { id:existing ? existing.id : uid("sp"), name:name, where:val("f-where") || "TBD",
     when:(val("f-when") || "DATE TBD").toUpperCase(),
-    status:(el("f-status") ? el("f-status").value : "Watching"), going:[] };
-  store.addedSpiels.unshift(sp); saveStore();
-  closeSheet(); gotoTab("spiels"); toast("Spiel added");
+    status:(el("f-status") ? el("f-status").value : "Watching"), going:existing ? existing.going : [] };
+  if(existing){
+    store.addedSpiels[store.addedSpiels.indexOf(existing)] = sp;
+  }else{
+    store.addedSpiels.unshift(sp);
+  }
+  if(!saveStore()) return;
+  closeSheet(); gotoTab("spiels"); toast(existing ? "Spiel updated and saved" : "Spiel added and saved");
+}
+function confirmDeleteSpiel(id){
+  var sp = addedSpiel(id); if(!sp) return;
+  openSheet('<h2>Delete spiel?</h2><p class="sub">Delete ' + esc(sp.name) + ' from this browser?</p>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="confirm-delete-spiel" data-id="' + esc(sp.id) + '" aria-label="Confirm delete spiel">Delete spiel</button></div>');
+}
+function deleteSpiel(id){
+  var before = store.addedSpiels.length;
+  store.addedSpiels = store.addedSpiels.filter(function(item){ return item.id !== id; });
+  if(store.addedSpiels.length === before) return;
+  delete store.joins[id];
+  if(!saveStore()) return;
+  closeSheet(); render({keepScroll:true}); toast("Spiel deleted and saved");
 }
 
-/* ---- create a curler (backported from the iOS port) ---- */
-function openNewCurler(){
-  var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
-  openSheet('<h2>Add to roster</h2><p class="sub">Add a curler to your circle.</p>' +
-    '<div class="field"><label>Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
-    '<div class="field split"><div><label>Position</label><select id="f-role">' + roles + '</select></div>' +
-      '<div><label>Province</label><input id="f-prov" placeholder="BC"></div></div>' +
-    '<div class="field"><label>Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' +
+function addedCurler(id){
+  return store.addedCurlers.filter(function(item){ return item.id === id; })[0] || null;
+}
+function openCurlerEditor(id){
+  var existing = id ? addedCurler(id) : null;
+  if(id && !existing) return;
+  var selectedRole = existing ? existing.role : "Skip";
+  var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){
+    return '<option' + (r === selectedRole ? ' selected' : '') + '>' + r + '</option>';
+  }).join("");
+  openSheet('<h2>' + (existing ? 'Edit curler' : 'Add to roster') + '</h2><p class="sub">' +
+    (existing ? 'Correct this record without changing its stable identity.' : 'Add a curler to your circle.') + '</p>' +
+    '<div class="field"><label for="f-name">Curler name</label><input id="f-name" value="' + esc(existing ? existing.name : '') + '" placeholder="Sam Reid" required></div>' +
+    '<div class="field split"><div><label for="f-role">Curler position</label><select id="f-role">' + roles + '</select></div>' +
+      '<div><label for="f-prov">Curler province</label><input id="f-prov" value="' + esc(existing ? existing.prov : '') + '" placeholder="BC"></div></div>' +
+    '<div class="field"><label for="f-club">Curler club</label><input id="f-club" value="' + esc(existing ? existing.club : '') + '" placeholder="Vernon CC" list="club-list"></div>' +
     clubDatalist() +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-new-curler">Add curler</button></div>');
+      '<button class="b solid" data-action="submit-curler" data-id="' + esc(id || '') + '">' +
+        (existing ? 'Save curler' : 'Add curler') + '</button></div>');
 }
-function submitNewCurler(){
+function openNewCurler(){ openCurlerEditor(""); }
+function submitCurler(id){
   var name = val("f-name");
-  if(!name){ toast("Add a name"); return; }
-  var c = { id:uid("c"), initials:initialsOf(name) || "?", name:name,
+  if(!name){ markInvalid("f-name", "Add a name"); return; }
+  var existing = id ? addedCurler(id) : null;
+  if(id && !existing) return;
+  var c = { id:existing ? existing.id : uid("c"), initials:initialsOf(name) || "?", name:name,
     role:(el("f-role") ? el("f-role").value : "Curler"),
     club:val("f-club") || "—", prov:(val("f-prov") || "—").toUpperCase(),
-    metAt:"your roster", following:true,
-    stats:{ record:"0–0", win:"—", clubs:0, mutual:0 }, clubs:[], form:[] };
-  store.addedCurlers.unshift(c); setFollowing(c.id, true); saveStore();
-  closeSheet(); gotoTab("roster"); toast("Added to roster");
+    metAt:existing ? existing.metAt : "your roster", following:true,
+    stats:existing ? existing.stats : { record:"0–0", win:"—", clubs:0, mutual:0 },
+    clubs:existing ? existing.clubs : [], form:existing ? existing.form : [] };
+  if(existing){
+    store.addedCurlers[store.addedCurlers.indexOf(existing)] = c;
+  }else{
+    store.addedCurlers.unshift(c);
+    store.follows[c.id] = lwwEntry(true, Date.now());
+  }
+  if(!saveStore()) return;
+  closeSheet(); gotoTab("roster"); toast(existing ? "Curler updated and saved" : "Curler added and saved");
+}
+function confirmDeleteCurler(id){
+  var c = addedCurler(id); if(!c) return;
+  openSheet('<h2>Delete curler?</h2><p class="sub">Delete ' + esc(c.name) + ' from this browser?</p>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="confirm-delete-curler" data-id="' + esc(c.id) + '" aria-label="Confirm delete curler">Delete curler</button></div>');
+}
+function deleteCurler(id){
+  var before = store.addedCurlers.length;
+  store.addedCurlers = store.addedCurlers.filter(function(item){ return item.id !== id; });
+  if(store.addedCurlers.length === before) return;
+  delete store.follows[id];
+  delete store.threads[id];
+  if(!saveStore()) return;
+  closeSheet(); render({keepScroll:true}); toast("Curler deleted and saved");
 }
 /* shared <datalist> of club names for the create pickers (from CLUB_SUGGESTIONS) */
 function clubDatalist(){
@@ -2227,10 +2489,18 @@ el("screen").addEventListener("click", function(e){
       break;
     }
     // create entities (backported from iOS)
-    case "new-spiel":         openNewSpiel(); break;
-    case "submit-new-spiel":  submitNewSpiel(); break;
-    case "new-curler":        openNewCurler(); break;
-    case "submit-new-curler": submitNewCurler(); break;
+    case "new-spiel":             openNewSpiel(); break;
+    case "edit-spiel":            openSpielEditor(id); break;
+    case "submit-spiel":          submitSpiel(id); break;
+    case "delete-spiel":          confirmDeleteSpiel(id); break;
+    case "confirm-delete-spiel":  deleteSpiel(id); break;
+    case "new-curler":            openNewCurler(); break;
+    case "edit-curler":           openCurlerEditor(id); break;
+    case "submit-curler":         submitCurler(id); break;
+    case "delete-curler":         confirmDeleteCurler(id); break;
+    case "confirm-delete-curler": deleteCurler(id); break;
+    case "retry-persistence":     retryPersistence(); break;
+    case "replace-malformed":     replaceMalformedStore(); break;
 
     // demo session
     case "auth-demo": {
@@ -2247,16 +2517,19 @@ el("screen").addEventListener("click", function(e){
 
     case "follow": {
       var c = curler(id);
-      if(c){ var nv = !isFollowing(c); setFollowing(id, nv); render({keepScroll:true}); toast(nv ? "Following " + c.name : "Unfollowed " + c.name); }
+      if(c){
+        var nv = !isFollowing(c);
+        if(setFollowing(id, nv)){ render({keepScroll:true}); toast((nv ? "Following " : "Unfollowed ") + c.name + " · saved"); }
+      }
       break;
     }
     // bonspiel registration
     case "join-spiel": {
-      if(id){ setSpielStatus(id, "You're in"); render({keepScroll:true}); toast("You're registered"); }
+      if(id && setSpielStatus(id, "You're in")){ render({keepScroll:true}); toast("You're registered · saved"); }
       break;
     }
     case "leave-spiel": {
-      if(id){ withdrawSpiel(id); render({keepScroll:true}); toast("Registration withdrawn"); }
+      if(id && withdrawSpiel(id)){ render({keepScroll:true}); toast("Registration withdrawn · saved"); }
       break;
     }
 
@@ -2288,6 +2561,36 @@ el("screen").addEventListener("click", function(e){
 });
 
 document.addEventListener("keydown", function(e){
+  var activeTab = e.target && e.target.closest ? e.target.closest('[role="tab"]') : null;
+  if(activeTab && ["ArrowLeft","ArrowRight","Home","End"].indexOf(e.key) > -1){
+    var tablist = activeTab.closest('[role="tablist"]');
+    var tabs = tablist ? Array.prototype.slice.call(tablist.querySelectorAll('[role="tab"]')) : [];
+    if(tabs.length){
+      e.preventDefault();
+      var index = tabs.indexOf(activeTab);
+      var next = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 :
+        (index + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      var dataTab = tabs[next].getAttribute("data-tab");
+      var dataType = tabs[next].getAttribute("data-type");
+      tabs[next].click();
+      var selector = dataTab ? '[role="tab"][data-tab="' + dataTab + '"]' : '[role="tab"][data-type="' + dataType + '"]';
+      var replacement = document.querySelector(selector);
+      if(replacement) replacement.focus();
+      return;
+    }
+  }
+  var activeRadio = e.target && e.target.closest ? e.target.closest('[role="radio"]') : null;
+  if(activeRadio && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].indexOf(e.key) > -1){
+    var group = activeRadio.closest('[role="radiogroup"]');
+    var radios = group ? Array.prototype.slice.call(group.querySelectorAll('[role="radio"]')) : [];
+    if(radios.length){
+      e.preventDefault();
+      var radioIndex = radios.indexOf(activeRadio);
+      var step = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : -1;
+      var radio = radios[(radioIndex + step + radios.length) % radios.length];
+      radio.click(); radio.focus(); return;
+    }
+  }
   if(!activeSheet) return;
   if(e.key === "Escape"){
     e.preventDefault();
@@ -2322,6 +2625,7 @@ migrateLegacyStore();
 refreshStore();
 refreshMe();
 render();
+reportBootStorageIssue();
 
 /* durability: flush any debounced hot write (likes/follows) before the page
    goes away — pagehide covers reload/close/bfcache; visibilitychange covers

@@ -76,9 +76,25 @@ const stateSource = fs.readFileSync(path.join(base, "assets/js/app/core.js"), "u
 assert(/const SCHEMA_VERSION = 4;/.test(stateSource), "SCHEMA_VERSION must remain 4 in core.js.");
 assert(fs.existsSync(path.join(base, "assets/icons/favicon/favicon.svg")), "favicon.svg must exist.");
 
+const manifestPath = path.join(base, "manifest.webmanifest");
+assert(fs.existsSync(manifestPath), "Classic manifest must exist.");
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+assert(manifest.name === "CurlPlan Classic" && manifest.start_url === "./" && manifest.scope === "./",
+  "Classic manifest must retain its product identity and scope.");
+assert(html.includes('href="manifest.webmanifest"'), "Classic manifest link missing.");
+assert(/Content-Security-Policy/.test(html) && /frame-src 'none'/.test(html), "Classic CSP boundary missing.");
+
 const combined = expectedScripts
   .map((file) => fs.readFileSync(path.join(base, file), "utf8"))
   .join("\n");
 new Function(combined);
+assert(/IMPORT_LIMITS/.test(combined) && /validateImportText/.test(combined) && /validateImportRecords/.test(combined),
+  "Classic import byte/depth/key/record limits missing.");
+
+const sw = fs.readFileSync(path.join(base, "sw.js"), "utf8");
+new Function(sw);
+assert(/CACHE_PREFIX\s*=\s*"curlplan-classic-"/.test(sw), "Classic cache prefix missing.");
+assert(/key\.startsWith\(CACHE_PREFIX\)\s*&&\s*key\s*!==\s*CACHE_NAME/.test(sw),
+  "Classic worker must delete only obsolete Classic caches.");
 
 console.log("verify-split: ok (classic/)");

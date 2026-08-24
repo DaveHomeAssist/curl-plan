@@ -1,23 +1,30 @@
-// CurlPlan Service Worker (Hi-Fi app)
-// Network-first for navigations so the HTML is always fresh; cache-first for
-// other same-origin GETs. On activate we delete every
-// origin cache except those in KEEP — this purges the legacy "curlplan-sw-v5" cache
-// (the pre-promote root app) while preserving the archived classic app's own cache.
-// NOTE: CacheStorage is per-origin, not per-SW-scope, so the classic worker
-// (scope /classic/) shares this keyspace; KEEP must list its cache too, and the
-// classic worker reciprocally keeps "curlplan-hifi-v2".
-const CACHE_NAME = "curlplan-hifi-v2";
-const KEEP = [CACHE_NAME, "curlplan-classic-v6"];
-
+// CurlPlan root preview service worker. Cache ownership is prefix-scoped so
+// activation can never remove Classic or unrelated origin caches.
+const CACHE_PREFIX = "curlplan-root-";
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const PRECACHE_URLS = [
-  "./", "./index.html",
-  "./manifest.webmanifest",
-  "./icons/icon.svg",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-maskable-512.png",
-  "./icons/apple-touch-icon.png"
+  "./", "./index.html", "./manifest.webmanifest",
+  "./icons/icon.svg", "./icons/icon-192.png", "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png"
 ];
+
+function scopePath() {
+  return new URL(self.registration.scope).pathname;
+}
+
+function isRootProductUrl(url) {
+  const path = url.pathname;
+  const scope = scopePath();
+  return url.origin === self.location.origin && path.startsWith(scope) &&
+    !path.startsWith(`${scope}classic/`);
+}
+
+function isRootShellNavigation(request) {
+  if (request.mode !== "navigate") return false;
+  const url = new URL(request.url);
+  const scope = scopePath();
+  return isRootProductUrl(url) && (url.pathname === scope || url.pathname === `${scope}index.html`);
+}
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)));
@@ -27,43 +34,44 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => !KEEP.includes(key)).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys
+        .filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+        .map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", event => {
-  const req = event.request;
-  if (req.method !== "GET") return;
+  const request = event.request;
+  if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (!isRootProductUrl(url)) return;
 
-  // Navigations (the app shell): network-first, fall back to cache when offline.
-  if (req.mode === "navigate") {
+  if (isRootShellNavigation(request)) {
     event.respondWith(
-      fetch(req)
-        .then(res => {
-          // Normalize to one canonical shell entry so query-stringed deep links
-          // (?theme=…&accent=…) don't accumulate per-URL copies. The runtime reads
-          // theme/accent from location.search, so the shell HTML is query-agnostic.
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("./index.html", clone));
-          return res;
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put("./index.html", copy)));
+          }
+          return response;
         })
-        .catch(() => caches.match("./index.html").then(m => m || caches.match(req)))
+        .catch(() => caches.match("./index.html"))
     );
     return;
   }
 
-  // Everything else (same-origin static): cache-first, then network.
+  if (request.mode === "navigate") return;
   event.respondWith(
-    caches.match(req).then(cached => {
-      if (cached) return cached;
-      return fetch(req).then(res => {
-        if (res.ok && new URL(req.url).origin === self.location.origin) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
+    caches.match(request, { cacheName: CACHE_NAME }).then(cached => cached ||
+      fetch(request).then(response => {
+        if (response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
         }
-        return res;
-      });
-    })
+        return response;
+      })
+    )
   );
 });

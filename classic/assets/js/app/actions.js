@@ -946,12 +946,82 @@ function exportData() {
   showToast("Export ready");
 }
 
+const IMPORT_LIMITS = Object.freeze({
+  bytes: 2 * 1024 * 1024,
+  records: 5000,
+  depth: 20,
+  keys: 25000
+});
+
+function validateImportText(text) {
+  const bytes = new TextEncoder().encode(text).byteLength;
+  if (bytes > IMPORT_LIMITS.bytes) {
+    throw new Error("Import is too large. CurlPlan accepts files up to 2 MB.");
+  }
+  let depth = 0;
+  let keys = 0;
+  let inString = false;
+  let escaped = false;
+  for (const char of text) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    } else if (char === "{" || char === "[") {
+      depth += 1;
+      if (depth > IMPORT_LIMITS.depth) {
+        throw new Error(`Import exceeds the nesting limit of ${IMPORT_LIMITS.depth} levels.`);
+      }
+    } else if (char === "}" || char === "]") {
+      depth -= 1;
+      if (depth < 0) throw new Error("Import contains unbalanced JSON.");
+    } else if (char === ":") {
+      keys += 1;
+      if (keys > IMPORT_LIMITS.keys) {
+        throw new Error(`Import exceeds the key limit of ${IMPORT_LIMITS.keys}.`);
+      }
+    }
+  }
+}
+
+function validateImportRecords(value) {
+  let records = 0;
+  const pending = [value];
+  while (pending.length) {
+    const node = pending.pop();
+    if (!node || typeof node !== "object") continue;
+    if (Array.isArray(node)) {
+      records += node.length;
+      if (records > IMPORT_LIMITS.records) {
+        throw new Error(`Import exceeds the record limit of ${IMPORT_LIMITS.records}.`);
+      }
+      node.forEach(item => pending.push(item));
+    } else {
+      Object.values(node).forEach(item => pending.push(item));
+    }
+  }
+}
+
 function importData(file) {
   if (!file) return;
+  if (file.size > IMPORT_LIMITS.bytes) {
+    const message = "Import is too large. CurlPlan accepts files up to 2 MB.";
+    setStatus(message, "error");
+    showToast(message);
+    return;
+  }
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const parsed = migrateRaw(JSON.parse(reader.result));
+      const text = String(reader.result || "");
+      validateImportText(text);
+      const raw = JSON.parse(text);
+      validateImportRecords(raw);
+      const parsed = migrateRaw(raw);
       const warnings = [];
       let previewError = "";
       let nextState;

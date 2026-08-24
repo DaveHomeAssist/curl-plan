@@ -2,6 +2,7 @@
   "name": "CurlPlan",
   "short_name": "CurlPlan",
   "description": "Curling passport, locker room feed, spiels, and ice notes.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -40,7 +40,10 @@ const swPath = path.join(root, "sw.js");
 assert(fs.existsSync(swPath), "sw.js must exist at repo root.");
 const sw = fs.readFileSync(swPath, "utf8");
 new Function(sw); // parse-only smoke check (identifiers need not resolve)
-assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v2"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v2.");
+assert(/CACHE_PREFIX\s*=\s*"curlplan-root-"/.test(sw), "sw.js must use the root-owned cache prefix.");
+assert(/key\.startsWith\(CACHE_PREFIX\)\s*&&\s*key\s*!==\s*CACHE_NAME/.test(sw),
+  "sw.js must delete only obsolete root-owned caches.");
+assert(/classic\//.test(sw) && /!path\.startsWith/.test(sw), "Root worker must exclude the Classic product scope.");
 assert(/caches\.keys\(\)/.test(sw) && /caches\.delete\(/.test(sw), "sw.js must purge old caches on activate.");
 
 // 6. PWA installability: manifest linked, present, valid, icons on disk and precached.
@@ -70,7 +73,8 @@ assert(!/assets\/js\/app\//.test(html), "Root app should not reference classic s
 // 9. The static preview still needs browser-enforced boundaries around its
 // inline shell and explicitly approved font hosts.
 assert(/Content-Security-Policy/.test(html), "Content Security Policy missing.");
-assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP object/base restrictions missing.");
+assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html) && /frame-src 'none'/.test(html),
+  "CSP object/base/frame restrictions missing.");
 assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
 assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmark missing.");
 
@@ -90,7 +94,14 @@ assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore i
 assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
   "Modal Tab containment missing.");
 
-// 11. The four primary tabs must retain the portfolio's 44px target floor.
+// 11. Storage mutations must report structured failures and retain retryable,
+// durable state instead of swallowing browser-storage exceptions.
+["readJSONResult", "storageErrorKind", "pendingStoreWrite", "retryPersistence", "persistence-alert"].forEach(token =>
+  assert(html.includes(token), `Structured root persistence token missing: ${token}`));
+assert(/role="alert"/.test(html) && /role="status" aria-live="polite"/.test(html),
+  "Persistence errors and success feedback must use live semantics.");
+
+// 12. The four primary tabs must retain the portfolio's 44px target floor.
 const tabRule = html.match(/\.tab\{([\s\S]*?)\}/);
 assert(tabRule, "Primary tab CSS rule missing.");
 assert(/min-width:\s*44px/.test(tabRule[1]) && /min-height:\s*44px/.test(tabRule[1]),
@@ -104,5 +115,12 @@ tabOrder.forEach(token => {
 });
 assert(/button:focus-visible[\s\S]*?outline:\s*3px solid var\(--accent\)/.test(html),
   "Primary tabs must retain the shared visible keyboard focus treatment.");
+assert(/role="tablist" aria-label="Primary"/.test(html) && /role="tab" aria-selected=/.test(html),
+  "Primary navigation must expose tab semantics and selection state.");
+
+// 13. External club links must remain secure-by-default.
+const clubData = JSON.parse(fs.readFileSync(path.join(root, "data/curling-clubs.json"), "utf8"));
+const insecureClub = clubData.clubs.find(club => /^http:\/\//i.test(club.website || ""));
+assert(!insecureClub, `Insecure external club URL: ${insecureClub && insecureClub.name}`);
 
 console.log("verify-app: ok (root index.html + sw.js)");

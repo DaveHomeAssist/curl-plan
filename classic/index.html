@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="description" content="Personal curling calendar, planner, game log, and ice notes. Track games, practices, bonspiels, and league nights.">
   <meta property="og:type" content="website">
   <meta property="og:title" content="CurlPlan">
@@ -10,8 +12,10 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="CurlPlan">
   <meta name="twitter:description" content="Personal curling calendar, planner, game log, and ice notes. Track games, practices, bonspiels, and league nights.">
-  <title>CurlPlan</title>
+  <title>CurlPlan Classic</title>
   <link rel="icon" type="image/svg+xml" href="assets/icons/favicon/favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="assets/css/theme.css" />
   <link rel="stylesheet" href="assets/css/app.css" />
   <script>
