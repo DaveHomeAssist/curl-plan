@@ -12,6 +12,8 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added durable Classic storage-recovery and pre-reset restore notices plus automated light/dark accessibility coverage for every overlay.
 - Added root create/edit/delete/reload coverage, structured storage-failure recovery, correction-state accessibility checks, and stable user-created record identifiers.
 - Added product-scoped manifests and isolated root/Classic service-worker upgrade and offline-shell browser tests.
+- Added the canonical Clerk + Worker/D1 identity and season-ownership decision, schema 4 D1 migration, versioned export/restore/deletion endpoints, and persisted idempotency receipts.
+- Added concurrent CAS, hostile-key, merged-size, migration, lifecycle, rejected-plane, per-record recovery, and failed-Swift-persistence regression coverage.
 
 ### Changed
 
@@ -23,12 +25,18 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Replaced non-semantic root controls with named keyboard-operable controls, added tab and rating state semantics, repaired form naming and validation focus, and established contrast-safe accents in both themes.
 - Isolated root and Classic cache ownership, constrained navigation fallbacks to each product scope, tightened both web CSPs, and bounded Classic imports by bytes, records, depth, and keys before merge.
 - Replaced all six cleartext club website records with verified HTTPS destinations and made the verifier reject new cleartext records.
+- Made Worker/D1 writes revision-conditional, bounded-retry, final-size checked, and atomic with small bounded idempotency receipts; stale writes now return a deterministic current-state conflict envelope.
+- Replaced inherited-key-sensitive merge accumulators with null-prototype dictionaries and filtered dangerous keys before they can enter merge state.
+- Quarantined the custom credential service by default, retained explicit development mode only, serialized its mutations, validated schema 4 imports, and replaced whole-system snapshots with content-addressed records behind an atomic recoverable manifest.
+- Staged Swift account mutations in an isolated store and publish them only after durable persistence succeeds.
 
 ### Verified locally
 
 - All P0 local application, parity, merge, API, account-backend, stress, Worker lifecycle, and browser gates passed.
 - All P1 Classic CRUD, recovery, modal, calendar, control-semantics, focus, contrast, and automated accessibility gates passed locally in Chromium.
 - All P2 root semantics, keyboard, CRUD/reload, storage recovery, theme/contrast, correction-state, install asset, service-worker isolation, wrong-shell, import-bound, CSP, and HTTPS gates passed locally; the browser suite is 25 of 25 green.
+- All P3 merge, atomic Worker/D1, migration, lifecycle, custom development-service, hostile-input, bounded-growth, and 19 Swift contract tests passed locally.
+- P3 Worker typecheck, lint, and direct esbuild passed; the current-revision Wrangler dry-run remains open because startup blocked on synchronous dependency reads under critical APFS capacity pressure.
 - Hosted CI, staging, deployment, monitoring, rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
 
 ## 2026-08-21

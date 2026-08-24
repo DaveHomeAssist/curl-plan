@@ -1,6 +1,6 @@
 # 2026-08-24 audit remediation evidence
 
-Status: P0 through P2 locally verified; P3 through P5 and all external release gates remain open.
+Status: P0 through P3 locally verified; P4, P5, the current-revision Wrangler lifecycle rerun, and all external release gates remain open.
 
 ## Authority
 
@@ -10,6 +10,7 @@ Status: P0 through P2 locally verified; P3 through P5 and all external release g
 - P0 change commit: `73523784ed6bb0eb0350b6feea481fd9620d1c45`
 - P1 change commit: `6749e1e46e77b4420c680eea56227eeaf3b6fffc`
 - P2 change commit: `f659a2914291034e04b846818c088925f296eb16`
+- P3 change commit: `af8ac0f33c8dd899573c373bc0f40599e9d0cb62`
 - Release owner: Dave Robertson
 - Evidence date: 2026-08-24 EDT
 
@@ -66,6 +67,24 @@ Status: P0 through P2 locally verified; P3 through P5 and all external release g
 | `make feature-review CHANGED_FILES='<P2 allowlist>'` | 0 | The bounded support-path review and unsupported-authority claim scan passed; this is not runtime product proof |
 | `git diff --cached --check` | 0 | The exact P2 implementation allowlist contained no whitespace errors before commit |
 
+## P3 command evidence
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `node scripts/verify-merge.js` | 0 | All 14 shared pair fixtures, the three-replica associativity regression, commutativity, idempotency, tombstones, hostile-key filtering, and prototype-pollution checks passed |
+| `node scripts/verify-api.js` | 0 | Schema migration wiring, atomic D1 batch tokens, concurrent same-revision convergence, stale conflict, idempotent retry and key-reuse rejection, schema 3 read migration, hostile keys, final merged size, export, restore, deletion, receipt purge, auth, and CORS checks passed |
+| `node scripts/verify-account-backend.mjs` | 0 | Development service account flow, idempotency, serialized concurrency, failed-commit rollback, bounded import, deletion, restart, content-addressed record storage, corrupt-primary recovery, and production quarantine checks passed |
+| `swift test --scratch-path /tmp/curlplan-p3-spm` | 0 | All 19 CurlPlanCore account, HTTP, runtime, social, sync, and persistence tests passed; the new failed-write fixture proved published memory remains unchanged |
+| `cd api && npm run typecheck` | 0 | Worker JavaScript typecheck passed at the P3 revision |
+| `cd api && npm run lint` | 0 | All three Worker modules passed syntax and source-policy checks |
+| `cd api && ./node_modules/.bin/esbuild src/index.js --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js` | 0 | Direct Worker bundle completed at 21.0 kB |
+| `node scripts/gen-seed.js --check` | 0 | Swift SHA-256 remained `3a5d67f746b8b90c67e5d38c2d0809c23e0ad8cfb7af2537a8383aee834885f9` before and after |
+| `node scripts/verify-app.js` | 0 | Root verifier remained green |
+| `node scripts/verify-split.js` | 0 | Classic verifier remained green |
+| `node scripts/verify-parity.js` | 0 | All 12 web/native parity capabilities remained green |
+| `make feature-review CHANGED_FILES='<P3 allowlist>'` | 0 | The bounded account/sync/trust-safety support-path review and unsupported-authority claim scan passed; this is not deployed-service proof |
+| `git diff --cached --check` | 0 | The exact P3 implementation allowlist contained no whitespace errors before commit |
+
 ## Browser and accessibility proof
 
 - `Closed`: Chromium executes the repaired browser stress page without a literal closing-script parse break.
@@ -81,14 +100,15 @@ Status: P0 through P2 locally verified; P3 through P5 and all external release g
 
 | Gate | Status | Evidence or blocker |
 |---|---|---|
-| Hosted CI on the P0 commit | Open | Push is explicitly outside the authorized program scope |
+| Hosted CI on the local phase commits | Open | Push is explicitly outside the authorized program scope |
+| Current-revision Wrangler dry-run | Open | Typecheck, lint, API behavior, and direct esbuild passed; repeated Wrangler 4.123.0 startup remained blocked in synchronous dependency reads on a 99-percent-full APFS data volume and was interrupted after bounded waits |
 | Xcode project tests | Open | Unsigned compile passed; unit/UI tests remain deferred to P5 dependency order |
 | Signed archive resource inspection | Open | Requires P5 and signing authority |
 | Controlled TLS staging boundary | Open | No staging deployment or credential authority granted |
 | Deployment smoke | Open | Deployment is explicitly unauthorized in this program run |
 | Monitoring | Open | No deployed candidate exists |
-| Backup and restore drill | Open | Production data authority is not selected until P3 |
-| Rollback | Open | Candidate rollback is a revert of the local P2-to-P0 phase commits; not exercised |
+| Backup and restore drill | Open | The authority is selected, but no live D1 database or migration/deployment authority exists for a production drill |
+| Rollback | Open | Candidate rollback is a revert of the local P3-to-P0 phase commits; no D1 down-migration exists and no live migration was run |
 
 ## Phase status
 
@@ -97,7 +117,7 @@ Status: P0 through P2 locally verified; P3 through P5 and all external release g
 | P0 Honest release baseline | Closed locally | Hosted CI remains an operational release gate, not a P0 code gate |
 | P1 Classic workflows and recovery | Closed locally | Hosted CI remains an operational release gate; no push or deployment was authorized |
 | P2 Root web and offline boundaries | Closed locally | Root semantics, durable recovery, bounded import, install assets, and cross-app offline/cache isolation pass locally; manual VoiceOver remains a final release gate |
-| P3 Atomic data ownership | Open | Depends on P0 checkpoint and architecture decision |
+| P3 Atomic data ownership | Closed locally | Clerk + Worker/D1 is the sole production plane; schema 4 CAS/idempotency/lifecycle, hostile-key, bounded-growth, rejected-plane quarantine, per-record development commits, and Swift rollback pass locally. No D1 migration or live cutover was authorized |
 | P4 Identity and abuse boundaries | Open | Depends on P3 |
 | P5 Native and release readiness | Open | Depends on P3 and P4 |
 
