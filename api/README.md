@@ -70,6 +70,27 @@ incidents, Cloudflare Worker/D1 rollback, and restoring D1 from the
 pre-migration export. Do not run a live migration without a row-counted backup,
 a rollback decision, and explicit deployment authority.
 
+The repository keeps the migration and live-boundary checks executable:
+
+```bash
+# Runs the real Wrangler/D1 migration against a disposable pre-v4 local DB,
+# proves row preservation and the receipt schema, and verifies its backup.
+npm run test:migration
+
+# Requires a fresh disposable Clerk staging user whose JWT uses the configured
+# curlplan-api audience. Keep the token in the environment; never paste it into
+# a command, report, issue, or tracked file.
+CURLPLAN_STAGING_URL=https://<worker>.workers.dev \
+CURLPLAN_STAGING_ORIGIN=https://<staging-client> \
+CURLPLAN_STAGING_TOKEN="$CURLPLAN_STAGING_TOKEN" \
+npm run test:staging
+```
+
+The live verifier requires HTTPS, independently verifies the supplied JWT
+against the issuer's JWKS, checks exact credentialed CORS and negative auth,
+then exercises merge, idempotent retry, export, restore, deletion, and final
+empty-state readback. It refuses to mutate a non-empty account state.
+
 ## What I still need from you to go live
 1. **Clerk** (non-secret): publishable key + instance issuer URL.
 2. **Cloudflare**: run the commands above; give me the **database_id** and the deployed

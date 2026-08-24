@@ -69,6 +69,9 @@ jobs:
       - name: Worker tests
         working-directory: api
         run: npm test
+      - name: D1 v3 to v4 migration exercise
+        working-directory: api
+        run: npm run test:migration
       - name: Worker dry-run build
         working-directory: api
         run: npm run build
