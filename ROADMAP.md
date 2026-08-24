@@ -6,7 +6,7 @@ The 2026-08-24 audit remediation runs in strict dependency order. Current proof 
 | Phase | Dependency | Current state | Completion authority |
 |---|---|---|---|
 | P0 Honest release baseline | None | Local checkpoint committed at `73523784` | Non-mutating seed, full verifier exits, browser harness, Worker lock/build, account tests, negative gate |
-| P1 Classic workflows and recovery | P0 | In progress | Browser CRUD/reload/failure/recovery plus modal, contrast, focus, calendar, and support-policy evidence |
+| P1 Classic workflows and recovery | P0 | Complete locally; checkpoint commit pending | Browser CRUD/reload/failure/recovery plus modal, contrast, focus, calendar, and support-policy evidence |
 | P2 Root web and offline boundaries | P0 | Open | Root semantics/correction/persistence and isolated install/offline/cache evidence |
 | P3 Atomic data ownership | P0 | Open | One production authority plus transactional, convergent, bounded, rollback-safe persistence |
 | P4 Identity and abuse boundaries | P3 | Open | Token, password, authorization, blocking, CORS/TLS, recovery, and abuse evidence |

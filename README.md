@@ -3,8 +3,8 @@
 > Your season, your circle. A curling-native app — map your season, stay close to your circle.
 
 The root app (`index.html`) is the **Hi-Fi concept**: a mobile-first, single-file
-build of the "Passport + Locker Room" direction. The original multi-view planner
-is preserved, fully working, under [`classic/`](classic/).
+build of the "Passport + Locker Room" direction. The retained local planner is
+supported under [`classic/`](classic/) and has its own offline and storage boundary.
 
 ## Hi-Fi app (root)
 
@@ -41,9 +41,11 @@ Open `index.html` in a browser, or serve the repo from any static host.
 
 ## Classic app (`classic/`)
 
-The original planner — Calendar, Game Log, Practice Tracker, Ice Notes, Daily
-Planner — with split CSS/JS assets, localStorage persistence, and offline support.
-Still live at `classic/index.html`. See [`classic/`](classic/) for its assets.
+The supported local-first planner — Calendar, Game Log, Practice Tracker, Ice
+Notes, Daily Planner — with split CSS/JS assets, localStorage persistence, and
+offline support. The root route remains the canonical product preview; `/classic/`
+is the canonical route for the retained planner workflow. See
+[`classic/README.md`](classic/README.md) for the support and recovery contract.
 
 ## Native iOS app (`ios/`)
 
@@ -60,7 +62,7 @@ curl-plan/
 ├── ios/                    # Native SwiftUI port (Xcode project)
 │   ├── CurlPlan.xcodeproj
 │   └── CurlPlan/*.swift
-├── classic/                # Original multi-view planner (archived, still working)
+├── classic/                # Retained and supported local-first planner
 │   ├── index.html
 │   ├── sw.js
 │   └── assets/css|js|icons

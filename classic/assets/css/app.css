@@ -9,9 +9,7 @@
       --leaf:         var(--success);
       --gold:         var(--warning);
       --white:        var(--surface);
-      --shadow-sm:    var(--shadow-sm);
       --shadow:       var(--shadow-md);
-      --shadow-lg:    var(--shadow-lg);
       --r:            var(--r-lg);
       --r-lg:         var(--r-xl);
 
@@ -106,6 +104,11 @@
       background: none;
     }
 
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
     input,
     select,
     textarea {
@@ -132,7 +135,7 @@
     select:focus,
     textarea:focus {
       border-color: var(--sky);
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.12);
+      box-shadow: var(--focus-ring);
       transform: translateY(-1px);
     }
 
@@ -243,8 +246,8 @@
     }
 
     .today-chip:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .btn {
@@ -265,7 +268,6 @@
       transition:
         transform var(--dur-fast) ease,
         box-shadow var(--dur-fast) ease,
-        background var(--dur-fast) ease,
         border-color var(--dur-fast) ease,
         opacity var(--dur-fast) ease;
     }
@@ -285,7 +287,7 @@
     }
 
     .btn:focus-visible {
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.12);
+      box-shadow: var(--focus-ring);
     }
 
     .btn.is-working {
@@ -419,7 +421,7 @@
     }
 
     .nav-btn:focus-visible {
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.12);
+      box-shadow: var(--focus-ring);
     }
 
     .toolbar {
@@ -511,8 +513,8 @@
     }
 
     .planner-entry-card:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .card-sm:hover {
@@ -597,7 +599,7 @@
     }
 
     .stat-route-card:focus-visible {
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.14), var(--shadow-sm);
+      box-shadow: var(--focus-ring);
       outline: none;
     }
 
@@ -638,6 +640,7 @@
     }
 
     .card-title {
+      display: block;
       font-family: var(--font-serif);
       font-size: 1.15rem;
       line-height: 1.1;
@@ -696,8 +699,8 @@
     }
 
     .view-context-link:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .view-context-sep {
@@ -866,6 +869,10 @@
       border-radius: var(--r);
       border: 1px solid var(--cp-border);
       background: var(--surface-soft);
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
       padding: 15px 16px;
       box-shadow: var(--shadow-sm);
       transition:
@@ -880,13 +887,13 @@
       box-shadow: 0 0 0 2px rgba(26, 111, 160, 0.08), var(--shadow-sm);
     }
 
-    .event-item[role="button"] {
+    .event-item {
       cursor: pointer;
     }
 
     .event-item:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.14), var(--shadow-sm);
+      box-shadow: var(--focus-ring);
     }
 
     .event-item:hover,
@@ -912,12 +919,14 @@
     }
 
     .event-day {
+      display: block;
       font-family: var(--font-serif);
       font-size: 1.55rem;
       font-weight: 700;
     }
 
     .event-mon {
+      display: block;
       font-size: 0.67rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -1012,8 +1021,20 @@
     }
 
     .log-row:focus-visible {
-      outline: 2px solid rgba(26, 111, 160, 0.28);
-      outline-offset: -2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    .log-expand-button {
+      width: 100%;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .log-expand-button:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .log-detail-row td {
@@ -1118,8 +1139,8 @@
     }
 
     .insight-card:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .insight-kicker {
@@ -1249,6 +1270,11 @@
     .state-warning {
       border-color: rgba(180, 74, 44, 0.22);
       background: rgba(180, 74, 44, 0.08);
+    }
+
+    .state-recovery {
+      border-color: var(--granite);
+      background: var(--surface-solid);
     }
 
     .quick-log-bar {
@@ -1386,7 +1412,14 @@
     }
 
     .planner-entry-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       cursor: pointer;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
     }
 
     .lineup-card {
@@ -1433,7 +1466,14 @@
     }
 
     .bonspiel-draw-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       cursor: pointer;
+      width: 100%;
+      color: inherit;
+      font: inherit;
+      text-align: left;
     }
 
     .bonspiel-draw-card:hover {
@@ -1475,8 +1515,8 @@
     }
 
     .drill-check:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .drill-check:has(input:checked) {
@@ -1533,8 +1573,8 @@
     }
 
     .checklist-item:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .checklist-item.is-checked {
@@ -1697,8 +1737,8 @@
     }
 
     .speed-dot:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .overlay {
@@ -1714,6 +1754,10 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--dur-med) var(--ease-out);
+    }
+
+    .overlay[hidden] {
+      display: none;
     }
 
     .overlay.is-open {
@@ -1775,7 +1819,7 @@
     }
 
     .modal-close:focus-visible {
-      box-shadow: 0 0 0 3px rgba(26, 111, 160, 0.12);
+      box-shadow: var(--focus-ring);
     }
 
     .status-bar {
@@ -1840,8 +1884,8 @@
     }
 
     .toast-action:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .tap-pop {
@@ -2089,8 +2133,8 @@
     }
 
     .settings-item:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: -2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     .settings-danger {
@@ -2199,8 +2243,8 @@
     }
 
     .speed-seg:focus-visible {
-      outline: 2px solid var(--sky);
-      outline-offset: -2px;
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     /* ── 2-Step Delete Confirmation ── */

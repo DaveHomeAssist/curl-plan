@@ -1,5 +1,6 @@
 // CurlPlan core state, schema, storage, and normalization
 const STORAGE_KEY = "curlplan-v1";
+const RESET_SNAPSHOT_KEY = "curlplan-reset-snapshot-v1";
 const SCHEMA_VERSION = 4;
 const CHECKLIST_DEFAULTS_KEY = "cp_checklist_defaults";
 const UI_PREFS_KEY = "cp_ui_prefs_v1";
@@ -16,6 +17,11 @@ const DEFAULT_PLANNER_CHECKLIST = [
   { text: "Warm-up routine", checked: false },
   { text: "Team communication reminders", checked: false }
 ];
+
+let storageRecoveryState = {
+  kind: "none",
+  message: ""
+};
 
 const emptyState = () => ({
   version: SCHEMA_VERSION,
@@ -214,6 +220,7 @@ const demoState = () => ({
 });
 
 let state = loadState();
+let lastDurableState = clone(state);
 let uiPrefs = loadUiPrefs();
 let currentView = uiPrefs.lastView || "dashboard";
 let currentFilter = uiPrefs.calendarFilter || "all";
@@ -822,13 +829,24 @@ function hydrateRinkConditionEntries(ice, rinkConditionEntries) {
   });
 }
 
-function safeParseStorage(key) {
+function readStorageJson(key) {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+    raw = localStorage.getItem(key);
+  } catch (error) {
+    return { ok: false, found: false, kind: "unavailable", error, raw: null, value: null };
   }
+  if (raw === null) return { ok: true, found: false, kind: "missing", raw: null, value: null };
+  try {
+    return { ok: true, found: true, kind: "ready", raw, value: JSON.parse(raw) };
+  } catch (error) {
+    return { ok: false, found: true, kind: "corrupt", error, raw, value: null };
+  }
+}
+
+function safeParseStorage(key) {
+  const result = readStorageJson(key);
+  return result.ok ? result.value : null;
 }
 
 function loadChecklistDefaults() {
@@ -897,23 +915,32 @@ function loadUiPrefs() {
   };
 }
 
-function safeSetItem(key, value) {
+function safeSetItem(key, value, options = {}) {
   try {
     localStorage.setItem(key, value);
     return true;
   } catch (err) {
-    if (typeof showToast === "function") {
+    if (!options.quiet && typeof showToast === "function") {
       showToast("Storage full — some changes may not be saved.", { type: "error" });
-    } else {
+    } else if (!options.quiet) {
       console.warn("CurlPlan: save failed", err);
     }
     return false;
   }
 }
 
+function safeRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function saveUiPrefs(nextPrefs = uiPrefs) {
   const defaults = defaultUiPrefs();
-  uiPrefs = {
+  const normalizedPrefs = {
     ...defaults,
     ...nextPrefs,
     plannerTemplate: {
@@ -921,7 +948,9 @@ function saveUiPrefs(nextPrefs = uiPrefs) {
       ...(nextPrefs.plannerTemplate && typeof nextPrefs.plannerTemplate === "object" ? nextPrefs.plannerTemplate : {})
     }
   };
-  safeSetItem(UI_PREFS_KEY, JSON.stringify(uiPrefs));
+  if (!safeSetItem(UI_PREFS_KEY, JSON.stringify(normalizedPrefs))) return false;
+  uiPrefs = normalizedPrefs;
+  return true;
 }
 
 function saveChecklistDefaults(items) {
@@ -990,31 +1019,47 @@ function loadPrototypeState() {
 }
 
 function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      return normalizeState(JSON.parse(raw));
-    } catch {
-      return clone(demoState());
-    }
+  const stored = readStorageJson(STORAGE_KEY);
+  if (!stored.ok) {
+    storageRecoveryState = stored.kind === "corrupt"
+      ? { kind: "corrupt", message: "Saved CurlPlan data could not be read. Demo data is shown and the original value has not been overwritten." }
+      : { kind: "unavailable", message: "Browser storage is unavailable. Demo data is shown and changes cannot be saved until storage access returns." };
+    return normalizeState(demoState());
+  }
+  if (stored.found) {
+    storageRecoveryState = { kind: "none", message: "" };
+    return normalizeState(stored.value);
   }
   const migratedPrototype = loadPrototypeState();
   if (migratedPrototype) {
     safeSetItem(STORAGE_KEY, JSON.stringify(migratedPrototype));
     return migratedPrototype;
   }
-  return clone(demoState());
+  return normalizeState(demoState());
 }
 
-function saveState(nextState = state) {
-  state = normalizeState(nextState);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
-    if (typeof showToast === "function") {
-      showToast("Storage full — some changes may not be saved.", { type: "error" });
-    } else {
-      console.warn("CurlPlan: save failed", err);
-    }
+function saveState(nextState = state, options = {}) {
+  if (storageRecoveryState.kind === "corrupt" && !options.allowRecoveryOverwrite) {
+    state = clone(lastDurableState);
+    if (typeof renderRecoveryNotices === "function") renderRecoveryNotices();
+    if (typeof setStatus === "function") setStatus("Changes could not be saved until the unreadable data is resolved.", "error");
+    return false;
   }
+  const normalizedState = normalizeState(nextState);
+  if (!safeSetItem(STORAGE_KEY, JSON.stringify(normalizedState), { quiet: true })) {
+    state = clone(lastDurableState);
+    storageRecoveryState = {
+      kind: "write-failed",
+      message: "Your last change could not be saved. The previous workspace remains active; retry the open action after restoring browser storage."
+    };
+    if (typeof renderRecoveryNotices === "function") renderRecoveryNotices();
+    if (typeof setStatus === "function") setStatus("Changes could not be saved. Your previous workspace is unchanged.", "error");
+    if (typeof showToast === "function") showToast("Save failed — previous data kept", { persist: true });
+    return false;
+  }
+  state = normalizedState;
+  lastDurableState = clone(normalizedState);
+  storageRecoveryState = { kind: "none", message: "" };
+  if (typeof renderRecoveryNotices === "function") renderRecoveryNotices();
+  return true;
 }

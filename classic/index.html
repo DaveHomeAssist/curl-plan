@@ -109,20 +109,22 @@
       </div>
     </header>
 
-    <div class="nav-wrap">
+    <nav class="nav-wrap" aria-label="Primary">
       <a href="https://davehomeassist.github.io/" class="nav-back">&larr; All Projects</a>
-      <nav class="nav" id="navTabs" role="tablist" aria-label="App views">
+      <div class="nav" id="navTabs" role="tablist" aria-label="App views">
         <button type="button" class="nav-btn is-active" id="tab-dashboard" data-view="dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard">Dashboard</button>
         <button type="button" class="nav-btn" id="tab-calendar" data-view="calendar" role="tab" aria-selected="false" aria-controls="view-calendar">Calendar</button>
         <button type="button" class="nav-btn" id="tab-planner" data-view="planner" role="tab" aria-selected="false" aria-controls="view-planner">Game Planner</button>
         <button type="button" class="nav-btn" id="tab-games" data-view="games" role="tab" aria-selected="false" aria-controls="view-games">Game Log</button>
         <button type="button" class="nav-btn" id="tab-practice" data-view="practice" role="tab" aria-selected="false" aria-controls="view-practice">Practice</button>
         <button type="button" class="nav-btn" id="tab-ice" data-view="ice" role="tab" aria-selected="false" aria-controls="view-ice">Ice Notes</button>
-      </nav>
+      </div>
       <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true"></div>
-    </div>
+    </nav>
 
     <div class="view-context is-hidden" id="viewContext" aria-live="polite"></div>
+    <div class="state-strip-shell is-hidden" id="storageRecovery"></div>
+    <div class="state-strip-shell is-hidden" id="resetRecovery"></div>
     <div class="state-strip-shell" id="suggestedNextStrip" aria-live="polite"></div>
 
     <main class="section-stack" id="main">
@@ -694,8 +696,8 @@
     </main>
   </div>
 
-  <div class="overlay" id="modal-event">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-event" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="eventModalTitle">Add Event</h2>
@@ -802,8 +804,8 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-game">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-game" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="gameModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="gameModalTitle">Log Game</h2>
@@ -867,8 +869,8 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-practice">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-practice" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="practiceModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="practiceModalTitle">Log Practice</h2>
@@ -920,8 +922,8 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-ice">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-ice" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="iceModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="iceModalTitle">Add Ice Notes</h2>
@@ -1022,8 +1024,8 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-issue">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-issue" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="issueModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
           <h2 class="modal-title" id="issueModalTitle">Add Issue</h2>
@@ -1074,11 +1076,11 @@
 
   <div class="print-report" id="printReport" aria-hidden="true"></div>
 
-  <div class="overlay" id="modal-import-preview">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-import-preview" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="importPreviewModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
-          <h2 class="modal-title">Import Preview</h2>
+          <h2 class="modal-title" id="importPreviewModalTitle">Import Preview</h2>
           <p class="modal-copy">Review the incoming data before it replaces your current workspace.</p>
         </div>
         <button type="button" class="modal-close" aria-label="Close import preview" data-close-modal="modal-import-preview">✕</button>
@@ -1091,11 +1093,11 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-shortcuts">
-    <div class="modal-panel">
+  <div class="overlay" id="modal-shortcuts" hidden inert aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="shortcutModalTitle" tabindex="-1">
       <div class="modal-head">
         <div>
-          <h2 class="modal-title">Keyboard Shortcuts</h2>
+          <h2 class="modal-title" id="shortcutModalTitle">Keyboard Shortcuts</h2>
           <p class="modal-copy">Fast paths for navigation, logging, and save actions.</p>
         </div>
         <button type="button" class="modal-close" aria-label="Close shortcuts" data-close-modal="modal-shortcuts">✕</button>

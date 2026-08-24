@@ -34,7 +34,9 @@ document.addEventListener("click", event => {
     filterType.value = currentFilter;
     saveUiPrefs({ ...uiPrefs, calendarFilter: currentFilter });
     document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
-      button.classList.toggle("active-filter", button === filterButton);
+      const isActive = button === filterButton;
+      button.classList.toggle("active-filter", isActive);
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
     });
     return;
   }
@@ -159,6 +161,15 @@ document.addEventListener("click", event => {
     if (action === "confirm-import") {
       confirmImportPreview();
     }
+    if (action === "restore-reset-snapshot") {
+      restoreResetSnapshot();
+    }
+    if (action === "replace-corrupt-storage") {
+      replaceCorruptStorage();
+    }
+    if (action === "retry-storage") {
+      retryStorageAccess();
+    }
     if (action === "print-game-report") {
       printGameReport(actionButton.dataset.id);
     }
@@ -232,8 +243,38 @@ filterType.addEventListener("change", () => {
   renderEventList();
   saveUiPrefs({ ...uiPrefs, calendarFilter: currentFilter });
   document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
-    button.classList.toggle("active-filter", button.dataset.filter === currentFilter);
+    const isActive = button.dataset.filter === currentFilter;
+    button.classList.toggle("active-filter", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+});
+
+document.getElementById("navTabs")?.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  const tabs = Array.from(document.querySelectorAll("#navTabs [role='tab']"));
+  const currentIndex = Math.max(0, tabs.indexOf(document.activeElement));
+  let nextIndex = currentIndex;
+  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+  if (event.key === "Home") nextIndex = 0;
+  if (event.key === "End") nextIndex = tabs.length - 1;
+  event.preventDefault();
+  tabs[nextIndex].focus();
+  showView(tabs[nextIndex].dataset.view);
+});
+
+document.getElementById("speedControl")?.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+  const controls = Array.from(document.querySelectorAll("#speedControl [role='radio']"));
+  const currentIndex = Math.max(0, controls.indexOf(document.activeElement));
+  let nextIndex = currentIndex;
+  if (["ArrowLeft", "ArrowUp"].includes(event.key)) nextIndex = (currentIndex - 1 + controls.length) % controls.length;
+  if (["ArrowRight", "ArrowDown"].includes(event.key)) nextIndex = (currentIndex + 1) % controls.length;
+  if (event.key === "Home") nextIndex = 0;
+  if (event.key === "End") nextIndex = controls.length - 1;
+  event.preventDefault();
+  setSpeed(controls[nextIndex].dataset.speed);
+  controls[nextIndex].focus();
 });
 
 document.getElementById("savePlannerBtn").addEventListener("click", event => {
@@ -314,6 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("iceSortSelect").value = uiPrefs.iceSort || "newest";
   setSpeed(0);
   renderAll();
+  renderRecoveryNotices();
   setStatus("Ready.");
   document.querySelectorAll(".overlay").forEach(el => el.dataset.ready = "");
 

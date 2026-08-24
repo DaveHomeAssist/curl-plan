@@ -6,6 +6,7 @@ let modalDirtyState = {
 };
 let plannerGamePrefillDate = "";
 let plannerGameToastTargetId = "";
+let activeModalInvoker = null;
 
 function setModalTitle(type, isEdit) {
   const labels = {
@@ -91,11 +92,13 @@ function plannerNav(dir) {
 
 function setSpeed(value) {
   currentSpeed = Number(value);
-  document.querySelectorAll(".speed-dot, .speed-seg").forEach(dot => {
+  const controls = Array.from(document.querySelectorAll(".speed-dot, .speed-seg"));
+  controls.forEach((dot, index) => {
     const isMatch = Number(dot.dataset.speed) === currentSpeed;
     const isFill = Number(dot.dataset.speed) <= currentSpeed;
     dot.classList.toggle("is-active", dot.classList.contains("speed-seg") ? isMatch : isFill);
     dot.setAttribute("aria-checked", isMatch ? "true" : "false");
+    dot.setAttribute("tabindex", isMatch || (!currentSpeed && index === 0) ? "0" : "-1");
   });
   speedLabel.textContent = speedText(currentSpeed);
   markModalDirty("modal-ice");
@@ -141,12 +144,16 @@ function showView(name) {
   currentView = name;
   saveUiPrefs({ ...uiPrefs, lastView: name });
   document.querySelectorAll(".view").forEach(view => {
-    view.classList.toggle("is-active", view.id === `view-${name}`);
+    const isActive = view.id === `view-${name}`;
+    view.classList.toggle("is-active", isActive);
+    view.hidden = !isActive;
+    view.setAttribute("aria-hidden", isActive ? "false" : "true");
   });
   document.querySelectorAll(".nav-btn").forEach(button => {
     const isActive = button.dataset.view === name;
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.setAttribute("tabindex", isActive ? "0" : "-1");
   });
   if (name === "planner") {
     updatePlannerLabel();
@@ -156,7 +163,9 @@ function showView(name) {
     currentFilter = uiPrefs.calendarFilter || "all";
     if (filterType) filterType.value = currentFilter;
     document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
-      button.classList.toggle("active-filter", button.dataset.filter === currentFilter);
+      const isActive = button.dataset.filter === currentFilter;
+      button.classList.toggle("active-filter", isActive);
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
     });
   }
   if (window.location.hash !== `#${name}`) {
@@ -238,9 +247,16 @@ function resetModal(type) {
 }
 
 function openModal(type, id = "") {
-  resetModal(type);
   const modalId = `modal-${type}`;
   const overlay = document.getElementById(modalId);
+  if (!overlay) return false;
+  const openOverlay = document.querySelector(".overlay.is-open");
+  const nextInvoker = activeModalInvoker || document.activeElement;
+  if (openOverlay && openOverlay !== overlay) {
+    if (!closeModal(openOverlay.id, { restoreFocus: false })) return false;
+  }
+  activeModalInvoker = nextInvoker;
+  resetModal(type);
   const collectionName = type === "issue" ? "issues" : type === "ice" ? "ice" : type === "practice" ? "practice" : type === "game" ? "games" : "events";
   const item = id ? state[collectionName].find(entry => entry.id === id) : null;
   modalState[type] = item ? item.id : null;
@@ -323,29 +339,52 @@ function openModal(type, id = "") {
   }
 
   clearFieldErrors(modalId);
+  document.querySelectorAll(".overlay").forEach((candidate) => {
+    if (candidate === overlay) return;
+    candidate.classList.remove("is-open");
+    candidate.hidden = true;
+    candidate.setAttribute("inert", "");
+    candidate.setAttribute("aria-hidden", "true");
+  });
+  overlay.hidden = false;
+  overlay.removeAttribute("inert");
+  overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add("is-open");
   bindModalDirtyTracking(modalId);
   resetModalDirty(modalId);
   trapFocus(overlay);
   focusFirstField(modalId);
+  return true;
 }
 
-function closeModal(modalId) {
+function closeModal(modalId, options = {}) {
   const overlay = document.getElementById(modalId);
   if (overlay && isDirtyTrackableModal(modalId) && modalDirtyState.modalId === modalId && modalDirtyState.dirty) {
-    if (!window.confirm("Discard unsaved changes?")) return;
+    if (!window.confirm("Discard unsaved changes?")) return false;
   }
-  if (overlay) overlay.classList.remove("is-open");
+  if (overlay) {
+    overlay.classList.remove("is-open");
+    overlay.hidden = true;
+    overlay.setAttribute("inert", "");
+    overlay.setAttribute("aria-hidden", "true");
+  }
   resetModalDirty("");
   releaseFocusTrap();
+  if (options.restoreFocus !== false && activeModalInvoker && document.contains(activeModalInvoker)) {
+    activeModalInvoker.focus();
+  }
+  if (options.restoreFocus !== false) activeModalInvoker = null;
+  return true;
 }
 
 function upsertEntry(collectionName, entry) {
-  const index = state[collectionName].findIndex(item => item.id === entry.id);
-  if (index >= 0) state[collectionName][index] = entry;
-  else state[collectionName].push(entry);
-  saveState();
+  const nextState = normalizeState(clone(state));
+  const index = nextState[collectionName].findIndex(item => item.id === entry.id);
+  if (index >= 0) nextState[collectionName][index] = entry;
+  else nextState[collectionName].push(entry);
+  if (!saveState(nextState)) return false;
   renderAll();
+  return true;
 }
 
 function clearLineupFieldErrors() {
@@ -416,7 +455,7 @@ function saveLineup(options = {}) {
   if (!lineupHasContent(entry)) {
     state.lineups = (state.lineups || []).filter((item) => item.eventId !== eventId);
     syncEventLineup(eventId, "");
-    saveState();
+    if (!saveState()) return null;
     renderAll();
     if (!options.silent) {
       setStatus("Lineup cleared.", "success");
@@ -433,7 +472,7 @@ function saveLineup(options = {}) {
   };
   state.lineups = (state.lineups || []).filter((item) => item.eventId !== eventId).concat(nextEntry);
   syncEventLineup(eventId, nextEntry.id);
-  saveState();
+  if (!saveState()) return null;
   renderAll();
   if (!options.silent) {
     setStatus("Lineup saved.", "success");
@@ -508,6 +547,9 @@ function collectionNameForType(type) {
 function markFieldError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (!field) return;
+  const hintId = `${fieldId}-error`;
+  field.setAttribute("aria-invalid", "true");
+  field.setAttribute("aria-describedby", hintId);
   const row = field.closest(".form-row");
   if (!row) return;
   row.classList.add("has-error");
@@ -515,6 +557,7 @@ function markFieldError(fieldId, message) {
   if (existing) existing.remove();
   const hint = document.createElement("div");
   hint.className = "field-error";
+  hint.id = hintId;
   hint.textContent = message;
   row.appendChild(hint);
 }
@@ -524,6 +567,10 @@ function clearFieldErrors(modalId) {
   if (!overlay) return;
   overlay.querySelectorAll(".has-error").forEach(row => row.classList.remove("has-error"));
   overlay.querySelectorAll(".field-error").forEach(el => el.remove());
+  overlay.querySelectorAll('[aria-invalid="true"]').forEach((field) => {
+    field.removeAttribute("aria-invalid");
+    field.removeAttribute("aria-describedby");
+  });
 }
 
 function saveEvent() {
@@ -557,6 +604,7 @@ function saveEvent() {
     lineupId: existing?.lineupId || "",
     notes: asString(document.getElementById("ev-notes").value)
   };
+  const previousSelectedEventId = selectedEventId;
   const eventIndex = state.events.findIndex((item) => item.id === entry.id);
   if (eventIndex >= 0) state.events[eventIndex] = entry;
   else state.events.push(entry);
@@ -582,7 +630,10 @@ function saveEvent() {
     state.events = state.events.map((item) => item.bonspielId === entry.id ? { ...item, bonspielId: bonspielParentId } : item);
   }
   selectedEventId = entry.id;
-  saveState();
+  if (!saveState()) {
+    selectedEventId = previousSelectedEventId;
+    return;
+  }
   renderAll();
   resetModalDirty("modal-event");
   closeModal("modal-event");
@@ -629,7 +680,7 @@ function saveGame() {
     notes: asString(document.getElementById("gm-notes").value),
     shotPct: Number.isFinite(shotPct) ? shotPct : existing ? existing.shotPct : null
   };
-  upsertEntry("games", entry);
+  if (!upsertEntry("games", entry)) return;
   resetModalDirty("modal-game");
   closeModal("modal-game");
   setStatus("Game saved.", "success");
@@ -667,7 +718,7 @@ function savePractice() {
     notes: asString(document.getElementById("pr-notes").value)
   };
   entry.eventId = getPlannerLinkedEvent(date, { date })?.id || "";
-  upsertEntry("practice", entry);
+  if (!upsertEntry("practice", entry)) return;
   resetModalDirty("modal-practice");
   closeModal("modal-practice");
   setStatus("Practice session saved.", "success");
@@ -682,6 +733,7 @@ function saveIce() {
     setStatus("Ice note date is required.", "error");
     return;
   }
+  const existing = modalState.ice ? state.ice.find(item => item.id === modalState.ice) : null;
   const entry = {
     id: modalState.ice || createId(),
     eventId: existing?.eventId || getPlannerLinkedEvent(date, {
@@ -702,11 +754,14 @@ function saveIce() {
     confidence: normalizeConfidence(document.getElementById("ice-confidence").value),
     notes: asString(document.getElementById("ice-notes-text").value)
   };
-  upsertEntry("ice", entry);
-  const storedIce = state.ice.find((item) => item.id === entry.id) || entry;
-  const existingConditionIndex = (state.rinkConditionEntries || []).findIndex((item) => item.sourceIceId === entry.id);
+  const nextState = normalizeState(clone(state));
+  const iceIndex = nextState.ice.findIndex((item) => item.id === entry.id);
+  if (iceIndex >= 0) nextState.ice[iceIndex] = entry;
+  else nextState.ice.push(entry);
+  const storedIce = nextState.ice.find((item) => item.id === entry.id) || entry;
+  const existingConditionIndex = (nextState.rinkConditionEntries || []).findIndex((item) => item.sourceIceId === entry.id);
   const linkedCondition = normalizeRinkConditionEntry({
-    id: existingConditionIndex >= 0 ? state.rinkConditionEntries[existingConditionIndex].id : createId(),
+    id: existingConditionIndex >= 0 ? nextState.rinkConditionEntries[existingConditionIndex].id : createId(),
     sourceIceId: storedIce.id,
     eventId: storedIce.eventId,
     rinkId: storedIce.rinkId,
@@ -720,10 +775,13 @@ function saveIce() {
     confidence: storedIce.confidence,
     notes: storedIce.notes
   });
-  if (existingConditionIndex >= 0) state.rinkConditionEntries[existingConditionIndex] = linkedCondition;
-  else state.rinkConditionEntries.push(linkedCondition);
-  saveState();
-  renderAll();
+  if (existingConditionIndex >= 0) nextState.rinkConditionEntries[existingConditionIndex] = linkedCondition;
+  else nextState.rinkConditionEntries.push(linkedCondition);
+  if (!saveState(nextState)) return;
+  renderIce();
+  renderDashboard();
+  renderSuggestedNext();
+  renderViewContext();
   resetModalDirty("modal-ice");
   closeModal("modal-ice");
   setStatus("Ice notes saved.", "success");
@@ -745,7 +803,7 @@ function saveIssue() {
     status: normalizeIssueStatus(document.getElementById("is-status").value),
     proposedFix: asString(document.getElementById("is-fix").value)
   };
-  upsertEntry("issues", entry);
+  if (!upsertEntry("issues", entry)) return;
   resetModalDirty("modal-issue");
   closeModal("modal-issue");
   setStatus("Issue saved.", "success");
@@ -753,6 +811,7 @@ function saveIssue() {
 }
 
 function restoreDeletedEntry(type, snapshot) {
+  const previousSelectedEventId = selectedEventId;
   const collectionName = collectionNameForType(type);
   const nextItems = state[collectionName].slice();
   nextItems.splice(snapshot.index, 0, snapshot.entry);
@@ -775,12 +834,16 @@ function restoreDeletedEntry(type, snapshot) {
   if (type === "event") {
     selectedEventId = snapshot.entry.id;
   }
-  saveState();
+  if (!saveState()) {
+    selectedEventId = previousSelectedEventId;
+    return;
+  }
   renderAll();
   setStatus(`${type.charAt(0).toUpperCase() + type.slice(1)} restored.`, "success");
 }
 
 function deleteEntry(type, id, options = {}) {
+  const previousSelectedEventId = selectedEventId;
   const collectionName = collectionNameForType(type);
   const index = state[collectionName].findIndex(item => item.id === id);
   if (index < 0) return;
@@ -802,7 +865,10 @@ function deleteEntry(type, id, options = {}) {
   if (type === "event" && selectedEventId === id) {
     selectedEventId = state.events[0] ? state.events[0].id : null;
   }
-  saveState();
+  if (!saveState()) {
+    selectedEventId = previousSelectedEventId;
+    return;
+  }
   renderAll();
   setStatus(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted.`, "success");
   if (options.toast !== false) {
@@ -923,27 +989,79 @@ function importData(file) {
 }
 
 function resetDemoData() {
+  if (!window.confirm("Reset CurlPlan to demo data? A restorable snapshot of the current workspace will be kept in this browser.")) return;
   const previousState = clone(state);
   const previousPrefs = clone(uiPrefs);
-  localStorage.removeItem(CHECKLIST_DEFAULTS_KEY);
-  saveState(clone(demoState()));
+  const snapshot = {
+    createdAt: new Date().toISOString(),
+    state: previousState,
+    prefs: previousPrefs
+  };
+  if (!safeSetItem(RESET_SNAPSHOT_KEY, JSON.stringify(snapshot))) {
+    setStatus("Reset cancelled because a recovery snapshot could not be saved.", "error");
+    return;
+  }
+  if (!saveState(clone(demoState()))) {
+    safeRemoveItem(RESET_SNAPSHOT_KEY);
+    renderRecoveryNotices();
+    return;
+  }
+  safeRemoveItem(CHECKLIST_DEFAULTS_KEY);
   selectedEventId = state.events[0] ? state.events[0].id : null;
   plannerDate = todayStr();
   plannerChecklist = cloneChecklist(DEFAULT_PLANNER_CHECKLIST);
-  saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate, plannerTemplate: defaultUiPrefs().plannerTemplate });
+  const prefsSaved = saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate, plannerTemplate: defaultUiPrefs().plannerTemplate });
   renderAll();
+  renderRecoveryNotices();
+  if (!prefsSaved) {
+    setStatus("Demo data restored, but display preferences could not be saved.", "error");
+    return;
+  }
   setStatus("Demo data restored.", "success");
   showToast("Demo data restored", {
-    actionLabel: "Undo",
-    onAction: () => {
-      saveState(previousState);
-      saveUiPrefs(previousPrefs);
-      selectedEventId = state.events[0] ? state.events[0].id : null;
-      plannerDate = previousPrefs.lastPlannerDate || todayStr();
-      renderAll();
-      setStatus("Previous workspace restored.", "success");
-    }
+    actionLabel: "Restore",
+    onAction: restoreResetSnapshot,
+    persist: true
   });
+}
+
+function restoreResetSnapshot() {
+  const snapshot = readStorageJson(RESET_SNAPSHOT_KEY);
+  if (!snapshot.ok || !snapshot.found || !snapshot.value?.state) {
+    renderRecoveryNotices();
+    setStatus("No valid reset snapshot is available.", "error");
+    return false;
+  }
+  if (!window.confirm("Restore the workspace saved before the last reset? Current demo changes will be replaced.")) return false;
+  if (!saveState(snapshot.value.state, { allowRecoveryOverwrite: true })) return false;
+  selectedEventId = state.events[0] ? state.events[0].id : null;
+  plannerDate = snapshot.value.prefs?.lastPlannerDate || todayStr();
+  if (snapshot.value.prefs && !saveUiPrefs(snapshot.value.prefs)) {
+    renderAll();
+    renderRecoveryNotices();
+    setStatus("Workspace restored, but display preferences could not be restored.", "error");
+    return false;
+  }
+  safeRemoveItem(RESET_SNAPSHOT_KEY);
+  renderAll();
+  renderRecoveryNotices();
+  setStatus("Previous workspace restored.", "success");
+  showToast("Workspace restored");
+  return true;
+}
+
+function replaceCorruptStorage() {
+  if (storageRecoveryState.kind !== "corrupt") return false;
+  if (!window.confirm("Replace the unreadable saved value with the demo workspace currently shown? This cannot recover the unreadable value.")) return false;
+  if (!saveState(state, { allowRecoveryOverwrite: true })) return false;
+  renderAll();
+  renderRecoveryNotices();
+  setStatus("Unreadable storage was replaced with the demo workspace.", "success");
+  return true;
+}
+
+function retryStorageAccess() {
+  window.location.reload();
 }
 
 function renderImportPreview() {
@@ -1005,17 +1123,22 @@ function renderImportPreview() {
 function confirmImportPreview() {
   if (!pendingImportState) return;
   const previousState = clone(state);
-  saveState(pendingImportState.nextState);
+  if (!saveState(pendingImportState.nextState)) return;
   selectedEventId = state.events[0] ? state.events[0].id : null;
   plannerDate = todayStr();
-  saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate });
+  const prefsSaved = saveUiPrefs({ ...uiPrefs, lastPlannerDate: plannerDate });
   renderAll();
   closeModal("modal-import-preview");
+  if (!prefsSaved) {
+    pendingImportState = null;
+    setStatus("Import saved, but display preferences could not be saved.", "error");
+    return;
+  }
   setStatus("Import complete.", "success");
   showToast("Import complete", {
     actionLabel: "Undo",
     onAction: () => {
-      saveState(previousState);
+      if (!saveState(previousState)) return;
       selectedEventId = state.events[0] ? state.events[0].id : null;
       renderAll();
       setStatus("Import undone.", "success");
@@ -1036,7 +1159,9 @@ function renderAll() {
   renderPlannerEntries();
   filterType.value = currentFilter;
   document.querySelectorAll("#filter-bar [data-filter]").forEach(button => {
-    button.classList.toggle("active-filter", button.dataset.filter === currentFilter);
+    const isActive = button.dataset.filter === currentFilter;
+    button.classList.toggle("active-filter", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
   if (!selectedEventId && state.events[0]) {
     selectedEventId = state.events[0].id;

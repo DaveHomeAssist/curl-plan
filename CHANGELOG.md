@@ -9,16 +9,20 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added reproducible Node 22 Worker typecheck, lint, behavioral test, and Wrangler dry-run build gates with an API lockfile.
 - Added a real-browser Playwright harness, a Classic Ice Notes regression fixture, and a demonstrated intentional-failure gate.
 - Added the authoritative dated release-evidence ledger and dependency-ordered remediation roadmap.
+- Added durable Classic storage-recovery and pre-reset restore notices plus automated light/dark accessibility coverage for every overlay.
 
 ### Changed
 
 - Made seed check mode read-only and self-verify the generated Swift SHA-256 before and after checking.
 - Repaired Planner Entries stress fixtures and the browser harness's literal closing-script injection.
 - Pinned the account backend container base to a multi-architecture Node 22 Alpine digest.
+- Stabilized Classic Ice Notes create/edit/reload and failed-write behavior, made overlays single-owner hidden/inert dialogs with focus restoration, aligned calendar detail with active filters, and scoped planner saves to affected views.
+- Defined Classic as a retained, supported local-first planner whose canonical route and storage boundary remain distinct from the root product preview.
 
 ### Verified locally
 
 - All P0 local application, parity, merge, API, account-backend, stress, Worker lifecycle, and browser gates passed.
+- All P1 Classic CRUD, recovery, modal, calendar, control-semantics, focus, contrast, and automated accessibility gates passed locally in Chromium.
 - Hosted CI, staging, deployment, monitoring, rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
 
 ## 2026-08-21

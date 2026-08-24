@@ -208,7 +208,8 @@ function focusFirstField(modalId) {
   const overlay = document.getElementById(modalId);
   if (!overlay) return;
   window.setTimeout(() => {
-    const target = overlay.querySelector("input, select, textarea");
+    const target = overlay.querySelector("input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])")
+      || overlay.querySelector(".modal-panel");
     if (target) target.focus();
   }, 50);
 }
@@ -219,7 +220,8 @@ function trapFocus(overlay) {
   releaseFocusTrap();
   const handler = (event) => {
     if (event.key !== "Tab") return;
-    const focusable = overlay.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = Array.from(overlay.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true" && element.getClientRects().length > 0);
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -245,6 +247,51 @@ function setStatus(message = "", tone = "") {
   statusBar.textContent = message;
   statusBar.className = `status-bar${tone ? ` ${tone}` : ""}`;
   pulseElement(statusBar, "is-pulsing", 260);
+}
+
+function renderRecoveryNotices() {
+  const storageTarget = document.getElementById("storageRecovery");
+  if (storageTarget) {
+    const hasRecovery = storageRecoveryState.kind !== "none";
+    storageTarget.classList.toggle("is-hidden", !hasRecovery);
+    if (hasRecovery) {
+      const canReplace = storageRecoveryState.kind === "corrupt";
+      const canReload = storageRecoveryState.kind === "corrupt" || storageRecoveryState.kind === "unavailable";
+      storageTarget.innerHTML = `
+        <div class="state-strip state-recovery" role="alert">
+          <div class="state-copy-block">
+            <div class="state-kicker">Storage recovery</div>
+            <strong>Saved workspace needs attention</strong>
+            <span>${escapeHtml(storageRecoveryState.message)}</span>
+          </div>
+          <div class="inline-actions">
+            ${canReload ? '<button type="button" class="btn btn-ghost btn-sm" data-action="retry-storage">Recheck storage</button>' : ""}
+            ${canReplace ? '<button type="button" class="btn btn-danger btn-sm" data-action="replace-corrupt-storage">Replace with demo data</button>' : ""}
+          </div>
+        </div>
+      `;
+    } else {
+      storageTarget.innerHTML = "";
+    }
+  }
+
+  const resetTarget = document.getElementById("resetRecovery");
+  if (!resetTarget) return;
+  const snapshot = readStorageJson(RESET_SNAPSHOT_KEY);
+  const canRestore = snapshot.ok && snapshot.found && snapshot.value && typeof snapshot.value === "object";
+  resetTarget.classList.toggle("is-hidden", !canRestore);
+  resetTarget.innerHTML = canRestore
+    ? `
+      <div class="state-strip state-recovery" role="status">
+        <div class="state-copy-block">
+          <div class="state-kicker">Reset recovery</div>
+          <strong>Pre-reset workspace is available</strong>
+          <span>Restore the durable snapshot created ${escapeHtml(relativeTimeFromIso(snapshot.value.createdAt))}.</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="restoreResetBtn" data-action="restore-reset-snapshot">Restore workspace</button>
+      </div>
+    `
+    : "";
 }
 
 let activeToast = null;

@@ -305,20 +305,20 @@ function renderBonspielDrawCards(bonspielId) {
         const drawGame = getGamesByEventId(draw.id)[0] || state.games.find((item) => item.date === draw.date && asString(item.opponent) === asString(draw.opponent)) || null;
         const drawLineup = getLineupByEventId(draw.id);
         return `
-          <div class="card-sm bonspiel-draw-card" data-event-id="${escapeHtml(draw.id)}" data-action="select-event" data-id="${escapeHtml(draw.id)}" tabindex="0" role="button" aria-pressed="false">
-            <div class="card-head">
-              <div>
-                <h3 class="card-title">${escapeHtml(draw.title)}</h3>
-                <div class="muted">${escapeHtml(fmtDate(draw.date, false))}${draw.time ? ` • ${escapeHtml(fmtTime(draw.time))}` : ""}</div>
-              </div>
-              <div class="pill-row">
+          <button type="button" class="card-sm bonspiel-draw-card" data-event-id="${escapeHtml(draw.id)}" data-action="select-event" data-id="${escapeHtml(draw.id)}" aria-pressed="false">
+            <span class="card-head">
+              <span>
+                <span class="card-title">${escapeHtml(draw.title)}</span>
+                <span class="muted">${escapeHtml(fmtDate(draw.date, false))}${draw.time ? ` • ${escapeHtml(fmtTime(draw.time))}` : ""}</span>
+              </span>
+              <span class="pill-row">
                 ${draw.sheet ? `<span class="badge mono">Sheet ${escapeHtml(draw.sheet)}</span>` : ""}
                 ${drawGame && drawGame.result ? `<span class="result-badge ${resultClass(drawGame.result)}">${escapeHtml(drawGame.result)}</span>` : ""}
-              </div>
-            </div>
-            <div class="event-notes">${escapeHtml(draw.opponent || draw.notes || "No opponent logged yet.")}</div>
-            <div class="muted">${escapeHtml(getLineupSummary(drawLineup))}</div>
-          </div>
+              </span>
+            </span>
+            <span class="event-notes">${escapeHtml(draw.opponent || draw.notes || "No opponent logged yet.")}</span>
+            <span class="muted">${escapeHtml(getLineupSummary(drawLineup))}</span>
+          </button>
         `;
       }).join("")}
     </div>
@@ -527,27 +527,24 @@ function renderEventCard(item, selected = false) {
   const shortDate = fmtDateShort(item.date);
   const parentBonspiel = item.bonspielId ? getEventById(item.bonspielId) : null;
   return `
-    <div class="event-item${selected ? " is-selected" : ""}" data-event-id="${escapeHtml(item.id)}" data-action="select-event" data-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-pressed="${selected ? "true" : "false"}">
-      <div class="event-date-block">
-        <div class="event-day">${shortDate.day}</div>
-        <div class="event-mon">${escapeHtml(shortDate.mon)}</div>
-      </div>
-      <div class="event-info">
-        <div class="event-title">${escapeHtml(item.title)}</div>
-        <div class="event-meta">
+    <button type="button" class="event-item${selected ? " is-selected" : ""}" data-event-id="${escapeHtml(item.id)}" data-action="select-event" data-id="${escapeHtml(item.id)}" aria-pressed="${selected ? "true" : "false"}">
+      <span class="event-date-block">
+        <span class="event-day">${shortDate.day}</span>
+        <span class="event-mon">${escapeHtml(shortDate.mon)}</span>
+      </span>
+      <span class="event-info">
+        <span class="event-title">${escapeHtml(item.title)}</span>
+        <span class="event-meta">
           <span class="type-chip type-${escapeHtml(item.type)}">${escapeHtml(item.type)}</span>
           ${item.time ? `<span>${escapeHtml(fmtTime(item.time))}</span>` : ""}
           ${item.rink ? `<span>${escapeHtml(item.rink)}</span>` : ""}
           ${item.sheet ? `<span>Sheet ${escapeHtml(item.sheet)}</span>` : ""}
           ${parentBonspiel ? `<span class="type-chip">Bonspiel draw</span>` : ""}
           ${item.position ? `<span class="position-badge ${positionClass(item.position)}">${escapeHtml(item.position)}</span>` : ""}
-        </div>
-        ${item.notes || parentBonspiel ? `<div class="event-notes">${escapeHtml(parentBonspiel ? `${parentBonspiel.title}${item.notes ? ` • ${item.notes}` : ""}` : item.notes)}</div>` : ""}
-        <div class="event-actions">
-          <button type="button" class="btn btn-ghost btn-sm" data-open-modal="event" data-id="${escapeHtml(item.id)}">Edit</button>
-        </div>
-      </div>
-    </div>
+        </span>
+        ${item.notes || parentBonspiel ? `<span class="event-notes">${escapeHtml(parentBonspiel ? `${parentBonspiel.title}${item.notes ? ` • ${item.notes}` : ""}` : item.notes)}</span>` : ""}
+      </span>
+    </button>
   `;
 }
 
@@ -561,19 +558,19 @@ function renderEventList() {
     renderViewContext();
     return;
   }
-  if (!selectedEventId || !state.events.find(item => item.id === selectedEventId)) {
+  if (!selectedEventId || !items.find(item => item.id === selectedEventId)) {
     const today = todayStr();
     const nextUpcoming = items.find(item => item.date >= today);
     selectedEventId = nextUpcoming ? nextUpcoming.id : items[0].id;
   }
   target.innerHTML = items.map(item => renderEventCard(item, item.id === selectedEventId)).join("");
-  renderSelectedEvent();
+  renderSelectedEvent(items);
   renderViewContext();
 }
 
-function renderSelectedEvent() {
+function renderSelectedEvent(visibleItems = getFilteredEvents()) {
   const target = document.getElementById("eventDetail");
-  const item = state.events.find(entry => entry.id === selectedEventId);
+  const item = visibleItems.find(entry => entry.id === selectedEventId);
   if (!item) {
     target.className = "empty";
     target.innerHTML = renderEmpty("calendar", "Select an event to inspect details.", { modal: "event", label: "Add Event" }, "No event selected");
@@ -750,9 +747,9 @@ function renderGames() {
   } else {
     empty.classList.add("is-hidden");
     tbody.innerHTML = items.map(item => `
-      <tr class="log-row${expandedGameId === item.id ? " is-expanded" : ""}" tabindex="0" role="button" data-action="toggle-game-expand" data-id="${escapeHtml(item.id)}" aria-expanded="${expandedGameId === item.id ? "true" : "false"}">
+      <tr class="log-row${expandedGameId === item.id ? " is-expanded" : ""}">
         <td class="mono">${escapeHtml(fmtDate(item.date))}</td>
-        <td><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No club saved")}</span><br /><span class="mobile-row-hint">Tap to expand</span></td>
+        <td><button type="button" class="log-expand-button" data-action="toggle-game-expand" data-id="${escapeHtml(item.id)}" aria-expanded="${expandedGameId === item.id ? "true" : "false"}" aria-label="${expandedGameId === item.id ? "Collapse" : "Expand"} game against ${escapeHtml(item.opponent || "Unknown Opponent")}"><strong>${escapeHtml(item.opponent || "Unknown Opponent")}</strong><br /><span class="muted">${escapeHtml(item.rink || "No club saved")}</span><br /><span class="mobile-row-hint">Activate to ${expandedGameId === item.id ? "collapse" : "expand"}</span></button></td>
         <td>${(item.us !== null && item.them !== null) ? `<span class="score-pill">${escapeHtml(String(item.us))}-${escapeHtml(String(item.them))}</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.shotPct !== null ? `<span class="badge mono">${escapeHtml(String(item.shotPct))}%</span>` : '<span class="muted">—</span>'}</td>
         <td>${item.result ? `<span class="result-badge ${resultClass(item.result)}">${escapeHtml(item.result)}</span>` : '<span class="muted">—</span>'}</td>
@@ -1001,22 +998,22 @@ function renderPlannerEntries() {
   const filtered = entries.filter((entry) => entry.date !== plannerDate).slice(0, 6);
   target.innerHTML = filtered.length
     ? filtered.map((entry) => `
-      <div class="card-sm planner-entry-card" data-action="planner-jump" data-date="${escapeHtml(entry.date)}">
-        <div class="card-head">
-          <div>
-            <h3 class="card-title">${escapeHtml(fmtDate(entry.date))}</h3>
-            <div class="muted">${escapeHtml(entry.opponent || "No opponent set")}</div>
-          </div>
-          <div class="pill-row">
+      <button type="button" class="card-sm planner-entry-card" data-action="planner-jump" data-date="${escapeHtml(entry.date)}">
+        <span class="card-head">
+          <span>
+            <span class="card-title">${escapeHtml(fmtDate(entry.date))}</span>
+            <span class="muted">${escapeHtml(entry.opponent || "No opponent set")}</span>
+          </span>
+          <span class="pill-row">
             ${entry.position ? `<span class="position-badge ${positionClass(entry.position)}">${escapeHtml(entry.position)}</span>` : ""}
             <span class="type-chip">${escapeHtml(getPlannerReviewLabel(entry))}</span>
-          </div>
-        </div>
-        ${(entry.scoreUs || entry.scoreThem) ? `<div class="score-pill">${escapeHtml(entry.scoreUs || "0")}-${escapeHtml(entry.scoreThem || "0")}</div>` : ""}
-        ${entry.checklist && entry.checklist.length ? `<div class="muted" style="margin-top:8px;">Checklist ${escapeHtml(String(entry.checklist.filter(item => item.checked).length))}/${escapeHtml(String(entry.checklist.length))}</div>` : ""}
-        <div class="event-notes" style="margin-top:10px;">${escapeHtml(getPlannerGoalSummary(entry))}</div>
-        ${getPlannerReviewStatus(entry) !== "none" ? `<div class="muted" style="margin-top:8px;">${escapeHtml((entry.nextFocus || entry.keyTakeaways || entry.reflection || "").slice(0, 120))}${(entry.nextFocus || entry.keyTakeaways || entry.reflection || "").length > 120 ? "…" : ""}</div>` : ""}
-      </div>
+          </span>
+        </span>
+        ${(entry.scoreUs || entry.scoreThem) ? `<span class="score-pill">${escapeHtml(entry.scoreUs || "0")}-${escapeHtml(entry.scoreThem || "0")}</span>` : ""}
+        ${entry.checklist && entry.checklist.length ? `<span class="muted" style="margin-top:8px;">Checklist ${escapeHtml(String(entry.checklist.filter(item => item.checked).length))}/${escapeHtml(String(entry.checklist.length))}</span>` : ""}
+        <span class="event-notes" style="margin-top:10px;">${escapeHtml(getPlannerGoalSummary(entry))}</span>
+        ${getPlannerReviewStatus(entry) !== "none" ? `<span class="muted" style="margin-top:8px;">${escapeHtml((entry.nextFocus || entry.keyTakeaways || entry.reflection || "").slice(0, 120))}${(entry.nextFocus || entry.keyTakeaways || entry.reflection || "").length > 120 ? "…" : ""}</span>` : ""}
+      </button>
     `).join("")
     : renderEmpty("note", "No other planner entries saved yet.", null, "No archived planner notes");
 }
@@ -1115,6 +1112,17 @@ function renderGameDayBanner() {
   }
 }
 
+function renderPlannerMutation() {
+  renderPlannerEntries();
+  renderPlannerStateStrip(Boolean(getPlannerEntryForDate(plannerDate)));
+  renderGameDayBanner();
+  renderPlannerRinkProfile();
+  renderSuggestedNext();
+  renderViewContext();
+  if (currentView === "dashboard") renderDashboard();
+  if (currentView === "calendar") renderEventList();
+}
+
 function savePlanner(options = {}) {
   const existingEntry = getPlannerEntryForDate(plannerDate);
   const linkedEvent = getPlannerLinkedEvent(plannerDate, {
@@ -1173,8 +1181,8 @@ function savePlanner(options = {}) {
       opponent: entry.opponent
     }
   });
-  saveState();
-  renderAll();
+  if (!saveState()) return null;
+  renderPlannerMutation();
   if (!options.silent) {
     setStatus("Planner saved.", "success");
     showToast("Planner saved");

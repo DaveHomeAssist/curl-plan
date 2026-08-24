@@ -1,6 +1,6 @@
 # 2026-08-24 audit remediation evidence
 
-Status: P0 locally verified; P1 through P5 and all external release gates remain open.
+Status: P0 and P1 locally verified; P2 through P5 and all external release gates remain open.
 
 ## Authority
 
@@ -18,6 +18,7 @@ Status: P0 locally verified; P1 through P5 and all external release gates remain
 - Worker CI contract: Node 22 because Wrangler 4.123.0 declares `node >=22.0.0`
 - Xcode 26.5 (`17F42`); unsigned generic iOS Simulator compile passed, while project tests and device evidence remain open for P5
 - Root browser dependencies locked by `package-lock.json`
+- Accessibility engine: `@axe-core/playwright` 4.10.2
 - Worker dependencies locked by `api/package-lock.json`
 - Account container base: `node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32`
 
@@ -41,12 +42,22 @@ Status: P0 locally verified; P1 through P5 and all external release gates remain
 | `cd api && npm run build` | 0 | Wrangler 4.123.0 dry-run bundle completed |
 | `xcodebuild -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/curlplan-audit-p0-derived CODE_SIGNING_ALLOWED=NO build` | 0 | Xcode 26.5 unsigned simulator compile succeeded |
 
+## P1 command evidence
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `node scripts/verify-split.js` | 0 | Classic source, schema, script order, and parseability passed |
+| `node tests/run-stress.js` | 0 | 70 assertions passed with no Classic normalization or persistence regression |
+| `npm run test:browser` | 0 | 14 Chromium journeys passed: Ice Notes CRUD/failure/reload, corrupt and unavailable storage, durable reset restore, modal and scrim ownership, calendar filtering, scoped planner rendering, native controls, stress, and both-theme accessibility |
+| `make feature-review CHANGED_FILES='<P1 allowlist>'` | 0 | The bounded review matrix accepted its in-scope support paths and the unsupported-authority claim scan passed |
+
 ## Browser and accessibility proof
 
 - `Closed`: Chromium executes the repaired browser stress page without a literal closing-script parse break.
 - `Closed`: the intentional failing fixture makes the Playwright gate return nonzero.
-- `Open (P1)`: Classic Ice Notes create/edit/reload/storage-failure journeys.
-- `Open (P1/P2)`: automated accessibility scans, full overlay keyboard inspection, light/dark contrast, and 200 percent web zoom.
+- `Closed (P1)`: Classic Ice Notes create/edit/invalid/storage-failure/reload and reset/restore journeys pass in Chromium.
+- `Closed (P1)`: automated Axe scans report no violations on the base page or any of seven overlays in light and dark themes; keyboard tests cover modal ownership, focus containment and restoration, Escape, scrim close, tabs, and the Ice speed radio group.
+- `Open (P2)`: root preview accessibility journeys and 200 percent web zoom.
 - `Open (P5)`: VoiceOver, Dynamic Type accessibility sizes, orientation, keyboard, and reduced-motion device evidence.
 
 ## Operational and release gates
@@ -67,7 +78,7 @@ Status: P0 locally verified; P1 through P5 and all external release gates remain
 | Phase | Status | Remaining gate |
 |---|---|---|
 | P0 Honest release baseline | Closed locally | Hosted CI remains an operational release gate, not a P0 code gate |
-| P1 Classic workflows and recovery | In progress | Implement and verify the Classic browser, recovery, modal, contrast, and policy gates |
+| P1 Classic workflows and recovery | Closed locally | Hosted CI remains an operational release gate; no push or deployment was authorized |
 | P2 Root web and offline boundaries | Open | Depends on P0 checkpoint |
 | P3 Atomic data ownership | Open | Depends on P0 checkpoint and architecture decision |
 | P4 Identity and abuse boundaries | Open | Depends on P3 |
