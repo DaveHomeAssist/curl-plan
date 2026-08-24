@@ -13,6 +13,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = path.resolve(__dirname, "..");
 const seedPath = path.join(root, "data", "season-seed.json");
@@ -103,8 +104,6 @@ ${seed.feed.map(swiftPost).join(",\n")}
 }
 `;
 
-fs.writeFileSync(swiftOut, swift);
-
 /* ---------- Web emit ---------- */
 // Map the canonical shape to the exact objects index.html already consumes.
 const webMe = seed.me;
@@ -168,15 +167,23 @@ html = injectBlock(html, CLUBS_START, CLUBS_END, clubsWebBlock, "CLUBS");
 const check = process.argv.includes("--check");
 if (check) {
   const norm = (s) => s.replace(/\r\n/g, "\n");   // EOL-insensitive (Windows/Linux)
+  const sha256 = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  const swiftHashBefore = sha256(swiftOut);
   const stale = [];
   if (norm(fs.readFileSync(swiftOut, "utf8")) !== norm(swift)) stale.push("ios/CurlPlan/Seed.generated.swift");
   if (norm(fs.readFileSync(clubsSwiftOut, "utf8")) !== norm(clubsSwift)) stale.push("ios/CurlPlan/Clubs.generated.swift");
   if (norm(existingHtml) !== norm(html)) stale.push("index.html generated block(s)");
+  const swiftHashAfter = sha256(swiftOut);
+  if (swiftHashBefore !== swiftHashAfter) {
+    console.error("gen-seed --check: Seed.generated.swift changed during read-only check mode.");
+    process.exit(1);
+  }
   if (stale.length) {
     console.error("gen-seed --check: generated files are STALE. Run `node scripts/gen-seed.js` and commit.");
     stale.forEach(f => console.error("  - " + f + " out of date"));
     process.exit(1);
   }
+  console.log(`gen-seed --check: Seed.generated.swift SHA-256 before=${swiftHashBefore} after=${swiftHashAfter}`);
   console.log("gen-seed --check: generated files are up to date ✓");
   process.exit(0);
 }

@@ -1,5 +1,8 @@
 .DS_Store
 node_modules/
+api/dist/
+playwright-report/
+test-results/
 .env
 *.log
 archives/

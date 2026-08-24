@@ -1,0 +1,11 @@
+{
+  "name": "curlplan-release-gates",
+  "private": true,
+  "scripts": {
+    "test:stress": "node tests/run-stress.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

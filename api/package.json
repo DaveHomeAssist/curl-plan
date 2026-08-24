@@ -4,12 +4,18 @@
   "type": "module",
   "description": "CurlPlan unified-sync Worker (Cloudflare Workers + D1 + Clerk JWT).",
   "scripts": {
+    "typecheck": "tsc --noEmit --allowJs --checkJs --strict false --noImplicitAny false --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM globals.d.ts src/index.js src/handler.js src/auth.js",
+    "lint": "node ../scripts/lint-api.js",
+    "test": "node ../scripts/verify-api.js",
+    "build": "wrangler deploy --dry-run --outdir=dist",
+    "verify": "npm run typecheck && npm run lint && npm test && npm run build",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute curlplan --file=./schema.sql",
     "db:init:remote": "wrangler d1 execute curlplan --remote --file=./schema.sql"
   },
   "devDependencies": {
-    "wrangler": "^4.123.0"
+    "typescript": "7.0.2",
+    "wrangler": "4.123.0"
   }
 }

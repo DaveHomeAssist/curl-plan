@@ -1,7 +1,7 @@
 # CurlPlan account backend — minimal container.
 # The service is a single zero-dependency Node ESM file with a JSON file store.
 # Persist /data with a named volume so account state survives restarts.
-FROM node:20-alpine
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
 
 WORKDIR /app
 COPY server.mjs ./server.mjs

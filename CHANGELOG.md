@@ -2,6 +2,25 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## Unreleased - 2026-08-24 audit remediation
+
+### Added
+
+- Added reproducible Node 22 Worker typecheck, lint, behavioral test, and Wrangler dry-run build gates with an API lockfile.
+- Added a real-browser Playwright harness, a Classic Ice Notes regression fixture, and a demonstrated intentional-failure gate.
+- Added the authoritative dated release-evidence ledger and dependency-ordered remediation roadmap.
+
+### Changed
+
+- Made seed check mode read-only and self-verify the generated Swift SHA-256 before and after checking.
+- Repaired Planner Entries stress fixtures and the browser harness's literal closing-script injection.
+- Pinned the account backend container base to a multi-architecture Node 22 Alpine digest.
+
+### Verified locally
+
+- All P0 local application, parity, merge, API, account-backend, stress, Worker lifecycle, and browser gates passed.
+- Hosted CI, staging, deployment, monitoring, rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
+
 ## 2026-08-21
 
 ### Fixed

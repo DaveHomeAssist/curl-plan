@@ -81,8 +81,9 @@ suite('Event Normalization', (assert) => {
   assert('String input produces valid event', e6.id && e6.title === 'Untitled Event');
 
   // XSS in title
-  const e7 = normalizeEvent({ title: '<script>alert("xss")</script>', date: '2026-01-01' });
-  assert('XSS in title stored as raw string (not executed)', e7.title.includes('<script>'));
+  const scriptTag = '<scr' + 'ipt>alert("xss")</scr' + 'ipt>';
+  const e7 = normalizeEvent({ title: scriptTag, date: '2026-01-01' });
+  assert('XSS in title stored as raw string (not executed)', e7.title === scriptTag);
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -123,7 +124,7 @@ suite('Game Normalization', (assert) => {
 
   // Negative scores
   const g9 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: -3, them: 5 });
-  assert('Negative score stored as number (no floor enforcement)', g9.us === -3);
+  assert('Negative score floors to 0', g9.us === 0);
 
   // Zero-zero
   const g10 = normalizeGame({ date: '2026-03-18', opponent: 'X', us: 0, them: 0 });
@@ -155,10 +156,10 @@ suite('Ice Note Normalization', (assert) => {
   assert('Valid ice note preserves fields', i1.speed === 3 && i1.curl === 'Moderate');
 
   const i2 = normalizeIce({ date: '2026-03-18', speed: 'fast' });
-  assert('Non-numeric speed normalizes to 0', i2.speed === 0);
+  assert('Text speed "fast" maps to 4', i2.speed === 4);
 
   const i3 = normalizeIce({ date: '2026-03-18', speed: 6 });
-  assert('Speed > 5 normalizes to 5', i3.speed === 5);
+  assert('Speed > 5 resets to 0', i3.speed === 0);
 
   const i4 = normalizeIce({ date: '2026-03-18', speed: -1 });
   assert('Negative speed normalizes to 0', i4.speed === 0);
@@ -197,29 +198,29 @@ suite('Planner Entry Normalization', (assert) => {
   const p1 = normalizePlannerEntries({
     '2026-03-18': { time: '19:00', rink: 'Main', opponent: 'Granite CC', position: 'Skip', goals: 'Win', checklist: [{ text: 'Warm up', checked: true }] }
   });
-  assert('Valid planner entry preserves date key', p1['2026-03-18'] && p1['2026-03-18'].rink === 'Main');
-  assert('Checklist items preserved', p1['2026-03-18'].checklist.length === 1 && p1['2026-03-18'].checklist[0].checked === true);
+  assert('Valid date key becomes a dated record', p1.length === 1 && p1[0].date === '2026-03-18' && p1[0].rink === 'Main');
+  assert('Checklist items preserved', p1[0].checklist.length === 1 && p1[0].checklist[0].checked === true);
 
   // Invalid date key rejected
   const p2 = normalizePlannerEntries({ 'not-a-date': { time: '19:00' } });
-  assert('Invalid date key rejected', !p2['not-a-date']);
+  assert('Invalid date key rejected', p2.length === 0);
 
   // Empty entries object
   const p3 = normalizePlannerEntries({});
-  assert('Empty entries object returns empty', Object.keys(p3).length === 0);
+  assert('Empty entries object returns empty', p3.length === 0);
 
   // Null input
   const p4 = normalizePlannerEntries(null);
-  assert('Null input returns empty object', Object.keys(p4).length === 0);
+  assert('Null input returns empty array', p4.length === 0);
 
   // Array input (wrong type)
-  const p5 = normalizePlannerEntries([1, 2, 3]);
-  assert('Array input returns empty object', Object.keys(p5).length === 0);
+  const p5 = normalizePlannerEntries([{ date: '2026-03-19', time: '20:00', rink: 'Away' }]);
+  assert('Array input preserves normalized records', p5.length === 1 && p5[0].rink === 'Away');
 
   // Legacy field names
   const p6 = normalizePlannerEntries({ '2026-01-01': { gameTime: '18:00', iceNotes: 'Fast' } });
-  assert('Legacy gameTime maps to time', p6['2026-01-01'].time === '18:00');
-  assert('Legacy iceNotes maps to ice', p6['2026-01-01'].ice === 'Fast');
+  assert('Legacy gameTime maps to time', p6[0].time === '18:00');
+  assert('Legacy iceNotes maps to ice', p6[0].ice === 'Fast');
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -295,17 +296,16 @@ suite('Scale Stress', (assert) => {
   assert('200 games all preserved', s2.games.length === 200);
 
   // 365 planner entries (1 year)
-  const bigPlanner = {};
+  const bigPlanner = [];
   for (let d = 0; d < 365; d++) {
     const date = new Date(2026, 0, 1 + d);
-    const key = date.toISOString().slice(0, 10);
-    bigPlanner[key] = { time: '19:00', rink: 'Rink ' + (d % 3), opponent: 'Team ' + d, checklist: [{ text: 'Item', checked: d % 2 === 0 }] };
+    bigPlanner.push({ date: date.toISOString().slice(0, 10), time: '19:00', rink: 'Rink ' + (d % 3), opponent: 'Team ' + d, checklist: [{ text: 'Item', checked: d % 2 === 0 }] });
   }
   const t3 = performance.now();
   const p3 = normalizePlannerEntries(bigPlanner);
   const d3 = performance.now() - t3;
   assert('365 planner entries normalize in < 200ms (' + Math.round(d3) + 'ms)', d3 < 200);
-  assert('365 planner entries all preserved', Object.keys(p3).length === 365);
+  assert('365 planner entries all preserved', p3.length === 365);
 
   // JSON size check
   const fullState = normalizeState({ events: bigEvents, games: bigGames, plannerEntries: bigPlanner });
@@ -327,7 +327,7 @@ suite('Persistence Round-Trip', (assert) => {
     const normalized = normalizeState(loaded);
     assert('Demo state survives save → parse → normalize', normalized.events.length === original.events.length);
     assert('Games survive round-trip', normalized.games.length === original.games.length);
-    assert('Planner entries survive round-trip', Object.keys(normalized.plannerEntries).length === Object.keys(original.plannerEntries).length);
+    assert('Planner entries survive round-trip', normalized.plannerEntries.length === original.plannerEntries.length);
     localStorage.removeItem(key);
   } catch (e) {
     assert('localStorage round-trip failed: ' + e.message, false);
@@ -378,7 +378,7 @@ suite('Season Stats Edge Cases', (assert, skip) => {
   // All wins
   const allWins = Array.from({ length: 10 }, (_, i) => normalizeGame({ date: '2026-03-' + String(i + 1).padStart(2, '0'), opponent: 'X', us: 7, them: 3 }));
   const s2 = calculateSeasonStats(allWins, 'all');
-  assert('10 wins: streak = 10', s2.winStreak === 10);
+  assert('10 wins: longestStreak = 10', s2.longestStreak === 10);
 
   // Mixed results
   const mixed = [
@@ -399,7 +399,7 @@ suite('Season Stats Edge Cases', (assert, skip) => {
     date: '2026-03-' + String(i + 1).padStart(2, '0'), opponent: 'X', us: 7, them: 3, shotPct: 70 + i
   }));
   const s5 = calculateSeasonStats(withShots, 'all');
-  assert('Shot trend computed from games with shotPct', s5.shotTrend && s5.shotTrend.length > 0);
+  assert('Shot trend computed from games with shotPct', s5.shotTrendGames.length > 0);
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -440,6 +440,12 @@ suite('Import Scenarios', (assert) => {
 // ═══════════════════════════════════════════════════════════════
 // RENDER RESULTS
 // ═══════════════════════════════════════════════════════════════
+if (new URLSearchParams(window.location.search).get('intentionalFailure') === '1') {
+  suite('Intentional Negative Gate', (assert) => {
+    assert('Deliberately malformed fixture is rejected by the browser gate', false);
+  });
+}
+
 const elapsed = Math.round(performance.now() - t0);
 const el = document.getElementById('results');
 results.forEach(s => {

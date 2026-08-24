@@ -124,12 +124,13 @@ suite('Issue Normalization', (assert) => {
 // ═══════════════════════════════════════════════════════════════
 suite('Planner Entries', (assert) => {
   const p1 = normalizePlannerEntries({ '2026-03-18': { time: '19:00', rink: 'Main' } });
-  assert('Valid date key preserved', p1['2026-03-18'] && p1['2026-03-18'].rink === 'Main');
-  assert('Invalid date key rejected', !normalizePlannerEntries({ 'bad': {} })['bad']);
-  assert('Null → empty', Object.keys(normalizePlannerEntries(null)).length === 0);
-  assert('Array → empty', Object.keys(normalizePlannerEntries([1])).length === 0);
-  assert('Legacy gameTime → time', normalizePlannerEntries({ '2026-01-01': { gameTime: '18:00' } })['2026-01-01'].time === '18:00');
-  assert('Legacy iceNotes → ice', normalizePlannerEntries({ '2026-01-01': { iceNotes: 'Fast' } })['2026-01-01'].ice === 'Fast');
+  assert('Valid date key becomes a dated record', p1.length === 1 && p1[0].date === '2026-03-18' && p1[0].rink === 'Main');
+  assert('Invalid date key rejected', normalizePlannerEntries({ bad: {} }).length === 0);
+  assert('Null → empty', normalizePlannerEntries(null).length === 0);
+  const arrayEntry = normalizePlannerEntries([{ date: '2026-03-19', time: '20:00', rink: 'Away' }]);
+  assert('Array input preserves normalized records', arrayEntry.length === 1 && arrayEntry[0].rink === 'Away');
+  assert('Legacy gameTime → time', normalizePlannerEntries({ '2026-01-01': { gameTime: '18:00' } })[0].time === '18:00');
+  assert('Legacy iceNotes → ice', normalizePlannerEntries({ '2026-01-01': { iceNotes: 'Fast' } })[0].ice === 'Fast');
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -185,16 +186,16 @@ suite('Scale Stress', (assert) => {
   assert(`200 games in < 100ms (${d2}ms)`, d2 < 100);
   assert('200 games preserved', s2.games.length === 200);
 
-  const bigPlanner = {};
+  const bigPlanner = [];
   for (let d = 0; d < 365; d++) {
     const dt = new Date(2026, 0, 1 + d);
-    bigPlanner[dt.toISOString().slice(0, 10)] = { time: '19:00', rink: 'R' + (d % 3), checklist: [{ text: 'Item', checked: d % 2 === 0 }] };
+    bigPlanner.push({ date: dt.toISOString().slice(0, 10), time: '19:00', rink: 'R' + (d % 3), checklist: [{ text: 'Item', checked: d % 2 === 0 }] });
   }
   const t3 = Date.now();
   const p3 = normalizePlannerEntries(bigPlanner);
   const d3 = Date.now() - t3;
   assert(`365 planner entries in < 200ms (${d3}ms)`, d3 < 200);
-  assert('365 entries preserved', Object.keys(p3).length === 365);
+  assert('365 entries preserved', p3.length === 365);
 
   const full = normalizeState({ events: bigEvents, games: bigGames, plannerEntries: bigPlanner });
   const kb = Math.round(JSON.stringify(full).length / 1024);
@@ -212,7 +213,7 @@ suite('Persistence Round-Trip', (assert) => {
   const normalized = normalizeState(loaded);
   assert('Events survive', normalized.events.length === original.events.length);
   assert('Games survive', normalized.games.length === original.games.length);
-  assert('Planner survives', Object.keys(normalized.plannerEntries).length === Object.keys(original.plannerEntries).length);
+  assert('Planner survives', normalized.plannerEntries.length === original.plannerEntries.length);
   localStorage.removeItem(key);
 });
 

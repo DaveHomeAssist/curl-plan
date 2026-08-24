@@ -99,6 +99,7 @@ These rows are not current app features. They are the required review contract b
 | `.github/workflows/verify.yml` | `gate-support`, `build-support` |
 | `Makefile` | `gate-support` |
 | `scripts/feature_review_matrix_check.sh` | `gate-support` |
+| `tests/browser/*.spec.js`, `tests/run-stress.js`, `tests/stress-test.html` | `test-support`, `gate-support` |
 | `docs/curlplan-feature-review-*.md` | `docs-only`, `gate-support` |
 | `docs/curlplan-accounts-social-roadmap-*.md` | `docs-only`, `FR-ACCOUNT`, `FR-SYNC`, `FR-PUBLIC-ID`, `FR-RELATIONSHIP`, `FR-SHARED-OBJECTS`, `FR-SOCIAL`, `FR-TRUST-SAFETY` |
 | `docs/reviews/*.md` | `docs-only`, `gate-support` |

@@ -28,7 +28,12 @@ jobs:
           FEATURE_REVIEW_BASE="$BASE_REF" make feature-review
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: npm
+      - name: Install reproducible browser gate dependencies
+        run: npm ci
+      - name: Install Chromium for real-browser gates
+        run: npx playwright install --with-deps chromium
       - name: Seed is up to date (web + iOS generated from data/season-seed.json)
         run: node scripts/gen-seed.js --check
       - name: Verify root Hi-Fi app
@@ -41,6 +46,34 @@ jobs:
         run: node scripts/verify-merge.js
       - name: Sync API handler (routes, merge, auth, isolation)
         run: node scripts/verify-api.js
+      - name: Classic stress suite
+        run: npm run test:stress
+      - name: Browser regression harness
+        run: npm run test:browser
+      - name: Demonstrate browser gate rejects a malformed fixture
+        run: |
+          if CURLPLAN_STRESS_NEGATIVE=1 npx playwright test tests/browser/stress-harness.spec.js; then
+            echo "Intentional browser failure was not detected"
+            exit 1
+          fi
+          echo "Intentional browser failure produced a nonzero gate as required"
+      - name: Install reproducible Worker dependencies
+        working-directory: api
+        run: npm ci
+      - name: Worker typecheck
+        working-directory: api
+        run: npm run typecheck
+      - name: Worker lint
+        working-directory: api
+        run: npm run lint
+      - name: Worker tests
+        working-directory: api
+        run: npm test
+      - name: Worker dry-run build
+        working-directory: api
+        run: npm run build
+      - name: Account backend behavioral and adversarial contracts
+        run: node scripts/verify-account-backend.mjs
 
   ios:
     runs-on: macos-14

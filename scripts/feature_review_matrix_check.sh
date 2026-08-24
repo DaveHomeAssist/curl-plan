@@ -124,6 +124,9 @@ while IFS= read -r path; do
     tests/CurlPlanCoreTests/*.swift|Tests/CurlPlanCoreTests/*.swift)
       add_rows test-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
       ;;
+    tests/browser/*.spec.js|tests/run-stress.js|tests/stress-test.html)
+      add_rows test-support gate-support
+      ;;
     Package.swift)
       add_rows build-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
       ;;
