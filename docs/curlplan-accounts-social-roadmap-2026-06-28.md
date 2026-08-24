@@ -4,9 +4,9 @@ Date: 2026-06-28
 
 Target surface: `ios/CurlPlan.xcodeproj`
 
-Status: the local season journal remains the production truth. Phase 1 account behavior is implemented against a private Tailscale development service, but production account, cloud, public, remote social, and moderation claims remain gated until their matching phases are implemented and verified.
+Status: the local season journal remains the shipped product truth. Clerk plus the Cloudflare Worker/D1 plane is the selected production account and data authority, but the native app has not completed that integration or its controlled staging proof. Production account, cloud, public, remote social, and moderation claims remain gated.
 
-Last verified: 2026-07-11. The private development service passed deployed AS 01 through AS 03 at `http://dominic.tailae148c.ts.net:8787`; Release and Archive remain unconfigured.
+Last verified: 2026-08-24. Local Worker, custom-verifier, and Swift contract suites pass. No live deployment, D1 migration, credential configuration, signed archive, or device screenflow was authorized or verified in this audit. The July Tailscale deployment record is historical only and is not current production authority.
 
 ## Goal
 
@@ -25,12 +25,12 @@ Move CurlPlan from a truthful local season journal to a truthful account-backed 
 
 ## Current Truth Boundary
 
-Today, CurlPlan has a proven local `AccountSeasonPayload` season document, local roster membership, local attendance, local scorecards, and local export/import. It also has a deployed private development account service for credential sign-in, account-scoped season import and restore, sign-out, export, and deletion. That service is not public production infrastructure. The following production claims remain blocked:
+Today, CurlPlan has a proven local `AccountSeasonPayload` season document, local roster membership, local attendance, local scorecards, and local export/import. The Worker/D1 source implements the selected production-shaped account-data boundary, and the custom handle/password service remains a quarantined local development verifier. Neither local implementation is deployed proof. The following production claims remain blocked:
 
 | Blocked claim | Missing authority |
 | --- | --- |
-| Production sign in, sign out, account restore | Public TLS endpoint, rate limiting, production release configuration, password recovery, and retained in-app screenflow proof |
-| Cloud sync | Sync API, versioning, offline queue, conflict state |
+| Production sign in, sign out, account restore | Clerk application configuration, controlled TLS staging, native integration, production release configuration, recovery policy, and retained in-app screenflow proof |
+| Cloud sync | Controlled D1 migration/staging proof, native state ownership, offline queue, conflict UI, and cross-device screenflow |
 | Public profile or public roster | Profile visibility API, search/discovery rules, permission checks |
 | Remote follow/friend/team graph | Relationship graph API and block enforcement |
 | Shared spiel, bonspiel, team, RSVP, lineup, scorecard | Shared object ownership, membership, visibility, collaborator permissions |
@@ -39,15 +39,17 @@ Today, CurlPlan has a proven local `AccountSeasonPayload` season document, local
 
 ## Executable Contract Progress
 
-The repo now includes a SwiftPM contract seam, a local Node backend verifier, and a private deployed development service. These prove the Phase 1 account contract but do not make production account, cloud, or social claims shippable.
+The repo now includes a SwiftPM contract seam, a Clerk-authenticated Worker/D1 implementation, and a quarantined custom Node verifier. These prove local contracts but do not make production account, cloud, or social claims shippable.
 
 | Artifact | Purpose |
 | --- | --- |
 | `ios/CurlPlan/AccountBackendAPI.swift` | Defines REST-shaped routes, response envelopes, machine-readable API errors, a session-scoped client, an in-memory transport, and a file-backed snapshot transport that can be replaced by a real network transport |
 | `ios/CurlPlan/AccountHTTPBackend.swift` | Defines the async HTTP adapter, typed JSON request bodies (including the handle/password create and sign-in bodies), bearer session headers, URL path and query construction, success decoding, and API error envelope mapping |
-| `ios/CurlPlan/AccountRuntime.swift` | Wires the app to an optional dev backend URL, keeps bearer sessions in memory, persists only the account ID, handle, and device ID (never the password or session token), and exposes create-with-credentials, sign-in-with-credentials (which restores the account season), export, sign out, and delete account actions without enabling backend claims when unconfigured |
+| `ios/CurlPlan/AccountRuntime.swift` | Implements resumable development-verifier lifecycle checkpoints, keeps bearer sessions in memory, persists only account lifecycle metadata, and ignores even a saved custom-backend URL unless the process explicitly enables the development feature |
+| `ios/CurlPlan/AuthView.swift` | Keeps the public preview credential-free and exposes password-gated retry or rollback only for an explicitly enabled custom verifier with an interrupted account lifecycle |
 | `ios/CurlPlan/AccountSocialContracts.swift` | Defines account, password credential, session, profile, account-scoped season, sync receipt, offline mutation, relationship, shared object, interaction, report, moderation contract models, the backend snapshot envelope, and a salted-hash `PasswordHasher` so the in-app contract store rejects wrong passwords without storing plaintext |
-| `services/account-backend/server.mjs` | Provides a runnable local HTTP backend proof for account creation with a scrypt-hashed password, credential sign in by handle and password, bearer sessions, sign out, export, account-scoped season import/restore, versioned season changes, conflict receipts, profile privacy/search, follow/unfollow, block enforcement, shared object membership, interactions, reports, moderation hide, deletion cleanup (including credential removal), session revocation, and JSON file persistence |
+| `api/` | Owns the selected production-shaped Clerk token verification, exact-origin CORS, account-scoped Worker routes, schema 4 D1 state, atomic version checks, idempotency receipts, export, restore, and deletion contracts |
+| `services/account-backend/server.mjs` | Provides a quarantined local HTTP proof with NFKC/scrypt credentials, bounded sessions and abuse state, exact-origin CORS, authorization and blocking, versioned season changes, content-addressed record persistence, backup recovery, and fail-closed runtime configuration |
 | `scripts/verify-account-backend.mjs` | Runs AS 01 through AS 12 backend slices over real HTTP against the local backend, including weak-password rejection and wrong-password sign-in rejection, and restarts the backend to prove deleted account state survives |
 | `tests/CurlPlanCoreTests/AccountSocialContractTests.swift` | Proves the first backend truth rules: account restore across sessions, account deletion revocation, stale sync conflict, offline queue persistence, private/public profile search, block enforcement, server-backed follow/unfollow, shared object permissions, and report/moderation state |
 | `tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift` | Proves the contract state survives backend restart: account season restore, account deletion revocation, public profile search, relationship graph, shared scorecard membership, interaction state, and moderation state |
@@ -55,27 +57,24 @@ The repo now includes a SwiftPM contract seam, a local Node backend verifier, an
 | `tests/CurlPlanCoreTests/AccountRuntimeTests.swift` | Proves unconfigured app builds make zero backend account requests, configured builds create/import/sign out/restore through HTTP, and bearer session IDs are not persisted in defaults |
 | `Package.swift` | Includes the contract source in the SwiftPM core target and points tests at the repo's lowercase `tests/CurlPlanCoreTests` path |
 
-Authentication is now credential based, not identifier based. Account creation takes a handle, display name, home club, and a password of at least eight characters. Sign in requires the handle and password, so a second device can authenticate with what the user knows rather than an opaque account ID. The deployable backend stores a scrypt salt and hash; the in-app contract mirror stores a salted SHA-256 hash. Neither stores the plaintext, both reject the wrong password, and both return a generic `INVALID_CREDENTIALS` so a wrong handle and a wrong password are indistinguishable. The app persists only the account ID, handle, and device ID; it never persists the password or the bearer session token, so restore, export, and delete require an explicit signed-in session.
+Production authentication is Clerk-issued identity validated by the Worker through issuer, audience, subject, time, algorithm, signing-use, and JWKS-rotation checks. The separate custom verifier accepts a handle and NFKC-normalized password for development contract exercises only; it stores asynchronous scrypt credentials, equalizes unknown-handle work, returns generic failures, and never persists plaintext. The native development runtime persists lifecycle metadata but neither passwords nor bearer session tokens.
 
-The local Node backend and private Tailscale deployment are verification infrastructure, not production infrastructure. Product copy must still treat production account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to public production services and the matching screenflow passes are green.
+The custom Node backend and any historical private deployment are verification infrastructure, not production infrastructure. Product copy must still treat production account, cloud, social, public profile, shared object, report, moderation, and notification claims as blocked until the app is wired to the selected managed plane and the matching staging and device screenflows are green.
 
 ## System Overview
 
 ```text
 SwiftUI app
-  -> Auth client
-  -> Account API
-  -> Sync client and offline queue
-  -> CurlPlan backend API
-       -> auth/session store
-       -> account profiles
-       -> season documents and change log
-       -> public identity/search
-       -> relationship graph
-       -> shared curling objects
-       -> social interactions
-       -> moderation and audit log
-  -> push notification provider
+  -> Clerk client and managed session
+  -> CurlPlan Cloudflare Worker
+       -> Clerk JWT verification and exact-origin CORS
+       -> D1 account profiles and schema 4 season documents
+       -> versioned mutations and idempotency receipts
+       -> export, restore, deletion, graph, shared object, and safety routes
+
+Explicit development flag only
+  -> quarantined custom handle/password verifier
+  -> private persisted manifest plus content-addressed records
 ```
 
 The backend becomes the source of truth for account identity, cloud sync, public discoverability, relationship state, shared objects, social interactions, reports, blocks, and deletion. The local app remains the fast working copy and must label pending, failed, conflicted, private, and server-confirmed states distinctly.
@@ -84,7 +83,7 @@ The backend becomes the source of truth for account identity, cloud sync, public
 
 | Component | Responsibility | Inputs | Outputs | Owner |
 | --- | --- | --- | --- | --- |
-| Auth service | Prove account identity and issue revocable sessions | Sign-in credentials, passkey/OAuth callback, refresh token | Account ID, access token, session state | Backend |
+| Auth service | Prove production account identity and issue revocable managed sessions | Clerk sign-in or recovery flow | Account ID, access token, session state | Clerk |
 | Account API | Manage profile, settings, deletion, export, device sessions | Authenticated requests | Account profile, privacy settings, export package, deletion status | Backend |
 | Migration adapter | Attach existing local `AccountSeasonPayload` to an account without corrupting local state | Local export JSON, account ID, schema version | Account-scoped season document and migration receipt | App + backend |
 | Sync engine | Replicate account-scoped season state across devices | Local changes, server changes, version vector | Synced document, pending queue, conflict receipts | App + backend |
@@ -133,13 +132,13 @@ Use stable server IDs for remote objects and preserve local IDs for migration re
 
 Build real account claims: sign in, sign out, delete account, export data, restore on a second device.
 
-Current status (verified 2026-07-11): credential authentication (handle + password) is implemented and verified against a private deployed development service.
+Current status (verified locally 2026-08-24): Clerk plus Worker/D1 is the sole selected production plane. Worker token, CORS, atomic data, migration, lifecycle, export, restore, and deletion contracts pass locally. The custom credential service passes its abuse, authorization, persistence, and recovery contracts while remaining quarantined by default.
 
-- The service runs on the `dominic` Tailscale host as a Docker container (`node:20-alpine`, `--restart unless-stopped`, persistent named volume `curlplan-account-data` at `/data`), reachable from the Mac and iOS Simulator at `http://dominic.tailae148c.ts.net:8787`. Deploy with `scripts/deploy-account-backend-dominic.sh` (re-run to ship updates).
-- AS 01, AS 02, and AS 03 pass over real HTTP against the deployed URL via `scripts/verify-account-remote.mjs` (create, wrong-password rejection, device-A session, season import, sign-out revocation, device-B restore by handle and password, delete revokes sessions and blocks future sign in). Account season also survives a container restart (volume persistence verified).
-- The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic.tailae148c.ts.net:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
+- No current private or public deployment was queried or changed in this audit.
+- The native development runtime is disabled unless both its feature flag and backend URL are explicit. Only interrupted development-account setup exposes retry and rollback controls.
+- Release and Archive remain unproven for managed identity, and the shipped preview retains local-only claims.
 
-Remaining for Phase 1 ship: drive the in-app create and sign-in screenflow against the deployed backend as an iOS UI proof, move the service off a private tailnet to a public host before non-tailnet devices can use it, add TLS and rate limiting for public exposure, and add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
+Remaining for Phase 1 ship: configure Clerk and Worker/D1 in a controlled TLS staging environment, migrate an isolated D1 target, connect the native app to that selected boundary, prove create/sign-in/recovery/export/delete and second-device restore on real simulator or device surfaces, complete password/account recovery policy, and inspect the signed archive. Product copy stays gated until those proofs are green.
 
 Deliverables:
 
