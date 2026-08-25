@@ -18,8 +18,8 @@ CLERK_AUDIENCE = ""
 # Wildcards fail closed; use a separate local wrangler environment for development.
 CORS_ORIGIN = ""
 
-# Isolated audit-remediation staging plane. Authentication remains fail closed
-# until a dedicated CurlPlan Clerk staging issuer is configured here.
+# Isolated audit-remediation staging plane backed by CurlPlan's dedicated Clerk
+# development instance and a disposable-user verification workflow.
 [env.staging]
 name = "curlplan-sync-staging"
 compatibility_date = "2026-08-25"
@@ -31,6 +31,6 @@ database_id = "d4bd3ef2-b45d-480a-ab3f-61f71bad9d50"
 migrations_dir = "./migrations"
 
 [env.staging.vars]
-CLERK_ISSUER = ""
+CLERK_ISSUER = "https://welcomed-wombat-9711.clerk.accounts.dev"
 CLERK_AUDIENCE = "curlplan-api"
 CORS_ORIGIN = "https://davehomeassist.github.io"
