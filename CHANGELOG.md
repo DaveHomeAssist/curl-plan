@@ -18,6 +18,7 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added resumable native account lifecycle checkpoints, crash-window recovery, idempotent retry, rollback, and block-revocation regression coverage.
 - Added a recovery-only native development surface, explicit custom-backend feature gate, bounded container runtime configuration, health check, and security/incident authority runbook.
 - Added an executable Wrangler/D1 v3-to-v4 migration rehearsal with backup verification and a fail-closed live Worker staging verifier for TLS, Clerk JWT/JWKS, exact CORS, idempotency, export, restore, and deletion.
+- Provisioned a dedicated ENAM D1 staging database and `curlplan-sync-staging` Worker environment without touching any production resource.
 
 ### Changed
 
@@ -49,9 +50,11 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - P3 Worker typecheck, lint, and direct esbuild passed; a fresh non-iCloud Node 22 worktree then completed the current-revision Wrangler 4.123.0 dry-run.
 - P4 Worker token/JWKS/CORS checks, all 37 custom-verifier configuration/authentication/authorization/abuse/session/quota/recovery checks, all 25 Swift package tests, the feature-review gate, and the unsigned arm64/x86_64 iOS Simulator build passed locally.
 - The isolated D1 migration rehearsal preserved its pre-v4 row and revision, added the planned schema and receipt index, accepted a receipt, and kept an independently readable rollback source. The live staging harness passed against a temporary trusted-TLS fixture using the actual Worker handler; this proves the verifier, not an external deployment.
-- P4 controlled TLS staging remains open because Cloudflare OAuth and a dedicated Clerk staging token are unavailable; P5 was not started because its P4 dependency is unsatisfied.
+- The controlled cloud D1 migration preserved the seeded pre-v4 row and defaults, created the receipt table/index, accepted a receipt, retained an independently readable rollback export, and returned the staging database to zero rows.
+- The pushed Worker candidate negotiates verified TLS 1.2, reports schema 4 health, rejects missing and malformed tokens with 401, permits only the exact credentialed Pages origin, and rejects a disallowed origin. Positive Clerk JWT/JWKS and authenticated lifecycle proof remain open because CurlPlan has no dedicated Clerk development instance or token.
+- P4 controlled TLS staging remains open only at the positive Clerk JWT/JWKS and authenticated lifecycle gate; P5 was not started because its P4 dependency is unsatisfied.
 - Docker image execution is unverified because the Docker CLI is unavailable; interactive recovery UI proof is unverified because the generated project has no UI-test target and no simulator devices are currently available.
-- The exact remediation branch is pushed, but its workflow runs only on `main` or pull requests, so hosted CI remains open without creating an unauthorized PR. Staging, deployment, monitoring, live rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
+- The exact remediation branch is pushed at `313fce6`, and Worker version `544eb06b-c5ce-422d-923a-9cd3b8e0fb75` is live at the isolated staging hostname. Its workflow runs only on `main` or pull requests, so hosted CI remains open without creating an unauthorized PR. Positive Clerk lifecycle, monitoring, live rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
 
 ## 2026-08-21
 
