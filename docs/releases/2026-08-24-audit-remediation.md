@@ -1,6 +1,6 @@
 # 2026-08-24 audit remediation evidence
 
-Status: P0 through P3 locally verified; the P4 implementation, D1 migration rehearsal, staging verifier, and current-revision Wrangler dry-run are locally verified, but the real controlled TLS staging exit remains open. P5 and the remaining external release gates remain open.
+Status: P0 through P3 are locally verified and the P4 controlled TLS staging exit is closed with isolated cloud D1 migration plus live Clerk JWT/JWKS, CORS, lifecycle, deployment, and cleanup proof. P5 is unlocked but not started; the remaining external release gates remain open.
 
 ## Authority
 
@@ -14,8 +14,11 @@ Status: P0 through P3 locally verified; the P4 implementation, D1 migration rehe
 - P4 local implementation commit: `77908ad4addba038b28b59df7208e502db45d92a`
 - P4 local closure commit: `10eb4f8c0c2fc98337306d7134d9f7680fe312f6`
 - Staging gate commit: `0e8e6d4d96d920936e02a1f1250fea65e7922169`
+- Isolated cloud configuration commit: `313fce69e6cb006362e0fdfb83964ab35f14db92`
+- Clerk issuer deployment commit: `2cdf3e2c7c2569bf01aa296bc424634bfb9b15b9`
+- Disposable Clerk staging verifier commit: `e2ce7a928de16b300c1901f73d7672a8c2717e66`
 - Release owner: Dave Robertson
-- Evidence date: 2026-08-24 EDT
+- Evidence date: 2026-08-25 EDT
 
 ## Environment
 
@@ -124,6 +127,9 @@ security authority document, and recovery UI before the local closure patch.
 | Remote `curlplan-staging-20260825` pre-v4 export and `0002_atomic_sync_v4.sql` execution | 0 | The isolated ENAM D1 preserved the disposable document, revision 17, and timestamp; added schema version 3 and the empty idempotency default; created the receipt table/index; accepted a receipt; and produced independently readable rollback export SHA-256 `a26e99c449d3cc6091585f517679b2161ac897e5330090a0fb21c0f178b917db` before returning to zero rows |
 | `wrangler deploy --env staging --strict` from pushed `313fce6` | 0 | Worker version `544eb06b-c5ce-422d-923a-9cd3b8e0fb75` deployed with the isolated D1, fail-closed empty Clerk issuer, `curlplan-api` audience, exact Pages origin, and 6 ms startup |
 | Live staging OpenSSL and HTTP smoke | 0 | TLS 1.2 negotiated with certificate verification; health returned 200/schema 4; missing and malformed bearer tokens returned 401; the exact credentialed origin returned 204 with the required headers; and a disallowed origin returned 403 |
+| `wrangler deploy --env staging` from pushed `2cdf3e2` | 0 | Worker version `6309a4f7-a8ee-4177-93ed-d5afe65b1570` deployed at 100 percent with the dedicated Clerk development issuer, isolated D1, `curlplan-api` audience, exact Pages origin, and 5 ms startup |
+| `node scripts/verify-clerk-worker-staging.mjs` from pushed `e2ce7a9` | 0 | The dedicated Clerk development instance created the audience template plus a disposable user/session and short-lived RS256 token; TLS 1.3, token claims, live JWKS key/signature, schema 4 health, negative auth, exact CORS, merge/idempotent retry/export/restore/delete, and final empty state all passed; the session was revoked and user deleted |
+| Exact post-run D1 and credential cleanup readback | 0 | The disposable subject was removed from `state` and `sync_receipts`; both exact and total counts returned zero. The temporary Clerk key was absent from Keychain and the clipboard returned zero bytes |
 | `xcodebuild -quiet -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/curlplan-staging-tools-derived CODE_SIGNING_ALLOWED=NO build` | 0 | The workflow-gate change retained a clean unsigned simulator compile |
 | `make feature-review CHANGED_FILES='<staging gate allowlist>'` | 0 | The workflow, API docs/package, and two verification scripts mapped to build/gate support and passed the unsupported-authority claim scan |
 
@@ -142,17 +148,17 @@ security authority document, and recovery UI before the local closure patch.
 
 | Gate | Status | Evidence or blocker |
 |---|---|---|
-| Hosted CI on the remediation branch | Open | Branch `codex/curlplan-audit-remediation-20260824` is pushed at `313fce6`; the workflow triggers only on `main` or pull requests, and no PR was created |
+| Hosted CI on the remediation branch | Open | Branch `codex/curlplan-audit-remediation-20260824` contains pushed verifier commit `e2ce7a9`; the workflow triggers only on `main` or pull requests, and no PR was created |
 | Current-revision Wrangler dry-run | Closed locally | Node 22 and Wrangler 4.123.0 bundled the current revision at 24.91 KiB with the expected D1 and Clerk/CORS bindings |
 | Xcode project tests | Open | The unsigned P4 simulator app build passed for arm64 and x86_64; Xcode unit/UI scheme execution remains deferred to P5 dependency order |
 | Native recovery UI runtime proof | Open | The generated project currently has only `CurlPlan` and `CurlPlanTests`, no UI-test target, and `xcrun simctl list devices available` returned no devices. Compile and source-contract proof passed; interactive recovery proof did not run |
 | Account container image build | Open | The Dockerfile and runtime parser are source- and behavior-checked, but `docker` is not installed on this Mac, so the pinned image was not built or health-checked as a container |
 | Signed archive resource inspection | Open | Requires P5 and signing authority |
 | Isolated D1 migration rehearsal | Closed locally and in controlled cloud staging | Real Wrangler/D1 execution preserved pre-v4 data locally and on isolated ENAM D1, created schema 4 support objects, accepted a receipt, and retained independently readable pre-migration backups |
-| Controlled TLS staging boundary | Open at positive identity gate | The isolated Worker/D1 candidate is live with verified TLS, health, fail-closed auth, and exact CORS. CurlPlan has no dedicated Clerk development instance or disposable token, so positive JWT/JWKS and authenticated lifecycle proof have not run |
-| Deployment smoke | Partially closed | Worker version and source SHA readback, TLS, schema 4 health, negative auth, allowed preflight, and rejected-origin smoke pass. Positive Clerk and lifecycle paths remain open |
+| Controlled TLS staging boundary | Closed | The isolated Worker/D1 candidate passed TLS 1.3, schema 4 health, positive RS256 JWT/JWKS verification, missing/malformed-token rejection, exact credentialed CORS, rejected-origin handling, and the full authenticated lifecycle with a disposable Clerk identity |
+| Deployment smoke | Closed for controlled staging | Cloudflare readback reports Worker version `6309a4f7-a8ee-4177-93ed-d5afe65b1570` at 100 percent from pushed source `2cdf3e2`; all live health, auth, CORS, and D1 lifecycle paths passed |
 | Monitoring | Open | A deployed candidate now exists, but live log and alert evidence has not been captured |
-| Backup and restore drill | Partially closed | The remote D1 pre-migration export is hash-recorded and independently readable; authenticated API export/restore remains part of the pending Clerk lifecycle run |
+| Backup and restore drill | Closed for controlled staging | The remote D1 pre-migration export is hash-recorded and independently readable, and the authenticated API export/restore cycle recovered the original empty state before deletion |
 | Rollback | Partially closed | The Worker version and source commit are identified and the pre-migration D1 export is readable; no D1 down-migration exists and an actual Worker rollback has not been exercised |
 
 ## Phase status
@@ -163,7 +169,7 @@ security authority document, and recovery UI before the local closure patch.
 | P1 Classic workflows and recovery | Closed locally | Hosted CI remains an operational release gate; no push or deployment was authorized |
 | P2 Root web and offline boundaries | Closed locally | Root semantics, durable recovery, bounded import, install assets, and cross-app offline/cache isolation pass locally; manual VoiceOver remains a final release gate |
 | P3 Atomic data ownership | Closed locally with isolated cloud migration proof | Clerk + Worker/D1 is the sole production plane; schema 4 CAS/idempotency/lifecycle, hostile-key, bounded-growth, rejected-plane quarantine, per-record development commits, Swift rollback, and local plus isolated-cloud D1 migration checks pass. No production D1 cutover has run |
-| P4 Identity and abuse boundaries | Local implementation verified; cloud boundary partially verified; exit open | Worker TLS/health, negative auth, exact CORS, and isolated D1 migration are live-proven. Dedicated Clerk positive JWT/JWKS and authenticated merge/idempotency/export/restore/delete lifecycle proof remain open, along with container execution and interactive UI proof |
-| P5 Native and release readiness | Not started | P4 has not met its controlled TLS staging exit, so strict dependency order blocks P5 |
+| P4 Identity and abuse boundaries | Closed through controlled TLS staging | Isolated D1 migration plus Worker TLS/health, positive and negative Clerk auth/JWKS, exact CORS, authenticated merge/idempotency/export/restore/delete, deployment readback, and exact test-data cleanup all pass. Container execution and interactive recovery UI remain separate operational/P5 evidence gaps |
+| P5 Native and release readiness | Unlocked; not started | P3 and P4 dependencies are satisfied. Native state ownership, archive resources, device accessibility/performance, and the final release record remain P5 work |
 
 This record must not be used to claim the full remediation program or a production release is complete.

@@ -18,6 +18,7 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - Added resumable native account lifecycle checkpoints, crash-window recovery, idempotent retry, rollback, and block-revocation regression coverage.
 - Added a recovery-only native development surface, explicit custom-backend feature gate, bounded container runtime configuration, health check, and security/incident authority runbook.
 - Added an executable Wrangler/D1 v3-to-v4 migration rehearsal with backup verification and a fail-closed live Worker staging verifier for TLS, Clerk JWT/JWKS, exact CORS, idempotency, export, restore, and deletion.
+- Added a development-instance-only Clerk staging wrapper that creates a short-lived audience JWT through a disposable user/session and always revokes the session and deletes the user.
 - Provisioned a dedicated ENAM D1 staging database and `curlplan-sync-staging` Worker environment without touching any production resource.
 
 ### Changed
@@ -51,10 +52,11 @@ All material CurlPlan product and engineering changes are recorded here. Dates a
 - P4 Worker token/JWKS/CORS checks, all 37 custom-verifier configuration/authentication/authorization/abuse/session/quota/recovery checks, all 25 Swift package tests, the feature-review gate, and the unsigned arm64/x86_64 iOS Simulator build passed locally.
 - The isolated D1 migration rehearsal preserved its pre-v4 row and revision, added the planned schema and receipt index, accepted a receipt, and kept an independently readable rollback source. The live staging harness passed against a temporary trusted-TLS fixture using the actual Worker handler; this proves the verifier, not an external deployment.
 - The controlled cloud D1 migration preserved the seeded pre-v4 row and defaults, created the receipt table/index, accepted a receipt, retained an independently readable rollback export, and returned the staging database to zero rows.
-- The pushed Worker candidate negotiates verified TLS 1.2, reports schema 4 health, rejects missing and malformed tokens with 401, permits only the exact credentialed Pages origin, and rejects a disallowed origin. Positive Clerk JWT/JWKS and authenticated lifecycle proof remain open because CurlPlan has no dedicated Clerk development instance or token.
-- P4 controlled TLS staging remains open only at the positive Clerk JWT/JWKS and authenticated lifecycle gate; P5 was not started because its P4 dependency is unsatisfied.
+- The dedicated Clerk development instance minted an RS256 `curlplan-api` token for a disposable user. The pushed Worker negotiated TLS 1.3, independently verified the matching JWKS signature, rejected missing and malformed tokens, enforced exact credentialed CORS, and passed authenticated merge, idempotent retry, export, restore, deletion, and final empty-state readback.
+- The disposable Clerk session was revoked, its user was deleted, and exact D1 cleanup readback returned zero state and receipt rows. The temporary Clerk key was deleted from Keychain and the clipboard was cleared without committing or printing either credential or JWT.
+- P4 controlled TLS staging is closed under its roadmap completion authority. P5 is unlocked but was not started in this exercise.
 - Docker image execution is unverified because the Docker CLI is unavailable; interactive recovery UI proof is unverified because the generated project has no UI-test target and no simulator devices are currently available.
-- The exact remediation branch is pushed at `313fce6`, and Worker version `544eb06b-c5ce-422d-923a-9cd3b8e0fb75` is live at the isolated staging hostname. Its workflow runs only on `main` or pull requests, so hosted CI remains open without creating an unauthorized PR. Positive Clerk lifecycle, monitoring, live rollback, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open.
+- The exact remediation branch contains pushed verifier commit `e2ce7a9`, and Worker version `6309a4f7-a8ee-4177-93ed-d5afe65b1570` from pushed source `2cdf3e2` is live at the isolated staging hostname. Its workflow runs only on `main` or pull requests, so hosted CI remains open without creating an unauthorized PR. Monitoring, live rollback, container execution, interactive recovery UI, Xcode project tests, archive, device, and manual accessibility evidence remain explicitly open release/P5 gates.
 
 ## 2026-08-21
 
