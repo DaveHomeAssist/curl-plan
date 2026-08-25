@@ -9,6 +9,7 @@
     "test": "node ../scripts/verify-api.js",
     "test:migration": "node ../scripts/verify-d1-migration.mjs",
     "test:staging": "node ../scripts/verify-worker-staging.mjs",
+    "test:staging:clerk": "node ../scripts/verify-clerk-worker-staging.mjs",
     "build": "CI=1 WRANGLER_SEND_METRICS=false wrangler deploy --dry-run --outdir=dist",
     "verify": "npm run typecheck && npm run lint && npm test && npm run test:migration && npm run build",
     "dev": "wrangler dev",

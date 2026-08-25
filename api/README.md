@@ -84,12 +84,23 @@ CURLPLAN_STAGING_URL=https://<worker>.workers.dev \
 CURLPLAN_STAGING_ORIGIN=https://<staging-client> \
 CURLPLAN_STAGING_TOKEN="$CURLPLAN_STAGING_TOKEN" \
 npm run test:staging
+
+# Or provision a disposable staging user/session and mint its token through
+# Clerk's Backend API. The wrapper revokes the session and deletes the user.
+# Keep the development-instance secret in a secret manager or environment only.
+CLERK_SECRET_KEY="$CLERK_SECRET_KEY" \
+CLERK_STAGING_EXPECTED_ISSUER=https://<your-app>.clerk.accounts.dev \
+CURLPLAN_STAGING_URL=https://<worker>.workers.dev \
+CURLPLAN_STAGING_ORIGIN=https://<staging-client> \
+npm run test:staging:clerk
 ```
 
 The live verifier requires HTTPS, independently verifies the supplied JWT
 against the issuer's JWKS, checks exact credentialed CORS and negative auth,
 then exercises merge, idempotent retry, export, restore, deletion, and final
-empty-state readback. It refuses to mutate a non-empty account state.
+empty-state readback. It refuses to mutate a non-empty account state. The Clerk
+wrapper requires a development-instance `sk_test_` key and leaves the reusable
+audience JWT template in place, but removes its disposable user and session.
 
 ## What I still need from you to go live
 1. **Clerk** (non-secret): publishable key + instance issuer URL.
