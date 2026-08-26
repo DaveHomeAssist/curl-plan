@@ -123,9 +123,11 @@ reads, reviews, threads), stop contributions, messaging threads, note/result/rev
 compose, interactive likes, spielId-unified registration, personalized Passport with
 derived stats, functional search, and create-spiel/curler — plus Following/Discover on
 both. The full plan is in [docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md](docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md).
-All Swift was authored on Windows and **needs a Mac Xcode compile/run pass** (the iOS CI
-job does this); iOS store logic is covered by `ios/CurlPlanTests/StoreTests.swift`, which
-needs a test target wired before it runs.
+All Swift was authored on Windows. The **compile pass is done and green**: the `ios` CI
+job (macos-14) regenerates the project and runs `xcodebuild build`, `swift test`
+(SwiftPM `CurlPlanCoreTests`), and `xcodebuild test` (`CurlPlanTests` — Store + Merge)
+on every push. What remains is an **interactive run pass** (nobody has launched the
+app) — see `docs/IMPLEMENTATION_PLAN_2026-08-26_ios-xcode-pass.md`.
 
 ## Product tag
 
