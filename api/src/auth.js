@@ -23,6 +23,9 @@ export function makeClerkVerifier(issuer, opts = {}) {
   }
   const jwksUrl = issuer.replace(/\/+$/, "") + "/.well-known/jwks.json";
   const ttlMs = opts.jwksTtlMs || 10 * 60 * 1000;
+  const skewSec = opts.clockSkewSec || 60; // small tolerance for client/worker clock drift
+  // Origins allowed as the token's authorized party (Clerk `azp`); [] = skip the check.
+  const authorizedParties = (opts.authorizedParties || []).filter(Boolean);
   let cache = { at: 0, keys: null };
 
   async function jwks() {
@@ -44,12 +47,15 @@ export function makeClerkVerifier(issuer, opts = {}) {
       if (!h || !p || !sig) return null;
       const header = JSON.parse(b64urlToString(h));
       const payload = JSON.parse(b64urlToString(p));
+      if (header.alg !== "RS256") return null; // pin the algorithm we verify with
 
-      // claims
+      // claims — expiry and issuer are REQUIRED, not optional-if-present
       const nowSec = Math.floor(Date.now() / 1000);
-      if (payload.exp && nowSec >= payload.exp) return null;
-      if (payload.nbf && nowSec < payload.nbf) return null;
-      if (payload.iss && issuer && payload.iss.replace(/\/+$/, "") !== issuer.replace(/\/+$/, "")) return null;
+      if (typeof payload.exp !== "number" || nowSec >= payload.exp + skewSec) return null;
+      if (typeof payload.nbf === "number" && nowSec < payload.nbf - skewSec) return null;
+      if (typeof payload.iss !== "string" || payload.iss.replace(/\/+$/, "") !== issuer.replace(/\/+$/, "")) return null;
+      // authorized party (Clerk sets `azp` to the requesting web origin)
+      if (authorizedParties.length && payload.azp && !authorizedParties.includes(payload.azp)) return null;
       if (!payload.sub) return null;
 
       // signature (RS256)

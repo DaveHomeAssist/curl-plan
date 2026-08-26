@@ -15,7 +15,13 @@ const { pathToFileURL } = require("url");
   const mem = new Map();
   const db = {
     async get(u) { return mem.has(u) ? mem.get(u) : null; },
-    async put(u, doc, rev) { mem.set(u, { doc, rev }); },
+    // Mirrors the D1 adapter: revision-checked write, false when the rev moved on.
+    async put(u, doc, rev) {
+      const cur = mem.has(u) ? mem.get(u).rev : 0;
+      if (rev !== cur + 1) return false;
+      mem.set(u, { doc, rev });
+      return true;
+    },
   };
   const verifyAuth = async (req) => { const u = req.headers.get("x-test-user"); return u ? { userId: u } : null; };
   const deps = { db, verifyAuth, now: () => 1720000000000, corsOrigin: "https://example.test" };
@@ -67,6 +73,19 @@ const { pathToFileURL } = require("url");
   j = await r.json();
   ok(j.state.posts.every(p => p.id !== "p1") && j.state.tombstones.posts.p1 === 300,
     "deleted item stays dead on read-back (no resurrection)");
+
+  // H-03: two concurrent POSTs must not clobber each other — the loser of the
+  // revision race re-reads and re-merges, so both posts survive with distinct revs.
+  const [ra, rb] = await Promise.all([
+    call("POST", "/v1/state", { user: "u3", body: { state: { posts: [{ id: "a1", at: 100, body: "a" }] } } }),
+    call("POST", "/v1/state", { user: "u3", body: { state: { posts: [{ id: "b1", at: 101, body: "b" }] } } }),
+  ]);
+  const [ja, jb] = [await ra.json(), await rb.json()];
+  r = await call("GET", "/v1/state", { user: "u3" });
+  j = await r.json();
+  ok(ra.status === 200 && rb.status === 200 && ja.rev !== jb.rev
+    && j.rev === 2 && j.state.posts.some(p => p.id === "a1") && j.state.posts.some(p => p.id === "b1"),
+    "concurrent POSTs converge (no lost write, revs 1 and 2)");
 
   const big = { state: { posts: Array.from({ length: 20000 }, (_, i) => ({ id: "x" + i, at: i, body: "padpadpadpadpadpad" })) } };
   r = await call("POST", "/v1/state", { user: "u1", body: big });

@@ -52,8 +52,10 @@ function json(body, status, origin) {
 
 // deps: { db, verifyAuth, now, corsOrigin }
 //   db.get(userId)         -> { doc, rev } | null
-//   db.put(userId, doc, rev)
+//   db.put(userId, doc, rev) -> boolean — atomic revision-checked write: succeeds
+//                               only if the stored rev is still rev - 1 (0 = no row)
 //   verifyAuth(request)    -> { userId } | null   (async)
+const PUT_RETRIES = 3; // re-read + re-merge attempts when a concurrent write wins the race
 export async function handleRequest(request, deps) {
   const { db, verifyAuth, now, corsOrigin } = deps;
   const url = new URL(request.url);
@@ -78,11 +80,15 @@ export async function handleRequest(request, deps) {
       const incomingRaw = body && body.state;
       if (JSON.stringify(incomingRaw || {}).length > MAX_BODY) return json({ error: "state too large" }, 413, corsOrigin);
       const incoming = sanitizeState(incomingRaw);
-      const row = await db.get(userId);
-      const merged = merge.mergeState(row ? row.doc : {}, incoming);
-      const rev = (row ? row.rev : 0) + 1;
-      await db.put(userId, merged, rev);
-      return json({ state: merged, rev }, 200, corsOrigin);
+      // Optimistic concurrency: the put only lands if the revision we read is still
+      // current; a concurrent write makes it a no-op, so re-read, re-merge, retry.
+      for (let attempt = 0; attempt < PUT_RETRIES; attempt++) {
+        const row = await db.get(userId);
+        const merged = merge.mergeState(row ? row.doc : {}, incoming);
+        const rev = (row ? row.rev : 0) + 1;
+        if (await db.put(userId, merged, rev)) return json({ state: merged, rev }, 200, corsOrigin);
+      }
+      return json({ error: "conflict" }, 409, corsOrigin);
     }
 
     return json({ error: "method not allowed" }, 405, corsOrigin);

@@ -14,3 +14,6 @@ database_id = "<DATABASE_ID>"   # paste the id printed by `wrangler d1 create cu
 CLERK_ISSUER = ""
 # Web origin allowed for CORS, e.g. https://davehomeassist.github.io  ("*" only for local dev).
 CORS_ORIGIN = "*"
+# Comma-separated origins accepted as the JWT authorized party (`azp`).
+# Defaults to CORS_ORIGIN when that is pinned; "" skips the check only while CORS_ORIGIN = "*".
+CLERK_AUTHORIZED_PARTIES = ""

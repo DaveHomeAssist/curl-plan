@@ -12,15 +12,27 @@ export default {
           .bind(userId).first();
         return row ? { doc: JSON.parse(row.doc), rev: row.rev } : null;
       },
+      // Atomic revision-checked write: lands only if the stored rev is still rev - 1
+      // (rev 1 = first write, must insert). Returns false when a concurrent write won.
       async put(userId, doc, rev) {
-        await env.DB.prepare(
-          "INSERT INTO state (user_id, doc, rev, updated_at) VALUES (?, ?, ?, ?) " +
-          "ON CONFLICT(user_id) DO UPDATE SET doc = excluded.doc, rev = excluded.rev, updated_at = excluded.updated_at"
-        ).bind(userId, JSON.stringify(doc), rev, Date.now()).run();
+        const res = rev === 1
+          ? await env.DB.prepare(
+              "INSERT INTO state (user_id, doc, rev, updated_at) VALUES (?, ?, ?, ?) " +
+              "ON CONFLICT(user_id) DO NOTHING"
+            ).bind(userId, JSON.stringify(doc), rev, Date.now()).run()
+          : await env.DB.prepare(
+              "UPDATE state SET doc = ?, rev = ?, updated_at = ? WHERE user_id = ? AND rev = ?"
+            ).bind(JSON.stringify(doc), rev, Date.now(), userId, rev - 1).run();
+        return ((res.meta && res.meta.changes) || 0) > 0;
       },
     };
 
-    const verifyAuth = makeClerkVerifier(env.CLERK_ISSUER);
+    // Authorized parties for the token's `azp` claim: explicit list, else the CORS
+    // origin when it is pinned ("*" means unconfigured — skip the check).
+    const azp = env.CLERK_AUTHORIZED_PARTIES || (env.CORS_ORIGIN && env.CORS_ORIGIN !== "*" ? env.CORS_ORIGIN : "");
+    const verifyAuth = makeClerkVerifier(env.CLERK_ISSUER, {
+      authorizedParties: azp.split(",").map(s => s.trim()).filter(Boolean),
+    });
 
     return handleRequest(request, {
       db,
