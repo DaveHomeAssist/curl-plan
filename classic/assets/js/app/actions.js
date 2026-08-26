@@ -682,6 +682,7 @@ function saveIce() {
     setStatus("Ice note date is required.", "error");
     return;
   }
+  const existing = modalState.ice ? state.ice.find(item => item.id === modalState.ice) : null;
   const entry = {
     id: modalState.ice || createId(),
     eventId: existing?.eventId || getPlannerLinkedEvent(date, {
