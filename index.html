@@ -68,6 +68,7 @@ body{
 :root{
   --accent:#c0402c;
   --accent-ink:#ffffff;
+  --accent-deep:#a83a28; /* accent tuned to >=4.5:1 on --panel for small text (M-03) */
   --house-red:#c0402c;
   --house-blue:#2f6f93;
   --ink:#1b2227;
@@ -79,6 +80,7 @@ body{
   --pebble-o:0.6;
 }
 [data-theme="arena"]{
+  --accent-deep:#e58270;
   --ink:#eef3f6;
   --muted:#a7b0b6;
   --line:rgba(255,255,255,0.09);
@@ -167,6 +169,7 @@ body{
 .mono{ font-family:'DM Mono',monospace; }
 .serif{ font-family:'Instrument Serif',serif; font-weight:400; }
 .accent{ color:var(--accent); }
+.accent-deep{ color:var(--accent-deep); }
 .ital{ font-style:italic; }
 
 /* ---------- cards & primitives ---------- */
@@ -218,16 +221,17 @@ body{
 /* ---------- section header ---------- */
 .sec-head{ display:flex; align-items:center; justify-content:space-between; }
 .sec-head .lab{ font:500 11px 'DM Mono'; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent); cursor:pointer; }
+.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent-deep); cursor:pointer; }
 
 /* ---------- list row (stops / games / people) ---------- */
 .tile{ padding:12px; cursor:pointer; }
 .tile .code{
   width:42px; height:42px; border-radius:12px; flex:none; background:var(--panel);
-  display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent);
+  display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent-deep);
 }
 .tile .title{ font:700 15px 'Hanken Grotesk'; color:var(--ink); }
 .tile .sub{ font:500 11px 'DM Mono'; color:var(--muted); margin-top:2px; }
+.card .sub{ font:500 11px 'DM Mono'; color:var(--muted); } /* non-tile cards (Spiels) otherwise inherit the page-frame color (M-03) */
 .score{ font:400 17px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
 .plus-badge{
   width:20px; height:20px; border-radius:99px; background:var(--accent);
@@ -243,13 +247,13 @@ body{
 .tab{
   min-width:44px; min-height:44px; padding:0 4px;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  background:none; border:0; cursor:pointer; opacity:.5;
+  background:none; border:0; cursor:pointer; opacity:.72; /* .5 dropped inactive labels below 4.5:1 (M-03) */
 }
 .tab.active{ opacity:1; }
 .tab .glyph{ font-size:18px; line-height:.9; color:var(--ink); }
 .tab.active .glyph{ color:var(--accent); }
 .tab .ring{ width:21px; height:21px; }
-.tab.active .lab{ font:600 10px 'Hanken Grotesk'; color:var(--accent); }
+.tab.active .lab{ font:600 10px 'Hanken Grotesk'; color:var(--accent-deep); }
 .tab .lab{ font:500 10px 'Hanken Grotesk'; color:var(--ink); }
 
 /* ---------- FAB ---------- */
@@ -291,7 +295,7 @@ body{
   background:radial-gradient(circle, transparent 0 24%, var(--house-red) 24% 30%, transparent 30% 52%, #fff 52% 58%, transparent 58% 80%, var(--house-blue) 80% 86%, transparent 86%); }
 .stop-hero .cap{ position:absolute; left:22px; bottom:20px; right:22px; }
 .stop-hero .cap .loc{ font:500 10px 'DM Mono'; letter-spacing:.18em; color:rgba(255,255,255,.82); }
-.stop-hero .cap h2{ font:400 34px/1.02 'Instrument Serif'; color:#fff; margin:5px 0 0; }
+.stop-hero .cap h1{ font:400 34px/1.02 'Instrument Serif'; color:#fff; margin:5px 0 0; }
 
 /* ice read */
 .iceread{ display:flex; gap:9px; }
@@ -324,9 +328,9 @@ body{
   background:radial-gradient(circle, var(--house-red) 0 18%, var(--screen) 18% 30%, var(--house-blue) 30% 44%, var(--screen) 44%);
 }
 .identity .halo .av{ width:100%; height:100%; font:700 28px 'Hanken Grotesk'; }
-.identity h2{ font:400 30px 'Instrument Serif'; color:var(--ink); line-height:1.05; margin:0; }
+.identity h1{ font:400 30px 'Instrument Serif'; color:var(--ink); line-height:1.05; margin:0; }
 .identity .meta{ font:500 11px 'DM Mono'; letter-spacing:.08em; color:var(--muted); margin-top:5px; }
-.metpill{ display:inline-flex; align-items:center; gap:7px; background:var(--panel); border-radius:99px; padding:5px 12px; font:600 11px 'Hanken Grotesk'; color:var(--accent); }
+.metpill{ display:inline-flex; align-items:center; gap:7px; background:var(--panel); border-radius:99px; padding:5px 12px; font:600 11px 'Hanken Grotesk'; color:var(--accent-deep); }
 .metpill .d{ width:6px; height:6px; border-radius:99px; background:var(--accent); }
 .actions2{ display:flex; gap:10px; }
 .actions2 .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
@@ -383,7 +387,7 @@ body{
 }
 .seg-type button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
 .field{ margin-bottom:13px; }
-.field > label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.field label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .field input, .field textarea, .field select{
   width:100%; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel);
   border:1px solid var(--line); border-radius:11px; padding:11px 12px; outline:none;
@@ -489,7 +493,7 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
       <div id="sheet-body"></div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
 </main>
 
@@ -512,9 +516,10 @@ function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)
    Appearance prefs (the concept's props made real & persisted)
    ============================================================ */
 var ACCENTS = [
-  { key:"House red",  val:"#c0402c" },
-  { key:"House blue", val:"#2f6f93" },
-  { key:"Granite",    val:"#41505a" }
+  // deep = same hue tuned to >=4.5:1 for small text on --panel/--card per theme (M-03)
+  { key:"House red",  val:"#c0402c", deep:{ ice:"#a83a28", arena:"#e58270" } },
+  { key:"House blue", val:"#2f6f93", deep:{ ice:"#28607f", arena:"#7fb2d1" } },
+  { key:"Granite",    val:"#41505a", deep:{ ice:"#41505a", arena:"#a4b3bd" } }
 ];
 var PREFS_KEY = "curlplan-hifi-prefs-v1";
 var prefs = loadPrefs();
@@ -541,11 +546,17 @@ function applyQueryOverrides(){
   }catch(e){}
 }
 function accentVal(){ var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0]; return a ? a.val : "#c0402c"; }
+function accentDeepVal(){
+  var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0];
+  var t = prefs.theme === "arena" ? "arena" : "ice";
+  return (a && a.deep) ? a.deep[t] : (t === "arena" ? "#e58270" : "#a83a28");
+}
 
 function applyPrefs(){
   var root = document.documentElement;
   root.setAttribute("data-theme", prefs.theme === "arena" ? "arena" : "ice");
   root.style.setProperty("--accent", accentVal());
+  root.style.setProperty("--accent-deep", accentDeepVal());
   root.style.setProperty("--pebble-o", prefs.pebble ? "0.6" : "0");
   document.querySelector('meta[name="theme-color"]').setAttribute("content", prefs.theme === "arena" ? "#13181b" : "#eceff1");
 }
@@ -1511,8 +1522,8 @@ function viewPassport(){
     '<div class="scroll">' +
       '<div>' +
         '<div class="eyebrow">' + esc(me.season) + '</div>' +
-        '<div class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin-top:3px;">On the ice, ' +
-          '<span class="ital accent">coast to coast</span></div>' +
+        '<h1 class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin:3px 0 0;">On the ice, ' +
+          '<span class="ital accent-deep">coast to coast</span></h1>' +
       '</div>' +
       '<div class="card telemetry">' +
         '<div class="cell"><div class="num">' + s.clubs + '</div><div class="lab">CLUBS</div></div><div class="vline"></div>' +
@@ -1581,7 +1592,7 @@ function renderPostCard(p){
       ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going ✓</button>'
       : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">I\'m in</button>');
     return '<div class="card spiel post" style="padding:14px;">' +
-      '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent); margin-bottom:7px;">SHARED SPIEL</div>' +
+      '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent-deep); margin-bottom:7px;">SHARED SPIEL</div>' +
       '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
         esc(p.title) + ' <span class="ital">' + esc(p.spiel) + '</span></div>' +
       '<div class="row">' + avatarStack(p.who) +
@@ -1622,7 +1633,7 @@ function viewLocker(){
   return statusbar(false) +
     '<div class="appbar" style="flex-direction:column; align-items:stretch; gap:0;">' +
       '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-        '<div class="serif" style="font-size:28px; color:var(--ink);">Locker Room</div>' +
+        '<h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Locker Room</h1>' +
         '<button class="backbtn" data-action="toggle-locker-search" aria-label="Search" style="font-size:17px;">' + (ui.lockerSearch ? '✕' : '⌕') + '</button></div>' +
       searchRow +
       '<div style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
@@ -1656,7 +1667,7 @@ function viewSpiels(){
   }).join("");
 
   return statusbar(false) +
-    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Spiels</div>' +
+    '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Spiels</h1>' +
       '<button class="backbtn" data-action="new-spiel" aria-label="New spiel" style="font-size:20px;">+</button></div>' +
     '<div class="scroll">' +
       '<div class="eyebrow">Your season ahead</div>' +
@@ -1687,7 +1698,7 @@ function viewRoster(){
     ? '<div class="field" style="margin:0 0 4px;"><input id="roster-q" placeholder="Search your circle" value="' + esc(ui.rosterQ) + '" autocomplete="off"></div>'
     : '';
   return statusbar(false) +
-    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Roster</div>' +
+    '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Roster</h1>' +
       '<div style="display:flex; gap:8px;">' +
         '<button class="backbtn" data-action="toggle-roster-search" aria-label="Search" style="font-size:17px;">' + (ui.rosterSearch ? '✕' : '⌕') + '</button>' +
         '<button class="backbtn" data-action="new-curler" aria-label="Add curler" style="font-size:20px;">+</button>' +
@@ -1743,7 +1754,7 @@ function viewStop(id){
       statusbar(true) +
       '<button class="hero-back" data-action="back" aria-label="Back">‹</button>' +
       '<div class="cap"><div class="loc">📍 ' + esc(st.club.toUpperCase().split(" ")[0]) + ', ' + esc(st.prov) + ' · ' + esc(st.dates) + '</div>' +
-        '<h2>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h2></div>' +
+        '<h1>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h1></div>' +
     '</div>' +
     '<div class="scroll" style="padding-top:16px;">' +
       '<div><div class="sec-head" style="margin-bottom:8px;"><span class="lab">Ice read</span></div>' +
@@ -1789,7 +1800,7 @@ function viewCurler(id){
     '<div class="scroll" style="padding-top:10px;">' +
       '<div class="identity">' +
         '<span class="halo">' + avatar(c.initials, 78, 'av') + '</span>' +
-        '<div><h2>' + esc(c.name) + '</h2><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
+        '<div><h1>' + esc(c.name) + '</h1><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
         '<span class="metpill"><span class="d"></span>You met at ' + esc(c.metAt) + '</span>' +
       '</div>' +
       '<div class="actions2">' +
@@ -1976,9 +1987,10 @@ function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
 function starPicker(){
   var b = "";
   for(var i = 1; i <= 5; i++){
-    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i + '">★</button>';
+    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i +
+      '" aria-label="' + i + ' star' + (i > 1 ? 's' : '') + '" aria-pressed="' + (i <= formStars) + '">★</button>';
   }
-  return '<div class="stars-pick" id="f-stars">' + b + '</div>';
+  return '<div class="stars-pick" id="f-stars" role="group" aria-labelledby="f-stars-label">' + b + '</div>';
 }
 function setStars(n){
   formStars = n;
@@ -1986,6 +1998,7 @@ function setStars(n){
   if(!wrap) return;
   Array.prototype.forEach.call(wrap.children, function(btn, i){
     btn.classList.toggle("on", (i + 1) <= n);
+    btn.setAttribute("aria-pressed", String((i + 1) <= n));
   });
 }
 function fmtTime(at){
@@ -2014,16 +2027,16 @@ function openCompose(type){
 
   var body;
   if(type === "result"){
-    body = '<div class="field split"><div><label>For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
-      '<div><label>Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
-      '<div class="field"><label>Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
-      '<div class="field"><label>Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
+    body = '<div class="field split"><div><label for="f-for">For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
+      '<div><label for="f-ag">Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
+      '<div class="field"><label for="f-vs">Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
+      '<div class="field"><label for="f-body">Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
   } else if(type === "review"){
-    body = '<div class="field"><label>Club</label><input id="f-club" placeholder="Granite City CC"></div>' +
-      '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
-      '<div class="field"><label>Note</label><textarea id="f-body" placeholder="fast, 5–6 ft of curl"></textarea></div>';
+    body = '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Granite City CC"></div>' +
+      '<div class="field"><label id="f-stars-label">Rating</label>' + starPicker() + '</div>' +
+      '<div class="field"><label for="f-body">Note</label><textarea id="f-body" placeholder="fast, 5–6 ft of curl"></textarea></div>';
   } else {
-    body = '<div class="field"><label>What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
+    body = '<div class="field"><label for="f-body">What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
   }
 
   openSheet('<h2>Share</h2><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
@@ -2061,8 +2074,8 @@ function submitCompose(type){
 function openVisit(stopId){
   var st = stop(stopId); if(!st) return;
   openSheet('<h2>Log a visit</h2><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field"><label>Date</label><input id="f-date" placeholder="Today"></div>' +
-    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
+    '<div class="field"><label for="f-date">Date</label><input id="f-date" placeholder="Today"></div>' +
+    '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button></div>');
   if(el("f-date")) el("f-date").value = "Today";
@@ -2079,9 +2092,9 @@ function openIceRead(stopId){
   var st = stop(stopId); if(!st) return;
   var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
   openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field split"><div><label>Speed</label><select id="f-speed">' + opts + '</select></div>' +
-      '<div><label>Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
-    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
+    '<div class="field split"><div><label for="f-speed">Speed</label><select id="f-speed">' + opts + '</select></div>' +
+      '<div><label for="f-curl">Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
+    '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button></div>');
 }
@@ -2094,8 +2107,8 @@ function openReview(stopId){
   var st = stop(stopId); if(!st) return;
   formStars = 5;
   openSheet('<h2>Write a review</h2><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
-    '<div class="field"><label>Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
+    '<div class="field"><label id="f-stars-label">Rating</label>' + starPicker() + '</div>' +
+    '<div class="field"><label for="f-note">Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-review" data-id="' + stopId + '">Post review</button></div>');
 }
@@ -2114,7 +2127,7 @@ function openThread(curlerId){
     : '<div class="thread-empty">No messages yet. Say hello to ' + esc(c.name.split(" ")[0]) + '.</div>';
   openSheet('<h2>' + esc(c.name) + '</h2><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
     body +
-    '<div class="composer"><textarea id="f-msg" placeholder="Message…"></textarea>' +
+    '<div class="composer"><textarea id="f-msg" placeholder="Message…" aria-label="Message"></textarea>' +
       '<button class="pill-btn" data-action="send-msg" data-id="' + curlerId + '">Send</button></div>');
   var th = el("f-thread"); if(th) th.scrollTop = th.scrollHeight;
 }
@@ -2138,10 +2151,10 @@ function sendMessage(curlerId){
 function openNewSpiel(){
   var statusOpts = ["You're in","Watching","Invite"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
   openSheet('<h2>New spiel</h2><p class="sub">Add a bonspiel to your season ahead.</p>' +
-    '<div class="field"><label>Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
-    '<div class="field"><label>Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
-    '<div class="field"><label>Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
-    '<div class="field"><label>Your status</label><select id="f-status">' + statusOpts + '</select></div>' +
+    '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
+    '<div class="field"><label for="f-where">Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
+    '<div class="field"><label for="f-when">Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
+    '<div class="field"><label for="f-status">Your status</label><select id="f-status">' + statusOpts + '</select></div>' +
     clubDatalist() +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-new-spiel">Add spiel</button></div>');
@@ -2160,10 +2173,10 @@ function submitNewSpiel(){
 function openNewCurler(){
   var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
   openSheet('<h2>Add to roster</h2><p class="sub">Add a curler to your circle.</p>' +
-    '<div class="field"><label>Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
-    '<div class="field split"><div><label>Position</label><select id="f-role">' + roles + '</select></div>' +
-      '<div><label>Province</label><input id="f-prov" placeholder="BC"></div></div>' +
-    '<div class="field"><label>Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' +
+    '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
+    '<div class="field split"><div><label for="f-role">Position</label><select id="f-role">' + roles + '</select></div>' +
+      '<div><label for="f-prov">Province</label><input id="f-prov" placeholder="BC"></div></div>' +
+    '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' +
     clubDatalist() +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-new-curler">Add curler</button></div>');

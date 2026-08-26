@@ -2,6 +2,13 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## 2026-08-26
+
+### Fixed
+
+- Accessible naming across the root Hi-Fi interior (audit M-02): every screen now carries a real `<h1>` (Passport headline, Locker Room, Spiels, Roster, stop hero, curler identity), all sheet-form labels are associated via `for`/`id` (including the previously unnamed Ice Read speed select), the star pickers expose a named group with per-star labels and pressed state, the message composer is labeled, and toast feedback is announced through `role="status"` + `aria-live="polite"`.
+- Interior contrast failures flagged by axe-core 4.10.3 (audit M-03): inactive tab-bar labels (opacity .5 → .72), stop-code chips, the met-pill, section-header actions, active tab labels, and the shared-spiel eyebrow now use a new `--accent-deep` token tuned per accent and theme to ≥4.5:1 on panel/card surfaces; split-field sheet labels and Spiels card sublines no longer inherit the page-frame color. Verified clean with axe-core 4.10.3 across Passport, Locker, compose (all types), Spiels, Roster, curler profile, stop detail, and the ice-read sheet in both themes and all three accents.
+
 ## 2026-08-21
 
 ### Fixed
