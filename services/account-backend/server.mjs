@@ -1,8 +1,11 @@
 import { createServer } from "node:http";
-import { randomUUID, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomUUID, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
+const scryptAsync = promisify(scrypt);
 
 const MAX_JSON_BYTES = 1_000_000;
 const DEFAULT_STORAGE_PATH = resolve("/tmp/curlplan-account-backend-state.json");
@@ -39,8 +42,18 @@ class AccountBackendStore {
   }
 
   async save() {
+    // Serialize writers: concurrent requests share one store, and unqueued
+    // temp-file writes can collide on the same path or land out of order.
+    const pending = (this.savePromise ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => this.writeSnapshot());
+    this.savePromise = pending;
+    await pending;
+  }
+
+  async writeSnapshot() {
     await mkdir(dirname(this.storagePath), { recursive: true });
-    const tempPath = `${this.storagePath}.${process.pid}.${Date.now()}.tmp`;
+    const tempPath = `${this.storagePath}.${process.pid}.${randomUUID()}.tmp`;
     await writeFile(tempPath, `${JSON.stringify(this.state, null, 2)}\n`);
     await rename(tempPath, this.storagePath);
   }
@@ -114,11 +127,15 @@ async function routeRequest({ request, response, store, url, requestID }) {
   }
 
   if (method === "POST" && path === "/v1/accounts") {
+    enforceRateLimit(request, "credentials");
     const body = await readJSON(request);
     const handle = requiredText(body, "handle").toLowerCase();
     const displayName = requiredText(body, "displayName");
     const homeClub = requiredText(body, "homeClub");
     const password = requiredPassword(body, "password");
+    if (Object.keys(store.state.accounts).length >= MAX_ACCOUNTS) {
+      throw new BackendError(507, "STORAGE_QUOTA", "Account storage quota has been reached.");
+    }
     const handleTaken = Object.values(store.state.profiles).some((profile) => profile.handle.toLowerCase() === handle);
     if (handleTaken) {
       throw new BackendError(409, "HANDLE_TAKEN", "That handle is already reserved.");
@@ -130,7 +147,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
       deletedAt: null
     };
     store.state.accounts[account.id] = account;
-    store.state.credentials[account.id] = hashPassword(password);
+    store.state.credentials[account.id] = await hashPassword(password);
     store.state.profiles[account.id] = {
       accountID: account.id,
       handle,
@@ -146,6 +163,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
   }
 
   if (method === "POST" && path === "/v1/auth/sign-in") {
+    enforceRateLimit(request, "credentials");
     const body = await readJSON(request);
     const handle = requiredText(body, "handle").toLowerCase();
     const password = requiredText(body, "password");
@@ -154,7 +172,9 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const accountID = profile?.accountID;
     const account = accountID ? store.state.accounts[accountID] : null;
     // Generic credential failure: never reveal whether the handle exists.
-    if (!account || account.status === "deleted" || !verifyPassword(password, store.state.credentials[accountID])) {
+    const credentialOK = account && account.status !== "deleted" &&
+      await verifyPassword(password, store.state.credentials[accountID]);
+    if (!credentialOK) {
       throw new BackendError(401, "INVALID_CREDENTIALS", "Handle or password is incorrect.");
     }
     const session = {
@@ -632,6 +652,32 @@ function requiredInteger(body, key) {
 }
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_ACCOUNTS = 10_000;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_ATTEMPTS = 30;
+const RATE_LIMIT_MAX_BUCKETS = 10_000;
+const rateBuckets = new Map();
+
+function enforceRateLimit(request, bucketName) {
+  const nowMs = Date.now();
+  if (rateBuckets.size > RATE_LIMIT_MAX_BUCKETS) {
+    for (const [key, bucket] of rateBuckets) {
+      if (nowMs - bucket.startedAt >= RATE_LIMIT_WINDOW_MS) {
+        rateBuckets.delete(key);
+      }
+    }
+  }
+  const key = `${bucketName}:${request.socket?.remoteAddress ?? "unknown"}`;
+  const bucket = rateBuckets.get(key);
+  if (!bucket || nowMs - bucket.startedAt >= RATE_LIMIT_WINDOW_MS) {
+    rateBuckets.set(key, { startedAt: nowMs, count: 1 });
+    return;
+  }
+  bucket.count += 1;
+  if (bucket.count > RATE_LIMIT_MAX_ATTEMPTS) {
+    throw new BackendError(429, "RATE_LIMITED", "Too many attempts. Try again shortly.");
+  }
+}
 
 function requiredPassword(body, key) {
   const value = body?.[key];
@@ -641,18 +687,18 @@ function requiredPassword(body, key) {
   return value;
 }
 
-function hashPassword(password) {
+async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hash = (await scryptAsync(password, salt, 64)).toString("hex");
   return { salt, hash };
 }
 
-function verifyPassword(password, credential) {
+async function verifyPassword(password, credential) {
   if (!credential || typeof credential.salt !== "string" || typeof credential.hash !== "string") {
     return false;
   }
   const expected = Buffer.from(credential.hash, "hex");
-  const actual = scryptSync(password, credential.salt, expected.length);
+  const actual = await scryptAsync(password, credential.salt, expected.length);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
@@ -729,6 +775,10 @@ function requireSharedObjectAdmin(state, object, accountID) {
 function canAdminSharedObject(state, object, accountID) {
   if (object.ownerID === accountID) {
     return true;
+  }
+  // A block between the owner and a delegated admin revokes that authority.
+  if (isBlockedBetween(state, object.ownerID, accountID)) {
+    return false;
   }
   return state.memberships.some((membership) => membership.objectID === object.id &&
     membership.accountID === accountID &&
