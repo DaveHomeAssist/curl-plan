@@ -323,6 +323,8 @@ function openModal(type, id = "") {
   }
 
   clearFieldErrors(modalId);
+  overlay.inert = false;
+  overlay.setAttribute("aria-hidden", "false");
   overlay.classList.add("is-open");
   bindModalDirtyTracking(modalId);
   resetModalDirty(modalId);
@@ -335,7 +337,12 @@ function closeModal(modalId) {
   if (overlay && isDirtyTrackableModal(modalId) && modalDirtyState.modalId === modalId && modalDirtyState.dirty) {
     if (!window.confirm("Discard unsaved changes?")) return;
   }
-  if (overlay) overlay.classList.remove("is-open");
+  if (overlay) {
+    overlay.classList.remove("is-open");
+    // Keep the invisible overlay out of the tab order and accessibility tree.
+    overlay.inert = true;
+    overlay.setAttribute("aria-hidden", "true");
+  }
   resetModalDirty("");
   releaseFocusTrap();
 }

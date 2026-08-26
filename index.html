@@ -815,7 +815,7 @@ function avatarStack(ids){
 function resColor(res){ return res === "W" ? "var(--accent)" : "var(--muted)"; }
 function likeBtn(p){
   var liked = isLiked(p.id);
-  return '<span data-action="like" data-id="' + esc(p.id) + '"' + (liked ? ' style="color:var(--accent);"' : '') + '>' +
+  return '<span role="button" tabindex="0" aria-label="Like" data-action="like" data-id="' + esc(p.id) + '"' + (liked ? ' style="color:var(--accent);"' : '') + '>' +
     (liked ? "♥" : "♡") + ' ' + likeCount(p) + '</span>';
 }
 function starsRow(n){
@@ -827,7 +827,7 @@ function starsRow(n){
 function postHead(p, o){
   o = o || {};
   var a = person(p.author) || { id:"", initials:"?", name:"Unknown curler", role:"CURLER", club:"—" };
-  var nav = (!a.id || a.id === "me") ? "" : ' data-action="curler" data-id="' + esc(a.id) + '"';
+  var nav = (!a.id || a.id === "me") ? "" : ' role="button" tabindex="0" data-action="curler" data-id="' + esc(a.id) + '"';
   var meta = o.meta || (esc((a.role || "").toUpperCase()) + ' · ' + esc((a.club || "").toUpperCase()) + ' · ' + esc(postTime(p)));
   return '<div class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
     '<div style="flex:1;"><div class="name"' + (o.nameSize ? ' style="font-size:' + o.nameSize + 'px;"' : '') + '>' + esc(a.name) + '</div>' +
@@ -910,10 +910,10 @@ function viewAuth(){
       '</div>' +
       '<div class="auth-alt">' +
         (signup
-          ? 'Already curling here? <b data-action="auth-mode" data-mode="signin">Sign in</b>'
-          : 'New here? <b data-action="auth-mode" data-mode="signup">Create an account</b>') +
+          ? 'Already curling here? <b role="button" tabindex="0" data-action="auth-mode" data-mode="signin">Sign in</b>'
+          : 'New here? <b role="button" tabindex="0" data-action="auth-mode" data-mode="signup">Create an account</b>') +
       '</div>' +
-      '<div class="auth-alt" style="margin-top:2px;"><b data-action="auth-demo">Explore the demo →</b></div>' +
+      '<div class="auth-alt" style="margin-top:2px;"><b role="button" tabindex="0" data-action="auth-demo">Explore the demo →</b></div>' +
     '</div>';
 }
 
@@ -930,7 +930,7 @@ function viewPassport(){
     var avs = st.met.slice(0,2).map(function(m){
       return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
     }).join("");
-    return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+    return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
       '<span class="code">' + esc(st.code) + '</span>' +
       '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
         '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
@@ -945,7 +945,7 @@ function viewPassport(){
   return statusbar(false) +
     '<div class="appbar">' +
       '<div class="brand"><span class="ring"></span><b>CurlPlan</b></div>' +
-      avatar(me.initials, 34) .replace('class="avatar"','class="avatar" data-action="settings" aria-label="Appearance"') +
+      avatar(me.initials, 34) .replace('class="avatar"','class="avatar" role="button" tabindex="0" data-action="settings" aria-label="Appearance"') +
     '</div>' +
     '<div class="scroll">' +
       '<div>' +
@@ -972,7 +972,7 @@ function viewPassport(){
         '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>' +
         '<div class="map-meta">12 STOPS · 2,400 KM</div>' +
       '</div>' +
-      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" data-action="tab" data-tab="spiels">All</span></div>' +
+      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" role="button" tabindex="0" data-action="tab" data-tab="spiels">All</span></div>' +
       recents +
     '</div>' +
     tabbar("passport");
@@ -1067,7 +1067,7 @@ function viewSpiels(){
 
 function viewRoster(){
   var rows = curlers.map(function(c){
-    return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
+    return '<div class="card tile prow" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
       avatar(c.initials, 44, 'av') +
       '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
         '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
@@ -1113,8 +1113,8 @@ function viewStop(id){
       ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
       : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
     return '<div class="prow">' +
-      '<span data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
-      '<div style="flex:1; min-width:0; cursor:pointer;" data-action="curler" data-id="' + c.id + '">' +
+      '<span role="button" tabindex="0" data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
+      '<div style="flex:1; min-width:0; cursor:pointer;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
         '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
       btn + '</div>';
   }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
@@ -1466,6 +1466,17 @@ function sendMessage(curlerId){
 /* ============================================================
    Event delegation
    ============================================================ */
+el("screen").addEventListener("keydown", function(e){
+  // Keyboard parity for div/span controls: Enter or Space activates like a click.
+  if(e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+  var t = e.target.closest('[data-action],[data-theme-val],[data-accent],#toggle-pebble');
+  if(!t) return;
+  var tag = t.tagName;
+  if(tag === "BUTTON" || tag === "A" || tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  e.preventDefault();
+  t.click();
+});
+
 el("screen").addEventListener("click", function(e){
   var t = e.target.closest("[data-action]");
 
