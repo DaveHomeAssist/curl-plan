@@ -1,13 +1,13 @@
 // CurlPlan Service Worker (Hi-Fi app)
 // Network-first for navigations so the HTML is always fresh; cache-first for
-// other same-origin GETs. On activate we delete every
-// origin cache except those in KEEP — this purges the legacy "curlplan-sw-v5" cache
-// (the pre-promote root app) while preserving the archived classic app's own cache.
-// NOTE: CacheStorage is per-origin, not per-SW-scope, so the classic worker
-// (scope /classic/) shares this keyspace; KEEP must list its cache too, and the
-// classic worker reciprocally keeps "curlplan-hifi-v1".
+// other same-origin GETs. On activate we delete only caches this worker owns:
+// its own "curlplan-hifi-*" lineage plus the legacy "curlplan-sw-v5" cache
+// (the pre-promote root app). NOTE: CacheStorage is per-origin, not
+// per-SW-scope, so the classic worker (scope /classic/) shares this keyspace;
+// each worker prunes only its own cache family and leaves the rest alone.
 const CACHE_NAME = "curlplan-hifi-v1";
-const KEEP = [CACHE_NAME, "curlplan-classic-v6"];
+const OWN_PREFIX = "curlplan-hifi-";
+const LEGACY_CACHES = ["curlplan-sw-v5"];
 
 const PRECACHE_URLS = ["./", "./index.html"];
 
@@ -19,7 +19,11 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => !KEEP.includes(key)).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME && (key.startsWith(OWN_PREFIX) || LEGACY_CACHES.includes(key)))
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -30,17 +34,27 @@ self.addEventListener("fetch", event => {
 
   // Navigations (the app shell): network-first, fall back to cache when offline.
   if (req.mode === "navigate") {
+    const shellPath = new URL("./", self.location).pathname;
+    const reqPath = new URL(req.url).pathname;
+    // Only the root shell itself may refresh the canonical "./index.html"
+    // entry — other navigations (classic, docs, error pages) must not
+    // replace the offline shell.
+    const isShell = reqPath === shellPath || reqPath === `${shellPath}index.html`;
     event.respondWith(
       fetch(req)
         .then(res => {
           // Normalize to one canonical shell entry so query-stringed deep links
           // (?theme=…&accent=…) don't accumulate per-URL copies. The runtime reads
           // theme/accent from location.search, so the shell HTML is query-agnostic.
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("./index.html", clone));
+          if (isShell && res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put("./index.html", clone));
+          }
           return res;
         })
-        .catch(() => caches.match("./index.html").then(m => m || caches.match(req)))
+        .catch(() => (isShell
+          ? caches.match("./index.html")
+          : caches.match(req).then(m => m || caches.match("./index.html"))))
     );
     return;
   }
