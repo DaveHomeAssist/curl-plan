@@ -59,10 +59,12 @@ jobs:
             -scheme CurlPlan \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO
+      - name: Account contract tests (SwiftPM CurlPlanCoreTests)
+        run: swift test --scratch-path /tmp/curlplan-spm-build
       - name: Test CurlPlan (Store + Merge unit tests)
         run: |
           cd ios
-          DEVICE=$(xcrun simctl list devices available | grep -Eo 'iPhone 1[567][^(]*' | head -1 | sed 's/ *$//')
+          DEVICE=$(xcrun simctl list devices available | grep -Eo 'iPhone [0-9]+[^(]*' | head -1 | sed 's/ *$//')
           echo "Testing on simulator: ${DEVICE:-iPhone 15}"
           xcodebuild test \
             -project CurlPlan.xcodeproj \
