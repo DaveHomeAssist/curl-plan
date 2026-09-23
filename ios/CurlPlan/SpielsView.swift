@@ -89,10 +89,14 @@ private struct SpielRow: View {
                         .tracking(0)
                         .foregroundStyle(settings.muted)
                         .layoutPriority(1)
-                        .fixedSize(horizontal: true, vertical: true)
-                    Text(spiel.name).font(.serif(21)).foregroundStyle(settings.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(spiel.name)
+                        .font(.serif(21))
+                        .foregroundStyle(settings.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted).padding(.top, 2)
                 }
+                .layoutPriority(1)
                 Spacer()
                 Text(status)
                     .font(solid ? .mono(9, .bold) : .grotesk(11, .semibold))
@@ -106,6 +110,7 @@ private struct SpielRow: View {
                         RoundedRectangle(cornerRadius: solid ? 6 : 99, style: .continuous)
                             .strokeBorder(solid ? Color.clear : settings.line, lineWidth: 1)
                     )
+                    .fixedSize(horizontal: true, vertical: true)
             }
 
             HStack(spacing: 11) {
@@ -141,7 +146,7 @@ struct SpielDetailSheet: View {
                         .font(.mono(11, .semibold))
                         .tracking(0)
                         .foregroundStyle(settings.muted)
-                        .fixedSize(horizontal: true, vertical: true)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(spiel.name).font(.serif(26)).foregroundStyle(settings.ink)
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted)
                         .padding(.top, 2).padding(.bottom, 20)

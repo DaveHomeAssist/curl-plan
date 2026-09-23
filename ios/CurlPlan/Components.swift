@@ -374,6 +374,7 @@ struct StarsRow: View {
             .fixedSize(horizontal: true, vertical: true)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(n) out of 5 stars")
+            .accessibilityRespondsToUserInteraction(false)
     }
 }
 
