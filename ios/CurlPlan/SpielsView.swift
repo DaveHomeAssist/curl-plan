@@ -100,7 +100,11 @@ private struct SpielRow: View {
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
                 : AnyLayout(HStackLayout(spacing: 11))
             attendeeLayout {
-                AvatarStack(initials: spiel.going.map { store.curler($0)?.initials ?? "?" }, size: 28)
+                AvatarStack(
+                    initials: spiel.going.map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: spiel.going.compactMap { store.curler($0)?.name },
+                    size: 28
+                )
                 Text("\(spiel.going.count) of your circle going")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
                     .fixedSize(horizontal: false, vertical: true)

@@ -134,7 +134,12 @@ struct RecentStopTile: View {
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
+                AvatarStack(
+                    initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: stop.met.prefix(2).compactMap { store.curler($0)?.name },
+                    size: 20,
+                    plus: stop.plus
+                )
             }
         }
         .padding(12)
@@ -186,6 +191,8 @@ private struct StopCode: View {
 struct SeasonMap: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var mapHeight: CGFloat = 212
 
     private var mapMeta: String {
         if store.isRealAccount {
@@ -242,7 +249,7 @@ struct SeasonMap: View {
                 }
             }
         }
-        .frame(height: 212)
+        .frame(height: mapHeight)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
@@ -262,9 +269,10 @@ struct SeasonMap: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Text(mapMeta)
-                .font(.mono(10, .medium))
-                .tracking(1)
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.ink)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, 5)
                 .padding(.horizontal, 9)
                 .background(settings.card.opacity(0.92))

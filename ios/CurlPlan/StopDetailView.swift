@@ -72,7 +72,8 @@ struct StopDetailView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "mappin").accessibilityHidden(true)
                     Text(cityLabel(stop))
-                        .font(.mono(10, .medium)).tracking(1)
+                        .font(.mono(11, .semibold))
+                        .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .foregroundStyle(.white)

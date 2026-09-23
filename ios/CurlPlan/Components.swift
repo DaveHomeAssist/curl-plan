@@ -54,12 +54,15 @@ struct AvatarView: View {
 struct AvatarStack: View {
     @EnvironmentObject var settings: AppSettings
     let initials: [String]
+    private let accessibilityNames: [String]
     private let baseSize: CGFloat
     private let plus: String?
     @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
 
-    init(initials: [String], size: CGFloat = 28, plus: String? = nil) {
+    init(initials: [String], accessibilityNames: [String]? = nil,
+         size: CGFloat = 28, plus: String? = nil) {
         self.initials = initials
+        self.accessibilityNames = accessibilityNames ?? initials
         baseSize = size
         self.plus = plus
         _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
@@ -68,16 +71,11 @@ struct AvatarStack: View {
     var body: some View {
         HStack(spacing: max(2, scaledSize * 0.08)) {
             ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
-                AvatarView(initials: ini, size: baseSize)
+                AvatarStackGlyph(text: ini, baseSize: baseSize, scaledSize: scaledSize)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
             if let plus {
-                Text(plus)
-                    .font(.grotesk(baseSize * 0.34, .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: scaledSize, height: scaledSize)
-                    .background(settings.accent)
-                    .clipShape(Circle())
+                AvatarStackGlyph(text: plus, baseSize: baseSize, scaledSize: scaledSize, accent: true)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
         }
@@ -86,9 +84,46 @@ struct AvatarStack: View {
     }
 
     private var stackLabel: String {
-        let people = initials.joined(separator: ", ")
+        let people = accessibilityNames.joined(separator: ", ")
         guard let plus else { return "People: \(people)" }
         return "People: \(people), \(plus.dropFirst()) more"
+    }
+}
+
+// Initials are redundant visual shorthand. The parent stack supplies the full
+// VoiceOver label, while this canvas keeps the glyph and its circle scaling as
+// one unit instead of exposing constrained individual text elements.
+private struct AvatarStackGlyph: View {
+    @EnvironmentObject var settings: AppSettings
+    let text: String
+    let baseSize: CGFloat
+    let scaledSize: CGFloat
+    var accent = false
+
+    var body: some View {
+        ZStack {
+            if accent {
+                Circle().fill(settings.accent)
+            } else {
+                Circle().fill(
+                    LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+            }
+            Canvas { context, size in
+                let glyph = context.resolve(
+                    Text(text)
+                        .font(.grotesk(baseSize * (accent ? 0.34 : 0.36), .bold))
+                        .foregroundColor(.white)
+                )
+                context.draw(glyph,
+                             at: CGPoint(x: size.width / 2, y: size.height / 2),
+                             anchor: .center)
+            }
+        }
+        .frame(width: scaledSize, height: scaledSize)
+        .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+        .accessibilityHidden(true)
     }
 }
 

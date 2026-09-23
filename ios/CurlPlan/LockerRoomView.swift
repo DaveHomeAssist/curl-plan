@@ -279,7 +279,11 @@ private struct SpielPromoCard: View {
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
                 : AnyLayout(HStackLayout(spacing: 11))
             promoLayout {
-                AvatarStack(initials: (post.who ?? []).map { store.curler($0)?.initials ?? "?" }, size: 28)
+                AvatarStack(
+                    initials: (post.who ?? []).map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: (post.who ?? []).compactMap { store.curler($0)?.name },
+                    size: 28
+                )
                 Text("\(post.whereText ?? "")\n\(post.whenText ?? "")")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
                 if !dynamicTypeSize.isAccessibilitySize { Spacer() }

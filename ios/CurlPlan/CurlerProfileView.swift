@@ -155,17 +155,37 @@ struct CurlerProfileView: View {
             Eyebrow(text: "Recent form")
             VStack(spacing: 0) {
                 ForEach(Array(c.form.enumerated()), id: \.element.id) { idx, g in
-                    HStack(spacing: 10) {
-                        Text(g.label).font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
-                        Spacer()
-                        Text(g.score).font(.serif(16)).foregroundStyle(settings.ink)
-                        ResultBadge(res: g.res)
+                    Group {
+                        if dynamicTypeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(g.label)
+                                    .font(.grotesk(13, .semibold))
+                                    .foregroundStyle(settings.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                formResult(g)
+                            }
+                        } else {
+                            HStack(spacing: 10) {
+                                Text(g.label)
+                                    .font(.grotesk(13, .semibold))
+                                    .foregroundStyle(settings.ink)
+                                Spacer()
+                                formResult(g)
+                            }
+                        }
                     }
                     .padding(.vertical, 11).padding(.horizontal, 13)
                     if idx < c.form.count - 1 { Rectangle().fill(settings.line).frame(height: 1) }
                 }
             }
             .cpCard(radius: 14)
+        }
+    }
+
+    private func formResult(_ game: GameLine) -> some View {
+        HStack(spacing: 10) {
+            Text(game.score).font(.serif(16)).foregroundStyle(settings.ink)
+            ResultBadge(res: game.res)
         }
     }
 }
