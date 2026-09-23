@@ -1,4 +1,43 @@
 import Foundation
+
+/// Versioned account transport built on the current main Store model. The
+/// feature branch previously transported its replacement AppData graph; this
+/// envelope keeps the CRDT-ready AppState authoritative while preserving the
+/// account backend's versioned season contract.
+struct AccountSeasonProfile: Hashable, Codable {
+    var name: String
+    var homeClub: String
+    var province: String
+
+    static func blank(name: String, homeClub: String, province: String) -> AccountSeasonProfile {
+        AccountSeasonProfile(name: name, homeClub: homeClub, province: province)
+    }
+}
+
+struct AccountSeasonPayload: Hashable, Codable {
+    var schemaVersion: Int
+    var profile: AccountSeasonProfile
+    var state: AppState
+
+    init(schemaVersion: Int = 3,
+         profile: AccountSeasonProfile = .blank(name: "CurlPlan Curler", homeClub: "", province: ""),
+         state: AppState = AppState()) {
+        self.schemaVersion = schemaVersion
+        self.profile = profile
+        self.state = state
+    }
+}
+
+enum SeasonDomain: String, Hashable, Codable {
+    case setup
+    case profile
+    case curlers
+    case stops
+    case visits
+    case spiels
+    case results
+    case feed
+}
 import CryptoKit
 
 /// Salted password credential. The deployable backend uses scrypt; this in-app
@@ -153,7 +192,7 @@ struct AccountSeasonDocument: Identifiable, Hashable, Codable {
     var accountID: String
     var schemaVersion: Int
     var version: Int
-    var body: AppData
+    var body: AccountSeasonPayload
     var updatedAt: String
 }
 
@@ -377,7 +416,7 @@ final class AccountSocialContractStore {
     }
 
     @discardableResult
-    func importLocalSeason(sessionID: String, season: AppData, now: String = "now") throws -> AccountSeasonDocument {
+    func importLocalSeason(sessionID: String, season: AccountSeasonPayload, now: String = "now") throws -> AccountSeasonDocument {
         let accountID = try requireAccount(sessionID: sessionID)
         if seasons[accountID] != nil {
             throw AccountBackendError.seasonAlreadyExists
@@ -401,7 +440,7 @@ final class AccountSocialContractStore {
     @discardableResult
     func applySeasonChange(sessionID: String,
                            baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String,
                            now: String = "now") throws -> SeasonChangeReceipt {

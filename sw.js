@@ -1,15 +1,21 @@
 // CurlPlan Service Worker (Hi-Fi app)
 // Network-first for navigations so the HTML is always fresh; cache-first for
-// other same-origin GETs. On activate we delete only caches this worker owns:
-// its own "curlplan-hifi-*" lineage plus the legacy "curlplan-sw-v5" cache
-// (the pre-promote root app). NOTE: CacheStorage is per-origin, not
-// per-SW-scope, so the classic worker (scope /classic/) shares this keyspace;
-// each worker prunes only its own cache family and leaves the rest alone.
-const CACHE_NAME = "curlplan-hifi-v1";
+// other same-origin GETs. On activate we prune only this worker's own cache
+// lineage and the legacy pre-promotion cache. CacheStorage is per-origin,
+// so the classic worker shares this keyspace.
+const CACHE_NAME = "curlplan-hifi-v2";
 const OWN_PREFIX = "curlplan-hifi-";
 const LEGACY_CACHES = ["curlplan-sw-v5"];
 
-const PRECACHE_URLS = ["./", "./index.html"];
+const PRECACHE_URLS = [
+  "./", "./index.html",
+  "./manifest.webmanifest",
+  "./icons/icon.svg",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)));
@@ -19,11 +25,9 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME && (key.startsWith(OWN_PREFIX) || LEGACY_CACHES.includes(key)))
-          .map(key => caches.delete(key))
-      ))
+      .then(keys => Promise.all(keys
+        .filter(key => key !== CACHE_NAME && (key.startsWith(OWN_PREFIX) || LEGACY_CACHES.includes(key)))
+        .map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -36,9 +40,6 @@ self.addEventListener("fetch", event => {
   if (req.mode === "navigate") {
     const shellPath = new URL("./", self.location).pathname;
     const reqPath = new URL(req.url).pathname;
-    // Only the root shell itself may refresh the canonical "./index.html"
-    // entry — other navigations (classic, docs, error pages) must not
-    // replace the offline shell.
     const isShell = reqPath === shellPath || reqPath === `${shellPath}index.html`;
     event.respondWith(
       fetch(req)

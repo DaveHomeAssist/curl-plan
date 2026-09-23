@@ -1,6 +1,6 @@
 # CurlPlan
 
-> Your season, your local roster. A curling-native app — map your season and keep your curling notes in one place.
+> Your season, your circle. A curling-native app — map your season, stay close to your circle.
 
 The root app (`index.html`) is the **Hi-Fi concept**: a mobile-first, single-file
 build of the "Passport + Locker Room" direction. The original multi-view planner
@@ -16,17 +16,24 @@ A single HTML file today, web fonts only — with a build step, dependencies, an
 - **Locker Room** — result posts, shared spiels, rink reviews, compose FAB
 - **Stop detail** — ice read, your games here, people you met
 - **Curler profile** — identity, stats, shared rinks, recent form
-- **Spiels** — your season schedule and locally saved attendance
-- **Roster** — local curlers saved to this season
+- **Spiels** — your season schedule and who from your circle is going
+- **Roster** — your circle, with follow/unfollow
 
 ### Interactions
 
 - Bottom **tab bar** navigation + push/back into stop & curler detail screens
-- **Save/remove local roster state** across Roster, profiles, and stop detail
+- **Follow/unfollow** across Roster, profiles, and stop detail
 - **Appearance** settings (tap the avatar): Ice/Arena theme, accent
   (House red / blue / Granite), pebble texture — persisted to localStorage
 - **Deep links**: `#locker`, `#spiels`, `#roster`, `#stop/<id>`, `#curler/<id>`
 - **Shareable themed links**: `?theme=arena&accent=House%20blue&pebble=0`
+
+### Account status
+
+The public web build is a credential-free product preview. It opens a demo
+season and stores demo changes in the current browser only. Account creation,
+cloud sync, recovery, and cross-device restore stay unavailable until the Clerk
+and D1 backend is configured and verified end to end.
 
 ### Quick start
 
@@ -65,14 +72,26 @@ curl-plan/
 └── README.md               # This file
 ```
 
+## Shared season seed (single source of truth)
+
+The demo season (curlers, stops, spiels, feed) lives in **`data/season-seed.json`** and
+is the only place to edit it. `node scripts/gen-seed.js` regenerates the web seed block
+in `index.html` **and** the iOS `Seed.generated.swift` from it — so the two apps can't
+drift. It also emits a shared club vocabulary from `data/curling-clubs.json`. CI fails if
+the generated output is stale.
+
 ## Verification
 
 ```bash
-node scripts/verify-app.js     # root Hi-Fi app: JS parses, views/router/SW/favicon present
-node scripts/verify-split.js   # classic app: required IDs, script order, schema, parseability
+node scripts/gen-seed.js          # regenerate web + iOS seed from data/season-seed.json
+node scripts/gen-seed.js --check  # CI: fail if generated seed is stale
+node scripts/verify-app.js        # root Hi-Fi app: JS parses, views/router/SW/favicon present
+node scripts/verify-split.js      # classic app: required IDs, script order, schema, parseability
+node scripts/verify-parity.js     # CI: each capability present on BOTH web and iOS
 ```
 
-Both run in CI on push/PR via `.github/workflows/verify.yml`.
+All run in CI via `.github/workflows/verify.yml` (a `web` job on Linux + an `ios` job on
+macOS that regenerates the Xcode project and runs `xcodebuild build`).
 
 ## Deployment
 
@@ -82,5 +101,5 @@ Both run in CI on push/PR via `.github/workflows/verify.yml`.
 ## Tech
 
 - Single-file root app today (dependencies + backend welcome as it grows)
-- localStorage for appearance prefs; service worker for offline shell
+- localStorage for demo data and appearance prefs; service worker for offline shell
 - Responsive: device frame on desktop, full-bleed on phones

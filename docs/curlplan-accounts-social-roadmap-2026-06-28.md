@@ -25,7 +25,7 @@ Move CurlPlan from a truthful local season journal to a truthful account-backed 
 
 ## Current Truth Boundary
 
-Today, CurlPlan has a proven local `AppData` season document, local roster membership, local attendance, local scorecards, and local export/import. It also has a deployed private development account service for credential sign-in, account-scoped season import and restore, sign-out, export, and deletion. That service is not public production infrastructure. The following production claims remain blocked:
+Today, CurlPlan has a proven local `AccountSeasonPayload` season document, local roster membership, local attendance, local scorecards, and local export/import. It also has a deployed private development account service for credential sign-in, account-scoped season import and restore, sign-out, export, and deletion. That service is not public production infrastructure. The following production claims remain blocked:
 
 | Blocked claim | Missing authority |
 | --- | --- |
@@ -86,7 +86,7 @@ The backend becomes the source of truth for account identity, cloud sync, public
 | --- | --- | --- | --- | --- |
 | Auth service | Prove account identity and issue revocable sessions | Sign-in credentials, passkey/OAuth callback, refresh token | Account ID, access token, session state | Backend |
 | Account API | Manage profile, settings, deletion, export, device sessions | Authenticated requests | Account profile, privacy settings, export package, deletion status | Backend |
-| Migration adapter | Attach existing local `AppData` to an account without corrupting local state | Local export JSON, account ID, schema version | Account-scoped season document and migration receipt | App + backend |
+| Migration adapter | Attach existing local `AccountSeasonPayload` to an account without corrupting local state | Local export JSON, account ID, schema version | Account-scoped season document and migration receipt | App + backend |
 | Sync engine | Replicate account-scoped season state across devices | Local changes, server changes, version vector | Synced document, pending queue, conflict receipts | App + backend |
 | Public identity service | Control handles, public profile, searchability, home club display | Profile settings, privacy flags | Search index rows and profile payloads | Backend |
 | Relationship graph | Store follows, friend requests, team links, blocks, invitations | Account IDs, target IDs, relationship action | Relationship edge, request state, block state | Backend |
@@ -104,7 +104,7 @@ Use stable server IDs for remote objects and preserve local IDs for migration re
 | `Account` | `id`, `createdAt`, `status`, `deletedAt` | Status supports active, suspended, deletion_pending, deleted |
 | `Session` | `id`, `accountID`, `deviceID`, `createdAt`, `expiresAt`, `revokedAt` | Logout revokes server-side session |
 | `AccountProfile` | `accountID`, `handle`, `displayName`, `homeClub`, `avatarURL`, `visibility`, `searchable` | Handle uniqueness enforced server-side |
-| `SeasonDocument` | `id`, `accountID`, `schemaVersion`, `version`, `body`, `updatedAt` | `body` starts as current `AppData`; normalize before write |
+| `SeasonDocument` | `id`, `accountID`, `schemaVersion`, `version`, `body`, `updatedAt` | `body` starts as current `AccountSeasonPayload`; normalize before write |
 | `SeasonChange` | `id`, `seasonID`, `actorID`, `baseVersion`, `patch`, `createdAt`, `clientMutationID` | Enables receipts, retry, and conflict explanation |
 | `RelationshipEdge` | `id`, `actorID`, `targetID`, `type`, `state`, `createdAt` | Types: follow, friend_request, teammate, block, invite |
 | `SharedObject` | `id`, `type`, `ownerID`, `visibility`, `seasonLinkID`, `createdAt` | Types: spiel, bonspiel, team, roster, lineup, scorecard |
@@ -139,15 +139,13 @@ Current status (verified 2026-07-11): credential authentication (handle + passwo
 - AS 01, AS 02, and AS 03 pass over real HTTP against the deployed URL via `scripts/verify-account-remote.mjs` (create, wrong-password rejection, device-A session, season import, sign-out revocation, device-B restore by handle and password, delete revokes sessions and blocks future sign in). Account season also survives a container restart (volume persistence verified).
 - The iOS app is pointed at the deployed URL for Debug Run builds (scheme `CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic.tailae148c.ts.net:8787`); Release and Archive remain unconfigured so the shipped app makes no backend claims, and tests do not inherit the dev URL.
 
-In-app screenflow: a UI test (`testAccountCredentialScreenflowCreateSignInDeleteAgainstBackend`) drives create -> sign out -> sign in (restore) -> delete against the deployed backend. It is opt-in (skipped unless `CURLPLAN_RUN_ACCOUNT_UI=1`) so the default UI suite does not depend on the private service. `ios/CurlPlan/Info.plist` now carries a hostname-scoped cleartext ATS exception for `dominic.tailae148c.ts.net`, and the generated Xcode project preserves that plist. The remaining proof gap is a clean, retained successful run of the opt-in screenflow; the exception is development-only and is not a substitute for public TLS.
-
-Remaining for Phase 1 ship: turn the opt-in in-app screenflow green with retained evidence; move the service off the private tailnet to a public host with TLS and rate limiting before non-tailnet devices can use it; configure the production release deliberately; and add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
+Remaining for Phase 1 ship: drive the in-app create and sign-in screenflow against the deployed backend as an iOS UI proof, move the service off a private tailnet to a public host before non-tailnet devices can use it, add TLS and rate limiting for public exposure, and add a password reset path (needs email infrastructure, deferred). Product copy stays gated until the in-app screenflow is green and the service is publicly reachable.
 
 Deliverables:
 
 1. Auth provider integration with revocable sessions.
 2. `AccountProfile` and account-scoped `SeasonDocument`.
-3. Local `AppData` migration adapter with schema validation and migration receipt.
+3. Local `AccountSeasonPayload` migration adapter with schema validation and migration receipt.
 4. Settings account surface: signed out, signed in, sync unavailable, export, delete account, sign out.
 5. Two-device restore test fixture.
 
@@ -315,7 +313,7 @@ Definition of done:
 | --- | --- |
 | Auth tests | session creation, refresh, revocation, expiry, rate limit, deleted account denial |
 | Authorization tests | owner/member/blocked/private checks on every endpoint |
-| Migration tests | valid local `AppData`, invalid schema, duplicate import, existing remote season, idempotent retry |
+| Migration tests | valid local `AccountSeasonPayload`, invalid schema, duplicate import, existing remote season, idempotent retry |
 | Sync tests | base version, conflict, retry, dedupe by `clientMutationID`, cross-device propagation |
 | Graph tests | follow, unfollow, friend request, invite, block, unblock, graph cache invalidation |
 | Shared object tests | object visibility, role checks, member-only reads, stale version denial |

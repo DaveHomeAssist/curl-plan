@@ -3,22 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="theme-color" content="#0e1316">
 <meta name="description" content="CurlPlan — your season, your circle. A curling-native app: map your season, stay close to your circle.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://davehomeassist.github.io/curl-plan/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CurlPlan">
 <meta property="og:description" content="Your season, your circle. Map your curling season and stay close to your circle.">
+<meta property="og:url" content="https://davehomeassist.github.io/curl-plan/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CurlPlan">
+<meta name="twitter:description" content="Your season, your circle. Map your curling season and stay close to your circle.">
 <title>CurlPlan</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='13.6' fill='%232f6f93'/%3E%3Ccircle cx='16' cy='16' r='11.2' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='8.4' fill='%23c0402c'/%3E%3Ccircle cx='16' cy='16' r='5.6' fill='%23fff'/%3E%3Ccircle cx='16' cy='16' r='2.9' fill='%23c0402c'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/hanken-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/instrument-serif-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* ============================================================
    CurlPlan — Hi-Fi Concept implementation
    Single file today (dependencies, a build step, and a backend are all welcome). Faithful to the
    "Passport + Locker Room" design concept; made navigable.
    ============================================================ */
+
+@font-face{
+  font-family:'Hanken Grotesk'; font-style:normal; font-weight:400 800; font-display:swap;
+  src:url('fonts/hanken-grotesk-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Instrument Serif'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('fonts/instrument-serif-400-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Instrument Serif'; font-style:italic; font-weight:400; font-display:swap;
+  src:url('fonts/instrument-serif-400-italic-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'DM Mono'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('fonts/dm-mono-400-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'DM Mono'; font-style:normal; font-weight:500; font-display:swap;
+  src:url('fonts/dm-mono-500-latin.woff2') format('woff2');
+}
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
@@ -38,10 +68,11 @@ body{
 :root{
   --accent:#c0402c;
   --accent-ink:#ffffff;
+  --accent-deep:#a83a28; /* accent tuned to >=4.5:1 on --panel for small text (M-03) */
   --house-red:#c0402c;
   --house-blue:#2f6f93;
   --ink:#1b2227;
-  --muted:#6a747b;
+  --muted:#596168;
   --line:#dde4e8;
   --screen:#eceff1;
   --card:#ffffff;
@@ -49,8 +80,9 @@ body{
   --pebble-o:0.6;
 }
 [data-theme="arena"]{
+  --accent-deep:#e58270;
   --ink:#eef3f6;
-  --muted:#8a949b;
+  --muted:#a7b0b6;
   --line:rgba(255,255,255,0.09);
   --screen:#13181b;
   --card:#1b2228;
@@ -127,12 +159,17 @@ body{
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.08); font-family:'Hanken Grotesk'; font-weight:700;
   border:0; cursor:pointer;
 }
+.appearance-trigger{
+  width:44px; height:44px; padding:5px; border:0; border-radius:99px; background:transparent;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;
+}
 
 /* ---------- type helpers ---------- */
 .eyebrow{ font:500 11px 'DM Mono',monospace; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
 .mono{ font-family:'DM Mono',monospace; }
 .serif{ font-family:'Instrument Serif',serif; font-weight:400; }
 .accent{ color:var(--accent); }
+.accent-deep{ color:var(--accent-deep); }
 .ital{ font-style:italic; }
 
 /* ---------- cards & primitives ---------- */
@@ -184,16 +221,17 @@ body{
 /* ---------- section header ---------- */
 .sec-head{ display:flex; align-items:center; justify-content:space-between; }
 .sec-head .lab{ font:500 11px 'DM Mono'; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent); cursor:pointer; }
+.sec-head .act{ font:600 12px 'Hanken Grotesk'; color:var(--accent-deep); cursor:pointer; }
 
 /* ---------- list row (stops / games / people) ---------- */
 .tile{ padding:12px; cursor:pointer; }
 .tile .code{
   width:42px; height:42px; border-radius:12px; flex:none; background:var(--panel);
-  display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent);
+  display:flex; align-items:center; justify-content:center; font:600 12px 'DM Mono'; letter-spacing:.04em; color:var(--accent-deep);
 }
 .tile .title{ font:700 15px 'Hanken Grotesk'; color:var(--ink); }
 .tile .sub{ font:500 11px 'DM Mono'; color:var(--muted); margin-top:2px; }
+.card .sub{ font:500 11px 'DM Mono'; color:var(--muted); } /* non-tile cards (Spiels) otherwise inherit the page-frame color (M-03) */
 .score{ font:400 17px 'Instrument Serif'; color:var(--ink); line-height:1; white-space:nowrap; }
 .plus-badge{
   width:20px; height:20px; border-radius:99px; background:var(--accent);
@@ -206,12 +244,16 @@ body{
   display:flex; justify-content:space-around; padding:11px 8px max(26px, env(safe-area-inset-bottom));
   z-index:20;
 }
-.tab{ display:flex; flex-direction:column; align-items:center; gap:5px; background:none; border:0; cursor:pointer; opacity:.5; }
+.tab{
+  min-width:44px; min-height:44px; padding:0 4px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  background:none; border:0; cursor:pointer; opacity:.72; /* .5 dropped inactive labels below 4.5:1 (M-03) */
+}
 .tab.active{ opacity:1; }
 .tab .glyph{ font-size:18px; line-height:.9; color:var(--ink); }
 .tab.active .glyph{ color:var(--accent); }
 .tab .ring{ width:21px; height:21px; }
-.tab.active .lab{ font:600 10px 'Hanken Grotesk'; color:var(--accent); }
+.tab.active .lab{ font:600 10px 'Hanken Grotesk'; color:var(--accent-deep); }
 .tab .lab{ font:500 10px 'Hanken Grotesk'; color:var(--ink); }
 
 /* ---------- FAB ---------- */
@@ -253,7 +295,7 @@ body{
   background:radial-gradient(circle, transparent 0 24%, var(--house-red) 24% 30%, transparent 30% 52%, #fff 52% 58%, transparent 58% 80%, var(--house-blue) 80% 86%, transparent 86%); }
 .stop-hero .cap{ position:absolute; left:22px; bottom:20px; right:22px; }
 .stop-hero .cap .loc{ font:500 10px 'DM Mono'; letter-spacing:.18em; color:rgba(255,255,255,.82); }
-.stop-hero .cap h2{ font:400 34px/1.02 'Instrument Serif'; color:#fff; margin:5px 0 0; }
+.stop-hero .cap h1{ font:400 34px/1.02 'Instrument Serif'; color:#fff; margin:5px 0 0; }
 
 /* ice read */
 .iceread{ display:flex; gap:9px; }
@@ -286,9 +328,9 @@ body{
   background:radial-gradient(circle, var(--house-red) 0 18%, var(--screen) 18% 30%, var(--house-blue) 30% 44%, var(--screen) 44%);
 }
 .identity .halo .av{ width:100%; height:100%; font:700 28px 'Hanken Grotesk'; }
-.identity h2{ font:400 30px 'Instrument Serif'; color:var(--ink); line-height:1.05; margin:0; }
+.identity h1{ font:400 30px 'Instrument Serif'; color:var(--ink); line-height:1.05; margin:0; }
 .identity .meta{ font:500 11px 'DM Mono'; letter-spacing:.08em; color:var(--muted); margin-top:5px; }
-.metpill{ display:inline-flex; align-items:center; gap:7px; background:var(--panel); border-radius:99px; padding:5px 12px; font:600 11px 'Hanken Grotesk'; color:var(--accent); }
+.metpill{ display:inline-flex; align-items:center; gap:7px; background:var(--panel); border-radius:99px; padding:5px 12px; font:600 11px 'Hanken Grotesk'; color:var(--accent-deep); }
 .metpill .d{ width:6px; height:6px; border-radius:99px; background:var(--accent); }
 .actions2{ display:flex; gap:10px; }
 .actions2 .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
@@ -311,7 +353,7 @@ body{
 }
 .sheet.open{ transform:translateY(0); }
 .sheet .grab{ width:38px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 14px; }
-.sheet h3{ font:400 24px 'Instrument Serif'; color:var(--ink); margin:0 0 2px; }
+.sheet h2{ font:400 24px 'Instrument Serif'; color:var(--ink); margin:0 0 2px; }
 .sheet .sub{ font:400 13px 'Hanken Grotesk'; color:var(--muted); margin:0 0 18px; }
 .set-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-top:1px solid var(--line); }
 .set-row .k{ font:600 14px 'Hanken Grotesk'; color:var(--ink); }
@@ -345,7 +387,7 @@ body{
 }
 .seg-type button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
 .field{ margin-bottom:13px; }
-.field > label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.field label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .field input, .field textarea, .field select{
   width:100%; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel);
   border:1px solid var(--line); border-radius:11px; padding:11px 12px; outline:none;
@@ -358,7 +400,7 @@ body{
 .stars-pick button{ background:none; border:0; cursor:pointer; font-size:26px; line-height:1; color:var(--line); padding:0; }
 .stars-pick button.on{ color:var(--accent); }
 .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
-.sheet-actions .b{ flex:1; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
+.sheet-actions .b{ flex:1; min-height:44px; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
 .sheet-actions .b.solid{ background:var(--accent); color:#fff; }
 .sheet-actions .b.outline{ border:1.5px solid var(--ink); color:var(--ink); background:transparent; padding:11.5px; }
 
@@ -387,27 +429,41 @@ body{
 .auth-wrap::-webkit-scrollbar{ width:0; }
 .auth-head{ text-align:center; }
 .auth-head .ring{ width:46px; height:46px; display:inline-block; margin-bottom:10px; box-shadow:0 2px 8px rgba(10,15,18,.3); }
-.auth-head h2{ font:400 32px 'Instrument Serif'; color:var(--ink); margin:0; line-height:1.05; }
+.auth-head h1{ font:400 32px 'Instrument Serif'; color:var(--ink); margin:0; line-height:1.05; }
 .auth-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow:0 14px 34px -22px rgba(15,20,24,.4); }
-.auth-err{ background:rgba(192,64,44,.12); color:var(--accent); border-radius:10px; padding:9px 12px; font:600 12px 'Hanken Grotesk'; margin-bottom:13px; }
-.auth-alt{ text-align:center; font:500 13px 'Hanken Grotesk'; color:var(--muted); }
+.auth-alt{ text-align:center; font:500 14px 'Hanken Grotesk'; color:var(--muted); }
 .auth-alt b{ color:var(--accent); cursor:pointer; }
-.pw-meter{ height:5px; border-radius:99px; background:var(--line); overflow:hidden; margin-top:8px; }
-.pw-meter > i{ display:block; height:100%; width:0; background:var(--accent); transition:width .2s; }
+.auth-notice{ margin:0; color:var(--ink); font:600 14px/1.5 'Hanken Grotesk'; }
+.auth-notice strong{ color:var(--accent); }
+.auth-footnote{ margin:12px 0 0; color:var(--muted); font:500 13px/1.45 'Hanken Grotesk'; }
+
+/* Keyboard and touch affordances stay consistent across the app shell. */
+button, [role="button"]{ touch-action:manipulation; }
+button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+}
+.pill-btn, .backbtn, .hero-back, .seg button, .seg-type button, .swatch, .toggle, .stars-pick button{
+  min-width:44px; min-height:44px;
+}
+.map-pin::after{ content:""; position:absolute; inset:-12px; }
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after{ scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; }
+}
 </style>
 </head>
 <body>
-<div class="phone">
+<main class="phone">
   <div class="screen" id="screen">
     <div class="notch"></div>
     <!-- view content injected here -->
     <div id="view" style="display:flex; flex-direction:column; flex:1; min-height:0;"></div>
 
     <!-- settings sheet -->
-    <div class="sheet-scrim" id="scrim" data-action="close-settings"></div>
-    <div class="sheet" id="sheet" role="dialog" aria-label="Appearance">
+    <div class="sheet-scrim" id="scrim" data-action="close-settings" aria-hidden="true" hidden></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Appearance" aria-hidden="true" tabindex="-1" hidden inert>
       <div class="grab"></div>
-      <h3>Appearance</h3>
+      <h2>Appearance</h2>
       <p class="sub">Same season, your circle — tune the ice.</p>
       <div class="set-row">
         <div class="k">Theme<small>ICE / ARENA</small></div>
@@ -431,15 +487,15 @@ body{
     </div>
 
     <!-- generic action sheet (compose / submissions / messaging) -->
-    <div class="sheet-scrim" id="scrim2" data-action="close-sheet"></div>
-    <div class="sheet" id="sheet2" role="dialog" aria-label="Action">
+    <div class="sheet-scrim" id="scrim2" data-action="close-sheet" aria-hidden="true" hidden></div>
+    <div class="sheet" id="sheet2" role="dialog" aria-modal="true" aria-label="Action" aria-hidden="true" tabindex="-1" hidden inert>
       <div class="grab"></div>
       <div id="sheet-body"></div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </div>
-</div>
+</main>
 
 <script>
 "use strict";
@@ -460,9 +516,10 @@ function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)
    Appearance prefs (the concept's props made real & persisted)
    ============================================================ */
 var ACCENTS = [
-  { key:"House red",  val:"#c0402c" },
-  { key:"House blue", val:"#2f6f93" },
-  { key:"Granite",    val:"#41505a" }
+  // deep = same hue tuned to >=4.5:1 for small text on --panel/--card per theme (M-03)
+  { key:"House red",  val:"#c0402c", deep:{ ice:"#a83a28", arena:"#e58270" } },
+  { key:"House blue", val:"#2f6f93", deep:{ ice:"#28607f", arena:"#7fb2d1" } },
+  { key:"Granite",    val:"#41505a", deep:{ ice:"#41505a", arena:"#a4b3bd" } }
 ];
 var PREFS_KEY = "curlplan-hifi-prefs-v1";
 var prefs = loadPrefs();
@@ -489,11 +546,17 @@ function applyQueryOverrides(){
   }catch(e){}
 }
 function accentVal(){ var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0]; return a ? a.val : "#c0402c"; }
+function accentDeepVal(){
+  var a = ACCENTS.filter(function(x){return x.key===prefs.accent;})[0];
+  var t = prefs.theme === "arena" ? "arena" : "ice";
+  return (a && a.deep) ? a.deep[t] : (t === "arena" ? "#e58270" : "#a83a28");
+}
 
 function applyPrefs(){
   var root = document.documentElement;
   root.setAttribute("data-theme", prefs.theme === "arena" ? "arena" : "ice");
   root.style.setProperty("--accent", accentVal());
+  root.style.setProperty("--accent-deep", accentDeepVal());
   root.style.setProperty("--pebble-o", prefs.pebble ? "0.6" : "0");
   document.querySelector('meta[name="theme-color"]').setAttribute("content", prefs.theme === "arena" ? "#13181b" : "#eceff1");
 }
@@ -501,88 +564,604 @@ function applyPrefs(){
 /* ============================================================
    Seed data — a coherent curling season
    ============================================================ */
-// defaultMe = the demo identity (and the "Explore demo" session). A signed-in user
-// overrides identity via activeMe(); the season data below stays shared demo data.
-var defaultMe = { name:"Dana Mercer", initials:"DM", role:"Skip", club:"Kamloops CC", prov:"BC",
-           season:"Season 2025–26 · in progress",
-           stats:{ clubs:12, prov:4, games:38, win:68 } };
-var me = defaultMe;
-
-// curlers in your circle
+// The demo season baseline is GENERATED. defaultMe is the demo identity (and the
+// "Explore demo" session); a signed-in user overrides identity via activeMe(). To
+// change the season, edit data/season-seed.json and run:  node scripts/gen-seed.js
+// (that command regenerates BOTH this block and the iOS Seed.generated.swift — the
+// single mechanism that keeps the web and native apps from drifting).
+/* SEED:START — generated by scripts/gen-seed.js from data/season-seed.json. DO NOT EDIT. */
+var defaultMe = {
+  "name": "Dana Mercer",
+  "initials": "DM",
+  "role": "Skip",
+  "club": "Kamloops CC",
+  "prov": "BC",
+  "season": "Season 2025–26 · in progress",
+  "stats": {
+    "clubs": 12,
+    "prov": 4,
+    "games": 38,
+    "win": 68
+  }
+};
 var curlers = [
-  { id:"sam",  initials:"SR", name:"Sam Reid", role:"Skip",  club:"Vernon CC",   prov:"BC",
-    metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"21–9", win:"70%", clubs:9, mutual:3 },
-    clubs:["Kelowna","Vernon","+4 more"],
-    form:[ {label:"A-final · Kelowna", score:"8–5", res:"W"}, {label:"Semi · Kelowna", score:"7–6", res:"W"} ] },
-  { id:"jo",   initials:"JM", name:"Jo Mara", role:"Lead · Spare", club:"In roster", prov:"BC",
-    metAt:"Kelowna · Jan 2026", following:true,
-    stats:{ record:"15–11", win:"58%", clubs:7, mutual:5 },
-    clubs:["Kelowna","Kamloops","+2 more"],
-    form:[ {label:"Pool · Kelowna", score:"6–4", res:"W"}, {label:"Tie-break · Vernon", score:"5–7", res:"L"} ] },
-  { id:"dee",  initials:"DT", name:"Dee Tan", role:"Lead", club:"Glenmore CC", prov:"BC",
-    metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"12–10", win:"55%", clubs:6, mutual:2 },
-    clubs:["Kelowna","Glenmore","+1 more"],
-    form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Pool · Kelowna", score:"4–8", res:"L"} ] },
-  { id:"carter", initials:"BC", name:"Bryn Carter", role:"Skip", club:"Sage Valley CC", prov:"AB",
-    metAt:"Kelowna · Jan 2026", following:false,
-    stats:{ record:"18–12", win:"60%", clubs:8, mutual:1 },
-    clubs:["Kelowna","Calgary","+3 more"],
-    form:[ {label:"Pool · Kelowna", score:"4–8", res:"L"}, {label:"Final · Calgary", score:"9–7", res:"W"} ] },
-  { id:"lind", initials:"EL", name:"Erik Lindqvist", role:"Third", club:"Granite City CC", prov:"MB",
-    metAt:"Kelowna · Jan 2026", following:true,
-    stats:{ record:"24–8", win:"75%", clubs:11, mutual:2 },
-    clubs:["Kelowna","Winnipeg","+5 more"],
-    form:[ {label:"Pool · Kelowna", score:"7–5", res:"W"}, {label:"Final · Winnipeg", score:"6–5", res:"W"} ] }
+  {
+    "id": "sam",
+    "initials": "SR",
+    "name": "Sam Reid",
+    "role": "Skip",
+    "club": "Vernon CC",
+    "prov": "BC",
+    "metAt": "Kelowna · Jan 2026",
+    "following": false,
+    "stats": {
+      "record": "21–9",
+      "win": "70%",
+      "clubs": 9,
+      "mutual": 3
+    },
+    "clubs": [
+      "Kelowna",
+      "Vernon",
+      "+4 more"
+    ],
+    "form": [
+      {
+        "label": "A-final · Kelowna",
+        "score": "8–5",
+        "res": "W"
+      },
+      {
+        "label": "Semi · Kelowna",
+        "score": "7–6",
+        "res": "W"
+      }
+    ]
+  },
+  {
+    "id": "jo",
+    "initials": "JM",
+    "name": "Jo Mara",
+    "role": "Lead · Spare",
+    "club": "In roster",
+    "prov": "BC",
+    "metAt": "Kelowna · Jan 2026",
+    "following": true,
+    "stats": {
+      "record": "15–11",
+      "win": "58%",
+      "clubs": 7,
+      "mutual": 5
+    },
+    "clubs": [
+      "Kelowna",
+      "Kamloops",
+      "+2 more"
+    ],
+    "form": [
+      {
+        "label": "Pool · Kelowna",
+        "score": "6–4",
+        "res": "W"
+      },
+      {
+        "label": "Tie-break · Vernon",
+        "score": "5–7",
+        "res": "L"
+      }
+    ]
+  },
+  {
+    "id": "dee",
+    "initials": "DT",
+    "name": "Dee Tan",
+    "role": "Lead",
+    "club": "Glenmore CC",
+    "prov": "BC",
+    "metAt": "Kelowna · Jan 2026",
+    "following": false,
+    "stats": {
+      "record": "12–10",
+      "win": "55%",
+      "clubs": 6,
+      "mutual": 2
+    },
+    "clubs": [
+      "Kelowna",
+      "Glenmore",
+      "+1 more"
+    ],
+    "form": [
+      {
+        "label": "Pool · Kelowna",
+        "score": "7–5",
+        "res": "W"
+      },
+      {
+        "label": "Pool · Kelowna",
+        "score": "4–8",
+        "res": "L"
+      }
+    ]
+  },
+  {
+    "id": "carter",
+    "initials": "BC",
+    "name": "Bryn Carter",
+    "role": "Skip",
+    "club": "Sage Valley CC",
+    "prov": "AB",
+    "metAt": "Kelowna · Jan 2026",
+    "following": false,
+    "stats": {
+      "record": "18–12",
+      "win": "60%",
+      "clubs": 8,
+      "mutual": 1
+    },
+    "clubs": [
+      "Kelowna",
+      "Calgary",
+      "+3 more"
+    ],
+    "form": [
+      {
+        "label": "Pool · Kelowna",
+        "score": "4–8",
+        "res": "L"
+      },
+      {
+        "label": "Final · Calgary",
+        "score": "9–7",
+        "res": "W"
+      }
+    ]
+  },
+  {
+    "id": "lind",
+    "initials": "EL",
+    "name": "Erik Lindqvist",
+    "role": "Third",
+    "club": "Granite City CC",
+    "prov": "MB",
+    "metAt": "Kelowna · Jan 2026",
+    "following": true,
+    "stats": {
+      "record": "24–8",
+      "win": "75%",
+      "clubs": 11,
+      "mutual": 2
+    },
+    "clubs": [
+      "Kelowna",
+      "Winnipeg",
+      "+5 more"
+    ],
+    "form": [
+      {
+        "label": "Pool · Kelowna",
+        "score": "7–5",
+        "res": "W"
+      },
+      {
+        "label": "Final · Winnipeg",
+        "score": "6–5",
+        "res": "W"
+      }
+    ]
+  }
 ];
-function curler(id){ return curlers.filter(function(c){return c.id===id;})[0]; }
-
-// stops on the season map — x/y are % positions on the hero map
 var stops = [
-  { id:"kamloops", code:"KAM", name:"Kamloops Cashspiel", club:"Kamloops Curling Club", prov:"BC",
-    dates:"HERE NOW", record:"—", here:true, x:86, y:54, big:true,
-    ice:{ speed:"Fast", speedSec:"23.6s", curl:"4–5", rec:"—" },
-    games:[], met:[] },
-  { id:"kelowna", code:"KEL", name:"Kelowna Bonspiel", club:"Kelowna Curling Club", prov:"BC",
-    dates:"JAN 9–11", record:"3–1", x:70, y:32, plus:"+3",
-    ice:{ speed:"Fast", speedSec:"24.1s", curl:"5–6", rec:"3–1" },
-    games:[ {opp:"vs Carter", score:"8–4", res:"W"}, {opp:"vs Lindqvist", score:"5–7", res:"L"} ],
-    met:["sam","jo","dee"] },
-  { id:"vernon", code:"VER", name:"Vernon Cashspiel", club:"Vernon Curling Club", prov:"BC",
-    dates:"DEC 2", record:"2–1", x:50, y:68, plus:"+2",
-    ice:{ speed:"Medium", speedSec:"25.0s", curl:"4–5", rec:"2–1" },
-    games:[ {opp:"vs Reid", score:"6–8", res:"L"}, {opp:"vs Mara", score:"7–5", res:"W"} ],
-    met:["sam","jo"] },
-  { id:"calgary", code:"CAL", name:"Sage Valley Open", club:"Sage Valley CC", prov:"AB",
-    dates:"NOV 14–16", record:"2–2", x:30, y:39,
-    ice:{ speed:"Keen", speedSec:"23.2s", curl:"6–7", rec:"2–2" },
-    games:[ {opp:"vs Carter", score:"9–7", res:"W"}, {opp:"vs Park", score:"4–9", res:"L"} ],
-    met:["carter"] },
-  { id:"winnipeg", code:"WPG", name:"Granite City Classic", club:"Granite City CC", prov:"MB",
-    dates:"OCT 24–26", record:"3–0", x:14, y:64,
-    ice:{ speed:"Fast", speedSec:"24.4s", curl:"5–6", rec:"3–0" },
-    games:[ {opp:"vs Lindqvist", score:"6–5", res:"W"}, {opp:"vs Olsen", score:"8–3", res:"W"} ],
-    met:["lind"] }
+  {
+    "id": "kamloops",
+    "code": "KAM",
+    "name": "Kamloops Cashspiel",
+    "club": "Kamloops Curling Club",
+    "prov": "BC",
+    "dates": "SAMPLE STOP",
+    "record": "—",
+    "here": true,
+    "x": 86,
+    "y": 54,
+    "big": true,
+    "ice": {
+      "speed": "Fast",
+      "speedSec": "23.6s",
+      "curl": "4–5",
+      "rec": "—"
+    },
+    "games": [],
+    "met": []
+  },
+  {
+    "id": "kelowna",
+    "code": "KEL",
+    "name": "Kelowna Bonspiel",
+    "club": "Kelowna Curling Club",
+    "prov": "BC",
+    "dates": "JAN 9–11",
+    "record": "3–1",
+    "x": 70,
+    "y": 32,
+    "plus": "+3",
+    "ice": {
+      "speed": "Fast",
+      "speedSec": "24.1s",
+      "curl": "5–6",
+      "rec": "3–1"
+    },
+    "games": [
+      {
+        "opp": "vs Carter",
+        "score": "8–4",
+        "res": "W"
+      },
+      {
+        "opp": "vs Lindqvist",
+        "score": "5–7",
+        "res": "L"
+      }
+    ],
+    "met": [
+      "sam",
+      "jo",
+      "dee"
+    ]
+  },
+  {
+    "id": "vernon",
+    "code": "VER",
+    "name": "Vernon Cashspiel",
+    "club": "Vernon Curling Club",
+    "prov": "BC",
+    "dates": "DEC 2",
+    "record": "2–1",
+    "x": 50,
+    "y": 68,
+    "plus": "+2",
+    "ice": {
+      "speed": "Medium",
+      "speedSec": "25.0s",
+      "curl": "4–5",
+      "rec": "2–1"
+    },
+    "games": [
+      {
+        "opp": "vs Reid",
+        "score": "6–8",
+        "res": "L"
+      },
+      {
+        "opp": "vs Mara",
+        "score": "7–5",
+        "res": "W"
+      }
+    ],
+    "met": [
+      "sam",
+      "jo"
+    ]
+  },
+  {
+    "id": "calgary",
+    "code": "CAL",
+    "name": "Sage Valley Open",
+    "club": "Sage Valley CC",
+    "prov": "AB",
+    "dates": "NOV 14–16",
+    "record": "2–2",
+    "x": 30,
+    "y": 39,
+    "ice": {
+      "speed": "Keen",
+      "speedSec": "23.2s",
+      "curl": "6–7",
+      "rec": "2–2"
+    },
+    "games": [
+      {
+        "opp": "vs Carter",
+        "score": "9–7",
+        "res": "W"
+      },
+      {
+        "opp": "vs Park",
+        "score": "4–9",
+        "res": "L"
+      }
+    ],
+    "met": [
+      "carter"
+    ]
+  },
+  {
+    "id": "winnipeg",
+    "code": "WPG",
+    "name": "Granite City Classic",
+    "club": "Granite City CC",
+    "prov": "MB",
+    "dates": "OCT 24–26",
+    "record": "3–0",
+    "x": 14,
+    "y": 64,
+    "ice": {
+      "speed": "Fast",
+      "speedSec": "24.4s",
+      "curl": "5–6",
+      "rec": "3–0"
+    },
+    "games": [
+      {
+        "opp": "vs Lindqvist",
+        "score": "6–5",
+        "res": "W"
+      },
+      {
+        "opp": "vs Olsen",
+        "score": "8–3",
+        "res": "W"
+      }
+    ],
+    "met": [
+      "lind"
+    ]
+  }
 ];
-function stop(id){ return stops.filter(function(s){return s.id===id;})[0]; }
-var recentStops = ["kelowna","vernon"]; // newest season results
-
-// locker-room feed
+var recentStops = [
+  "kelowna",
+  "vernon"
+];
 var feed = [
-  { id:"seed-1", type:"result", author:"sam", time:"2H", body:"Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
-    score:{ for:8, ag:5, res:"WIN", vs:"vs Northern" }, likes:24, comments:6 },
-  { id:"seed-2", type:"spiel", title:"5 curlers you follow are headed to", spiel:"Brier Patch Open", spielId:"sp1",
-    where:"KAMLOOPS", when:"FEB 14–16", who:["sam","jo","lind"] },
-  { id:"seed-3", type:"review", author:"jo", time:"5H", club:"Granite City CC", stars:4, note:"fast, 5–6 ft of curl" }
+  {
+    "id": "seed-1",
+    "type": "result",
+    "author": "sam",
+    "time": "2H",
+    "body": "Took the A-final at Kelowna. Ice was lightning all weekend. 🥌",
+    "score": {
+      "for": 8,
+      "ag": 5,
+      "res": "WIN",
+      "vs": "vs Northern"
+    },
+    "likes": 24,
+    "comments": 6
+  },
+  {
+    "id": "seed-2",
+    "type": "spiel",
+    "title": "5 curlers you follow are headed to",
+    "spiel": "Brier Patch Open",
+    "spielId": "sp1",
+    "where": "KAMLOOPS",
+    "when": "FEB 14–16",
+    "who": [
+      "sam",
+      "jo",
+      "lind"
+    ]
+  },
+  {
+    "id": "seed-3",
+    "type": "review",
+    "author": "jo",
+    "time": "5H",
+    "club": "Granite City CC",
+    "stars": 4,
+    "note": "fast, 5–6 ft of curl"
+  }
 ];
-
-// spiels (season schedule)
 var spiels = [
-  { id:"sp1", name:"Brier Patch Open", where:"Kamloops, BC", when:"FEB 14–16", status:"You're in", going:["sam","jo","lind"] },
-  { id:"sp2", name:"Okanagan Classic", where:"Kelowna, BC", when:"MAR 6–8", status:"Watching", going:["dee","carter"] },
-  { id:"sp3", name:"Prairie Cashspiel", where:"Winnipeg, MB", when:"MAR 27–29", status:"Invite", going:["lind"] }
+  {
+    "id": "sp1",
+    "name": "Brier Patch Open",
+    "where": "Kamloops, BC",
+    "when": "FEB 14–16",
+    "status": "You're in",
+    "going": [
+      "sam",
+      "jo",
+      "lind"
+    ]
+  },
+  {
+    "id": "sp2",
+    "name": "Okanagan Classic",
+    "where": "Kelowna, BC",
+    "when": "MAR 6–8",
+    "status": "Watching",
+    "going": [
+      "dee",
+      "carter"
+    ]
+  },
+  {
+    "id": "sp3",
+    "name": "Prairie Cashspiel",
+    "where": "Winnipeg, MB",
+    "when": "MAR 27–29",
+    "status": "Invite",
+    "going": [
+      "lind"
+    ]
+  }
 ];
+/* SEED:END */
+var me = defaultMe;
+function curler(id){ return (typeof allCurlers==="function"?allCurlers():curlers).filter(function(c){return c.id===id;})[0]; }
+function stop(id){ return stops.filter(function(s){return s.id===id;})[0]; }
+
+// Shared club vocabulary for pickers/autocomplete (from data/curling-clubs.json).
+/* CLUBS:START — generated by scripts/gen-seed.js from data/curling-clubs.json. DO NOT EDIT. */
+var CLUB_SUGGESTIONS = [
+  "Aksarben Curling Club · Omaha, Nebraska",
+  "Albany Curling Club · Albany, New York",
+  "Anchorage Curling Club · Anchorage, Alaska",
+  "Anthracite Curling Club · Wilkes-Barre, Pennsylvania",
+  "Appleton Curling Club · Appleton, Wisconsin",
+  "Ardsley Curling Club · Irvington (Ardsley-on-Hudson), New York",
+  "Aspen Curling Club · Aspen, Colorado",
+  "Atlanta Curling Club · Atlanta, Georgia",
+  "Barnstormers · Westminster, Maryland",
+  "Belfast Curling Club · Belfast, Maine",
+  "Bemidji Curling Club · Bemidji, Minnesota",
+  "Bend Curling Club · Bend, Oregon",
+  "Blackhawk Curling Club · Janesville, Wisconsin",
+  "Blackstone Valley Curling Club · Hopedale, Massachusetts",
+  "Blue Ridge Curling Club · Charlottesville, Virginia",
+  "Boise Curling Club · Boise, Idaho",
+  "Boston Curling Club · Sudbury, Massachusetts",
+  "Bowling Green Curling Club · Bowling Green, Ohio",
+  "Broadmoor Curling Club · Colorado Springs, Colorado",
+  "Brooklyn Lakeside Curling Club · Brooklyn, New York",
+  "Broomstones Curling Club · Wayland, Massachusetts",
+  "Bucks County Curling Club · Warminster, Pennsylvania",
+  "Buffalo Curling Club · Buffalo, New York",
+  "Cache Valley Stone Society · Logan, Utah",
+  "Cambridge Curling Club · Cambridge, Minnesota",
+  "Cape Cod Curling Club · Falmouth, Massachusetts",
+  "Cedar Rapids Curling Club · Cedar Rapids, Iowa",
+  "Charleston Curling Club · North Charleston, South Carolina",
+  "Charlotte Curling Association · Charlotte, North Carolina",
+  "Chaska Curling Club · Chaska, Minnesota",
+  "Chesapeake Curling Club · Easton, Maryland",
+  "Chicago Curling Club · Northbrook, Illinois",
+  "Cincinnati Curling Club · West Chester, Ohio",
+  "Circle City Curling Club · Anderson, Indiana",
+  "Cleveland Skating Club · Shaker Heights, Ohio",
+  "Cloud City Curling Club · Leadville, Colorado",
+  "Coastal Carolina Curling Club · Wilmington, North Carolina",
+  "Colonial Curling Association · Worcester, Massachusetts",
+  "Columbus Curling Club · Columbus, Ohio",
+  "Copper Country Curling Club · Calumet, Michigan",
+  "Coyotes Curling Club · Tempe, Arizona",
+  "Curl Mesabi · Eveleth, Minnesota",
+  "Curl San Diego · Carlsbad, California",
+  "Curl Troy · Troy, Ohio",
+  "CurlVegas · Las Vegas, Nevada",
+  "Curling Club of Houston · Houston, Texas",
+  "Curling Club of Virginia · Richmond, Virginia",
+  "Curling Club of the Berkshires · Pittsfield, Massachusetts",
+  "Dakota Curling Club · Lakeville, Minnesota",
+  "Dallas/Fort Worth Curling Club · Dallas, Texas",
+  "Delta Rocks Curling Club · Escanaba, Michigan",
+  "Denver Curling Club · Denver, Colorado",
+  "Derby City Curling Club · Louisville, Kentucky",
+  "Des Moines Curling Club · West Des Moines, Iowa",
+  "Detroit Curling Club · Ferndale, Michigan",
+  "Diamond State Curling Club · Newark, Delaware",
+  "Duluth Curling Club · Duluth, Minnesota",
+  "Eau Claire Curling Club · Eau Claire, Wisconsin",
+  "Evergreen Curling Club · Portland (Beaverton), Oregon",
+  "Exmoor Curling Club · Highland Park, Illinois",
+  "Fairbanks Curling Club · Fairbanks, Alaska",
+  "Finger Lakes Curling Club · Ithaca, New York",
+  "Fort Wayne Curling Club · Fort Wayne, Indiana",
+  "Four Seasons Curling Club · Blaine, Minnesota",
+  "French Creek Curling Club · Meadville / Erie, Pennsylvania",
+  "Frogtown Curling Club · St. Paul, Minnesota",
+  "Grand Rapids Curling Club · Grand Rapids, Michigan",
+  "Granite Curling Club (NH) · Hollis, New Hampshire",
+  "Granite Curling Club of Seattle · Seattle, Washington",
+  "Great Smoky Mountains Curling Club · Knoxville, Tennessee",
+  "Green Bay Curling Club · Green Bay, Wisconsin",
+  "Green Mountain Curling Club · Burlington, Vermont",
+  "Hartford Curling Club · West Hartford, Connecticut",
+  "Hibbing Curling Club · Hibbing, Minnesota",
+  "Hollywood Curling · Los Angeles, California",
+  "Inland Northwest Curling Club · Coeur d'Alene, Idaho",
+  "Jacksonville Granite Curling Club · Jacksonville, Florida",
+  "Jersey Pinelands Curling Club · Pennsauken Township, New Jersey",
+  "Kalamazoo Curling Club · Kalamazoo, Michigan",
+  "Kansas City Curling Club · Blue Springs, Missouri",
+  "Kettle Moraine Curling Club · Hartland, Wisconsin",
+  "La Crosse Curling Club · La Crosse, Wisconsin",
+  "Lake Placid Curling Club · Lake Placid, New York",
+  "Lake Tahoe Epic Curling · Stateline, Nevada",
+  "Lakes Region Curling Association · Wolfeboro, New Hampshire",
+  "Lansing Curling Club · East Lansing, Michigan",
+  "Lewiston Curling Club · Lewiston, Michigan",
+  "Loggerhead Curling Club · Lake Worth, Florida",
+  "Lone Star Curling Club · Austin, Texas",
+  "Long Island Curling Club · Syosset, New York",
+  "Loudoun Curling Club · Leesburg, Virginia",
+  "Lower Cape Curling Club · Orleans, Massachusetts",
+  "Madison Curling Club · McFarland, Wisconsin",
+  "Mankato Curling Club · Mankato, Minnesota",
+  "Marshfield Curling Club · Marshfield, Wisconsin",
+  "Mayfield Curling Club · Warrensville Heights, Ohio",
+  "Medford Curling Club · Medford, Wisconsin",
+  "Merrimack Valley Curling Club · Merrimack, New Hampshire",
+  "Mid-South Curling Club · Olive Branch, Mississippi",
+  "Midland Curling Club · Midland, Michigan",
+  "Milwaukee Curling Club · Cedarburg, Wisconsin",
+  "Morgantown Curling Club · Morgantown, West Virginia",
+  "Mount Washington Valley Curling Club · Conway, New Hampshire",
+  "Nantucket Curling Club · Nantucket, Massachusetts",
+  "Nashua Country Club · Nashua, New Hampshire",
+  "Nashville Curling Club · Nashville, Tennessee",
+  "New Pond Curling Club · Walpole, Massachusetts",
+  "New York Caledonian Curling Club · Bronxville, New York",
+  "Nittany Valley Curling Club · State College, Pennsylvania",
+  "Norfolk Curling Club · Norfolk, Connecticut",
+  "North End Curling Club · Boston, Massachusetts",
+  "Nutmeg Curling Club · Bridgeport, Connecticut",
+  "Ocean State Curling Club · Smithfield, Rhode Island",
+  "Ogden Curling Club · Ogden, Utah",
+  "Orange County Curling Club · Irvine, California",
+  "Orlando Curling Club · Kissimmee, Florida",
+  "Palmer Curling Club · Palmer, Alaska",
+  "Palmetto Curling Club · Greenville, South Carolina",
+  "Park City Curling Club · Park City, Utah",
+  "Pawcatuck River Curling Club · Westerly, Rhode Island",
+  "Peachtree Curling Association · Marietta, Georgia",
+  "Petersham Curling Club · Petersham, Massachusetts",
+  "Philadelphia Curling Club · Paoli, Pennsylvania",
+  "Pine Tree Curling Club · Portland, Maine",
+  "Pittsburgh Curling Club · Pittsburgh, Pennsylvania",
+  "Plainfield Curling Club · South Plainfield, New Jersey",
+  "Plymouth Rocks Curling Club · Plymouth, New Hampshire",
+  "Portage Curling Club · Portage, Wisconsin",
+  "Potomac Curling Club · Laurel, Maryland",
+  "Princeton University Curling Club · Princeton, New Jersey",
+  "Rail City Curling Club · Altoona, Pennsylvania",
+  "Rice Lake Curling Club · Rice Lake, Wisconsin",
+  "Road Runner Curling Club · Albuquerque, New Mexico",
+  "Roanoke Valley Curling Club · Roanoke, Virginia",
+  "Rochester Curling Club · Rochester, New York",
+  "Rock Creek Curling · Lafayette, Colorado",
+  "Rocket City Curling Club · Huntsville, Alabama",
+  "Rutland Rocks Curling Club · Rutland, Vermont",
+  "San Francisco Bay Area Curling Club · Oakland, California",
+  "Schenectady Curling Club · Schenectady, New York",
+  "Silicon Valley Curling Club · San Jose / Fremont, California",
+  "South Shore Curling Club · Bridgewater, Massachusetts",
+  "St. Louis Curling Club · Creve Coeur, Missouri",
+  "St. Paul Curling Club · St. Paul, Minnesota",
+  "Steamboat Springs Curling Club · Steamboat Springs, Colorado",
+  "Stevens Point Curling Club · Stevens Point, Wisconsin",
+  "Superior Curling Club · Superior, Wisconsin",
+  "Tampa Bay Curling Club · Wesley Chapel, Florida",
+  "Telluride Curling Club · Telluride, Colorado",
+  "The Country Club · Chestnut Hill (Brookline), Massachusetts",
+  "Traverse City Curling Club · Traverse City, Michigan",
+  "Triangle Curling Club · Durham, North Carolina",
+  "Tulsa Curling Club · Tulsa, Oklahoma",
+  "Two Harbors Curling Club · Two Harbors, Minnesota",
+  "Upper Valley Curling Club · White River Junction / Woodstock, Vermont",
+  "Utah Olympic Oval Curling Club · Salt Lake City, Utah",
+  "Utica Curling Club · Whitesboro, New York",
+  "Waltham Curling Club · Triumph, Illinois",
+  "Waupaca Curling Club · Waupaca, Wisconsin",
+  "Wausau Curling Club · Wausau, Wisconsin",
+  "Wauwatosa Curling Club · Wauwatosa, Wisconsin",
+  "Weston Curling Club · Weston, Massachusetts",
+  "Wilmette Curling Club · Wilmette, Illinois",
+  "Windy City Curling Club · Villa Park, Illinois",
+  "Wine Country Curling Club · Roseville, California",
+  "Ybor City Curling Club · Tampa, Florida"
+];
+/* CLUBS:END */
 
 /* ============================================================
    Persisted app state — the social/log layer the concept
@@ -612,19 +1191,27 @@ function migrateLegacyStore(){
 }
 var store = defaultStore(); // hydrated by refreshStore() at boot and on every auth change
 
+var STORE_SCHEMA = 3; // v3: LWW maps carry {v, at} so the CRDT merge (src/merge.js) can converge
 function defaultStore(){
   return {
-    v:1,
-    follows:{},   // curlerId -> bool (overrides seed `following`)
-    likes:{},     // postId -> bool (liked by me)
-    joins:{},     // spielId -> status string ("You're in" | "Watching" | "Invite")
-    posts:[],     // user-authored feed items, newest-first
-    visits:{},    // stopId -> [ {date, note, at} ]
-    reviews:{},   // stopId -> [ {stars, note, at} ]
-    iceReads:{},  // stopId -> [ {speed, curl, note, at} ]
-    threads:{}    // curlerId -> [ {from:"me"|"them", text, at} ]
+    v:STORE_SCHEMA,
+    // LWW-Register per key — entry = { v, at } so two devices' edits merge by max at
+    follows:{},   // curlerId -> { v:bool,   at }  (overrides seed `following`)
+    likes:{},     // postId   -> { v:bool,   at }  (liked by me)
+    joins:{},     // spielId  -> { v:status, at }  ("You're in" | "Watching" | "Invite")
+    posts:[],     // OR-Set by id — user-authored feed items, newest-first
+    visits:{},    // stopId -> OR-Set [ {id?, date, note, at} ]
+    reviews:{},   // stopId -> OR-Set [ {id?, stars, note, at} ]
+    iceReads:{},  // stopId -> OR-Set [ {id?, speed, curl, note, at} ]
+    threads:{},   // curlerId -> OR-Set [ {id?, from, text, at} ]
+    addedSpiels:[],  // OR-Set by id — user-created spiels (seed + these = allSpiels())
+    addedCurlers:[]  // OR-Set by id — user-created curlers (seed + these = allCurlers())
   };
 }
+/* wrap a bare v1/v2 LWW value (bool/string) as a v3 timestamped entry;
+   at:0 so any later explicit action always wins the merge */
+function lwwEntry(v, at){ return { v:v, at:(at || 0) }; }
+function lwwVal(entry){ return (entry && typeof entry === "object" && "v" in entry) ? entry.v : entry; }
 function loadStore(){
   var d = defaultStore();
   var raw = readJSON(storeKey());
@@ -633,6 +1220,8 @@ function loadStore(){
       if(raw[k] && typeof raw[k] === "object") d[k] = raw[k];
     });
     if(Array.isArray(raw.posts)) d.posts = raw.posts;
+    if(Array.isArray(raw.addedSpiels)) d.addedSpiels = raw.addedSpiels;
+    if(Array.isArray(raw.addedCurlers)) d.addedCurlers = raw.addedCurlers;
   }
   return sanitizeStore(d);
 }
@@ -648,10 +1237,44 @@ function sanitizeStore(d){
   Object.keys(d.reviews).forEach(function(id){
     d.reviews[id].forEach(function(r){ if(r && typeof r === "object") r.stars = clampStars(r.stars); });
   });
+  d.addedSpiels = d.addedSpiels.filter(function(s){ return s && typeof s === "object" && s.id && s.name; });
+  d.addedCurlers = d.addedCurlers.filter(function(c){ return c && typeof c === "object" && c.id && c.name; });
+  // schema v3 migration: normalize LWW maps to { v, at } (bare v1/v2 bool/string
+  // values become at:0 so a later explicit action wins); drop malformed entries
+  ["follows","likes","joins"].forEach(function(k){
+    var m = d[k];
+    Object.keys(m).forEach(function(key){
+      var e = m[key];
+      if(e && typeof e === "object" && "v" in e) m[key] = { v:e.v, at:+e.at || 0 };
+      else if(typeof e === "boolean" || typeof e === "string" || typeof e === "number") m[key] = lwwEntry(e, 0);
+      else delete m[key];
+    });
+  });
+  d.v = STORE_SCHEMA;
   return d;
 }
-function saveStore(){ writeJSON(storeKey(), store); }
-function refreshStore(){ store = loadStore(); }
+/* derived collections: user additions (per-account) + seed baseline */
+function allSpiels(){ return store.addedSpiels.concat(spiels); }
+function allCurlers(){ return store.addedCurlers.concat(curlers); }
+/* Persistence. Content writes (posts, visits, reviews, messages, joins, added*)
+   stay synchronous — durable immediately. Hot high-frequency writes (likes,
+   follows) debounce via saveStoreSoon to avoid a full stringify per tap. The
+   pending write captures its target key, so a flush after a sign-out can never
+   land in the next account's bucket. */
+var _hotTimer = null, _hotPending = null;
+function saveStore(){ flushStoreSoon(); writeJSON(storeKey(), store); }
+function saveStoreSoon(){
+  _hotPending = { key:storeKey(), obj:store };
+  if(_hotTimer) return;
+  _hotTimer = setTimeout(flushStoreSoon, 500);
+}
+function flushStoreSoon(){
+  if(_hotTimer){ clearTimeout(_hotTimer); _hotTimer = null; }
+  if(!_hotPending) return;
+  writeJSON(_hotPending.key, _hotPending.obj);
+  _hotPending = null;
+}
+function refreshStore(){ flushStoreSoon(); store = loadStore(); } // drain before switching accounts
 function uid(prefix){ return prefix + "-" + Date.now().toString(36) + "-" + Math.floor(Math.random()*1e4).toString(36); }
 
 /* a person record for rendering — seed curlers or "me" */
@@ -674,22 +1297,18 @@ function initialsOf(name){
 /* ---- derivations: seed baseline + user overrides ---- */
 function isFollowing(c){
   if(!c) return false;
-  return store.follows.hasOwnProperty(c.id) ? !!store.follows[c.id] : !!c.following;
+  return store.follows.hasOwnProperty(c.id) ? !!lwwVal(store.follows[c.id]) : !!c.following;
 }
-function setFollowing(id, val){ store.follows[id] = val; saveStore(); }
+function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); saveStoreSoon(); }
 
-function isLiked(postId){ return !!store.likes[postId]; }
-function likeCount(p){ return (p.likes || 0) + (isLiked(p.id) ? 1 : 0); }
-function toggleLike(postId){ store.likes[postId] = !store.likes[postId]; saveStore(); }
-
-function spielStatus(sp){ return store.joins[sp.id] || sp.status; }
-function setSpielStatus(id, status){ store.joins[id] = status; saveStore(); }
-function spielById(id){ return spiels.filter(function(s){return s.id===id;})[0]; }
+function spielStatus(sp){ return lwwVal(store.joins[sp.id]) || sp.status; }
+function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); saveStore(); }
+function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
 function withdrawSpiel(id){
   var sp = spielById(id);
   // dropping the override reverts to the seed status (e.g. back to "Invite");
   // when the seed itself is "You're in", only an explicit override can leave
-  if(sp && sp.status === "You're in") store.joins[id] = "Watching";
+  if(sp && sp.status === "You're in") store.joins[id] = lwwEntry("Watching", Date.now());
   else delete store.joins[id];
   saveStore();
 }
@@ -709,87 +1328,49 @@ function derivedStats(){
   return { clubs:clubIds.length, prov:Object.keys(provs).length, games:games,
     win:games ? Math.round(wins * 100 / games) : 0 };
 }
+/* a signed-in, non-demo user — the demo session and signed-out both use seed chrome */
+function isRealAccount(){ var u = currentUser(); return !!(u && !u.demo); }
+/* stops the user has actually logged a visit at, newest visit first */
+function visitedStops(){
+  return Object.keys(store.visits)
+    .filter(function(id){ return (store.visits[id] || []).length && stop(id); })
+    .map(function(id){
+      var vs = store.visits[id];
+      var latest = vs.reduce(function(m, v){ return Math.max(m, v.at || 0); }, 0);
+      return { id:id, count:vs.length, at:latest };
+    })
+    .sort(function(a, b){ return b.at - a.at; });
+}
 
 /* ============================================================
-   Accounts & auth — user identity + session. Local-first
-   scaffold with a backend-ready seam: swap signUp / signIn /
-   currentUser for a real API (or the connected Clerk instance)
-   and the rest of the app is unchanged. Stored separately under
-   curlplan-hifi-auth-v1.
-   NOTE: passwords are obfuscated with a non-cryptographic hash
-   for this on-device demo only — NOT secure. Real auth should
-   run through a backend or Clerk (see CLAUDE.md engineering policy).
+   Demo session gate. Public password collection is intentionally
+   disabled until the Clerk + D1 backend is configured end to end.
+   The migration removes legacy password records from the auth key
+   without deleting a user's separate local season data.
    ============================================================ */
 var AUTH_KEY = "curlplan-hifi-auth-v1";
 var auth = loadAuth();
-var authMode = "signin";   // "signin" | "signup"
-var authError = "";
-// typed-but-not-submitted form values, so an error re-render doesn't wipe the
-// form (password intentionally excluded — never re-rendered into markup)
-var authDraft = { name:"", club:"", email:"", role:"Skip" };
-function resetAuthDraft(){ authDraft = { name:"", club:"", email:"", role:"Skip" }; }
-
-function defaultAuth(){ return { users:[], session:null }; }
+function defaultAuth(){ return { session:null }; }
 function loadAuth(){
   var d = defaultAuth();
   var raw = readJSON(AUTH_KEY);
   if(raw && typeof raw === "object"){
-    if(Array.isArray(raw.users)) d.users = raw.users;
-    if(typeof raw.session === "string") d.session = raw.session;
+    if(raw.session === "demo") d.session = "demo";
+    if(Array.isArray(raw.users) || raw.session !== d.session) writeJSON(AUTH_KEY, d);
   }
   return d;
 }
 function saveAuth(){ writeJSON(AUTH_KEY, auth); }
-function hashPass(s){ // djb2 — obfuscation only, NOT cryptographic
-  var h = 5381, str = String(s);
-  for(var i = 0; i < str.length; i++){ h = ((h << 5) + h + str.charCodeAt(i)) | 0; }
-  return (h >>> 0).toString(36);
-}
-function userByEmail(email){
-  var e = String(email || "").trim().toLowerCase();
-  return auth.users.filter(function(u){ return u.email === e; })[0] || null;
-}
 function currentUser(){
   if(auth.session === "demo"){
     return { id:"demo", name:defaultMe.name, email:"demo@curlplan.app", club:defaultMe.club, role:defaultMe.role, prov:defaultMe.prov, demo:true };
   }
-  if(!auth.session) return null;
-  return auth.users.filter(function(u){ return u.id === auth.session; })[0] || null;
+  return null;
 }
 function activeMe(){
-  var u = currentUser();
-  if(!u || u.demo) return defaultMe;
-  return {
-    name:u.name, initials:initialsOf(u.name), role:u.role || "Skip",
-    club:u.club || defaultMe.club, prov:u.prov || defaultMe.prov,
-    season:"Your season · in progress",
-    stats:null // real accounts: viewPassport derives live stats from their store
-  };
+  return defaultMe;
 }
 function refreshMe(){ me = activeMe(); }
-
-/* --- auth actions (the backend-ready seam) --- */
-function signUp(f){
-  var name = String(f.name || "").trim(),
-      email = String(f.email || "").trim().toLowerCase(),
-      pass = String(f.pass || "");
-  if(!name) return { ok:false, error:"Add your name" };
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok:false, error:"Enter a valid email" };
-  if(pass.length < 6) return { ok:false, error:"Password needs 6+ characters" };
-  if(userByEmail(email)) return { ok:false, error:"That email already has an account" };
-  var user = { id:uid("u"), name:name, email:email, pass:hashPass(pass),
-    club:String(f.club || "").trim() || "Independent", role:f.role || "Skip", prov:String(f.prov || "").trim() };
-  auth.users.push(user);
-  auth.session = user.id;
-  saveAuth();
-  return { ok:true };
-}
-function signIn(email, pass){
-  var u = userByEmail(email);
-  if(!u || u.pass !== hashPass(pass)) return { ok:false, error:"Email or password is incorrect" };
-  auth.session = u.id; saveAuth();
-  return { ok:true };
-}
 function signOut(){ auth.session = null; saveAuth(); }
 
 /* ============================================================
@@ -806,6 +1387,11 @@ function avatar(initials, size, cls){
   return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="width:' + s + 'px;height:' + s + 'px;' +
     'font-size:' + Math.round(s*0.36) + 'px;">' + esc(initials) + '</span>';
 }
+function appearanceButton(initials){
+  return '<button type="button" class="appearance-trigger"' +
+    ' data-action="settings" aria-label="Appearance" aria-haspopup="dialog" aria-controls="sheet" aria-expanded="false">' +
+    '<span class="avatar" style="width:34px;height:34px;font-size:12px;">' + esc(initials) + '</span></button>';
+}
 function avatarStack(ids){
   return '<div class="stack">' + ids.map(function(id){
     var c = curler(id);
@@ -813,11 +1399,6 @@ function avatarStack(ids){
   }).join("") + '</div>';
 }
 function resColor(res){ return res === "W" ? "var(--accent)" : "var(--muted)"; }
-function likeBtn(p){
-  var liked = isLiked(p.id);
-  return '<span role="button" tabindex="0" aria-label="Like" data-action="like" data-id="' + esc(p.id) + '"' + (liked ? ' style="color:var(--accent);"' : '') + '>' +
-    (liked ? "♥" : "♡") + ' ' + likeCount(p) + '</span>';
-}
 function starsRow(n){
   n = Math.max(0, Math.min(5, parseInt(n, 10) || 0));
   return '<span style="font-size:13px; letter-spacing:2px; color:var(--accent);">' + "★".repeat(n) + '</span>' +
@@ -834,9 +1415,6 @@ function postHead(p, o){
     '<div class="meta"' + (o.metaSize ? ' style="font-size:' + o.metaSize + 'px;"' : '') + '>' + meta + '</div></div>' +
     (o.noMenu ? '' : '<span style="font-size:18px; color:var(--muted);">⋯</span>') +
   '</div>';
-}
-function postActions(p){
-  return '<div class="actions">' + likeBtn(p) + '<span>💬 ' + (p.comments || 0) + '</span><span style="margin-left:auto;">↗</span></div>';
 }
 /* titled .glist card for the stop-detail submission lists; "" when empty */
 function submissionCard(title, items, rowFn){
@@ -866,92 +1444,86 @@ function tabbar(active){
    Views
    ============================================================ */
 function viewAuth(){
-  var signup = authMode === "signup";
-  var seg = '<div class="seg-type">' +
-    '<button type="button" class="' + (!signup ? "on" : "") + '" data-action="auth-mode" data-mode="signin">Sign in</button>' +
-    '<button type="button" class="' + (signup ? "on" : "") + '" data-action="auth-mode" data-mode="signup">Create account</button>' +
-  '</div>';
-
-  var fields = "";
-  if(signup){
-    var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){
-      return '<option' + (r === authDraft.role ? " selected" : "") + '>' + r + '</option>';
-    }).join("");
-    fields +=
-      '<div class="field"><label>Name</label><input id="au-name" placeholder="Dana Mercer" autocomplete="name" value="' + esc(authDraft.name) + '"></div>' +
-      '<div class="field split">' +
-        '<div><label>Home club</label><input id="au-club" placeholder="Kamloops CC" value="' + esc(authDraft.club) + '"></div>' +
-        '<div><label>Position</label><select id="au-role">' + roles + '</select></div>' +
-      '</div>';
-  }
-  fields +=
-    '<div class="field"><label>Email</label><input id="au-email" type="email" placeholder="you@club.ca" autocomplete="email" value="' + esc(authDraft.email) + '"></div>' +
-    '<div class="field"><label>Password</label>' +
-      '<input id="au-pass" type="password" placeholder="' + (signup ? "6+ characters" : "Your password") + '" autocomplete="' + (signup ? "new-password" : "current-password") + '">' +
-      (signup ? '<div class="pw-meter"><i id="pw-bar"></i></div>' : '') +
-    '</div>';
-
-  var err = authError ? '<div class="auth-err">' + esc(authError) + '</div>' : '';
-
   return statusbar(false) +
     '<div class="appbar"><div class="brand"><span class="ring"></span><b>CurlPlan</b></div></div>' +
     '<div class="auth-wrap">' +
       '<div class="auth-head">' +
         '<span class="ring"></span>' +
-        '<h2>' + (signup ? 'Join the circle' : 'Welcome back') + '</h2>' +
-        '<div class="eyebrow" style="margin-top:6px;">' + (signup ? 'Your season, your circle' : 'Sign in to your season') + '</div>' +
+        '<h1>Your season, your circle</h1>' +
+        '<div class="eyebrow" style="margin-top:6px;">A working CurlPlan product preview</div>' +
       '</div>' +
       '<div class="auth-card">' +
-        seg + err + fields +
+        '<p class="auth-notice" id="demo-notice"><strong>Demo only.</strong> Accounts and cloud sync are not live yet, so CurlPlan will never ask for your email or password in this preview.</p>' +
         '<div class="sheet-actions" style="margin-top:4px;">' +
-          '<button class="b solid" style="flex:1;" data-action="' + (signup ? 'submit-signup' : 'submit-signin') + '">' +
-            (signup ? 'Create account' : 'Sign in') + '</button>' +
+          '<button class="b solid" style="flex:1;" data-action="auth-demo" aria-describedby="demo-notice">Explore the demo</button>' +
         '</div>' +
+        '<p class="auth-footnote">Demo changes stay in this browser and can be cleared with site data. Real account recovery, deletion, and cross-device restore will ship only with the verified backend.</p>' +
       '</div>' +
-      '<div class="auth-alt">' +
-        (signup
-          ? 'Already curling here? <b role="button" tabindex="0" data-action="auth-mode" data-mode="signin">Sign in</b>'
-          : 'New here? <b role="button" tabindex="0" data-action="auth-mode" data-mode="signup">Create an account</b>') +
-      '</div>' +
-      '<div class="auth-alt" style="margin-top:2px;"><b role="button" tabindex="0" data-action="auth-demo">Explore the demo →</b></div>' +
+      '<div class="auth-alt">No credentials are collected or transmitted.</div>' +
     '</div>';
 }
 
 function viewPassport(){
   var s = me.stats || derivedStats();
+  var real = isRealAccount();
   var pins = stops.map(function(st){
     var sz = st.big ? 21 : 13;
-    return '<button class="map-pin' + (st.here ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
+    // The highlighted stop is explicit sample data, not a live or verified location.
+    return '<button class="map-pin' + ((st.here && !real) ? ' here' : '') + '" data-action="stop" data-id="' + st.id + '" ' +
       'style="left:' + st.x + '%; top:' + st.y + '%; width:' + sz + 'px; height:' + sz + 'px;" aria-label="' + esc(st.name) + '"></button>';
   }).join("");
 
-  var recents = recentStops.map(function(id){
-    var st = stop(id);
-    var avs = st.met.slice(0,2).map(function(m){
-      return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
+  var recents;
+  if(real){
+    // personal: stops the user has logged, count badge instead of a seed record
+    var mine = visitedStops();
+    recents = mine.length ? mine.map(function(v){
+      var st = stop(v.id);
+      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
+        '<span class="code">' + esc(st.code) + '</span>' +
+        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
+        '<span class="score">' + v.count + (v.count === 1 ? ' visit' : ' visits') + '</span>' +
+      '</div>';
+    }).join("")
+    : '<div class="card tile" style="text-align:center; color:var(--muted); font:500 13px \'Hanken Grotesk\'; padding:18px;">' +
+        'No stops logged yet — tap a pin, then “Log visit,” to start your season map.</div>';
+  } else {
+    recents = recentStops.map(function(id){
+      var st = stop(id);
+      var avs = st.met.slice(0,2).map(function(m){
+        return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
+      }).join("");
+      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
+        '<span class="code">' + esc(st.code) + '</span>' +
+        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
+        '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
+          '<span class="score">' + esc(st.record) + '</span>' +
+          '<div class="stack">' + avs +
+            (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
+          '</div></div>' +
+      '</div>';
     }).join("");
-    return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
-      '<span class="code">' + esc(st.code) + '</span>' +
-      '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
-        '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
-      '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
-        '<span class="score">' + esc(st.record) + '</span>' +
-        '<div class="stack">' + avs +
-          (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
-        '</div></div>' +
-    '</div>';
-  }).join("");
+  }
+  // Map chrome: the sample-stop chip and stop/KM tally are demo flavor; a real
+  // account gets a tally derived from its own visits (no fabricated distance)
+  var hereChip = real ? '' : '<div class="map-chip"><span class="dot"></span><span>Kamloops · sample stop</span></div>';
+  var nVisited = visitedStops().length;
+  var mapMeta = real
+    ? (nVisited ? nVisited + (nVisited === 1 ? ' STOP LOGGED' : ' STOPS LOGGED') : 'NEW SEASON')
+    : '12 STOPS · 2,400 KM';
 
   return statusbar(false) +
     '<div class="appbar">' +
       '<div class="brand"><span class="ring"></span><b>CurlPlan</b></div>' +
-      avatar(me.initials, 34) .replace('class="avatar"','class="avatar" role="button" tabindex="0" data-action="settings" aria-label="Appearance"') +
+      appearanceButton(me.initials) +
     '</div>' +
     '<div class="scroll">' +
       '<div>' +
         '<div class="eyebrow">' + esc(me.season) + '</div>' +
-        '<div class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin-top:3px;">On the ice, ' +
-          '<span class="ital accent">coast to coast</span></div>' +
+        '<h1 class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin:3px 0 0;">On the ice, ' +
+          '<span class="ital accent-deep">coast to coast</span></h1>' +
       '</div>' +
       '<div class="card telemetry">' +
         '<div class="cell"><div class="num">' + s.clubs + '</div><div class="lab">CLUBS</div></div><div class="vline"></div>' +
@@ -969,8 +1541,8 @@ function viewPassport(){
         '</svg>' +
         '<div class="pebble-tex"></div>' +
         pins +
-        '<div class="map-chip"><span class="dot"></span><span>Kamloops · here now</span></div>' +
-        '<div class="map-meta">12 STOPS · 2,400 KM</div>' +
+        hereChip +
+        '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
       '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" role="button" tabindex="0" data-action="tab" data-tab="spiels">All</span></div>' +
       recents +
@@ -978,63 +1550,102 @@ function viewPassport(){
     tabbar("passport");
 }
 
-function viewLocker(){
-  var cards = allPosts().map(function(p){
-    if(p.type === "result"){
-      return '<div class="card post">' + postHead(p) +
-        (p.body ? '<div class="body">' + esc(p.body) + '</div>' : '') +
-        '<div class="scorebar"><span class="big">' + esc(p.score.for) + '<span style="color:var(--muted);"> – </span>' + esc(p.score.ag) + '</span>' +
-          '<span class="win-chip">' + esc(p.score.res) + '</span>' +
-          '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
-        postActions(p) +
-      '</div>';
-    }
-    if(p.type === "note"){
-      return '<div class="card post">' + postHead(p) +
-        '<div class="body">' + esc(p.body) + '</div>' +
-        postActions(p) +
-      '</div>';
-    }
-    if(p.type === "spiel"){
-      var sp = spielById(p.spielId);
-      var spielBtn = !sp ? '' : (spielStatus(sp) === "You're in"
-        ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going ✓</button>'
-        : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">I\'m in</button>');
-      return '<div class="card spiel post" style="padding:14px;">' +
-        '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent); margin-bottom:7px;">SHARED SPIEL</div>' +
-        '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
-          esc(p.title) + ' <span class="ital">' + esc(p.spiel) + '</span></div>' +
-        '<div class="row">' + avatarStack(p.who) +
-          '<div class="mono" style="font-size:11px; color:var(--muted); line-height:1.3;">' + esc(p.where) + '<br>' + esc(p.when) + '</div>' +
-          spielBtn +
-        '</div>' +
-      '</div>';
-    }
-    // review
-    return '<div class="card post">' +
-      postHead(p, { size:32, nameSize:13, metaSize:10, noMenu:true, meta:'CLUB REVIEW · ' + esc(postTime(p)) }) +
-      '<div class="serif" style="font-size:16px; color:var(--ink); white-space:nowrap;">' + esc(p.club) + '</div>' +
-      '<div class="row" style="gap:8px; margin-top:4px;">' + starsRow(p.stars) +
-        '<span style="font:400 13px \'Hanken Grotesk\'; color:var(--muted);">— ' + esc(p.note) + '</span></div>' +
+/* ---- locker feed: Following/Discover filter + search (list re-renders alone
+       so the search box keeps focus between keystrokes) ---- */
+function postMatches(p, q){
+  var a = person(p.author);
+  var hay = [a && a.name, p.body, p.score && p.score.vs, p.club, p.note, p.spiel, p.title, p.where]
+    .filter(Boolean).join(" ").toLowerCase();
+  return hay.indexOf(q) > -1;
+}
+function lockerPosts(){
+  var list = allPosts();
+  if(ui.lockerTab === "following"){
+    // Following = your posts, shared spiels, and posts by curlers you follow
+    list = list.filter(function(p){
+      if(p.author === "me" || p.type === "spiel") return true;
+      var c = curler(p.author);
+      return c ? isFollowing(c) : true;
+    });
+  }
+  var q = (ui.lockerQ || "").trim().toLowerCase();
+  if(q) list = list.filter(function(p){ return postMatches(p, q); });
+  return list;
+}
+function renderPostCard(p){
+  if(p.type === "result"){
+    return '<div class="card post">' + postHead(p) +
+      (p.body ? '<div class="body">' + esc(p.body) + '</div>' : '') +
+      '<div class="scorebar"><span class="big">' + esc(p.score.for) + '<span style="color:var(--muted);"> – </span>' + esc(p.score.ag) + '</span>' +
+        '<span class="win-chip">' + esc(p.score.res) + '</span>' +
+        '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
     '</div>';
-  }).join("");
+  }
+  if(p.type === "note"){
+    return '<div class="card post">' + postHead(p) +
+      '<div class="body">' + esc(p.body) + '</div>' +
+    '</div>';
+  }
+  if(p.type === "spiel"){
+    var sp = spielById(p.spielId);
+    var spielBtn = !sp ? '' : (spielStatus(sp) === "You're in"
+      ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going ✓</button>'
+      : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">I\'m in</button>');
+    return '<div class="card spiel post" style="padding:14px;">' +
+      '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent-deep); margin-bottom:7px;">SHARED SPIEL</div>' +
+      '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
+        esc(p.title) + ' <span class="ital">' + esc(p.spiel) + '</span></div>' +
+      '<div class="row">' + avatarStack(p.who) +
+        '<div class="mono" style="font-size:11px; color:var(--muted); line-height:1.3;">' + esc(p.where) + '<br>' + esc(p.when) + '</div>' +
+        spielBtn +
+      '</div>' +
+    '</div>';
+  }
+  // review
+  return '<div class="card post">' +
+    postHead(p, { size:32, nameSize:13, metaSize:10, noMenu:true, meta:'CLUB REVIEW · ' + esc(postTime(p)) }) +
+    '<div class="serif" style="font-size:16px; color:var(--ink); white-space:nowrap;">' + esc(p.club) + '</div>' +
+    '<div class="row" style="gap:8px; margin-top:4px;">' + starsRow(p.stars) +
+      '<span style="font:400 13px \'Hanken Grotesk\'; color:var(--muted);">— ' + esc(p.note) + '</span></div>' +
+  '</div>';
+}
+function lockerCards(){
+  var list = lockerPosts();
+  if(!list.length){
+    return '<div class="empty"><span class="ring"></span><h3>Nothing here yet</h3><p>' +
+      (ui.lockerQ ? 'No posts match your search.'
+        : (ui.lockerTab === "following" ? 'Follow curlers or post to fill your Locker Room.' : 'No posts to discover yet.')) +
+      '</p></div>';
+  }
+  return list.map(renderPostCard).join("");
+}
+function lockerTabLink(id, label){
+  var on = ui.lockerTab === id;
+  return '<span data-action="locker-tab" data-tab="' + id + '" style="cursor:pointer; font:' +
+    (on ? '700' : '500') + ' 14px \'Hanken Grotesk\'; color:' + (on ? 'var(--ink)' : 'var(--muted)') +
+    '; padding-bottom:9px;' + (on ? ' border-bottom:2.5px solid var(--accent);' : '') + '">' + label + '</span>';
+}
 
+function viewLocker(){
+  var searchRow = ui.lockerSearch
+    ? '<div class="field" style="margin:12px 0 0;"><input id="locker-q" placeholder="Search the feed" value="' + esc(ui.lockerQ) + '" autocomplete="off"></div>'
+    : '';
   return statusbar(false) +
     '<div class="appbar" style="flex-direction:column; align-items:stretch; gap:0;">' +
       '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-        '<div class="serif" style="font-size:28px; color:var(--ink);">Locker Room</div>' +
-        '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink);">⌕</span></div>' +
+        '<h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Locker Room</h1>' +
+        '<button class="backbtn" data-action="toggle-locker-search" aria-label="Search" style="font-size:17px;">' + (ui.lockerSearch ? '✕' : '⌕') + '</button></div>' +
+      searchRow +
       '<div style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
-        '<span style="font:700 14px \'Hanken Grotesk\'; color:var(--ink); padding-bottom:9px; border-bottom:2.5px solid var(--accent);">Following</span>' +
-        '<span style="font:500 14px \'Hanken Grotesk\'; color:var(--muted); padding-bottom:9px;">Discover</span></div>' +
+        lockerTabLink("following", "Following") + lockerTabLink("discover", "Discover") + '</div>' +
     '</div>' +
-    '<div class="scroll" style="gap:13px;">' + cards + '</div>' +
+    '<div class="scroll" style="gap:13px;"><div id="locker-list" style="display:flex; flex-direction:column; gap:13px;">' + lockerCards() + '</div></div>' +
     '<button class="fab" data-action="compose" aria-label="New post">+</button>' +
     tabbar("locker");
 }
 
 function viewSpiels(){
-  var rows = spiels.map(function(sp){
+  var rows = allSpiels().map(function(sp){
     var status = spielStatus(sp);
     var solid = status === "You're in";
     var btn = solid
@@ -1056,8 +1667,8 @@ function viewSpiels(){
   }).join("");
 
   return statusbar(false) +
-    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Spiels</div>' +
-      '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--ink);">+</span></div>' +
+    '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Spiels</h1>' +
+      '<button class="backbtn" data-action="new-spiel" aria-label="New spiel" style="font-size:20px;">+</button></div>' +
     '<div class="scroll">' +
       '<div class="eyebrow">Your season ahead</div>' +
       rows +
@@ -1065,23 +1676,37 @@ function viewSpiels(){
     tabbar("spiels");
 }
 
-function viewRoster(){
-  var rows = curlers.map(function(c){
-    return '<div class="card tile prow" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
+function rosterRows(){
+  var q = (ui.rosterQ || "").trim().toLowerCase();
+  var list = allCurlers().filter(function(c){
+    if(!q) return true;
+    return (c.name + " " + c.club + " " + c.role).toLowerCase().indexOf(q) > -1;
+  });
+  if(!list.length) return '<div class="empty"><span class="ring"></span><h3>No matches</h3><p>No curlers match your search.</p></div>';
+  return list.map(function(c){
+    return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
       avatar(c.initials, 44, 'av') +
-      '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
+      '<div style="flex:1; min-width:0;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '"><div class="nm">' + esc(c.name) + '</div>' +
         '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
       '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
         (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
     '</div>';
   }).join("");
-
+}
+function viewRoster(){
+  var searchRow = ui.rosterSearch
+    ? '<div class="field" style="margin:0 0 4px;"><input id="roster-q" placeholder="Search your circle" value="' + esc(ui.rosterQ) + '" autocomplete="off"></div>'
+    : '';
   return statusbar(false) +
-    '<div class="appbar"><div class="serif" style="font-size:28px; color:var(--ink);">Roster</div>' +
-      '<span style="width:34px; height:34px; border-radius:99px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:17px; color:var(--ink);">⌕</span></div>' +
+    '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Roster</h1>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button class="backbtn" data-action="toggle-roster-search" aria-label="Search" style="font-size:17px;">' + (ui.rosterSearch ? '✕' : '⌕') + '</button>' +
+        '<button class="backbtn" data-action="new-curler" aria-label="Add curler" style="font-size:20px;">+</button>' +
+      '</div></div>' +
     '<div class="scroll">' +
-      '<div class="eyebrow">Your circle · ' + curlers.length + ' curlers</div>' +
-      rows +
+      searchRow +
+      '<div class="eyebrow">Your circle · ' + allCurlers().length + ' curlers</div>' +
+      '<div id="roster-list" style="display:flex; flex-direction:column; gap:16px;">' + rosterRows() + '</div>' +
     '</div>' +
     tabbar("roster");
 }
@@ -1129,7 +1754,7 @@ function viewStop(id){
       statusbar(true) +
       '<button class="hero-back" data-action="back" aria-label="Back">‹</button>' +
       '<div class="cap"><div class="loc">📍 ' + esc(st.club.toUpperCase().split(" ")[0]) + ', ' + esc(st.prov) + ' · ' + esc(st.dates) + '</div>' +
-        '<h2>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h2></div>' +
+        '<h1>' + esc(st.name.split(" ")[0]) + ' <span class="ital">' + esc(st.name.split(" ").slice(1).join(" ") || "Curling Club") + '</span></h1></div>' +
     '</div>' +
     '<div class="scroll" style="padding-top:16px;">' +
       '<div><div class="sec-head" style="margin-bottom:8px;"><span class="lab">Ice read</span></div>' +
@@ -1150,7 +1775,7 @@ function viewStop(id){
       '</div>' +
       visitList +
       reviewList +
-      '<div class="sec-head"><span class="lab">People you met here</span><span class="act">+ All</span></div>' +
+      '<div class="sec-head"><span class="lab">People you met here</span></div>' +
       '<div style="display:flex; flex-direction:column; gap:12px;">' + people + '</div>' +
     '</div>';
 }
@@ -1175,7 +1800,7 @@ function viewCurler(id){
     '<div class="scroll" style="padding-top:10px;">' +
       '<div class="identity">' +
         '<span class="halo">' + avatar(c.initials, 78, 'av') + '</span>' +
-        '<div><h2>' + esc(c.name) + '</h2><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
+        '<div><h1>' + esc(c.name) + '</h1><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
         '<span class="metpill"><span class="d"></span>You met at ' + esc(c.metAt) + '</span>' +
       '</div>' +
       '<div class="actions2">' +
@@ -1199,6 +1824,8 @@ function viewCurler(id){
    Router / nav stack
    ============================================================ */
 var state = { tab:"passport", stack:[] }; // stack entries: {view:"stop"|"curler", id}
+// transient view UI (search boxes, locker filter) — not persisted
+var ui = { lockerTab:"following", lockerSearch:false, lockerQ:"", rosterSearch:false, rosterQ:"" };
 
 function render(opts){
   // keepScroll: re-rendering the same view after an in-view mutation (follow,
@@ -1247,6 +1874,60 @@ function applyHash(){
 /* ============================================================
    Settings sheet
    ============================================================ */
+var activeSheet = null;
+var currentActionTrigger = null;
+var sheetFocusable = 'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function visibleSheetControls(sheet){
+  return Array.prototype.filter.call(sheet.querySelectorAll(sheetFocusable), function(node){
+    return !node.hidden && node.type !== "hidden" && node.getAttribute("aria-hidden") !== "true" && node.getClientRects().length > 0;
+  });
+}
+function openManagedSheet(sheetId, scrimId, trigger){
+  var sheet = el(sheetId), scrim = el(scrimId);
+  if(activeSheet && activeSheet.sheet !== sheet) closeManagedSheet(false);
+  if(!activeSheet){
+    activeSheet = { sheet:sheet, scrim:scrim, trigger:trigger && trigger.isConnected ? trigger : document.activeElement };
+  }
+  sheet.hidden = false;
+  scrim.hidden = false;
+  sheet.removeAttribute("inert");
+  sheet.setAttribute("aria-hidden", "false");
+  scrim.setAttribute("aria-hidden", "false");
+  if(activeSheet.trigger && activeSheet.trigger.getAttribute("aria-controls") === sheetId){
+    activeSheet.trigger.setAttribute("aria-expanded", "true");
+  }
+  // Commit the un-hidden state before adding the transition class so the
+  // opening motion remains visible while focus moves deterministically now.
+  void sheet.offsetWidth;
+  sheet.classList.add("open");
+  scrim.classList.add("open");
+  var controls = visibleSheetControls(sheet);
+  try{ (controls[0] || sheet).focus(); }catch(e){}
+}
+function closeManagedSheet(restoreFocus){
+  if(!activeSheet) return;
+  var closing = activeSheet;
+  activeSheet = null;
+  closing.sheet.classList.remove("open");
+  closing.scrim.classList.remove("open");
+  closing.sheet.setAttribute("inert", "");
+  closing.sheet.setAttribute("aria-hidden", "true");
+  closing.scrim.setAttribute("aria-hidden", "true");
+  if(closing.trigger && closing.trigger.getAttribute("aria-controls") === closing.sheet.id){
+    closing.trigger.setAttribute("aria-expanded", "false");
+  }
+  window.setTimeout(function(){
+    if(!closing.sheet.classList.contains("open")){
+      closing.sheet.hidden = true;
+      closing.scrim.hidden = true;
+    }
+  }, 270);
+  if(restoreFocus !== false && closing.trigger && closing.trigger.isConnected){
+    try{ closing.trigger.focus(); }catch(e){}
+  }
+}
+
 function buildSettings(){
   // accent swatches
   el("seg-accent").innerHTML = ACCENTS.map(function(a){
@@ -1263,7 +1944,7 @@ function syncSettings(){
   });
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
 }
-function openSettings(){
+function openSettings(trigger){
   var u = currentUser(), m = el("acct-meta");
   if(m){
     // canonical team identity: "{Club short} · {Skip}" (see terminology page)
@@ -1271,9 +1952,11 @@ function openSettings(){
       ? (u.demo ? "Demo session · " + teamLabel(me.club, me.name) : u.email + " · " + teamLabel(me.club, me.name))
       : "Signed out";
   }
-  el("scrim").classList.add("open"); el("sheet").classList.add("open");
+  openManagedSheet("sheet", "scrim", trigger);
 }
-function closeSettings(){ el("scrim").classList.remove("open"); el("sheet").classList.remove("open"); }
+function closeSettings(){
+  if(activeSheet && activeSheet.sheet === el("sheet")) closeManagedSheet(true);
+}
 
 /* ============================================================
    Toast
@@ -1294,20 +1977,20 @@ var formStars = 0; // shared picker state — only one sheet is open at a time
 
 function openSheet(html){
   el("sheet-body").innerHTML = html;
-  el("scrim2").classList.add("open");
-  el("sheet2").classList.add("open");
-  var first = el("sheet2").querySelector("input, textarea, select");
-  if(first) try{ first.focus(); }catch(e){}
+  openManagedSheet("sheet2", "scrim2", currentActionTrigger);
 }
-function closeSheet(){ el("scrim2").classList.remove("open"); el("sheet2").classList.remove("open"); }
+function closeSheet(){
+  if(activeSheet && activeSheet.sheet === el("sheet2")) closeManagedSheet(true);
+}
 function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
 
 function starPicker(){
   var b = "";
   for(var i = 1; i <= 5; i++){
-    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i + '">★</button>';
+    b += '<button type="button" class="' + (i <= formStars ? "on" : "") + '" data-action="pick-star" data-val="' + i +
+      '" aria-label="' + i + ' star' + (i > 1 ? 's' : '') + '" aria-pressed="' + (i <= formStars) + '">★</button>';
   }
-  return '<div class="stars-pick" id="f-stars">' + b + '</div>';
+  return '<div class="stars-pick" id="f-stars" role="group" aria-labelledby="f-stars-label">' + b + '</div>';
 }
 function setStars(n){
   formStars = n;
@@ -1315,6 +1998,7 @@ function setStars(n){
   if(!wrap) return;
   Array.prototype.forEach.call(wrap.children, function(btn, i){
     btn.classList.toggle("on", (i + 1) <= n);
+    btn.setAttribute("aria-pressed", String((i + 1) <= n));
   });
 }
 function fmtTime(at){
@@ -1343,19 +2027,19 @@ function openCompose(type){
 
   var body;
   if(type === "result"){
-    body = '<div class="field split"><div><label>For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
-      '<div><label>Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
-      '<div class="field"><label>Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
-      '<div class="field"><label>Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
+    body = '<div class="field split"><div><label for="f-for">For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
+      '<div><label for="f-ag">Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
+      '<div class="field"><label for="f-vs">Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
+      '<div class="field"><label for="f-body">Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
   } else if(type === "review"){
-    body = '<div class="field"><label>Club</label><input id="f-club" placeholder="Granite City CC"></div>' +
-      '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
-      '<div class="field"><label>Note</label><textarea id="f-body" placeholder="fast, 5–6 ft of curl"></textarea></div>';
+    body = '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Granite City CC"></div>' +
+      '<div class="field"><label id="f-stars-label">Rating</label>' + starPicker() + '</div>' +
+      '<div class="field"><label for="f-body">Note</label><textarea id="f-body" placeholder="fast, 5–6 ft of curl"></textarea></div>';
   } else {
-    body = '<div class="field"><label>What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
+    body = '<div class="field"><label for="f-body">What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
   }
 
-  openSheet('<h3>Share</h3><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
+  openSheet('<h2>Share</h2><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
     '<div class="seg-type">' + seg + '</div>' + body +
     '<div class="sheet-actions">' +
       '<button class="b outline" data-action="close-sheet">Cancel</button>' +
@@ -1389,9 +2073,9 @@ function submitCompose(type){
 /* ---- stop detail submissions ---- */
 function openVisit(stopId){
   var st = stop(stopId); if(!st) return;
-  openSheet('<h3>Log a visit</h3><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field"><label>Date</label><input id="f-date" placeholder="Today"></div>' +
-    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
+  openSheet('<h2>Log a visit</h2><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field"><label for="f-date">Date</label><input id="f-date" placeholder="Today"></div>' +
+    '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button></div>');
   if(el("f-date")) el("f-date").value = "Today";
@@ -1407,10 +2091,10 @@ function submitVisit(stopId){
 function openIceRead(stopId){
   var st = stop(stopId); if(!st) return;
   var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h3>Add an ice read</h3><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field split"><div><label>Speed</label><select id="f-speed">' + opts + '</select></div>' +
-      '<div><label>Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
-    '<div class="field"><label>Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
+  openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field split"><div><label for="f-speed">Speed</label><select id="f-speed">' + opts + '</select></div>' +
+      '<div><label for="f-curl">Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
+    '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button></div>');
 }
@@ -1422,9 +2106,9 @@ function submitIceRead(stopId){
 function openReview(stopId){
   var st = stop(stopId); if(!st) return;
   formStars = 5;
-  openSheet('<h3>Write a review</h3><p class="sub">' + esc(st.name) + '</p>' +
-    '<div class="field"><label>Rating</label>' + starPicker() + '</div>' +
-    '<div class="field"><label>Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
+  openSheet('<h2>Write a review</h2><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field"><label id="f-stars-label">Rating</label>' + starPicker() + '</div>' +
+    '<div class="field"><label for="f-note">Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-review" data-id="' + stopId + '">Post review</button></div>');
 }
@@ -1441,9 +2125,9 @@ function openThread(curlerId){
         '<span class="ts">' + fmtTime(m.at) + '</span></div>';
     }).join("") + '</div>'
     : '<div class="thread-empty">No messages yet. Say hello to ' + esc(c.name.split(" ")[0]) + '.</div>';
-  openSheet('<h3>' + esc(c.name) + '</h3><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
+  openSheet('<h2>' + esc(c.name) + '</h2><p class="sub">Local thread — saved on this device, not yet delivered.</p>' +
     body +
-    '<div class="composer"><textarea id="f-msg" placeholder="Message…"></textarea>' +
+    '<div class="composer"><textarea id="f-msg" placeholder="Message…" aria-label="Message"></textarea>' +
       '<button class="pill-btn" data-action="send-msg" data-id="' + curlerId + '">Send</button></div>');
   var th = el("f-thread"); if(th) th.scrollTop = th.scrollHeight;
 }
@@ -1463,18 +2147,68 @@ function sendMessage(curlerId){
   el("f-msg").value = "";
 }
 
+/* ---- create a spiel (backported from the iOS port) ---- */
+function openNewSpiel(){
+  var statusOpts = ["You're in","Watching","Invite"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
+  openSheet('<h2>New spiel</h2><p class="sub">Add a bonspiel to your season ahead.</p>' +
+    '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
+    '<div class="field"><label for="f-where">Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
+    '<div class="field"><label for="f-when">Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
+    '<div class="field"><label for="f-status">Your status</label><select id="f-status">' + statusOpts + '</select></div>' +
+    clubDatalist() +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-new-spiel">Add spiel</button></div>');
+}
+function submitNewSpiel(){
+  var name = val("f-name");
+  if(!name){ toast("Name the spiel"); return; }
+  var sp = { id:uid("sp"), name:name, where:val("f-where") || "TBD",
+    when:(val("f-when") || "DATE TBD").toUpperCase(),
+    status:(el("f-status") ? el("f-status").value : "Watching"), going:[] };
+  store.addedSpiels.unshift(sp); saveStore();
+  closeSheet(); gotoTab("spiels"); toast("Spiel added");
+}
+
+/* ---- create a curler (backported from the iOS port) ---- */
+function openNewCurler(){
+  var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
+  openSheet('<h2>Add to roster</h2><p class="sub">Add a curler to your circle.</p>' +
+    '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
+    '<div class="field split"><div><label for="f-role">Position</label><select id="f-role">' + roles + '</select></div>' +
+      '<div><label for="f-prov">Province</label><input id="f-prov" placeholder="BC"></div></div>' +
+    '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' +
+    clubDatalist() +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
+      '<button class="b solid" data-action="submit-new-curler">Add curler</button></div>');
+}
+function submitNewCurler(){
+  var name = val("f-name");
+  if(!name){ toast("Add a name"); return; }
+  var c = { id:uid("c"), initials:initialsOf(name) || "?", name:name,
+    role:(el("f-role") ? el("f-role").value : "Curler"),
+    club:val("f-club") || "—", prov:(val("f-prov") || "—").toUpperCase(),
+    metAt:"your roster", following:true,
+    stats:{ record:"0–0", win:"—", clubs:0, mutual:0 }, clubs:[], form:[] };
+  store.addedCurlers.unshift(c); setFollowing(c.id, true); saveStore();
+  closeSheet(); gotoTab("roster"); toast("Added to roster");
+}
+/* shared <datalist> of club names for the create pickers (from CLUB_SUGGESTIONS) */
+function clubDatalist(){
+  return '<datalist id="club-list">' +
+    CLUB_SUGGESTIONS.slice(0, 400).map(function(s){ return '<option value="' + esc(s.split(" · ")[0]) + '">'; }).join("") +
+    '</datalist>';
+}
+
 /* ============================================================
    Event delegation
    ============================================================ */
 el("screen").addEventListener("keydown", function(e){
-  // Keyboard parity for div/span controls: Enter or Space activates like a click.
-  if(e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
-  var t = e.target.closest('[data-action],[data-theme-val],[data-accent],#toggle-pebble');
-  if(!t) return;
-  var tag = t.tagName;
-  if(tag === "BUTTON" || tag === "A" || tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  if(e.key !== "Enter" && e.key !== " ") return;
+  if(e.target.closest("button, a, input, select, textarea")) return;
+  var control = e.target.closest('[role="button"][data-action]');
+  if(!control) return;
   e.preventDefault();
-  t.click();
+  control.click();
 });
 
 el("screen").addEventListener("click", function(e){
@@ -1489,6 +2223,7 @@ el("screen").addEventListener("click", function(e){
 
   if(!t) return;
   var action = t.getAttribute("data-action");
+  currentActionTrigger = t;
   var id = t.getAttribute("data-id");
   var type = t.getAttribute("data-type");
 
@@ -1497,41 +2232,37 @@ el("screen").addEventListener("click", function(e){
     case "stop":     push("stop", id); break;
     case "curler":   push("curler", id); break;
     case "back":     back(); break;
-    case "settings": openSettings(); break;
+    case "settings": openSettings(t); break;
     case "close-settings": closeSettings(); break;
     case "close-sheet":    closeSheet(); break;
 
-    // accounts & auth
-    case "auth-mode": authMode = t.getAttribute("data-mode"); authError = ""; render(); break;
+    // locker filter + search (backported from iOS)
+    case "locker-tab": ui.lockerTab = t.getAttribute("data-tab"); render(); break;
+    case "toggle-locker-search": {
+      ui.lockerSearch = !ui.lockerSearch; if(!ui.lockerSearch) ui.lockerQ = "";
+      render(); var lq = el("locker-q"); if(lq) lq.focus();
+      break;
+    }
+    case "toggle-roster-search": {
+      ui.rosterSearch = !ui.rosterSearch; if(!ui.rosterSearch) ui.rosterQ = "";
+      render(); var rq = el("roster-q"); if(rq) rq.focus();
+      break;
+    }
+    // create entities (backported from iOS)
+    case "new-spiel":         openNewSpiel(); break;
+    case "submit-new-spiel":  submitNewSpiel(); break;
+    case "new-curler":        openNewCurler(); break;
+    case "submit-new-curler": submitNewCurler(); break;
+
+    // demo session
     case "auth-demo": {
-      auth.session = "demo"; saveAuth(); authError = ""; resetAuthDraft();
+      auth.session = "demo"; saveAuth();
       refreshStore(); refreshMe(); enterApp();
-      break;
-    }
-    case "submit-signin": {
-      var si = signIn(val("au-email"), val("au-pass"));
-      if(si.ok){
-        authError = ""; resetAuthDraft();
-        refreshStore(); refreshMe(); enterApp();
-        toast("Welcome back, " + me.name.split(" ")[0]);
-      }
-      else { authError = si.error; render(); }
-      break;
-    }
-    case "submit-signup": {
-      var su = signUp({ name:val("au-name"), email:val("au-email"), pass:val("au-pass"),
-        club:val("au-club"), role:(el("au-role") ? el("au-role").value : "Skip") });
-      if(su.ok){
-        authError = ""; resetAuthDraft();
-        refreshStore(); refreshMe(); enterApp();
-        toast("Welcome to CurlPlan, " + me.name.split(" ")[0]);
-      }
-      else { authError = su.error; render(); }
       break;
     }
     case "signout": {
       signOut(); closeSettings(); refreshStore(); refreshMe();
-      state.tab = "passport"; state.stack = []; authMode = "signin"; authError = "";
+      state.tab = "passport"; state.stack = [];
       render(); syncHash(); toast("Signed out");
       break;
     }
@@ -1541,16 +2272,6 @@ el("screen").addEventListener("click", function(e){
       if(c){ var nv = !isFollowing(c); setFollowing(id, nv); render({keepScroll:true}); toast(nv ? "Following " + c.name : "Unfollowed " + c.name); }
       break;
     }
-    case "like": {
-      if(id){
-        toggleLike(id);
-        var lp = allPosts().filter(function(x){ return x.id === id; })[0];
-        if(lp) t.outerHTML = likeBtn(lp); // patch the heart in place — no re-render, no scroll jump
-        else render({keepScroll:true});
-      }
-      break;
-    }
-
     // bonspiel registration
     case "join-spiel": {
       if(id){ setSpielStatus(id, "You're in"); render({keepScroll:true}); toast("You're registered"); }
@@ -1588,23 +2309,27 @@ el("screen").addEventListener("click", function(e){
   }
 });
 
-/* live password-strength meter + draft capture on the auth screen */
-var AUTH_DRAFT_FIELDS = { "au-name":"name", "au-club":"club", "au-email":"email", "au-role":"role" };
-function onAuthInput(e){
-  if(!e.target || !e.target.id) return;
-  var key = AUTH_DRAFT_FIELDS[e.target.id];
-  if(key){ authDraft[key] = e.target.value; return; }
-  if(e.target.id === "au-pass"){
-    var bar = el("pw-bar");
-    if(bar){
-      var v = e.target.value;
-      var score = Math.min(4, Math.floor(v.length / 3)) + (/[^a-zA-Z0-9]/.test(v) ? 1 : 0);
-      bar.style.width = Math.min(100, score * 22) + "%";
-    }
+document.addEventListener("keydown", function(e){
+  if(!activeSheet) return;
+  if(e.key === "Escape"){
+    e.preventDefault();
+    if(activeSheet.sheet === el("sheet")) closeSettings(); else closeSheet();
+    return;
   }
-}
-el("screen").addEventListener("input", onAuthInput);
-el("screen").addEventListener("change", onAuthInput); // <select> coverage on older engines
+  if(e.key !== "Tab") return;
+  var controls = visibleSheetControls(activeSheet.sheet);
+  if(!controls.length){ e.preventDefault(); activeSheet.sheet.focus(); return; }
+  var first = controls[0], last = controls[controls.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+/* live search: re-render only the results list so the input keeps focus */
+el("screen").addEventListener("input", function(e){
+  if(!e.target || !e.target.id) return;
+  if(e.target.id === "locker-q"){ ui.lockerQ = e.target.value; var ln = el("locker-list"); if(ln) ln.innerHTML = lockerCards(); }
+  else if(e.target.id === "roster-q"){ ui.rosterQ = e.target.value; var rn = el("roster-list"); if(rn) rn.innerHTML = rosterRows(); }
+});
 
 /* ============================================================
    Boot
@@ -1619,6 +2344,12 @@ migrateLegacyStore();
 refreshStore();
 refreshMe();
 render();
+
+/* durability: flush any debounced hot write (likes/follows) before the page
+   goes away — pagehide covers reload/close/bfcache; visibilitychange covers
+   mobile backgrounding where pagehide is unreliable */
+window.addEventListener("pagehide", flushStoreSoon);
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden") flushStoreSoon(); });
 
 /* offline support — network-first SW (purges any older CurlPlan cache) */
 if("serviceWorker" in navigator){

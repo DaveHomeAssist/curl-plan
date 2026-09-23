@@ -2,8 +2,7 @@
 // Cache name is version-stamped so edits to assets invalidate the old cache.
 // Renamed from the pre-promote "curlplan-sw-v5" so that the root Hi-Fi worker can
 // purge the genuinely-stale v5 cache without touching the live classic cache.
-// CacheStorage is per-origin, so on activate this worker prunes only its own
-// "curlplan-classic-*" lineage and leaves every other cache alone.
+// CacheStorage is per-origin, so prune only this worker's cache lineage.
 const CACHE_NAME = "curlplan-classic-v6";
 const OWN_PREFIX = "curlplan-classic-";
 

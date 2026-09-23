@@ -7,10 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Ensure ripgrep
@@ -26,10 +26,50 @@ jobs:
             BASE_REF="origin/${{ github.base_ref }}"
           fi
           FEATURE_REVIEW_BASE="$BASE_REF" make feature-review
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '20'
+      - name: Seed is up to date (web + iOS generated from data/season-seed.json)
+        run: node scripts/gen-seed.js --check
       - name: Verify root Hi-Fi app
         run: node scripts/verify-app.js
       - name: Verify archived classic app
         run: node scripts/verify-split.js
+      - name: Cross-platform parity checklist
+        run: node scripts/verify-parity.js
+      - name: CRDT merge algebra (fixtures + laws)
+        run: node scripts/verify-merge.js
+      - name: Sync API handler (routes, merge, auth, isolation)
+        run: node scripts/verify-api.js
+      - name: Account backend contracts (HTTP, auth, persistence)
+        run: make account-backend-verify
+
+  ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+      - name: Regenerate Xcode project (auto-wires all Swift files)
+        run: node ios/generate-xcodeproj.js
+      - name: Build CurlPlan (iOS Simulator)
+        run: |
+          cd ios
+          xcodebuild build \
+            -project CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Account contract tests (SwiftPM CurlPlanCoreTests)
+        run: swift test --scratch-path /tmp/curlplan-spm-build
+      - name: Test CurlPlan (Store + Merge unit tests)
+        run: |
+          cd ios
+          DEVICE=$(xcrun simctl list devices available | grep -Eo 'iPhone [0-9]+[^(]*' | head -1 | sed 's/ *$//')
+          echo "Testing on simulator: ${DEVICE:-iPhone 15}"
+          xcodebuild test \
+            -project CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination "platform=iOS Simulator,name=${DEVICE:-iPhone 15}" \
+            CODE_SIGNING_ALLOWED=NO

@@ -40,13 +40,69 @@ const swPath = path.join(root, "sw.js");
 assert(fs.existsSync(swPath), "sw.js must exist at repo root.");
 const sw = fs.readFileSync(swPath, "utf8");
 new Function(sw); // parse-only smoke check (identifiers need not resolve)
-assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v1"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v1.");
+assert(/CACHE_NAME\s*=\s*"curlplan-hifi-v2"/.test(sw), "sw.js CACHE_NAME must be curlplan-hifi-v2.");
 assert(/caches\.keys\(\)/.test(sw) && /caches\.delete\(/.test(sw), "sw.js must purge old caches on activate.");
 
-// 6. Inline favicon present.
+// 6. PWA installability: manifest linked, present, valid, icons on disk and precached.
+assert(/<link rel="manifest" href="manifest\.webmanifest">/.test(html), "Web app manifest not linked from index.html.");
+const manifestPath = path.join(root, "manifest.webmanifest");
+assert(fs.existsSync(manifestPath), "manifest.webmanifest must exist at repo root.");
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+assert(manifest.name === "CurlPlan", "Manifest name must be CurlPlan.");
+assert(manifest.display === "standalone", "Manifest display must be standalone.");
+assert(Array.isArray(manifest.icons) && manifest.icons.some(i => i.sizes === "192x192") &&
+  manifest.icons.some(i => i.sizes === "512x512"), "Manifest must declare 192x192 and 512x512 icons.");
+manifest.icons.forEach(i => assert(fs.existsSync(path.join(root, i.src)), `Manifest icon missing on disk: ${i.src}`));
+["./manifest.webmanifest", "./icons/icon-192.png"].forEach(u =>
+  assert(sw.includes(`"${u}"`), `Service worker must precache ${u}.`));
+
+// 7. Public preview must not collect credentials until real backend auth is live.
+assert(!/type="password"/.test(html), "Public preview must not render a password field.");
+assert(!/data-action="submit-sign(?:in|up)"/.test(html), "Public preview must not expose local sign-in/sign-up actions.");
+assert(/Demo only\./.test(html) && /No credentials are collected or transmitted\./.test(html), "Demo-only disclosure missing.");
+
+// 7. Inline favicon present.
 assert(/rel="icon"[^>]*data:image\/svg\+xml/.test(html), "Inline SVG favicon missing.");
 
-// 7. Root shell must not reference the archived classic/ asset tree.
+// 8. Root shell must not reference the archived classic/ asset tree.
 assert(!/assets\/js\/app\//.test(html), "Root app should not reference classic split JS assets.");
+
+// 9. The static preview still needs browser-enforced boundaries around its
+// inline shell and explicitly approved font hosts.
+assert(/Content-Security-Policy/.test(html), "Content Security Policy missing.");
+assert(/object-src 'none'/.test(html) && /base-uri 'self'/.test(html), "CSP object/base restrictions missing.");
+assert(/name="referrer" content="strict-origin-when-cross-origin"/.test(html), "Referrer policy missing.");
+assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmark missing.");
+
+// 10. Closed dialogs must not leak controls into the initial keyboard order,
+// and the shared lifecycle must provide the expected keyboard behavior.
+["sheet", "sheet2"].forEach(id => {
+  const dialog = html.match(new RegExp(`<div class="sheet" id="${id}"[^>]*>`));
+  assert(dialog, `Dialog ${id} missing.`);
+  assert(/aria-modal="true"/.test(dialog[0]), `Dialog ${id} must be modal.`);
+  assert(/aria-hidden="true"/.test(dialog[0]) && /\bhidden\b/.test(dialog[0]) && /\binert\b/.test(dialog[0]),
+    `Dialog ${id} must start hidden and inert.`);
+});
+assert(/function openManagedSheet\(/.test(html) && /function closeManagedSheet\(/.test(html),
+  "Managed sheet lifecycle missing.");
+assert(/e\.key === "Escape"/.test(html), "Escape must close the active sheet.");
+assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore invoking-control focus.");
+assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
+  "Modal Tab containment missing.");
+
+// 11. The four primary tabs must retain the portfolio's 44px target floor.
+const tabRule = html.match(/\.tab\{([\s\S]*?)\}/);
+assert(tabRule, "Primary tab CSS rule missing.");
+assert(/min-width:\s*44px/.test(tabRule[1]) && /min-height:\s*44px/.test(tabRule[1]),
+  "Primary tabs must provide at least a 44px by 44px hit area.");
+const tabOrder = ['id:"passport"', 'id:"locker"', 'id:"spiels"', 'id:"roster"'];
+let previousTab = -1;
+tabOrder.forEach(token => {
+  const currentTab = html.indexOf(token, previousTab + 1);
+  assert(currentTab > previousTab, `Primary tab order missing or changed: ${token}`);
+  previousTab = currentTab;
+});
+assert(/button:focus-visible[\s\S]*?outline:\s*3px solid var\(--accent\)/.test(html),
+  "Primary tabs must retain the shared visible keyboard focus treatment.");
 
 console.log("verify-app: ok (root index.html + sw.js)");

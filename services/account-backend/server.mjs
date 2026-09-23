@@ -42,8 +42,6 @@ class AccountBackendStore {
   }
 
   async save() {
-    // Serialize writers: concurrent requests share one store, and unqueued
-    // temp-file writes can collide on the same path or land out of order.
     const pending = (this.savePromise ?? Promise.resolve())
       .catch(() => {})
       .then(() => this.writeSnapshot());
@@ -133,6 +131,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
     const displayName = requiredText(body, "displayName");
     const homeClub = requiredText(body, "homeClub");
     const password = requiredPassword(body, "password");
+    const credential = await hashPassword(password);
     if (Object.keys(store.state.accounts).length >= MAX_ACCOUNTS) {
       throw new BackendError(507, "STORAGE_QUOTA", "Account storage quota has been reached.");
     }
@@ -147,7 +146,7 @@ async function routeRequest({ request, response, store, url, requestID }) {
       deletedAt: null
     };
     store.state.accounts[account.id] = account;
-    store.state.credentials[account.id] = await hashPassword(password);
+    store.state.credentials[account.id] = credential;
     store.state.profiles[account.id] = {
       accountID: account.id,
       handle,
@@ -660,23 +659,24 @@ const rateBuckets = new Map();
 
 function enforceRateLimit(request, bucketName) {
   const nowMs = Date.now();
-  if (rateBuckets.size > RATE_LIMIT_MAX_BUCKETS) {
-    for (const [key, bucket] of rateBuckets) {
-      if (nowMs - bucket.startedAt >= RATE_LIMIT_WINDOW_MS) {
-        rateBuckets.delete(key);
-      }
-    }
-  }
   const key = `${bucketName}:${request.socket?.remoteAddress ?? "unknown"}`;
   const bucket = rateBuckets.get(key);
-  if (!bucket || nowMs - bucket.startedAt >= RATE_LIMIT_WINDOW_MS) {
-    rateBuckets.set(key, { startedAt: nowMs, count: 1 });
+  if (bucket && nowMs - bucket.startedAt < RATE_LIMIT_WINDOW_MS) {
+    bucket.count += 1;
+    if (bucket.count > RATE_LIMIT_MAX_ATTEMPTS) {
+      throw new BackendError(429, "RATE_LIMITED", "Too many attempts. Try again shortly.");
+    }
     return;
   }
-  bucket.count += 1;
-  if (bucket.count > RATE_LIMIT_MAX_ATTEMPTS) {
-    throw new BackendError(429, "RATE_LIMITED", "Too many attempts. Try again shortly.");
+  if (rateBuckets.size >= RATE_LIMIT_MAX_BUCKETS) {
+    for (const [key, bucket] of rateBuckets) {
+      if (nowMs - bucket.startedAt >= RATE_LIMIT_WINDOW_MS) rateBuckets.delete(key);
+    }
+    if (rateBuckets.size >= RATE_LIMIT_MAX_BUCKETS) {
+      throw new BackendError(429, "RATE_LIMITED", "Too many attempts. Try again shortly.");
+    }
   }
+  rateBuckets.set(key, { startedAt: nowMs, count: 1 });
 }
 
 function requiredPassword(body, key) {
@@ -737,7 +737,7 @@ function requiredSeason(body) {
     throw new BackendError(422, "VALIDATION_FAILED", "season.schemaVersion must be an integer.");
   }
   if (season.schemaVersion > 4) {
-    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "CurlPlan account backend accepts AppData schema 4 or earlier.");
+    throw new BackendError(422, "SCHEMA_UNSUPPORTED", "CurlPlan account backend accepts account season payload schema 4 or earlier.");
   }
   return season;
 }
@@ -776,7 +776,6 @@ function canAdminSharedObject(state, object, accountID) {
   if (object.ownerID === accountID) {
     return true;
   }
-  // A block between the owner and a delegated admin revokes that authority.
   if (isBlockedBetween(state, object.ownerID, accountID)) {
     return false;
   }

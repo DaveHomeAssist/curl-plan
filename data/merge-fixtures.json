@@ -1,0 +1,111 @@
+{
+  "$schema": "curlplan-merge-fixtures",
+  "note": "Cross-platform merge vectors. Both src/merge.js and ios/CurlPlan/Merge.swift must reproduce `expected` from mergeState(a, b). Empty buckets are treated as present-empty when comparing. Every case must also be commutative and idempotent; associativityCases pin three-replica merge groupings (checked by both runners).",
+  "cases": [
+    {
+      "name": "empty ∪ empty",
+      "a": {},
+      "b": {},
+      "expected": {}
+    },
+    {
+      "name": "LWW follow: later timestamp wins",
+      "a": { "follows": { "sam": { "v": true, "at": 100 } } },
+      "b": { "follows": { "sam": { "v": false, "at": 200 } } },
+      "expected": { "follows": { "sam": { "v": false, "at": 200 } } }
+    },
+    {
+      "name": "LWW: disjoint keys union across buckets",
+      "a": { "follows": { "sam": { "v": true, "at": 100 } }, "likes": { "p1": { "v": true, "at": 50 } } },
+      "b": { "follows": { "jo": { "v": true, "at": 120 } }, "joins": { "sp1": { "v": "You're in", "at": 70 } } },
+      "expected": {
+        "follows": { "sam": { "v": true, "at": 100 }, "jo": { "v": true, "at": 120 } },
+        "likes": { "p1": { "v": true, "at": 50 } },
+        "joins": { "sp1": { "v": "You're in", "at": 70 } }
+      }
+    },
+    {
+      "name": "LWW tie: equal at → larger value wins (true > false)",
+      "a": { "likes": { "p1": { "v": true, "at": 100 } } },
+      "b": { "likes": { "p1": { "v": false, "at": 100 } } },
+      "expected": { "likes": { "p1": { "v": true, "at": 100 } } }
+    },
+    {
+      "name": "OR-Set posts: union sorted at desc",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ] },
+      "b": { "posts": [ { "id": "p2", "at": 200, "body": "two" } ] },
+      "expected": { "posts": [ { "id": "p2", "at": 200, "body": "two" }, { "id": "p1", "at": 100, "body": "one" } ] }
+    },
+    {
+      "name": "OR-Set posts: duplicate id deduped",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "x" } ] },
+      "b": { "posts": [ { "id": "p1", "at": 100, "body": "x" }, { "id": "p3", "at": 90, "body": "y" } ] },
+      "expected": { "posts": [ { "id": "p1", "at": 100, "body": "x" }, { "id": "p3", "at": 90, "body": "y" } ] }
+    },
+    {
+      "name": "map-of-OR-Sets visits: union per stop",
+      "a": { "visits": { "kelowna": [ { "id": "v1", "at": 10 } ] } },
+      "b": { "visits": { "kelowna": [ { "id": "v2", "at": 20 } ], "vernon": [ { "id": "v3", "at": 5 } ] } },
+      "expected": {
+        "visits": {
+          "kelowna": [ { "id": "v2", "at": 20 }, { "id": "v1", "at": 10 } ],
+          "vernon": [ { "id": "v3", "at": 5 } ]
+        }
+      }
+    },
+    {
+      "name": "threads: union sorted at desc, tie broken by id asc",
+      "a": { "threads": { "sam": [ { "id": "m1", "at": 10, "from": "me", "text": "hi" } ] } },
+      "b": { "threads": { "sam": [ { "id": "m2", "at": 10, "from": "me", "text": "yo" } ] } },
+      "expected": { "threads": { "sam": [ { "id": "m1", "at": 10, "from": "me", "text": "hi" }, { "id": "m2", "at": 10, "from": "me", "text": "yo" } ] } }
+    },
+    {
+      "name": "addedSpiels + addedCurlers OR-Set union",
+      "a": { "addedSpiels": [ { "id": "sp-a", "name": "A", "at": 5 } ], "addedCurlers": [ { "id": "c-a", "name": "Ada" } ] },
+      "b": { "addedSpiels": [ { "id": "sp-b", "name": "B", "at": 9 } ] },
+      "expected": {
+        "addedSpiels": [ { "id": "sp-b", "name": "B", "at": 9 }, { "id": "sp-a", "name": "A", "at": 5 } ],
+        "addedCurlers": [ { "id": "c-a", "name": "Ada" } ]
+      }
+    },
+    {
+      "name": "tombstone: delete-then-merge propagates (v4)",
+      "a": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ] },
+      "b": { "posts": [ { "id": "p1", "at": 100, "body": "one" } ], "tombstones": { "posts": { "p1": 200 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "p1": 200 } } }
+    },
+    {
+      "name": "tombstone: concurrent add/delete at equal timestamp — delete wins (v4)",
+      "a": { "posts": [ { "id": "p2", "at": 150, "body": "race" } ] },
+      "b": { "tombstones": { "posts": { "p2": 150 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "p2": 150 } } }
+    },
+    {
+      "name": "tombstone: re-add after delete — newer item.at survives (v4)",
+      "a": { "tombstones": { "posts": { "p3": 100 } } },
+      "b": { "posts": [ { "id": "p3", "at": 200, "body": "back" } ] },
+      "expected": { "posts": [ { "id": "p3", "at": 200, "body": "back" } ], "tombstones": { "posts": { "p3": 100 } } }
+    },
+    {
+      "name": "tombstone: map-of-OR-Sets visit delete empties the stop list (v4)",
+      "a": { "visits": { "kelowna": [ { "id": "v1", "at": 10 } ] } },
+      "b": { "tombstones": { "visits": { "v1": 20 } } },
+      "expected": { "visits": { "kelowna": [] }, "tombstones": { "visits": { "v1": 20 } } }
+    },
+    {
+      "name": "tombstone: union takes max deletedAt — later delete beats earlier survivor (v4)",
+      "a": { "posts": [ { "id": "pX", "at": 200, "body": "alive in a" } ], "tombstones": { "posts": { "pX": 100 } } },
+      "b": { "tombstones": { "posts": { "pX": 300 } } },
+      "expected": { "posts": [], "tombstones": { "posts": { "pX": 300 } } }
+    }
+  ],
+  "associativityCases": [
+    {
+      "name": "tombstone: stale item, delete, and newer same-id re-add converge (v4)",
+      "a": { "posts": [ { "id": "p-readd", "at": 100, "body": "old" } ] },
+      "b": { "tombstones": { "posts": { "p-readd": 150 } } },
+      "c": { "posts": [ { "id": "p-readd", "at": 200, "body": "new" } ] },
+      "expected": { "posts": [ { "id": "p-readd", "at": 200, "body": "new" } ], "tombstones": { "posts": { "p-readd": 150 } } }
+    }
+  ]
+}

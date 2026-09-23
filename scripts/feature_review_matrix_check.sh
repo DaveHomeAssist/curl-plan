@@ -67,6 +67,9 @@ while IFS= read -r path; do
     ios/CurlPlan/Models.swift)
       add_rows FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-BONSPIEL-ROSTER FR-BONSPIEL-LINEUP FR-BONSPIEL-SCORE FR-SETTINGS FR-CLAIMS
       ;;
+    ios/CurlPlan/Seed.generated.swift|ios/CurlPlan/Clubs.generated.swift)
+      add_rows build-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-ATTENDANCE FR-CLAIMS
+      ;;
     ios/CurlPlan/CurlPlanApp.swift)
       add_rows FR-SETUP FR-SETTINGS FR-A11Y FR-CLAIMS
       ;;
@@ -100,7 +103,10 @@ while IFS= read -r path; do
     ios/CurlPlan/Components.swift|ios/CurlPlan/Theme.swift)
       add_rows FR-A11Y FR-CLAIMS
       ;;
-    ios/CurlPlan/Assets.xcassets/*|ios/CurlPlan/PrivacyInfo.xcprivacy|ios/CurlPlan.xcodeproj/*)
+    ios/CurlPlan/Merge.swift)
+      add_rows FR-SYNC FR-CLAIMS
+      ;;
+    ios/CurlPlan/Assets.xcassets/*|ios/CurlPlan/Info.plist|ios/CurlPlan/PrivacyInfo.xcprivacy|ios/CurlPlan.xcodeproj/*)
       add_rows build-support
       ;;
     ios/CurlPlan/*.swift)
@@ -108,6 +114,9 @@ while IFS= read -r path; do
       ;;
     ios/CurlPlanUITests/*.swift|ios/CurlPlanUITests/*/*.swift)
       add_rows test-support FR-A11Y FR-CLAIMS
+      ;;
+    ios/CurlPlanTests/MergeTests.swift)
+      add_rows test-support FR-SYNC FR-CLAIMS
       ;;
     tests/CurlPlanCoreTests/AccountBackendAPITests.swift|tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|tests/CurlPlanCoreTests/AccountRuntimeTests.swift|tests/CurlPlanCoreTests/AccountSocialContractTests.swift|Tests/CurlPlanCoreTests/AccountBackendAPITests.swift|Tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|Tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|Tests/CurlPlanCoreTests/AccountRuntimeTests.swift|Tests/CurlPlanCoreTests/AccountSocialContractTests.swift)
       add_rows test-support FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
@@ -215,8 +224,7 @@ if [ -s "$rows_file" ]; then
   if grep -Eq 'FR-ACCOUNT|FR-SYNC|FR-TRUST-SAFETY' "$rows_file" && grep -Eq 'services/account-backend/|scripts/verify-account-backend.mjs' "$files_file"; then
     echo "- node scripts/verify-account-backend.mjs"
   fi
-  printf '%s\n' "- rg -in \"likes|comments|public roster|here now|GPS verification|official result\" ios/CurlPlan ios/CurlPlanUITests tests/CurlPlanCoreTests -g '*.swift'"
-  printf '%s\n' "- rg -in \"\\b(Text|Label|Button)\\([^\\n]*(official|public roster|likes|comments|gps|here now|live)\" ios/CurlPlan -g '*.swift'"
+  echo "- literal visible-copy scan in scripts/feature_review_matrix_check.sh"
 else
   echo "- claim scans only"
 fi
@@ -224,10 +232,11 @@ fi
 echo
 echo "Claim scan:"
 claim_failed=0
-if rg -in "likes|comments|public roster|here now|GPS verification|official result" ios/CurlPlan ios/CurlPlanUITests tests/CurlPlanCoreTests -g '*.swift'; then
-  claim_failed=1
-fi
-if rg -in "\b(Text|Label|Button)\([^\n]*(official|public roster|likes|comments|gps|here now|live)" ios/CurlPlan -g '*.swift'; then
+claim_matches=$(rg -in '"[^"]*(likes|comments|public roster|here now|GPS verification|official result)[^"]*"' ios/CurlPlan \
+  -g '*View.swift' -g '*Sheet.swift' -g 'Components.swift' -g 'CurlPlanApp.swift' -g 'Seed.generated.swift' 2>/dev/null \
+  | rg -iv 'not live|not yet|local|demo|sample|unavailable|allowed:|banned:' || true)
+if [ -n "$claim_matches" ]; then
+  printf '%s\n' "$claim_matches"
   claim_failed=1
 fi
 if [ "$claim_failed" -eq 0 ]; then

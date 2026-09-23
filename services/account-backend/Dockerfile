@@ -5,6 +5,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY server.mjs ./server.mjs
+RUN mkdir -p /data && chown node:node /data
 
 ENV PORT=8787 \
     HOST=0.0.0.0 \
@@ -12,5 +13,6 @@ ENV PORT=8787 \
 
 EXPOSE 8787
 VOLUME ["/data"]
+USER node
 
 CMD ["node", "server.mjs"]

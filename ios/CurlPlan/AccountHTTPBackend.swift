@@ -18,12 +18,12 @@ struct AccountSignInRequest: Equatable, Codable {
 }
 
 struct AccountImportSeasonRequest: Equatable, Codable {
-    var season: AppData
+    var season: AccountSeasonPayload
 }
 
 struct AccountApplySeasonChangeRequest: Equatable, Codable {
     var baseVersion: Int
-    var updatedBody: AppData
+    var updatedBody: AccountSeasonPayload
     var domains: Set<SeasonDomain>
     var clientMutationID: String
 }
@@ -122,7 +122,7 @@ final class AccountHTTPBackendTransport {
                    response: AccountEmptyResponse.self)
     }
 
-    func importLocalSeason(sessionID: String, season: AppData) async -> AccountAPIResponse<AccountSeasonDocument> {
+    func importLocalSeason(sessionID: String, season: AccountSeasonPayload) async -> AccountAPIResponse<AccountSeasonDocument> {
         await send(AccountAPIRoutes.importSeason,
                    sessionID: sessionID,
                    body: AccountImportSeasonRequest(season: season),
@@ -137,7 +137,7 @@ final class AccountHTTPBackendTransport {
 
     func applySeasonChange(sessionID: String,
                            baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) async -> AccountAPIResponse<SeasonChangeReceipt> {
         await send(AccountAPIRoutes.applySeasonChange,
@@ -414,7 +414,7 @@ final class AccountHTTPBackendClient {
     }
 
     @discardableResult
-    func importLocalSeason(_ season: AppData) async throws -> AccountSeasonDocument {
+    func importLocalSeason(_ season: AccountSeasonPayload) async throws -> AccountSeasonDocument {
         try unwrap(await transport.importLocalSeason(sessionID: try requireSessionID(), season: season))
     }
 
@@ -424,7 +424,7 @@ final class AccountHTTPBackendClient {
 
     @discardableResult
     func applySeasonChange(baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) async throws -> SeasonChangeReceipt {
         try unwrap(await transport.applySeasonChange(sessionID: try requireSessionID(),

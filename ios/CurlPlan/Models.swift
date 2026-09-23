@@ -1,84 +1,20 @@
-import Combine
-import Foundation
+import SwiftUI
 
-// MARK: - Models
+// ============================================================
+// CurlPlan — data models + Store.
+// Seed baseline lives in Seed.generated.swift (from data/season-seed.json).
+// This file owns the mutable demo state layer and the derivations that mirror
+// the web Hi-Fi app (index.html). Public credential collection remains disabled
+// until the real account backend is configured and verified.
+// ============================================================
+
+// MARK: - Value models
 
 struct GameLine: Identifiable, Hashable, Codable {
     var id = UUID()
     let label: String   // opponent or game label
-    let score: String   // "8-4"
+    let score: String   // "8–4"
     let res: String     // "W" / "L"
-}
-
-struct PlayerProfile: Hashable, Codable {
-    var name: String
-    var initials: String
-    var homeClub: String
-    var homeProvince: String
-    var season: String
-    var demoMode: Bool
-    var baseGames: Int
-    var baseWins: Int
-
-    var importedGameCount: Int { baseGames }
-    var importedWinCount: Int { baseWins }
-
-    static let demo = PlayerProfile(name: "Dana Mercer",
-                                    initials: "DM",
-                                    homeClub: "Calgary Granite CC",
-                                    homeProvince: "AB",
-                                    season: "Season 2025-26 · demo season",
-                                    demoMode: true,
-                                    baseGames: 38,
-                                    baseWins: 26)
-
-    static func blank(name: String, homeClub: String, province: String) -> PlayerProfile {
-        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let initials = cleanName.split(separator: " ").prefix(2)
-            .compactMap(\.first).map(String.init).joined().uppercased()
-        return PlayerProfile(name: cleanName.isEmpty ? "CurlPlan User" : cleanName,
-                             initials: initials.isEmpty ? "CP" : initials,
-                             homeClub: homeClub.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Home rink TBD" : homeClub,
-                             homeProvince: province.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "TBD" : province.uppercased(),
-                             season: "Season 2025-26 · blank season",
-                             demoMode: false,
-                             baseGames: 0,
-                             baseWins: 0)
-    }
-}
-
-struct SeasonSummary {
-    let rinks: Int
-    let provinces: Int
-    let games: Int
-    let winPercent: Int
-    let wins: Int
-    let met: Int
-    let kilometers: Int
-    let distanceLabel: String
-}
-
-struct CurlerProfileSummary: Hashable {
-    var curler: Curler
-    var record: String
-    var win: String
-    var rinks: Int
-    var mutual: Int
-    var sharedRinks: [String]
-    var recentForm: [GameLine]
-
-    var shareText: String {
-        "\(curler.name), \(curler.role), \(curler.club) (\(curler.prov)). Record \(record), win \(win)."
-    }
-}
-
-struct ImportedCurlerHistory: Hashable, Codable {
-    var record: String
-    var win: String
-    var rinks: Int
-    var mutual: Int
-    var sharedRinks: [String]
-    var form: [GameLine]
 }
 
 struct Curler: Identifiable, Hashable, Codable {
@@ -89,252 +25,34 @@ struct Curler: Identifiable, Hashable, Codable {
     let club: String
     let prov: String
     let metAt: String
-    var following: Bool
+    var following: Bool          // seed baseline; live state is Store.isFollowing()
     let record: String
     let win: String
     let clubs: Int
     let mutual: Int
     let sharedClubs: [String]
     let form: [GameLine]
-    var importedHistory: ImportedCurlerHistory? = nil
 }
 
-enum VenueAuthority: String, Hashable, Codable {
-    case curated
-    case mapItem = "map_item"
-    case geocodedAddress = "geocoded_address"
-    case freeText = "free_text"
-    case unmapped
-}
-
-struct Venue: Identifiable, Hashable, Codable {
-    let id: String
-    var displayName: String
-    var aliases: [String] = []
-    var clubName: String
-    var city: String
-    var region: String
-    var country: String
-    var postalAddress: String
-    var latitude: Double? = nil
-    var longitude: Double? = nil
-    var timezone: String? = nil
-    var authority: VenueAuthority
-    var mapItemIdentifier: String? = nil
-    var sourceURL: String? = nil
-    var sourceCheckedAt: String? = nil
-    var seasonMapX: Double? = nil
-    var seasonMapY: Double? = nil
-    var code: String? = nil
-
-    var canMap: Bool {
-        latitude != nil && longitude != nil
-    }
-
-    var displayLocationText: String {
-        let parts = [city, region].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        return parts.isEmpty ? postalAddress : parts.joined(separator: ", ")
-    }
-
-    var bonspielVenue: BonspielVenue {
-        BonspielVenue(name: clubName.isEmpty ? displayName : clubName,
-                      city: city,
-                      region: region,
-                      country: country.isEmpty ? "CA" : country)
-    }
-
-    func stop(spielID: String, name: String, dateText: String) -> Stop? {
-        guard let latitude, let longitude else { return nil }
-        let point = Venue.seasonMapPoint(latitude: latitude,
-                                         longitude: longitude,
-                                         fallbackX: seasonMapX,
-                                         fallbackY: seasonMapY)
-        return Stop(id: "stop-\(spielID)",
-                    code: stopCode,
-                    name: name,
-                    club: clubName.isEmpty ? displayName : clubName,
-                    prov: region.isEmpty ? "TBD" : region,
-                    dates: dateText,
-                    record: "—",
-                    here: false,
-                    x: point.x,
-                    y: point.y,
-                    big: false,
-                    plus: nil,
-                    iceSpeed: "—",
-                    iceSpeedSec: "—",
-                    iceCurl: "—",
-                    iceRec: "—",
-                    games: [],
-                    met: [],
-                    latitude: latitude,
-                    longitude: longitude,
-                    venueID: id)
-    }
-
-    static func generatedID(prefix: String = "venue", name: String, city: String = "", region: String = "") -> String {
-        let source = [name, city, region]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        let slug = source
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            .lowercased()
-            .map { character -> Character in
-                character.isLetter || character.isNumber ? character : "-"
-            }
-            .reduce(into: "") { result, character in
-                if character == "-" && result.last == "-" { return }
-                result.append(character)
-            }
-            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        return "\(prefix)-\(slug.isEmpty ? UUID().uuidString.prefix(8).lowercased() : slug)"
-    }
-
-    private var stopCode: String {
-        if let code = code?.trimmingCharacters(in: .whitespacesAndNewlines), !code.isEmpty {
-            return code.uppercased()
-        }
-        let base = city.isEmpty ? displayName : city
-        let letters = base.filter(\.isLetter).prefix(3).map(String.init).joined().uppercased()
-        return letters.isEmpty ? "VEN" : letters
-    }
-
-    private static func seasonMapPoint(latitude: Double,
-                                       longitude: Double,
-                                       fallbackX: Double?,
-                                       fallbackY: Double?) -> (x: Double, y: Double) {
-        if let fallbackX, let fallbackY {
-            return (clamp(fallbackX), clamp(fallbackY))
-        }
-
-        let x = ((longitude + 140.0) / 70.0) * 100.0
-        let y = ((70.0 - latitude) / 25.0) * 100.0
-        return (clamp(x), clamp(y))
-    }
-
-    private static func clamp(_ value: Double) -> Double {
-        min(100, max(0, value))
-    }
-}
-
-struct VenueResolver {
-    static func resolve(_ freeText: String, venues: [Venue]) -> Venue? {
-        let query = normalized(freeText)
-        guard !query.isEmpty else { return nil }
-        return venues.first { venue in
-            authoritativeTerms(for: venue).contains { term in
-                query == term || (term.count >= 4 && query.contains(term)) || (query.count >= 4 && term.contains(query))
-            }
-        }
-    }
-
-    static func suggestions(for query: String, venues: [Venue], limit: Int = 5) -> [Venue] {
-        let clean = normalized(query)
-        guard !clean.isEmpty else {
-            return Array(venues.prefix(limit))
-        }
-        let ranked = venues.compactMap { venue -> (Venue, Int)? in
-            let terms = matchTerms(for: venue)
-            if terms.contains(clean) { return (venue, 0) }
-            if terms.contains(where: { $0.hasPrefix(clean) }) { return (venue, 1) }
-            if terms.contains(where: { $0.contains(clean) || clean.contains($0) }) { return (venue, 2) }
-            return nil
-        }
-        return ranked.sorted { lhs, rhs in
-            if lhs.1 != rhs.1 { return lhs.1 < rhs.1 }
-            return lhs.0.displayName < rhs.0.displayName
-        }
-        .prefix(limit)
-        .map(\.0)
-    }
-
-    static func matches(_ venue: Venue, query: String) -> Bool {
-        let clean = normalized(query)
-        guard !clean.isEmpty else { return false }
-        return matchTerms(for: venue).contains { term in
-            clean == term || (term.count >= 4 && clean.contains(term)) || (clean.count >= 4 && term.contains(clean))
-        }
-    }
-
-    static func normalized(_ value: String) -> String {
-        value
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            .lowercased()
-            .replacingOccurrences(of: ".", with: "")
-            .replacingOccurrences(of: "-", with: " ")
-            .replacingOccurrences(of: "_", with: " ")
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func authoritativeTerms(for venue: Venue) -> [String] {
-        ([venue.displayName, venue.clubName, venue.postalAddress] + venue.aliases)
-            .map(normalized)
-            .filter { !$0.isEmpty }
-    }
-
-    private static func matchTerms(for venue: Venue) -> [String] {
-        (authoritativeTerms(for: venue) + [venue.city, "\(venue.city), \(venue.region)"].map(normalized))
-            .filter { !$0.isEmpty }
-    }
-}
-
-struct Stop: Identifiable, Hashable, Codable {
+struct Stop: Identifiable, Hashable {
     let id: String
     let code: String
     let name: String
     let club: String
     let prov: String
     let dates: String
-    var record: String
+    let record: String
     var here: Bool = false
-    let x: Double           // 0–100 % position on the season map
+    let x: Double
     let y: Double
     var big: Bool = false
-    var plus: String? = nil // "+3" badge on the avatar stack
+    var plus: String? = nil
     let iceSpeed: String
     let iceSpeedSec: String
     let iceCurl: String
     let iceRec: String
-    var games: [GameLine]
-    var met: [String]       // curler ids
-    var latitude: Double? = nil
-    var longitude: Double? = nil
-    var venueID: String? = nil
-}
-
-struct ResultPost: Identifiable, Hashable, Codable {
-    var id = UUID()
-    let author: String, time: String, body: String
-    let scoreFor: Int, scoreAgainst: Int, res: String, vs: String
-}
-
-struct SpielPost: Identifiable, Hashable, Codable {
-    var id = UUID()
-    let title: String, spielName: String, whereText: String, whenText: String
-    let who: [String]
-}
-
-struct ReviewPost: Identifiable, Hashable, Codable {
-    var id = UUID()
-    let author: String, time: String, club: String
-    let stars: Int, note: String
-}
-
-enum FeedItem: Identifiable, Hashable, Codable {
-    case result(ResultPost)
-    case spiel(SpielPost)
-    case review(ReviewPost)
-
-    var id: UUID {
-        switch self {
-        case .result(let p): return p.id
-        case .spiel(let p): return p.id
-        case .review(let p): return p.id
-        }
-    }
+    let games: [GameLine]
+    let met: [String]
 }
 
 struct Spiel: Identifiable, Hashable, Codable {
@@ -344,2632 +62,379 @@ struct Spiel: Identifiable, Hashable, Codable {
     let whenText: String
     var status: String
     var going: [String]
-    var startDate: String? = nil
-    var endDate: String? = nil
-    var stopID: String? = nil
-    var venueID: String? = nil
 }
 
-struct GameResult: Identifiable, Hashable, Codable {
-    var id = UUID()
-    var authorID: String?
-    var createdAt: String
-    var note: String
-    var opponent: String
-    var scoreFor: Int
-    var scoreAgainst: Int
-    var stopID: String?
-    var spielID: String?
-    var participantCurlerIDs: [String]
-    var ends: [BonspielEndScore]
-    var conceded: Bool
-    var forfeited: Bool
-    var locallyConfirmed: Bool
-    var bonspielID: String? = nil
-    var bonspielGameID: String? = nil
+struct MeStats { let clubs: Int; let prov: Int; let games: Int; let win: Int }
 
-    var res: String {
-        if forfeited { return "FORFEIT" }
-        if scoreFor == scoreAgainst { return "TIE" }
-        return scoreFor > scoreAgainst ? "WIN" : "LOSS"
-    }
-
-    var scoreLabel: String {
-        if ends.isEmpty {
-            return "\(scoreFor)-\(scoreAgainst)"
-        }
-        let forTotal = ends.reduce(0) { $0 + $1.teamA }
-        let againstTotal = ends.reduce(0) { $0 + $1.teamB }
-        return "\(forTotal)-\(againstTotal)"
-    }
-
-    func asFeedPost(profile: PlayerProfile) -> ResultPost {
-        let opponentLabel = opponent.trimmingCharacters(in: .whitespacesAndNewlines)
-        let vsLabel = opponentLabel.isEmpty ? "" : (opponentLabel.lowercased().hasPrefix("vs") ? opponentLabel : "vs \(opponentLabel)")
-        let cleanNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let body = cleanNote.isEmpty ? "\(res.capitalized) \(scoreLabel) \(vsLabel).".trimmingCharacters(in: .whitespacesAndNewlines) : cleanNote
-        return ResultPost(id: id,
-                          author: authorID ?? "me",
-                          time: createdAt,
-                          body: body,
-                          scoreFor: scoreFor,
-                          scoreAgainst: scoreAgainst,
-                          res: res,
-                          vs: vsLabel)
-    }
-}
-
-struct StopVisit: Identifiable, Hashable, Codable {
-    var id = UUID()
-    var stopID: String
-    var arrivedAt: String
-    var departedAt: String?
-    var curlerIDs: [String]
-    var note: String
-
-    var isActive: Bool { departedAt == nil }
-}
-
-enum SpielAttendanceStatus: String, Hashable, Codable {
-    case going
-    case notGoing = "not_going"
-}
-
-struct SpielAttendance: Identifiable, Hashable, Codable {
-    var id = UUID()
-    var spielID: String
-    var curlerID: String
-    var status: SpielAttendanceStatus
-    var updatedAt: String
-}
-
-enum SeasonDomain: String, Hashable, Codable {
-    case setup
-    case profile
-    case curlers
-    case venues
-    case stops
-    case visits
-    case spiels
-    case attendance
-    case results
-    case feed
-    case bonspiels
-}
-
-struct UndoToken: Hashable, Codable {
-    var action: String
-    var payloadID: String
-}
-
-struct MutationReceipt: Hashable, Codable {
-    var id = UUID()
-    var action: String
-    var changedDomains: Set<SeasonDomain>
-    var userMessage: String
-    var focusRoute: Route?
-    var undoToken: UndoToken?
-}
-
-enum CurlingDiscipline: String, CaseIterable, Hashable, Codable {
-    case fourPlayer = "four_player"
-    case mixed = "mixed"
-    case mixedDoubles = "mixed_doubles"
-    case wheelchair = "wheelchair"
-    case wheelchairMixedDoubles = "wheelchair_mixed_doubles"
-    case stick = "stick"
-    case other = "other"
-
-    var label: String {
-        switch self {
-        case .fourPlayer: return "Four player"
-        case .mixed: return "Mixed"
-        case .mixedDoubles: return "Mixed doubles"
-        case .wheelchair: return "Wheelchair"
-        case .wheelchairMixedDoubles: return "Wheelchair mixed doubles"
-        case .stick: return "Stick"
-        case .other: return "Other"
-        }
-    }
-
-    var scheduledEnds: Int {
-        switch self {
-        case .mixedDoubles: return 8
-        case .wheelchairMixedDoubles: return 8
-        default: return 8
-        }
-    }
-
-    var maxPlayersOnIce: Int {
-        switch self {
-        case .mixedDoubles, .wheelchairMixedDoubles: return 2
-        default: return 4
-        }
-    }
-
-    var allowsAlternates: Bool {
-        switch self {
-        case .mixed, .mixedDoubles, .wheelchairMixedDoubles: return false
-        default: return true
-        }
-    }
-
-    static func fromLabel(_ label: String) -> CurlingDiscipline {
-        allCases.first { $0.label == label } ?? .fourPlayer
-    }
-}
-
-enum BonspielGameStatus: String, Hashable, Codable {
-    case scheduled
-    case readyForLineup = "ready_for_lineup"
-    case lineupLocked = "lineup_locked"
-    case inProgress = "in_progress"
-    case complete
-    case finalized
-    case forfeit
-    case cancelled
-    case postponed
-
-    var label: String {
-        switch self {
-        case .scheduled: return "Scheduled"
-        case .readyForLineup: return "Ready for lineup"
-        case .lineupLocked: return "Lineup locked"
-        case .inProgress: return "In progress"
-        case .complete: return "Complete"
-        case .finalized: return "Finalized"
-        case .forfeit: return "Forfeit"
-        case .cancelled: return "Cancelled"
-        case .postponed: return "Postponed"
-        }
-    }
-}
-
-struct BonspielVenue: Hashable, Codable {
-    var name: String
-    var city: String
-    var region: String
-    var country: String
-
-    var display: String {
-        [city, region].filter { !$0.isEmpty }.joined(separator: ", ")
-    }
-
-    static func fromFreeText(_ text: String) -> BonspielVenue {
-        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !clean.isEmpty else {
-            return BonspielVenue(name: "Venue TBD", city: "TBD", region: "", country: "CA")
-        }
-        let parts = clean
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        return BonspielVenue(name: clean,
-                             city: parts.first ?? clean,
-                             region: parts.dropFirst().first ?? "",
-                             country: "CA")
-    }
-}
-
-struct BonspielWindow: Hashable, Codable {
-    var opensAt: String
-    var closesAt: String
-}
-
-struct BonspielRulesProfile: Hashable, Codable {
-    var rulebookRef: String
-    var scheduledEnds: Int
-    var minEndsForLocalResult: Int
-    var lsfeMethod: String
-    var tiebreakerMethods: [String]
-}
-
-struct BonspielRosterPolicy: Hashable, Codable {
-    var maxPlayersOnIce: Int
-    var allowAlternates: Bool
-    var allowSpares: Bool
-    var allowReentry: Bool
-    var lockMinutesBeforeGame: Int
-}
-
-struct BonspielPrivacyPolicy: Hashable, Codable {
-    var rosterDisplayFields: [String]
-    var internalFields: [String]
-    var mediaConsentRequired: Bool
-    var consentVersion: String
-}
-
-struct BonspielStage: Identifiable, Hashable, Codable {
-    var id: String
-    var name: String
-    var stageType: String
-    var sequence: Int
-}
-
-struct BonspielTeamMember: Identifiable, Hashable, Codable {
-    var id: String
-    var curlerID: String?
-    var displayName: String
-    var role: String
-    var rosterStatus: String
-    var declaredPosition: String
-}
-
-struct BonspielTeam: Identifiable, Hashable, Codable {
-    var id: String
-    var displayName: String
-    var shortName: String
-    var affiliation: String
-    var members: [BonspielTeamMember]
-}
-
-struct BonspielLineupSlot: Hashable, Codable {
-    var memberID: String
-    var position: String
-    var isSkip: Bool
-    var isViceSkip: Bool
-}
-
-struct BonspielGameLineup: Identifiable, Hashable, Codable {
-    var id: String
-    var teamID: String
-    var submittedAt: String
-    var source: String
-    var deliveryRotation: [BonspielLineupSlot]
-    var alternateMemberID: String?
-    var coachName: String?
-}
-
-struct BonspielLineupChange: Identifiable, Hashable, Codable {
-    var id: String
-    var teamID: String
-    var outgoingMemberID: String?
-    var incomingName: String
-    var effectiveEnd: Int
-    var reason: String
-    var approvedBy: String
-}
-
-struct BonspielEndScore: Identifiable, Hashable, Codable {
-    var id: String
-    var endNumber: Int
-    var teamA: Int
-    var teamB: Int
-    var hammerTeamIDStart: String?
-    var isBlank: Bool
-    var isExtraEnd: Bool
-    var measureRequired: Bool
-    var powerPlayUsed: Bool
-}
-
-struct BonspielLastStoneDecision: Hashable, Codable {
-    var method: String
-    var teamID: String
-    var evidence: String
-}
-
-struct BonspielResultFlags: Hashable, Codable {
-    var isFinal: Bool
-    var conceded: Bool
-    var forfeited: Bool
-}
-
-struct BonspielScoreAgreement: Hashable, Codable {
-    var confirmed: Bool
-    var confirmedAt: String?
-    var confirmedBy: String?
-}
-
-struct BonspielGame: Identifiable, Hashable, Codable {
-    var id: String
-    var stageID: String
-    var drawLabel: String
-    var status: BonspielGameStatus
-    var scheduledStartAt: String
-    var sheet: String
-    var teamAID: String
-    var teamBID: String
-    var stoneColorAssignment: String
-    var lsfeOrPlacementDecision: BonspielLastStoneDecision
-    var scheduledEnds: Int
-    var minEndsForLocalResult: Int
-    var ends: [BonspielEndScore]
-    var gameLineups: [BonspielGameLineup]
-    var lineupChanges: [BonspielLineupChange]
-    var resultFlags: BonspielResultFlags
-    var scoreAgreement: BonspielScoreAgreement
-    var version: Int
-
-    var completedEnds: Int {
-        ends.filter { $0.teamA > 0 || $0.teamB > 0 || $0.isBlank }.count
-    }
-
-    var teamATotal: Int {
-        ends.reduce(0) { $0 + $1.teamA }
-    }
-
-    var teamBTotal: Int {
-        ends.reduce(0) { $0 + $1.teamB }
-    }
-
-    var scoreLabel: String {
-        "\(teamATotal)-\(teamBTotal)"
-    }
-}
-
-struct BonspielRecord: Identifiable, Hashable, Codable {
-    var id: String
-    var linkedSpielID: String
-    var name: String
-    var shortName: String
-    var season: String
-    var discipline: CurlingDiscipline
-    var venueID: String? = nil
-    var venue: BonspielVenue
-    var timezone: String
-    var startDate: String
-    var endDate: String
-    var registrationWindow: BonspielWindow
-    var rulesProfile: BonspielRulesProfile
-    var rosterPolicy: BonspielRosterPolicy
-    var privacyPolicy: BonspielPrivacyPolicy
-    var stages: [BonspielStage]
-    var teams: [BonspielTeam]
-    var games: [BonspielGame]
-    var version: Int
-
-    static func defaultLinked(spielID: String,
-                              name: String,
-                              whereText: String,
-                              whenText: String,
-                              discipline: CurlingDiscipline,
-                              homeClub: String,
-                              startDate: String? = nil,
-                              endDate: String? = nil,
-                              venueID: String? = nil,
-                              venue resolvedVenue: BonspielVenue? = nil,
-                              timezone resolvedTimezone: String? = nil) -> BonspielRecord {
-        let id = "bon-\(spielID)"
-        let venue = resolvedVenue ?? BonspielVenue.fromFreeText(whereText)
-        let canonicalStart = startDate?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let canonicalEnd = endDate?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackDate = whenText.isEmpty ? "Date TBD" : whenText
-        return BonspielRecord(
-            id: id,
-            linkedSpielID: spielID,
-            name: name,
-            shortName: String(name.prefix(22)),
-            season: "2025-26",
-            discipline: discipline,
-            venueID: venueID,
-            venue: venue,
-            timezone: resolvedTimezone ?? "America/Vancouver",
-            startDate: (canonicalStart?.isEmpty == false ? canonicalStart : nil) ?? fallbackDate,
-            endDate: (canonicalEnd?.isEmpty == false ? canonicalEnd : nil) ?? fallbackDate,
-            registrationWindow: BonspielWindow(opensAt: "Open", closesAt: "Before draw"),
-            rulesProfile: BonspielRulesProfile(rulebookRef: "Club rules profile",
-                                                scheduledEnds: discipline.scheduledEnds,
-                                                minEndsForLocalResult: min(6, discipline.scheduledEnds),
-                                                lsfeMethod: "LSD or organizer decision",
-                                                tiebreakerMethods: ["Win loss", "Head to head", "Draw shot challenge"]),
-            rosterPolicy: BonspielRosterPolicy(maxPlayersOnIce: discipline.maxPlayersOnIce,
-                                                allowAlternates: discipline.allowsAlternates,
-                                                allowSpares: true,
-                                                allowReentry: false,
-                                                lockMinutesBeforeGame: 45),
-            privacyPolicy: BonspielPrivacyPolicy(rosterDisplayFields: ["Team", "Name", "Position", "Club"],
-                                                  internalFields: ["Birth date", "Email", "Phone", "Consent"],
-                                                  mediaConsentRequired: false,
-                                                  consentVersion: "v1"),
-            stages: [BonspielStage(id: "\(id)-pool", name: "Pool", stageType: "round_robin", sequence: 1)],
-            teams: [BonspielTeam(id: "\(id)-team-me",
-                                  displayName: "Team \(homeClub.isEmpty ? "CurlPlan" : homeClub)",
-                                  shortName: "Team CP",
-                                  affiliation: homeClub.isEmpty ? "Home club TBD" : homeClub,
-                                  members: [])],
-            games: [],
-            version: 1
-        )
-    }
-
-    func teamName(_ teamID: String) -> String {
-        teams.first(where: { $0.id == teamID })?.displayName ?? "Team TBD"
-    }
-
-    func memberName(_ memberID: String, teamID: String) -> String {
-        teams.first(where: { $0.id == teamID })?
-            .members.first(where: { $0.id == memberID })?
-            .displayName ?? "Player TBD"
-    }
-
-    func lineupNames(_ lineup: BonspielGameLineup) -> [String] {
-        lineup.deliveryRotation.map { slot in
-            let name = memberName(slot.memberID, teamID: lineup.teamID)
-            if slot.isSkip { return "\(slot.position) \(name) skip" }
-            if slot.isViceSkip { return "\(slot.position) \(name) vice" }
-            return "\(slot.position) \(name)"
-        }
-    }
-}
-
-struct AppData: Hashable, Codable {
-    var schemaVersion: Int
-    var setupComplete: Bool
-    var profile: PlayerProfile
-    var curlers: [Curler]
-    var venues: [Venue]
-    var stops: [Stop]
-    var visits: [StopVisit]
-    var spiels: [Spiel]
-    var attendance: [SpielAttendance]
-    var results: [GameResult]
-    var feed: [FeedItem]
-    var bonspiels: [BonspielRecord]
-
-    init(schemaVersion: Int,
-         setupComplete: Bool,
-         profile: PlayerProfile,
-         curlers: [Curler],
-         venues: [Venue],
-         stops: [Stop],
-         visits: [StopVisit],
-         spiels: [Spiel],
-         attendance: [SpielAttendance],
-         results: [GameResult],
-         feed: [FeedItem],
-         bonspiels: [BonspielRecord]) {
-        self.schemaVersion = schemaVersion
-        self.setupComplete = setupComplete
-        self.profile = profile
-        self.curlers = curlers
-        self.venues = venues
-        self.stops = stops
-        self.visits = visits
-        self.spiels = spiels
-        self.attendance = attendance
-        self.results = results
-        self.feed = feed
-        self.bonspiels = bonspiels
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case schemaVersion
-        case setupComplete
-        case profile
-        case curlers
-        case venues
-        case stops
-        case visits
-        case spiels
-        case attendance
-        case results
-        case feed
-        case bonspiels
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
-        setupComplete = try container.decodeIfPresent(Bool.self, forKey: .setupComplete) ?? true
-        profile = try container.decode(PlayerProfile.self, forKey: .profile)
-        curlers = try container.decodeIfPresent([Curler].self, forKey: .curlers) ?? []
-        venues = try container.decodeIfPresent([Venue].self, forKey: .venues) ?? []
-        stops = try container.decodeIfPresent([Stop].self, forKey: .stops) ?? []
-        visits = try container.decodeIfPresent([StopVisit].self, forKey: .visits) ?? []
-        spiels = try container.decodeIfPresent([Spiel].self, forKey: .spiels) ?? []
-        attendance = try container.decodeIfPresent([SpielAttendance].self, forKey: .attendance) ?? []
-        results = try container.decodeIfPresent([GameResult].self, forKey: .results) ?? []
-        feed = try container.decodeIfPresent([FeedItem].self, forKey: .feed) ?? []
-        bonspiels = try container.decodeIfPresent([BonspielRecord].self, forKey: .bonspiels) ?? []
-    }
-}
-
-enum StoreDataError: LocalizedError {
-    case invalidJSON
-    case unsupportedVersion(Int)
-    case emptyProfile
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidJSON: return "That does not look like a CurlPlan season export."
-        case .unsupportedVersion(let version): return "CurlPlan cannot import schema version \(version)."
-        case .emptyProfile: return "The imported season is missing a player profile."
-        }
-    }
-}
+struct VisitedStop: Identifiable { let stop: Stop; let count: Int; let at: Double; var id: String { stop.id } }
 
 // Navigation routes for the per-tab NavigationStacks.
-enum Route: Hashable, Codable {
+enum Route: Hashable {
     case stop(String)
     case curler(String)
 }
 
-// MARK: - Persistence
+struct MeInfo {
+    let name: String
+    let initials: String
+    let role: String
+    let club: String
+    let prov: String
+    let season: String
+    let stats: MeStats
+}
 
-enum Persist {
-    static let appDataKey = "cp.appdata.v2"
-    static let curlersKey = "cp.curlers.v1"
-    static let spielsKey = "cp.spiels.v1"
-    static let feedKey = "cp.feed.v1"
+// Unified feed post — mirrors the web's uniform dict so seed feed + user posts
+// merge trivially and every post carries a stable String id (likes key on it).
+struct Post: Identifiable, Codable, Hashable {
+    enum Kind: String, Codable { case result, note, review, spiel }
+    let id: String
+    let kind: Kind
+    var author: String?
+    var at: Double?          // epoch seconds; nil => seed, use `time`
+    var time: String?        // seed/legacy relative label
+    // result / note
+    var body: String?
+    var scoreFor: Int?
+    var scoreAgainst: Int?
+    var res: String?
+    var vs: String?
+    var likes: Int
+    var comments: Int
+    // review
+    var club: String?
+    var stars: Int?
+    var note: String?
+    // spiel promo
+    var title: String?
+    var spielName: String?
+    var spielId: String?     // links a feed card back to a real Spiel (parity fix)
+    var whereText: String?
+    var whenText: String?
+    var who: [String]?
 
-    static func save<T: Encodable>(_ value: T, _ key: String) {
-        guard let data = try? JSONEncoder().encode(value) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+    init(id: String, kind: Kind, author: String? = nil, at: Double? = nil, time: String? = nil,
+         body: String? = nil, scoreFor: Int? = nil, scoreAgainst: Int? = nil, res: String? = nil,
+         vs: String? = nil, likes: Int = 0, comments: Int = 0, club: String? = nil, stars: Int? = nil,
+         note: String? = nil, title: String? = nil, spielName: String? = nil, spielId: String? = nil,
+         whereText: String? = nil, whenText: String? = nil, who: [String]? = nil) {
+        self.id = id; self.kind = kind; self.author = author; self.at = at; self.time = time
+        self.body = body; self.scoreFor = scoreFor; self.scoreAgainst = scoreAgainst; self.res = res
+        self.vs = vs; self.likes = likes; self.comments = comments; self.club = club; self.stars = stars
+        self.note = note; self.title = title; self.spielName = spielName; self.spielId = spielId
+        self.whereText = whereText; self.whenText = whenText; self.who = who
     }
+}
 
-    static func load<T: Decodable>(_ key: String) -> T? {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(T.self, from: data)
+// MARK: - Stop-detail contribution entries + messages
+
+struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
+struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double }
+struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
+struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: String; let text: String; let at: Double }
+
+// MARK: - Identity
+
+struct Account: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let club: String
+    let role: String
+    let prov: String
+    var isDemo: Bool { id == "demo" }
+
+    static let demo = Account(id: "demo", name: Seed.me.name,
+                              club: Seed.me.club, role: Seed.me.role, prov: Seed.me.prov)
+}
+
+struct AuthState: Codable {
+    var session: String? = nil     // "demo" | nil
+}
+
+// MARK: - Per-account mutable state (the "store" blob)
+
+struct AppState: Codable, Hashable {
+    var addedCurlers: [Curler] = []
+    var addedSpiels: [Spiel] = []
+    var follows: [String: Bool] = [:]        // curlerId -> override
+    var likes: [String: Bool] = [:]          // postId -> liked
+    var joins: [String: String] = [:]        // spielId -> status override
+    var posts: [Post] = []                   // user-authored, newest first
+    var visits: [String: [VisitEntry]] = [:] // stopId -> entries
+    var reviews: [String: [ReviewEntry]] = [:]
+    var iceReads: [String: [IceReadEntry]] = [:]
+    var threads: [String: [Message]] = [:]   // curlerId -> messages
+
+    init() {}
+
+    // Tolerant decode: property defaults apply for missing/new keys, so adding a bucket
+    // in a later version never wipes an existing account's saved state (web-parity resilience).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        // try? flattens the optional from decodeIfPresent, so a single bind is correct.
+        if let v = try? c.decodeIfPresent([Curler].self, forKey: .addedCurlers) { addedCurlers = v }
+        if let v = try? c.decodeIfPresent([Spiel].self, forKey: .addedSpiels) { addedSpiels = v }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .follows) { follows = v }
+        if let v = try? c.decodeIfPresent([String: Bool].self, forKey: .likes) { likes = v }
+        if let v = try? c.decodeIfPresent([String: String].self, forKey: .joins) { joins = v }
+        if let v = try? c.decodeIfPresent([Post].self, forKey: .posts) { posts = v }
+        if let v = try? c.decodeIfPresent([String: [VisitEntry]].self, forKey: .visits) { visits = v }
+        if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews) { reviews = v }
+        if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads) { iceReads = v }
+        if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
     }
+}
 
-    static func has(_ key: String) -> Bool {
-        UserDefaults.standard.object(forKey: key) != nil
+// MARK: - Time helpers (mirror web fmtAgo / fmtTime)
+
+enum RelativeTime {
+    static func ago(_ at: Double) -> String {
+        let s = Int(Date().timeIntervalSince1970 - at)
+        if s < 60 { return "NOW" }
+        let m = s / 60; if m < 60 { return "\(m)M" }
+        let h = m / 60; if h < 24 { return "\(h)H" }
+        let d = h / 24; if d < 7 { return "\(d)D" }
+        let df = DateFormatter(); df.dateFormat = "MMM d"
+        return df.string(from: Date(timeIntervalSince1970: at)).uppercased()
     }
-
-    static func clearAllSeasonData() {
-        [appDataKey, curlersKey, spielsKey, feedKey].forEach {
-            UserDefaults.standard.removeObject(forKey: $0)
-        }
+    static func clock(_ at: Double) -> String {
+        let df = DateFormatter(); df.dateFormat = "HH:mm"
+        return df.string(from: Date(timeIntervalSince1970: at))
     }
 }
 
 // MARK: - Store
 
 final class Store: ObservableObject {
-    @Published private var data: AppData = Seed.appData(setupComplete: false) {
-        didSet { persistAll() }
+    @Published private(set) var auth: AuthState { didSet { persistAuth() } }
+    @Published private(set) var state: AppState { didSet { persistState() } }
+
+    private static let authKey = "cp.auth.v1"
+    private var stateKey: String { "cp.state.v2:" + (auth.session ?? "anon") }
+
+    /// Persistence backing store — override with an ephemeral suite in tests.
+    static var defaults: UserDefaults = .standard
+
+    init() {
+        let loadedAuth = Store.loadAuth(Store.authKey)
+        auth = loadedAuth
+        // one-time migrate the pre-parity global blobs into the demo bucket
+        Store.migrateLegacyIfNeeded(session: loadedAuth.session)
+        state = Store.loadState(key: "cp.state.v2:" + (loadedAuth.session ?? "anon"))
     }
 
-    private var isHydrating = false
-    private var undoSnapshots: [String: AppData] = [:]
+    // MARK: Baselines (immutable seed) + derived collections
 
-    init(appData: AppData? = nil, loadPersisted: Bool = true) {
-        isHydrating = true
-        if let appData {
-            data = Self.normalized(appData)
-        } else if loadPersisted, let saved: AppData = Persist.load(Persist.appDataKey) {
-            data = Self.normalized(saved)
-        } else if loadPersisted, Persist.has(Persist.curlersKey) || Persist.has(Persist.spielsKey) || Persist.has(Persist.feedKey) {
-            data = Self.normalized(Self.legacyAppData())
-        } else {
-            data = Seed.appData(setupComplete: false)
+    var stops: [Stop] { Seed.stops }
+    var curlers: [Curler] { state.addedCurlers + Seed.curlers }
+    var spiels: [Spiel] { state.addedSpiels + Seed.spiels }
+    var allPosts: [Post] { state.posts + Seed.feed }
+
+    func curler(_ id: String) -> Curler? { curlers.first { $0.id == id } }
+    func stop(_ id: String) -> Stop? { stops.first { $0.id == id } }
+    func spiel(_ id: String) -> Spiel? { spiels.first { $0.id == id } }
+
+    var recentStops: [Stop] { Seed.recentStopIDs.compactMap { stop($0) } }
+
+    /// Demo map pins that represent completed stops. The `here` seed entry is
+    /// an explicit sample-location cue, so it must not inflate logged totals.
+    var demoLoggedStops: [Stop] { stops.filter { !$0.here } }
+
+    // MARK: Identity
+
+    func currentUser() -> Account? {
+        auth.session == "demo" ? .demo : nil
+    }
+    var isSignedIn: Bool { auth.session != nil }
+    var isRealAccount: Bool { false }
+    var me: MeInfo { Seed.me }
+
+    /// Live telemetry for a real account, computed from their own log (demo keeps seed numbers).
+    func derivedStats() -> MeStats {
+        let visitedIds = state.visits.filter { !$0.value.isEmpty }.map { $0.key }
+        var provs = Set<String>()
+        for sid in visitedIds { if let s = stop(sid) { provs.insert(s.prov) } }
+        let results = state.posts.filter { $0.kind == .result }
+        let games = results.count
+        let wins = results.filter { $0.res == "WIN" }.count
+        let win = games > 0 ? Int((Double(wins) * 100 / Double(games)).rounded()) : 0
+        return MeStats(clubs: visitedIds.count, prov: provs.count, games: games, win: win)
+    }
+
+    /// Stops the user has actually logged a visit at, newest visit first.
+    func visitedStops() -> [VisitedStop] {
+        state.visits.compactMap { (sid, entries) -> VisitedStop? in
+            guard !entries.isEmpty, let s = stop(sid) else { return nil }
+            let latest = entries.map { $0.at }.max() ?? 0
+            return VisitedStop(stop: s, count: entries.count, at: latest)
         }
-        isHydrating = false
+        .sorted { $0.at > $1.at }
     }
 
-    struct Me {
-        let name: String
-        let initials: String
-        let season: String
-        let clubs: Int
-        let prov: Int
-        let games: Int
-        let win: Int
+    // MARK: Follow graph
+
+    func isFollowing(_ id: String) -> Bool {
+        if let o = state.follows[id] { return o }
+        return curler(id)?.following ?? false
+    }
+    func toggleFollow(_ id: String) { state.follows[id] = !isFollowing(id) }
+
+    // MARK: Likes
+
+    func isLiked(_ postId: String) -> Bool { state.likes[postId] ?? false }
+    func likeCount(_ p: Post) -> Int { p.likes + (isLiked(p.id) ? 1 : 0) }
+    func toggleLike(_ postId: String) { state.likes[postId] = !isLiked(postId) }
+
+    // MARK: Spiel registration (unified across Spiels tab + feed)
+
+    func spielStatus(_ id: String) -> String { state.joins[id] ?? (spiel(id)?.status ?? "Watching") }
+    func setSpielStatus(_ id: String, _ status: String) { state.joins[id] = status }
+    func withdrawSpiel(_ id: String) {
+        if spiel(id)?.status == "You're in" { state.joins[id] = "Watching" }
+        else { state.joins[id] = nil }
     }
 
-    var me: Me {
-        let summary = seasonSummary
-        return Me(name: data.profile.name,
-                  initials: data.profile.initials,
-                  season: data.profile.season,
-                  clubs: summary.rinks,
-                  prov: summary.provinces,
-                  games: summary.games,
-                  win: summary.winPercent)
-    }
+    // MARK: Create actions (write to the per-account state)
 
-    var appData: AppData { data }
-    var setupComplete: Bool { data.setupComplete }
-    var profile: PlayerProfile { data.profile }
-    var curlers: [Curler] { data.curlers }
-    var venues: [Venue] { data.venues }
-    var stops: [Stop] { data.stops }
-    var visits: [StopVisit] { data.visits }
-    var spiels: [Spiel] { data.spiels }
-    var attendance: [SpielAttendance] { data.attendance }
-    var results: [GameResult] { data.results }
-    var feed: [FeedItem] { data.feed }
-    var bonspiels: [BonspielRecord] { data.bonspiels }
-
-    var seasonSummary: SeasonSummary {
-        let resultWins = data.results.filter { $0.res == "WIN" || $0.res == "W" }.count
-        let games = max(0, data.profile.importedGameCount) + data.results.count
-        let wins = max(0, data.profile.importedWinCount) + resultWins
-        let winPercent = games == 0 ? 0 : Int((Double(wins) / Double(games) * 100).rounded())
-        let visited = data.stops.filter { stopHasActivity($0.id) }
-        let provinces = Set(visited.map(\.prov).filter { !$0.isEmpty && $0 != "TBD" }).count
-        let met = Set(data.visits.flatMap(\.curlerIDs) + data.stops.flatMap(\.met) + data.results.flatMap(\.participantCurlerIDs)).count
-        let routeKilometers = Self.routeKilometers(for: visited)
-        return SeasonSummary(rinks: visited.count,
-                             provinces: provinces,
-                             games: games,
-                             winPercent: winPercent,
-                             wins: wins,
-                             met: met,
-                             kilometers: routeKilometers ?? 0,
-                             distanceLabel: routeKilometers.map(String.init) ?? "—")
-    }
-
-    var needsOnboarding: Bool { !data.setupComplete }
-
-    var lockerFeed: [FeedItem] {
-        data.results.map { .result($0.asFeedPost(profile: data.profile)) } + data.feed
-    }
-
-    var lockerFollowingFeed: [FeedItem] {
-        lockerFeed.filter(feedVisibleToFollowing)
-    }
-
-    var discoverSuggestions: [Curler] {
-        var referenced = Set<String>()
-        data.stops.flatMap(\.met).forEach { referenced.insert($0) }
-        data.spiels.flatMap(\.going).forEach { referenced.insert($0) }
-        data.visits.flatMap(\.curlerIDs).forEach { referenced.insert($0) }
-        data.results.flatMap(\.participantCurlerIDs).forEach { referenced.insert($0) }
-        for bonspiel in data.bonspiels {
-            for team in bonspiel.teams {
-                for member in team.members {
-                    if let curlerID = member.curlerID {
-                        referenced.insert(curlerID)
-                    }
-                }
-            }
-        }
-        return data.curlers.filter { !$0.following && referenced.contains($0.id) }
-    }
-
-    var allActivityStops: [Stop] {
-        data.stops.filter { stopHasActivity($0.id) }
-    }
-
-    var recentStops: [Stop] {
-        allActivityStops.sorted { lhs, rhs in
-            let lhsActive = isCurrentStop(lhs.id)
-            let rhsActive = isCurrentStop(rhs.id)
-            if lhsActive != rhsActive { return lhsActive }
-            return lhs.name < rhs.name
-        }
-        .prefix(4)
-        .map { $0 }
-    }
-
-    func curler(_ id: String) -> Curler? { data.curlers.first(where: { $0.id == id }) }
-    func venue(_ id: String) -> Venue? { data.venues.first(where: { $0.id == id }) }
-    func venueSuggestions(for query: String, limit: Int = 5) -> [Venue] {
-        VenueResolver.suggestions(for: query, venues: data.venues, limit: limit)
-    }
-    func stop(_ id: String) -> Stop? { data.stops.first(where: { $0.id == id }) }
-    func bonspiel(_ id: String) -> BonspielRecord? {
-        data.bonspiels.first(where: { $0.id == id })
-    }
-    func bonspiel(for spielID: String) -> BonspielRecord? {
-        data.bonspiels.first(where: { $0.linkedSpielID == spielID })
-    }
-    func bonspielGame(bonspielID: String, gameID: String) -> BonspielGame? {
-        bonspiel(bonspielID)?.games.first(where: { $0.id == gameID })
-    }
-    func gameResult(_ id: UUID) -> GameResult? {
-        data.results.first(where: { $0.id == id })
-    }
-
-    func lineupIsLocked(bonspielID: String, gameID: String) -> Bool {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else { return true }
-        return lineupIsLocked(game, record: record)
-    }
-
-    func lineupValidationMessage(bonspielID: String, gameID: String, teamID: String, slots: [BonspielLineupSlot]) -> String? {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else {
-            return "Bonspiel game not found."
-        }
-        return lineupValidationMessage(record: record, game: game, teamID: teamID, slots: slots)
-    }
-
-    func scorecardValidationMessage(bonspielID: String, gameID: String) -> String? {
-        guard let game = bonspielGame(bonspielID: bonspielID, gameID: gameID) else {
-            return "Bonspiel game not found."
-        }
-        return scorecardValidationMessage(game)
-    }
-
-    func curlerProfile(_ id: String) -> CurlerProfileSummary? {
-        guard let curler = curler(id) else { return nil }
-        let relatedResults = data.results.filter { $0.participantCurlerIDs.contains(id) }
-        let wins = relatedResults.filter { $0.res == "WIN" || $0.res == "W" }.count
-        let losses = relatedResults.filter { $0.res == "LOSS" || $0.res == "L" }.count
-        let ties = relatedResults.filter { $0.res == "TIE" }.count
-        let total = wins + losses + ties
-        let imported = curler.importedHistory
-
-        let record = total > 0 ? [wins, losses, ties].map(String.init).joined(separator: "-") : (imported?.record ?? "—")
-        let win = total > 0 ? "\(Int((Double(wins) / Double(total) * 100).rounded()))%" : (imported?.win ?? "—")
-        let shared = derivedSharedRinks(for: id)
-        let displayShared = shared.isEmpty ? (imported?.sharedRinks ?? []) : shared
-        let form = derivedRecentForm(for: id)
-        let derivedMutual = derivedMutualCount(for: id)
-
-        return CurlerProfileSummary(curler: curler,
-                                    record: record,
-                                    win: win,
-                                    rinks: shared.isEmpty ? (imported?.rinks ?? displayShared.count) : shared.count,
-                                    mutual: derivedMutual == 0 ? (imported?.mutual ?? 0) : derivedMutual,
-                                    sharedRinks: displayShared,
-                                    recentForm: form.isEmpty ? (imported?.form ?? []) : form)
-    }
-
-    func curlerConnectionLabel(_ id: String) -> String {
-        if let stop = data.stops.first(where: { peopleMetIDs(for: $0.id).contains(id) }) {
-            return "Met at \(stop.club.isEmpty ? stop.name : stop.club)"
-        }
-        guard let curler = curler(id) else { return "Local roster member" }
-        if curler.metAt.localizedCaseInsensitiveContains("Added to") {
-            return "Added to your local roster"
-        }
-        return "Imported note: \(curler.metAt)"
-    }
-
-    func isFollowing(_ id: String) -> Bool { curler(id)?.following ?? false }
-
-    func stopResults(_ stopID: String) -> [GameResult] {
-        data.results.filter { $0.stopID == stopID }
-    }
-
-    func peopleMetIDs(for stopID: String) -> [String] {
-        let fromVisits = data.visits.filter { $0.stopID == stopID }.flatMap(\.curlerIDs)
-        let fromStop = stop(stopID)?.met ?? []
-        return Array(Set(fromVisits + fromStop)).sorted()
-    }
-
-    private func derivedSharedRinks(for curlerID: String) -> [String] {
-        var labels = Set<String>()
-        for stop in data.stops {
-            let metHere = peopleMetIDs(for: stop.id).contains(curlerID)
-            let resultHere = data.results.contains { $0.stopID == stop.id && $0.participantCurlerIDs.contains(curlerID) }
-            if metHere || resultHere {
-                labels.insert(stop.club.isEmpty ? stop.name : stop.club)
-            }
-        }
-        return labels.sorted()
-    }
-
-    private func derivedRecentForm(for curlerID: String) -> [GameLine] {
-        data.results
-            .filter { $0.participantCurlerIDs.contains(curlerID) }
-            .prefix(5)
-            .map { result in
-                let context = result.stopID.flatMap { stop($0)?.name } ?? (result.opponent.isEmpty ? "Logged result" : "vs \(result.opponent)")
-                let badge: String
-                switch result.res {
-                case "WIN": badge = "W"
-                case "LOSS": badge = "L"
-                case "TIE": badge = "T"
-                default: badge = result.res
-                }
-                return GameLine(label: context, score: result.scoreLabel, res: badge)
-            }
-    }
-
-    private func derivedMutualCount(for curlerID: String) -> Int {
-        var mutuals = Set<String>()
-        for visit in data.visits where visit.curlerIDs.contains(curlerID) {
-            visit.curlerIDs.filter { $0 != curlerID && $0 != "me" }.forEach { mutuals.insert($0) }
-        }
-        for result in data.results where result.participantCurlerIDs.contains(curlerID) {
-            result.participantCurlerIDs.filter { $0 != curlerID && $0 != "me" }.forEach { mutuals.insert($0) }
-        }
-        for bonspiel in data.bonspiels {
-            for team in bonspiel.teams where team.members.contains(where: { $0.curlerID == curlerID }) {
-                team.members.compactMap(\.curlerID)
-                    .filter { $0 != curlerID && $0 != "me" }
-                    .forEach { mutuals.insert($0) }
-            }
-        }
-        return mutuals.count
-    }
-
-    func isCurrentStop(_ stopID: String) -> Bool {
-        data.visits.contains { $0.stopID == stopID && $0.isActive }
-    }
-
-    func attendeeIDs(for spielID: String) -> [String] {
-        data.attendance
-            .filter { $0.spielID == spielID && $0.status == .going }
-            .map(\.curlerID)
-            .reduce(into: [String]()) { result, id in
-                if !result.contains(id) { result.append(id) }
-            }
-    }
-
-    func attendanceCount(for spielID: String) -> Int {
-        attendeeIDs(for: spielID).count
-    }
-
-    func isAttendingSpiel(_ spielID: String, curlerID: String = "me") -> Bool {
-        data.attendance.contains { $0.spielID == spielID && $0.curlerID == curlerID && $0.status == .going }
-    }
-
-    func spielID(named name: String) -> String? {
-        data.spiels.first { $0.name == name }?.id
-    }
-
-    func isAttendingSpiel(named name: String, curlerID: String = "me") -> Bool {
-        guard let id = spielID(named: name) else { return false }
-        return isAttendingSpiel(id, curlerID: curlerID)
+    @discardableResult
+    func addSpiel(name: String, whereText: String, whenText: String, status: String) -> Spiel {
+        let sp = Spiel(id: Store.uid("sp"), name: name,
+                       whereText: whereText.isEmpty ? "TBD" : whereText,
+                       whenText: whenText.isEmpty ? "DATE TBD" : whenText,
+                       status: status, going: [])
+        state.addedSpiels.insert(sp, at: 0)
+        return sp
     }
 
     @discardableResult
-    func toggleFollow(_ id: String) -> MutationReceipt {
-        mutate(action: "toggleFollow",
-               domains: [.curlers, .feed],
-               message: "Roster state updated.",
-               focusRoute: .curler(id)) { draft in
-            guard let i = draft.curlers.firstIndex(where: { $0.id == id }) else { return }
-            draft.curlers[i].following.toggle()
-        }
+    func addCurler(name: String, role: String, club: String, prov: String) -> Curler {
+        let initials = Store.initials(name)
+        let c = Curler(id: Store.uid("c"), initials: initials.isEmpty ? "?" : initials,
+                       name: name, role: role.isEmpty ? "Curler" : role,
+                       club: club.isEmpty ? "—" : club, prov: prov.isEmpty ? "—" : prov,
+                       metAt: "your roster", following: true,
+                       record: "0–0", win: "—", clubs: 0, mutual: 0, sharedClubs: [], form: [])
+        state.addedCurlers.insert(c, at: 0)
+        return c
     }
 
-    @discardableResult
-    func followAll(_ ids: [String]) -> MutationReceipt {
-        mutate(action: "followAll",
-               domains: [.curlers, .feed],
-               message: "Curlers saved to your roster.") { draft in
-            for id in ids {
-                guard let i = draft.curlers.firstIndex(where: { $0.id == id }) else { continue }
-                draft.curlers[i].following = true
-            }
-        }
-    }
-
-    func initials(for ids: [String], limit: Int = 2) -> [String] {
-        ids.compactMap { id in
-            id == "me" ? data.profile.initials : curler(id)?.initials
-        }
-        .prefix(limit)
-        .map { $0 }
-    }
-
-    func plusLabel(for ids: [String], visible: Int = 2) -> String? {
-        let hidden = ids.filter { $0 == "me" || curler($0) != nil }.count - visible
-        return hidden > 0 ? "+\(hidden)" : nil
-    }
-
-    @discardableResult
-    func deleteFeedItem(_ id: UUID) -> MutationReceipt {
-        mutate(action: "deleteFeedItem",
-               domains: [.feed, .results],
-               message: "Post deleted.") { draft in
-            draft.results.removeAll { $0.id == id }
-            draft.feed.removeAll { $0.id == id }
-        }
-    }
-
-    @discardableResult
-    func deleteCurler(_ id: String) -> MutationReceipt {
-        mutate(action: "deleteCurler",
-               domains: [.curlers, .stops, .visits, .spiels, .attendance, .results, .bonspiels],
-               message: "Curler removed.") { draft in
-            draft.curlers.removeAll { $0.id == id }
-            for i in draft.stops.indices {
-                draft.stops[i].met.removeAll { $0 == id }
-            }
-            for i in draft.spiels.indices {
-                draft.spiels[i].going.removeAll { $0 == id }
-            }
-            for i in draft.visits.indices {
-                draft.visits[i].curlerIDs.removeAll { $0 == id }
-            }
-            draft.attendance.removeAll { $0.curlerID == id }
-            for i in draft.results.indices {
-                draft.results[i].participantCurlerIDs.removeAll { $0 == id }
-            }
-            for bonspielIndex in draft.bonspiels.indices {
-                for teamIndex in draft.bonspiels[bonspielIndex].teams.indices {
-                    for memberIndex in draft.bonspiels[bonspielIndex].teams[teamIndex].members.indices where draft.bonspiels[bonspielIndex].teams[teamIndex].members[memberIndex].curlerID == id {
-                        draft.bonspiels[bonspielIndex].teams[teamIndex].members[memberIndex].curlerID = nil
-                    }
-                }
-            }
-        }
-    }
-
-    @discardableResult
-    func markStopVisited(_ id: String) -> MutationReceipt {
-        startVisit(stopID: id, curlerIDs: [], note: "")
-    }
-
-    @discardableResult
-    func startVisit(stopID: String, curlerIDs: [String], note: String, arrivedAt: String = "now") -> MutationReceipt {
-        guard data.stops.contains(where: { $0.id == stopID }) else {
-            return blockedReceipt(action: "startVisit", message: "Stop not found.")
-        }
-        let validCurlerIDs = curlerIDs
-            .filter { curler($0) != nil }
-            .reduce(into: [String]()) { result, id in
-                if !result.contains(id) { result.append(id) }
-            }
-        return mutate(action: "startVisit",
-                      domains: [.visits, .stops],
-                      message: "Visit started.",
-                      focusRoute: .stop(stopID)) { draft in
-            for i in draft.visits.indices where draft.visits[i].isActive {
-                draft.visits[i].departedAt = arrivedAt
-            }
-            draft.visits.insert(StopVisit(stopID: stopID,
-                                          arrivedAt: arrivedAt,
-                                          departedAt: nil,
-                                          curlerIDs: validCurlerIDs,
-                                          note: note),
-                                at: 0)
-        }
-    }
-
-    @discardableResult
-    func endVisit(stopID: String, departedAt: String = "now") -> MutationReceipt {
-        mutate(action: "endVisit",
-               domains: [.visits],
-               message: "Visit ended.",
-               focusRoute: .stop(stopID)) { draft in
-            for i in draft.visits.indices where draft.visits[i].stopID == stopID && draft.visits[i].isActive {
-                draft.visits[i].departedAt = departedAt
-            }
-        }
-    }
-
-    @discardableResult
-    func startDemoSeason() -> MutationReceipt {
-        let previous = data
-        apply(Seed.appData(setupComplete: true), shouldPersist: true)
-        return receipt(action: "startDemoSeason",
-                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
-                       message: "Demo season loaded.",
-                       previous: previous)
-    }
-
-    @discardableResult
-    func startBlankSeason(name: String, homeClub: String, province: String) -> MutationReceipt {
-        let blankProfile = PlayerProfile.blank(name: name, homeClub: homeClub, province: province)
-        let previous = data
-        apply(AppData(schemaVersion: 4,
-                      setupComplete: true,
-                      profile: blankProfile,
-                      curlers: [],
-                      venues: Seed.venues,
-                      stops: [],
-                      visits: [],
-                      spiels: [],
-                      attendance: [],
-                      results: [],
-                      feed: [],
-                      bonspiels: []),
-              shouldPersist: true)
-        return receipt(action: "startBlankSeason",
-                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
-                       message: "Blank season started.",
-                       previous: previous)
-    }
-
-    @discardableResult
-    func clearSeason() -> MutationReceipt {
-        let previous = data
-        apply(AppData(schemaVersion: 4,
-                      setupComplete: true,
-                      profile: PlayerProfile.blank(name: profile.name,
-                                                   homeClub: profile.homeClub,
-                                                   province: profile.homeProvince),
-                      curlers: [],
-                      venues: Seed.venues,
-                      stops: [],
-                      visits: [],
-                      spiels: [],
-                      attendance: [],
-                      results: [],
-                      feed: [],
-                      bonspiels: []),
-              shouldPersist: true)
-        return receipt(action: "clearSeason",
-                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
-                       message: "Season cleared.",
-                       previous: previous)
-    }
-
-    @discardableResult
-    func resetToSetup() -> MutationReceipt {
-        mutate(action: "resetToSetup",
-               domains: [.setup],
-               message: "Setup will show on next launch.") { draft in
-            draft.setupComplete = false
-        }
-    }
-
-    func exportJSON() -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(appData),
-              let json = String(data: data, encoding: .utf8) else { return "{}" }
-        return json
-    }
-
-    @discardableResult
-    func importJSON(_ text: String) throws -> MutationReceipt {
-        guard let data = text.data(using: .utf8),
-              let imported = try? JSONDecoder().decode(AppData.self, from: data) else {
-            throw StoreDataError.invalidJSON
-        }
-        return try importData(imported)
-    }
-
-    @discardableResult
-    func importData(_ imported: AppData) throws -> MutationReceipt {
-        guard imported.schemaVersion <= 4 else { throw StoreDataError.unsupportedVersion(imported.schemaVersion) }
-        guard !imported.profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw StoreDataError.emptyProfile
-        }
-        let previous = data
-        var normalized = Self.normalized(imported)
-        normalized.setupComplete = true
-        apply(normalized, shouldPersist: true)
-        return receipt(action: "importData",
-                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
-                       message: "Season imported.",
-                       previous: previous)
-    }
-
-    // MARK: - Create actions
-
-    private static func isoDateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
-    }
-
-    private static func displayDateRange(startISO: String, endISO: String) -> String {
-        guard let start = parseISODate(startISO),
-              let end = parseISODate(endISO) else {
-            return startISO == endISO ? startISO : "\(startISO)-\(endISO)"
-        }
-        let calendar = Calendar.current
-        let month = DateFormatter()
-        month.locale = Locale(identifier: "en_US_POSIX")
-        month.dateFormat = "MMM"
-        let day = DateFormatter()
-        day.locale = Locale(identifier: "en_US_POSIX")
-        day.dateFormat = "d"
-
-        if calendar.isDate(start, inSameDayAs: end) {
-            return "\(month.string(from: start)) \(day.string(from: start))".uppercased()
-        }
-        if calendar.component(.month, from: start) == calendar.component(.month, from: end),
-           calendar.component(.year, from: start) == calendar.component(.year, from: end) {
-            return "\(month.string(from: start)) \(day.string(from: start))-\(day.string(from: end))".uppercased()
-        }
-        return "\(month.string(from: start)) \(day.string(from: start))-\(month.string(from: end)) \(day.string(from: end))".uppercased()
-    }
-
-    private static func parseISODate(_ value: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: value)
-    }
-
-    private static func slug(_ value: String) -> String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789")
-        let mapped = value.lowercased().map { allowed.contains($0) ? String($0) : "-" }.joined()
-        let clean = mapped.split(separator: "-").joined(separator: "-")
-        return clean.isEmpty ? "opponent" : clean
-    }
-
-    @discardableResult
-    func addSpiel(name: String, whereText: String, whenText: String, status: String, discipline: CurlingDiscipline) -> MutationReceipt {
-        addSpiel(name: name,
-                 whereText: whereText,
-                 whenText: whenText,
-                 status: status,
-                 discipline: discipline,
-                 startDate: nil,
-                 endDate: nil,
-                 venue: nil)
-    }
-
-    @discardableResult
-    func addSpiel(name: String, whereText: String, startDate: Date, endDate: Date, status: String, discipline: CurlingDiscipline) -> MutationReceipt {
-        addSpiel(name: name,
-                 whereText: whereText,
-                 startDate: startDate,
-                 endDate: endDate,
-                 status: status,
-                 discipline: discipline,
-                 venue: nil)
-    }
-
-    @discardableResult
-    func addSpiel(name: String,
-                  whereText: String,
-                  startDate: Date,
-                  endDate: Date,
-                  status: String,
-                  discipline: CurlingDiscipline,
-                  venue: Venue?) -> MutationReceipt {
-        let orderedStart = min(startDate, endDate)
-        let orderedEnd = max(startDate, endDate)
-        let startISO = Self.isoDateString(orderedStart)
-        let endISO = Self.isoDateString(orderedEnd)
-        return addSpiel(name: name,
-                        whereText: whereText,
-                        whenText: Self.displayDateRange(startISO: startISO, endISO: endISO),
-                        status: status,
-                        discipline: discipline,
-                        startDate: startISO,
-                        endDate: endISO,
-                        venue: venue)
-    }
-
-    @discardableResult
-    private func addSpiel(name: String,
-                          whereText: String,
-                          whenText: String,
-                          status: String,
-                          discipline: CurlingDiscipline,
-                          startDate: String?,
-                          endDate: String?,
-                          venue confirmedVenue: Venue?) -> MutationReceipt {
-        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanLocation = whereText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let resolvedVenue = confirmedVenue ?? VenueResolver.resolve(cleanLocation, venues: data.venues)
-        let spielID = "sp-\(UUID().uuidString.prefix(6))"
-        let locationText = cleanLocation.isEmpty
-            ? (resolvedVenue?.displayLocationText.isEmpty == false ? resolvedVenue?.displayLocationText ?? "TBD" : "TBD")
-            : cleanLocation
-        let spiel = Spiel(id: spielID,
-                          name: cleanName,
-                          whereText: locationText,
-                          whenText: whenText.isEmpty ? "DATE TBD" : whenText,
-                          status: status,
-                          going: [],
-                          startDate: startDate,
-                          endDate: endDate,
-                          stopID: resolvedVenue?.canMap == true ? "stop-\(spielID)" : nil,
-                          venueID: resolvedVenue?.id)
-        let routeStop = resolvedVenue?.stop(spielID: spiel.id, name: spiel.name, dateText: spiel.whenText)
-        var domains: Set<SeasonDomain> = [.spiels, .bonspiels]
-        if routeStop != nil { domains.insert(.stops) }
-        let venueIsNew = resolvedVenue.map { venue in
-            !data.venues.contains(where: { $0.id == venue.id })
-        } ?? false
-        if venueIsNew { domains.insert(.venues) }
-        return mutate(action: "addSpiel",
-                      domains: domains,
-                      message: "Spiel added.") { draft in
-            draft.spiels.insert(spiel, at: 0)
-            if let resolvedVenue {
-                if let existingIndex = draft.venues.firstIndex(where: { $0.id == resolvedVenue.id }) {
-                    draft.venues[existingIndex] = resolvedVenue
-                } else {
-                    draft.venues.insert(resolvedVenue, at: 0)
-                }
-            }
-            if let routeStop {
-                draft.stops.insert(routeStop, at: 0)
-            }
-            draft.bonspiels.insert(BonspielRecord.defaultLinked(spielID: spiel.id,
-                                                                name: spiel.name,
-                                                                whereText: spiel.whereText,
-                                                                whenText: spiel.whenText,
-                                                                discipline: discipline,
-                                                                homeClub: draft.profile.homeClub,
-                                                                startDate: startDate,
-                                                                endDate: endDate,
-                                                                venueID: resolvedVenue?.id,
-                                                                venue: resolvedVenue?.bonspielVenue,
-                                                                timezone: resolvedVenue?.timezone),
-                                   at: 0)
-        }
-    }
-
-    @discardableResult
-    func addBonspielGame(bonspielID: String,
-                         drawLabel: String,
-                         scheduledStartAt: String,
-                         sheet: String,
-                         opponentName: String) -> MutationReceipt {
-        let cleanDraw = drawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanStart = scheduledStartAt.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanSheet = sheet.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanOpponent = opponentName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanDraw.isEmpty, !cleanStart.isEmpty, !cleanSheet.isEmpty, !cleanOpponent.isEmpty else {
-            return blockedReceipt(action: "addBonspielGame", message: "Game needs draw, scheduled start, sheet, and opponent.")
-        }
-        guard let record = bonspiel(bonspielID) else {
-            return blockedReceipt(action: "addBonspielGame", message: "Bonspiel not found.")
-        }
-
-        let stageID = record.stages.first?.id ?? "\(bonspielID)-pool"
-        let fallbackHomeTeam = BonspielTeam(id: "\(bonspielID)-team-me",
-                                            displayName: "Team \(profile.homeClub.isEmpty ? "CurlPlan" : profile.homeClub)",
-                                            shortName: "Team CP",
-                                            affiliation: profile.homeClub.isEmpty ? "Home club TBD" : profile.homeClub,
-                                            members: [])
-        let homeTeamID = record.teams.first?.id ?? fallbackHomeTeam.id
-        let suffix = UUID().uuidString.prefix(8).lowercased()
-        let opponentSlug = Self.slug(cleanOpponent)
-        let opponentTeam = BonspielTeam(id: "\(bonspielID)-team-\(opponentSlug)-\(suffix)",
-                                        displayName: cleanOpponent,
-                                        shortName: String(cleanOpponent.prefix(12)),
-                                        affiliation: "",
-                                        members: [])
-        let game = BonspielGame(id: "\(bonspielID)-game-\(suffix)",
-                                stageID: stageID,
-                                drawLabel: cleanDraw,
-                                status: .scheduled,
-                                scheduledStartAt: cleanStart,
-                                sheet: cleanSheet,
-                                teamAID: homeTeamID,
-                                teamBID: opponentTeam.id,
-                                stoneColorAssignment: "Team A dark handles",
-                                lsfeOrPlacementDecision: BonspielLastStoneDecision(method: "LSD pending",
-                                                                                   teamID: homeTeamID,
-                                                                                   evidence: "Local game setup"),
-                                scheduledEnds: record.rulesProfile.scheduledEnds,
-                                minEndsForLocalResult: record.rulesProfile.minEndsForLocalResult,
-                                ends: [],
-                                gameLineups: [],
-                                lineupChanges: [],
-                                resultFlags: BonspielResultFlags(isFinal: false, conceded: false, forfeited: false),
-                                scoreAgreement: BonspielScoreAgreement(confirmed: false, confirmedAt: nil, confirmedBy: nil),
-                                version: 1)
-
-        return mutate(action: "addBonspielGame",
-                      domains: [.bonspiels],
-                      message: "Game snapshot added.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }) else { return }
-            if draft.bonspiels[bonspielIndex].stages.isEmpty {
-                draft.bonspiels[bonspielIndex].stages.append(BonspielStage(id: stageID,
-                                                                           name: "Pool",
-                                                                           stageType: "round_robin",
-                                                                           sequence: 1))
-            }
-            if draft.bonspiels[bonspielIndex].teams.first(where: { $0.id == homeTeamID }) == nil {
-                draft.bonspiels[bonspielIndex].teams.append(fallbackHomeTeam)
-            }
-            draft.bonspiels[bonspielIndex].teams.append(opponentTeam)
-            draft.bonspiels[bonspielIndex].games.append(game)
-            draft.bonspiels[bonspielIndex].version += 1
-        }
-    }
-
-    @discardableResult
-    func setSpielStatus(_ id: String, _ status: String) -> MutationReceipt {
-        mutate(action: "setSpielStatus",
-               domains: [.spiels],
-               message: "Spiel status updated.") { draft in
-            guard let i = draft.spiels.firstIndex(where: { $0.id == id }) else { return }
-            draft.spiels[i].status = status
-        }
-    }
-
-    @discardableResult
-    func addResult(body: String, scoreFor: Int, scoreAgainst: Int, vs: String, stopID: String? = nil, spielID: String? = nil, participantCurlerIDs: [String] = []) -> MutationReceipt {
+    func addResult(body: String, scoreFor: Int, scoreAgainst: Int, vs: String) {
         let res = scoreFor == scoreAgainst ? "TIE" : (scoreFor > scoreAgainst ? "WIN" : "LOSS")
         let opp = vs.trimmingCharacters(in: .whitespaces)
-        let cleanBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        let validStopID = stopID.flatMap { stop($0) == nil ? nil : $0 }
-        let validSpielID = spielID.flatMap { id in data.spiels.contains(where: { $0.id == id }) ? id : nil }
-        let validParticipants = participantCurlerIDs
-            .filter { curler($0) != nil }
-            .reduce(into: [String]()) { result, id in
-                if !result.contains(id) { result.append(id) }
-            }
-        let result = GameResult(createdAt: "now",
-                                note: cleanBody.isEmpty ? "\(res.capitalized) \(scoreFor)-\(scoreAgainst)." : cleanBody,
-                                opponent: opp,
-                                scoreFor: scoreFor,
-                                scoreAgainst: scoreAgainst,
-                                stopID: validStopID,
-                                spielID: validSpielID,
-                                participantCurlerIDs: validParticipants,
-                                ends: [],
-                                conceded: false,
-                                forfeited: false,
-                                locallyConfirmed: true)
-        return mutate(action: "addResult",
-                      domains: [.results, .feed],
-                      message: "Result recorded.") { draft in
-            draft.results.insert(result, at: 0)
-        }
+        let vsLabel = opp.isEmpty ? "" : (opp.lowercased().hasPrefix("vs") ? opp : "vs \(opp)")
+        let p = Post(id: Store.uid("p"), kind: .result, author: "me", at: Store.now(),
+                     body: body, scoreFor: scoreFor, scoreAgainst: scoreAgainst, res: res,
+                     vs: vsLabel, likes: 0, comments: 0)
+        state.posts.insert(p, at: 0)
     }
 
-    @discardableResult
-    func updateResult(id: UUID, body: String, scoreFor: Int, scoreAgainst: Int, vs: String) -> MutationReceipt {
-        guard data.results.contains(where: { $0.id == id }) else {
-            return blockedReceipt(action: "updateResult", message: "Result not found.")
-        }
-        return mutate(action: "updateResult",
-                      domains: [.results, .feed],
-                      message: "Result updated.") { draft in
-            guard let i = draft.results.firstIndex(where: { $0.id == id }) else { return }
-            draft.results[i].note = body.trimmingCharacters(in: .whitespacesAndNewlines)
-            draft.results[i].opponent = vs.trimmingCharacters(in: .whitespacesAndNewlines)
-            draft.results[i].scoreFor = scoreFor
-            draft.results[i].scoreAgainst = scoreAgainst
-        }
+    func addNote(body: String) {
+        let p = Post(id: Store.uid("p"), kind: .note, author: "me", at: Store.now(), body: body)
+        state.posts.insert(p, at: 0)
     }
 
-    @discardableResult
-    func deleteResult(_ id: UUID) -> MutationReceipt {
-        guard data.results.contains(where: { $0.id == id }) else {
-            return blockedReceipt(action: "deleteResult", message: "Result not found.")
-        }
-        return mutate(action: "deleteResult",
-                      domains: [.results, .feed],
-                      message: "Result deleted.") { draft in
-            draft.results.removeAll { $0.id == id }
-        }
+    func addReview(club: String, stars: Int, note: String) {
+        let p = Post(id: Store.uid("p"), kind: .review, author: "me", at: Store.now(),
+                     club: club, stars: max(1, min(5, stars)), note: note)
+        state.posts.insert(p, at: 0)
     }
 
-    @discardableResult
-    func addCurler(name: String, role: String, club: String, prov: String) -> MutationReceipt {
-        let initials = name.split(separator: " ").prefix(2)
-            .compactMap { $0.first }.map(String.init).joined().uppercased()
-        let curler = Curler(id: "c-\(UUID().uuidString.prefix(6))",
-                            initials: initials.isEmpty ? "?" : initials,
-                            name: name,
-                            role: role.isEmpty ? "Curler" : role,
-                            club: club.isEmpty ? "—" : club,
-                            prov: prov.isEmpty ? "—" : prov,
-                            metAt: "Added to your roster", following: true,
-                            record: "0–0", win: "—", clubs: 0, mutual: 0,
-                            sharedClubs: [], form: [])
-        return mutate(action: "addCurler",
-                      domains: [.curlers],
-                      message: "Curler added.",
-                      focusRoute: .curler(curler.id)) { draft in
-            draft.curlers.insert(curler, at: 0)
-        }
+    // MARK: Stop-detail contributions
+
+    func visits(_ stopID: String) -> [VisitEntry] { state.visits[stopID] ?? [] }
+    func iceReads(_ stopID: String) -> [IceReadEntry] { state.iceReads[stopID] ?? [] }
+    func reviews(_ stopID: String) -> [ReviewEntry] { state.reviews[stopID] ?? [] }
+
+    func addVisit(_ stopID: String, date: String, note: String) {
+        state.visits[stopID, default: []].insert(VisitEntry(date: date.isEmpty ? "Today" : date, note: note, at: Store.now()), at: 0)
+    }
+    func addIceRead(_ stopID: String, speed: String, curl: String, note: String) {
+        state.iceReads[stopID, default: []].insert(IceReadEntry(speed: speed.isEmpty ? "Medium" : speed, curl: curl, note: note, at: Store.now()), at: 0)
+    }
+    func addStopReview(_ stopID: String, stars: Int, note: String) {
+        state.reviews[stopID, default: []].insert(ReviewEntry(stars: max(1, min(5, stars)), note: note, at: Store.now()), at: 0)
     }
 
-    @discardableResult
-    func setAttendance(spielID: String, curlerID: String = "me", isGoing: Bool, updatedAt: String = "now") -> MutationReceipt {
-        mutate(action: "setAttendance",
-               domains: [.attendance, .spiels, .feed],
-               message: isGoing ? "Attendance saved." : "Attendance removed.") { draft in
-            guard draft.spiels.contains(where: { $0.id == spielID }) else { return }
-            draft.attendance.removeAll { $0.spielID == spielID && $0.curlerID == curlerID }
-            draft.attendance.append(SpielAttendance(spielID: spielID,
-                                                    curlerID: curlerID,
-                                                    status: isGoing ? .going : .notGoing,
-                                                    updatedAt: updatedAt))
-        }
+    // MARK: Messaging
+
+    func thread(_ curlerID: String) -> [Message] { state.threads[curlerID] ?? [] }
+    func sendMessage(_ curlerID: String, text: String) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty else { return }
+        state.threads[curlerID, default: []].append(Message(from: "me", text: t, at: Store.now()))
     }
 
-    @discardableResult
-    func toggleAttendance(forSpielNamed name: String, curlerID: String = "me") -> MutationReceipt {
-        guard let spielID = spielID(named: name) else {
-            return MutationReceipt(action: "toggleAttendance",
-                                   changedDomains: [],
-                                   userMessage: "Spiel not found.",
-                                   focusRoute: nil,
-                                   undoToken: nil)
-        }
-        return setAttendance(spielID: spielID, curlerID: curlerID, isGoing: !isAttendingSpiel(spielID, curlerID: curlerID))
+    // MARK: Demo session
+
+    func exploreDemo() {
+        setSession("demo")
     }
 
-    @discardableResult
-    func addBonspielTeamMember(bonspielID: String,
-                               teamID: String,
-                               displayName: String,
-                               role: String,
-                               rosterStatus: String,
-                               declaredPosition: String,
-                               curlerID: String? = nil) -> MutationReceipt {
-        let cleanName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanName.isEmpty else {
-            return blockedReceipt(action: "addBonspielTeamMember", message: "Team member needs a name.")
-        }
-        if let curlerID, curlerID != "me", curler(curlerID) == nil {
-            return blockedReceipt(action: "addBonspielTeamMember", message: "Linked curler not found.")
-        }
-        guard bonspiel(bonspielID)?.teams.contains(where: { $0.id == teamID }) == true else {
-            return blockedReceipt(action: "addBonspielTeamMember", message: "Bonspiel team not found.")
-        }
+    func signOut() { setSession(nil) }
 
-        let member = BonspielTeamMember(id: "member-\(UUID().uuidString.prefix(8))",
-                                        curlerID: curlerID,
-                                        displayName: cleanName,
-                                        role: role.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "player" : role,
-                                        rosterStatus: rosterStatus.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "active" : rosterStatus,
-                                        declaredPosition: declaredPosition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Player" : declaredPosition)
-        return mutate(action: "addBonspielTeamMember",
-                      domains: [.bonspiels],
-                      message: "Team member added.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let teamIndex = draft.bonspiels[bonspielIndex].teams.firstIndex(where: { $0.id == teamID }) else { return }
-            draft.bonspiels[bonspielIndex].teams[teamIndex].members.append(member)
-            draft.bonspiels[bonspielIndex].version += 1
-        }
+    /// Switch identity: persist current, repoint the key, load that account's state.
+    private func setSession(_ session: String?) {
+        auth.session = session
+        state = Store.loadState(key: stateKey)
     }
 
-    @discardableResult
-    func removeBonspielTeamMember(bonspielID: String, teamID: String, memberID: String) -> MutationReceipt {
-        guard let record = bonspiel(bonspielID),
-              record.teams.contains(where: { $0.id == teamID }) else {
-            return blockedReceipt(action: "removeBonspielTeamMember", message: "Bonspiel team not found.")
-        }
-        let lockedUse = record.games.contains { game in
-            lineupIsLocked(game, record: record) && game.gameLineups.contains { lineup in
-                lineup.teamID == teamID && lineup.deliveryRotation.contains(where: { $0.memberID == memberID })
-            }
-        }
-        guard !lockedUse else {
-            return blockedReceipt(action: "removeBonspielTeamMember", message: "Member is locked into a submitted lineup. Record a lineup change instead.")
-        }
+    // MARK: Persistence
 
-        return mutate(action: "removeBonspielTeamMember",
-                      domains: [.bonspiels],
-                      message: "Team member removed.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let teamIndex = draft.bonspiels[bonspielIndex].teams.firstIndex(where: { $0.id == teamID }) else { return }
-            draft.bonspiels[bonspielIndex].teams[teamIndex].members.removeAll { $0.id == memberID }
-            for gameIndex in draft.bonspiels[bonspielIndex].games.indices {
-                for lineupIndex in draft.bonspiels[bonspielIndex].games[gameIndex].gameLineups.indices {
-                    guard draft.bonspiels[bonspielIndex].games[gameIndex].gameLineups[lineupIndex].teamID == teamID else { continue }
-                    draft.bonspiels[bonspielIndex].games[gameIndex].gameLineups[lineupIndex].deliveryRotation.removeAll { $0.memberID == memberID }
-                }
-            }
-            draft.bonspiels[bonspielIndex].version += 1
+    private func persistAuth() {
+        if let d = try? JSONEncoder().encode(auth) { Store.defaults.set(d, forKey: Store.authKey) }
+    }
+    private func persistState() {
+        if let d = try? JSONEncoder().encode(state) { Store.defaults.set(d, forKey: stateKey) }
+    }
+    private static func loadAuth(_ key: String) -> AuthState {
+        guard let d = Store.defaults.data(forKey: key),
+              let decoded = try? JSONDecoder().decode(AuthState.self, from: d) else { return AuthState() }
+        let sanitized = AuthState(session: decoded.session == "demo" ? "demo" : nil)
+        if let replacement = try? JSONEncoder().encode(sanitized) {
+            Store.defaults.set(replacement, forKey: key)
         }
+        return sanitized
+    }
+    private static func loadState(key: String) -> AppState {
+        guard let d = Store.defaults.data(forKey: key),
+              let s = try? JSONDecoder().decode(AppState.self, from: d) else { return AppState() }
+        return s
     }
 
-    @discardableResult
-    func submitBonspielLineup(bonspielID: String,
-                              gameID: String,
-                              teamID: String,
-                              slots: [BonspielLineupSlot],
-                              submittedAt: String = "now",
-                              source: String = "local_game_lineup") -> MutationReceipt {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else {
-            return blockedReceipt(action: "submitBonspielLineup", message: "Bonspiel game not found.")
+    /// Migrate the pre-parity global arrays (cp.curlers/spiels/feed.v1) into the demo bucket,
+    /// once. Best-effort: seed items are dropped; only user additions carry over.
+    private static func migrateLegacyIfNeeded(session: String?) {
+        let d = Store.defaults
+        let demoKey = "cp.state.v2:demo"
+        guard d.data(forKey: demoKey) == nil else { return }
+        let hadLegacy = d.data(forKey: "cp.curlers.v1") != nil
+            || d.data(forKey: "cp.spiels.v1") != nil
+            || d.data(forKey: "cp.feed.v1") != nil
+        guard hadLegacy else { return }
+        var migrated = AppState()
+        let seedCurlerIDs = Set(Seed.curlers.map { $0.id })
+        let seedSpielIDs = Set(Seed.spiels.map { $0.id })
+        if let cd = d.data(forKey: "cp.curlers.v1"), let cs = try? JSONDecoder().decode([Curler].self, from: cd) {
+            migrated.addedCurlers = cs.filter { !seedCurlerIDs.contains($0.id) }
         }
-        guard !lineupIsLocked(game, record: record) else {
-            return blockedReceipt(action: "submitBonspielLineup", message: "Lineup is locked for this game.")
+        if let sd = d.data(forKey: "cp.spiels.v1"), let ss = try? JSONDecoder().decode([Spiel].self, from: sd) {
+            migrated.addedSpiels = ss.filter { !seedSpielIDs.contains($0.id) }
         }
-        if let message = lineupValidationMessage(record: record, game: game, teamID: teamID, slots: slots) {
-            return blockedReceipt(action: "submitBonspielLineup", message: message)
-        }
-
-        return mutate(action: "submitBonspielLineup",
-                      domains: [.bonspiels],
-                      message: "Lineup submitted.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            var game = draft.bonspiels[bonspielIndex].games[gameIndex]
-            let lineup = BonspielGameLineup(id: game.gameLineups.first(where: { $0.teamID == teamID })?.id ?? "lineup-\(UUID().uuidString.prefix(8))",
-                                            teamID: teamID,
-                                            submittedAt: submittedAt,
-                                            source: source,
-                                            deliveryRotation: slots,
-                                            alternateMemberID: nil,
-                                            coachName: nil)
-            if let existingIndex = game.gameLineups.firstIndex(where: { $0.teamID == teamID }) {
-                game.gameLineups[existingIndex] = lineup
-            } else {
-                game.gameLineups.append(lineup)
-            }
-            if game.status == .scheduled {
-                game.status = .readyForLineup
-            }
-            game.version += 1
-            draft.bonspiels[bonspielIndex].games[gameIndex] = game
-            draft.bonspiels[bonspielIndex].version += 1
-        }
+        // Legacy feed used a different (enum) shape; new Post won't decode it — safe to drop.
+        if let data = try? JSONEncoder().encode(migrated) { d.set(data, forKey: demoKey) }
+        d.removeObject(forKey: "cp.curlers.v1")
+        d.removeObject(forKey: "cp.spiels.v1")
+        d.removeObject(forKey: "cp.feed.v1")
     }
 
-    @discardableResult
-    func lockBonspielLineup(bonspielID: String, gameID: String) -> MutationReceipt {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else {
-            return blockedReceipt(action: "lockBonspielLineup", message: "Bonspiel game not found.")
-        }
-        for teamID in [game.teamAID, game.teamBID] {
-            guard let lineup = game.gameLineups.first(where: { $0.teamID == teamID }) else {
-                return blockedReceipt(action: "lockBonspielLineup", message: "Both teams need a lineup before lock.")
-            }
-            if let message = lineupValidationMessage(record: record, game: game, teamID: teamID, slots: lineup.deliveryRotation) {
-                return blockedReceipt(action: "lockBonspielLineup", message: message)
-            }
-        }
+    // MARK: Utilities
 
-        return mutate(action: "lockBonspielLineup",
-                      domains: [.bonspiels],
-                      message: "Lineup locked.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            draft.bonspiels[bonspielIndex].games[gameIndex].status = .lineupLocked
-            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
-            draft.bonspiels[bonspielIndex].version += 1
-        }
+    static func now() -> Double { Date().timeIntervalSince1970 }
+    static func uid(_ prefix: String) -> String { prefix + "-" + UUID().uuidString.prefix(8).lowercased() }
+    static func initials(_ name: String) -> String {
+        let parts = name.split(separator: " ").filter { !$0.isEmpty }
+        guard let first = parts.first?.first else { return "··" }
+        let last = parts.count > 1 ? (parts.last?.first).map(String.init) ?? "" : ""
+        return (String(first) + last).uppercased()
     }
-
-    @discardableResult
-    func addBonspielLineupChange(bonspielID: String,
-                                 gameID: String,
-                                 teamID: String,
-                                 outgoingMemberID: String?,
-                                 incomingName: String,
-                                 effectiveEnd: Int,
-                                 reason: String,
-                                 approvedBy: String = "local scorer") -> MutationReceipt {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else {
-            return blockedReceipt(action: "addBonspielLineupChange", message: "Bonspiel game not found.")
-        }
-        guard lineupIsLocked(game, record: record) else {
-            return blockedReceipt(action: "addBonspielLineupChange", message: "Submit or edit the lineup before lock.")
-        }
-        guard effectiveEnd > 0 else {
-            return blockedReceipt(action: "addBonspielLineupChange", message: "Effective end must be positive.")
-        }
-        let cleanName = incomingName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanName.isEmpty else {
-            return blockedReceipt(action: "addBonspielLineupChange", message: "Incoming player needs a name.")
-        }
-
-        return mutate(action: "addBonspielLineupChange",
-                      domains: [.bonspiels],
-                      message: "Lineup change recorded.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            draft.bonspiels[bonspielIndex].games[gameIndex].lineupChanges.append(
-                BonspielLineupChange(id: "change-\(UUID().uuidString.prefix(8))",
-                                     teamID: teamID,
-                                     outgoingMemberID: outgoingMemberID,
-                                     incomingName: cleanName,
-                                     effectiveEnd: effectiveEnd,
-                                     reason: reason.trimmingCharacters(in: .whitespacesAndNewlines),
-                                     approvedBy: approvedBy)
-            )
-            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
-            draft.bonspiels[bonspielIndex].version += 1
-        }
-    }
-
-    @discardableResult
-    func recordBonspielEndScore(bonspielID: String,
-                                gameID: String,
-                                endNumber: Int,
-                                teamA: Int,
-                                teamB: Int,
-                                isBlank: Bool = false,
-                                isExtraEnd: Bool = false,
-                                hammerTeamIDStart: String? = nil,
-                                measureRequired: Bool = false,
-                                powerPlayUsed: Bool = false) -> MutationReceipt {
-        guard let game = bonspielGame(bonspielID: bonspielID, gameID: gameID) else {
-            return blockedReceipt(action: "recordBonspielEndScore", message: "Bonspiel game not found.")
-        }
-        guard game.status != .finalized else {
-            return blockedReceipt(action: "recordBonspielEndScore", message: "Finalized scorecards need a correction flow.")
-        }
-        if let message = endScoreValidationMessage(game: game,
-                                                   endNumber: endNumber,
-                                                   teamA: teamA,
-                                                   teamB: teamB,
-                                                   isBlank: isBlank,
-                                                   isExtraEnd: isExtraEnd) {
-            return blockedReceipt(action: "recordBonspielEndScore", message: message)
-        }
-
-        let score = BonspielEndScore(id: "\(gameID)-e\(endNumber)",
-                                     endNumber: endNumber,
-                                     teamA: teamA,
-                                     teamB: teamB,
-                                     hammerTeamIDStart: hammerTeamIDStart,
-                                     isBlank: isBlank,
-                                     isExtraEnd: isExtraEnd,
-                                     measureRequired: measureRequired,
-                                     powerPlayUsed: powerPlayUsed)
-        return mutate(action: "recordBonspielEndScore",
-                      domains: [.bonspiels],
-                      message: "End score saved.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            if let endIndex = draft.bonspiels[bonspielIndex].games[gameIndex].ends.firstIndex(where: { $0.endNumber == endNumber }) {
-                draft.bonspiels[bonspielIndex].games[gameIndex].ends[endIndex] = score
-            } else {
-                draft.bonspiels[bonspielIndex].games[gameIndex].ends.append(score)
-            }
-            draft.bonspiels[bonspielIndex].games[gameIndex].ends.sort { $0.endNumber < $1.endNumber }
-            if [.scheduled, .readyForLineup, .lineupLocked].contains(draft.bonspiels[bonspielIndex].games[gameIndex].status) {
-                draft.bonspiels[bonspielIndex].games[gameIndex].status = .inProgress
-            }
-            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
-            draft.bonspiels[bonspielIndex].version += 1
-        }
-    }
-
-    @discardableResult
-    func correctBonspielEndScore(bonspielID: String,
-                                 gameID: String,
-                                 endNumber: Int,
-                                 teamA: Int,
-                                 teamB: Int,
-                                 isBlank: Bool = false,
-                                 isExtraEnd: Bool = false,
-                                 hammerTeamIDStart: String? = nil,
-                                 measureRequired: Bool = false,
-                                 powerPlayUsed: Bool = false) -> MutationReceipt {
-        guard let game = bonspielGame(bonspielID: bonspielID, gameID: gameID) else {
-            return blockedReceipt(action: "correctBonspielEndScore", message: "Bonspiel game not found.")
-        }
-        guard game.scoreAgreement.confirmed || game.status == .finalized || game.status == .forfeit else {
-            return recordBonspielEndScore(bonspielID: bonspielID,
-                                          gameID: gameID,
-                                          endNumber: endNumber,
-                                          teamA: teamA,
-                                          teamB: teamB,
-                                          isBlank: isBlank,
-                                          isExtraEnd: isExtraEnd,
-                                          hammerTeamIDStart: hammerTeamIDStart,
-                                          measureRequired: measureRequired,
-                                          powerPlayUsed: powerPlayUsed)
-        }
-        if let message = endScoreValidationMessage(game: game,
-                                                   endNumber: endNumber,
-                                                   teamA: teamA,
-                                                   teamB: teamB,
-                                                   isBlank: isBlank,
-                                                   isExtraEnd: isExtraEnd) {
-            return blockedReceipt(action: "correctBonspielEndScore", message: message)
-        }
-
-        let score = BonspielEndScore(id: "\(gameID)-e\(endNumber)",
-                                     endNumber: endNumber,
-                                     teamA: teamA,
-                                     teamB: teamB,
-                                     hammerTeamIDStart: hammerTeamIDStart,
-                                     isBlank: isBlank,
-                                     isExtraEnd: isExtraEnd,
-                                     measureRequired: measureRequired,
-                                     powerPlayUsed: powerPlayUsed)
-        return mutate(action: "correctBonspielEndScore",
-                      domains: [.bonspiels, .results, .feed],
-                      message: "Correction saved. Confirm the scorecard again.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            if let endIndex = draft.bonspiels[bonspielIndex].games[gameIndex].ends.firstIndex(where: { $0.endNumber == endNumber }) {
-                draft.bonspiels[bonspielIndex].games[gameIndex].ends[endIndex] = score
-            } else {
-                draft.bonspiels[bonspielIndex].games[gameIndex].ends.append(score)
-            }
-            draft.bonspiels[bonspielIndex].games[gameIndex].ends.sort { $0.endNumber < $1.endNumber }
-            draft.bonspiels[bonspielIndex].games[gameIndex].resultFlags.isFinal = false
-            draft.bonspiels[bonspielIndex].games[gameIndex].scoreAgreement = BonspielScoreAgreement(confirmed: false,
-                                                                                                     confirmedAt: nil,
-                                                                                                     confirmedBy: nil)
-            if [.finalized, .forfeit, .complete].contains(draft.bonspiels[bonspielIndex].games[gameIndex].status) {
-                draft.bonspiels[bonspielIndex].games[gameIndex].status = .inProgress
-            }
-            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
-            draft.bonspiels[bonspielIndex].version += 1
-            draft.results.removeAll { $0.bonspielGameID == gameID }
-        }
-    }
-
-    @discardableResult
-    func setBonspielResultFlags(bonspielID: String,
-                                gameID: String,
-                                conceded: Bool,
-                                forfeited: Bool) -> MutationReceipt {
-        guard bonspielGame(bonspielID: bonspielID, gameID: gameID) != nil else {
-            return blockedReceipt(action: "setBonspielResultFlags", message: "Bonspiel game not found.")
-        }
-        return mutate(action: "setBonspielResultFlags",
-                      domains: [.bonspiels],
-                      message: "Result flags saved.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            draft.bonspiels[bonspielIndex].games[gameIndex].resultFlags.conceded = conceded
-            draft.bonspiels[bonspielIndex].games[gameIndex].resultFlags.forfeited = forfeited
-            if forfeited {
-                draft.bonspiels[bonspielIndex].games[gameIndex].status = .forfeit
-            }
-            draft.bonspiels[bonspielIndex].games[gameIndex].version += 1
-            draft.bonspiels[bonspielIndex].version += 1
-        }
-    }
-
-    @discardableResult
-    func confirmBonspielGameResult(bonspielID: String,
-                                   gameID: String,
-                                   confirmedBy: String = "me",
-                                   confirmedAt: String = "now") -> MutationReceipt {
-        guard let record = bonspiel(bonspielID),
-              let game = record.games.first(where: { $0.id == gameID }) else {
-            return blockedReceipt(action: "confirmBonspielGameResult", message: "Bonspiel game not found.")
-        }
-        if let message = scorecardValidationMessage(game) {
-            return blockedReceipt(action: "confirmBonspielGameResult", message: message)
-        }
-
-        return mutate(action: "confirmBonspielGameResult",
-                      domains: [.bonspiels, .results, .feed],
-                      message: "Local scorecard confirmed.") { draft in
-            guard let bonspielIndex = draft.bonspiels.firstIndex(where: { $0.id == bonspielID }),
-                  let gameIndex = draft.bonspiels[bonspielIndex].games.firstIndex(where: { $0.id == gameID }) else { return }
-            var game = draft.bonspiels[bonspielIndex].games[gameIndex]
-            game.resultFlags.isFinal = true
-            game.scoreAgreement = BonspielScoreAgreement(confirmed: true,
-                                                         confirmedAt: confirmedAt,
-                                                         confirmedBy: confirmedBy)
-            game.status = game.resultFlags.forfeited ? .forfeit : .finalized
-            game.version += 1
-            draft.bonspiels[bonspielIndex].games[gameIndex] = game
-            draft.bonspiels[bonspielIndex].version += 1
-
-            let participantIDs = participantCurlerIDs(record: draft.bonspiels[bonspielIndex], game: game)
-            var result = GameResult(authorID: nil,
-                                    createdAt: game.scheduledStartAt,
-                                    note: "Local scorecard: \(draft.bonspiels[bonspielIndex].teamName(game.teamAID)) vs \(draft.bonspiels[bonspielIndex].teamName(game.teamBID)).",
-                                    opponent: draft.bonspiels[bonspielIndex].teamName(game.teamBID),
-                                    scoreFor: game.teamATotal,
-                                    scoreAgainst: game.teamBTotal,
-                                    stopID: nil,
-                                    spielID: draft.bonspiels[bonspielIndex].linkedSpielID,
-                                    participantCurlerIDs: participantIDs,
-                                    ends: game.ends,
-                                    conceded: game.resultFlags.conceded,
-                                    forfeited: game.resultFlags.forfeited,
-                                    locallyConfirmed: true)
-            result.bonspielID = bonspielID
-            result.bonspielGameID = gameID
-
-            if let existingIndex = draft.results.firstIndex(where: { $0.bonspielGameID == gameID }) {
-                result.id = draft.results[existingIndex].id
-                draft.results[existingIndex] = result
-            } else {
-                draft.results.insert(result, at: 0)
-            }
-        }
-    }
-
-    @discardableResult
-    func undo(_ token: UndoToken) -> MutationReceipt? {
-        guard let snapshot = undoSnapshots.removeValue(forKey: token.payloadID) else { return nil }
-        let previous = data
-        apply(snapshot, shouldPersist: true)
-        return receipt(action: "undo",
-                       domains: [.setup, .profile, .curlers, .venues, .stops, .visits, .spiels, .attendance, .results, .feed, .bonspiels],
-                       message: "Undo complete.",
-                       previous: previous)
-    }
-
-    private func apply(_ data: AppData, shouldPersist: Bool) {
-        isHydrating = true
-        self.data = Self.normalized(data)
-        isHydrating = false
-        if shouldPersist { persistAll() }
-    }
-
-    private func persistAll() {
-        guard !isHydrating else { return }
-        Persist.save(data, Persist.appDataKey)
-    }
-
-    private func feedVisibleToFollowing(_ item: FeedItem) -> Bool {
-        switch item {
-        case .result(let post):
-            return post.author == "me" || curler(post.author)?.following == true
-        case .spiel(let post):
-            let followed = post.who.contains { curler($0)?.following == true }
-            let attending = spielID(named: post.spielName).map { isAttendingSpiel($0) } ?? false
-            return followed || attending
-        case .review(let post):
-            return curler(post.author)?.following == true
-        }
-    }
-
-    private func stopHasActivity(_ stopID: String) -> Bool {
-        data.visits.contains { $0.stopID == stopID }
-            || data.results.contains { $0.stopID == stopID }
-            || (stop(stopID).map { !$0.games.isEmpty || !$0.met.isEmpty || $0.record != "—" } ?? false)
-    }
-
-    private static func routeKilometers(for stops: [Stop]) -> Int? {
-        let coordinates = stops.compactMap { stop -> (latitude: Double, longitude: Double)? in
-            guard let latitude = stop.latitude, let longitude = stop.longitude else { return nil }
-            return (latitude, longitude)
-        }
-        guard !coordinates.isEmpty else { return nil }
-        guard coordinates.count > 1 else { return 0 }
-        let total = zip(coordinates, coordinates.dropFirst()).reduce(0.0) { partial, pair in
-            partial + haversineKilometers(from: pair.0, to: pair.1)
-        }
-        return Int(total.rounded())
-    }
-
-    private static func haversineKilometers(from start: (latitude: Double, longitude: Double),
-                                            to end: (latitude: Double, longitude: Double)) -> Double {
-        let earthRadius = 6371.0
-        let lat1 = start.latitude * .pi / 180
-        let lat2 = end.latitude * .pi / 180
-        let deltaLat = (end.latitude - start.latitude) * .pi / 180
-        let deltaLon = (end.longitude - start.longitude) * .pi / 180
-        let a = sin(deltaLat / 2) * sin(deltaLat / 2)
-            + cos(lat1) * cos(lat2) * sin(deltaLon / 2) * sin(deltaLon / 2)
-        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
-    }
-
-    private func mutate(action: String,
-                        domains: Set<SeasonDomain>,
-                        message: String,
-                        focusRoute: Route? = nil,
-                        _ body: (inout AppData) -> Void) -> MutationReceipt {
-        let previous = data
-        var draft = data
-        body(&draft)
-        data = Self.normalized(draft)
-        return receipt(action: action,
-                       domains: domains,
-                       message: message,
-                       focusRoute: focusRoute,
-                       previous: previous)
-    }
-
-    private func receipt(action: String,
-                         domains: Set<SeasonDomain>,
-                         message: String,
-                         focusRoute: Route? = nil,
-                         previous: AppData) -> MutationReceipt {
-        let tokenID = UUID().uuidString
-        undoSnapshots[tokenID] = previous
-        return MutationReceipt(action: action,
-                               changedDomains: domains,
-                               userMessage: message,
-                               focusRoute: focusRoute,
-                               undoToken: UndoToken(action: "restoreAppData", payloadID: tokenID))
-    }
-
-    private static func legacyAppData() -> AppData {
-        var migrated = Seed.appData(setupComplete: true)
-        if let saved: [Curler] = Persist.load(Persist.curlersKey) { migrated.curlers = saved }
-        if let saved: [Spiel] = Persist.load(Persist.spielsKey) { migrated.spiels = saved }
-        if let saved: [FeedItem] = Persist.load(Persist.feedKey) { migrated.feed = saved }
-        return migrated
-    }
-
-    private func blockedReceipt(action: String, message: String, focusRoute: Route? = nil) -> MutationReceipt {
-        MutationReceipt(action: action,
-                        changedDomains: [],
-                        userMessage: message,
-                        focusRoute: focusRoute,
-                        undoToken: nil)
-    }
-
-    private func lineupIsLocked(_ game: BonspielGame, record: BonspielRecord? = nil, now: Date = Date()) -> Bool {
-        switch game.status {
-        case .lineupLocked, .inProgress, .complete, .finalized, .forfeit, .cancelled:
-            return true
-        case .postponed:
-            return false
-        case .scheduled, .readyForLineup:
-            break
-        }
-        guard let record else { return false }
-        return scheduledLineupLockIsActive(record: record, game: game, now: now)
-    }
-
-    private func scheduledLineupLockIsActive(record: BonspielRecord, game: BonspielGame, now: Date) -> Bool {
-        guard record.rosterPolicy.lockMinutesBeforeGame > 0,
-              let start = scheduledStartDate(record: record, game: game) else {
-            return false
-        }
-        let lockStart = start.addingTimeInterval(TimeInterval(-record.rosterPolicy.lockMinutesBeforeGame * 60))
-        return now >= lockStart
-    }
-
-    private func scheduledStartDate(record: BonspielRecord, game: BonspielGame) -> Date? {
-        let value = game.scheduledStartAt.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let date = ISO8601DateFormatter().date(from: value) {
-            return date
-        }
-
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: record.timezone) ?? .current
-        for format in ["yyyy-MM-dd HH:mm", "yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd"] {
-            formatter.dateFormat = format
-            if let date = formatter.date(from: value) {
-                return date
-            }
-        }
-        return nil
-    }
-
-    private func lineupValidationMessage(record: BonspielRecord,
-                                         game: BonspielGame,
-                                         teamID: String,
-                                         slots: [BonspielLineupSlot]) -> String? {
-        guard teamID == game.teamAID || teamID == game.teamBID else {
-            return "Lineup team is not assigned to this game."
-        }
-        guard let team = record.teams.first(where: { $0.id == teamID }) else {
-            return "Bonspiel team not found."
-        }
-        guard slots.count == record.rosterPolicy.maxPlayersOnIce else {
-            return "Lineup needs \(record.rosterPolicy.maxPlayersOnIce) players for \(record.discipline.label)."
-        }
-        let memberIDs = slots.map(\.memberID)
-        guard Set(memberIDs).count == memberIDs.count else {
-            return "Lineup cannot contain duplicate players."
-        }
-        guard slots.filter(\.isSkip).count == 1 else {
-            return "Lineup needs exactly one skip."
-        }
-        guard slots.filter(\.isViceSkip).count == 1 else {
-            return "Lineup needs exactly one vice skip."
-        }
-
-        let membersByID = Dictionary(uniqueKeysWithValues: team.members.map { ($0.id, $0) })
-        for slot in slots {
-            guard let member = membersByID[slot.memberID] else {
-                return "Lineup contains a player outside the team roster."
-            }
-            let status = member.rosterStatus.lowercased()
-            let role = member.role.lowercased()
-            if (status == "spare" || role == "spare") && !record.rosterPolicy.allowSpares {
-                return "Roster policy does not allow spares."
-            }
-            if (status == "alternate" || role == "alternate") && !record.rosterPolicy.allowAlternates {
-                return "Roster policy does not allow alternates."
-            }
-        }
-
-        return nil
-    }
-
-    private func endScoreValidationMessage(game: BonspielGame,
-                                           endNumber: Int,
-                                           teamA: Int,
-                                           teamB: Int,
-                                           isBlank: Bool,
-                                           isExtraEnd: Bool) -> String? {
-        guard endNumber > 0 else { return "End number must be positive." }
-        guard teamA >= 0, teamB >= 0 else { return "End scores cannot be negative." }
-        guard !(teamA > 0 && teamB > 0) else { return "Only one team can score in an end." }
-        if isBlank {
-            guard teamA == 0, teamB == 0 else { return "Blank ends must be 0-0." }
-        } else if teamA == 0 && teamB == 0 {
-            return "Mark 0-0 as a blank end."
-        }
-        if endNumber <= game.scheduledEnds && isExtraEnd {
-            return "Regulation ends cannot be marked as extra ends."
-        }
-        if endNumber > game.scheduledEnds {
-            guard isExtraEnd else { return "End \(endNumber) must be marked as an extra end." }
-            let regulationEnds = game.ends.filter { $0.endNumber <= game.scheduledEnds && $0.endNumber != endNumber }
-            guard regulationEnds.count >= game.scheduledEnds else {
-                return "Extra ends require completed regulation ends."
-            }
-            let teamATotal = regulationEnds.reduce(0) { $0 + $1.teamA }
-            let teamBTotal = regulationEnds.reduce(0) { $0 + $1.teamB }
-            guard teamATotal == teamBTotal else {
-                return "Extra ends are only valid after tied regulation."
-            }
-        }
-        return nil
-    }
-
-    private func scorecardValidationMessage(_ game: BonspielGame) -> String? {
-        if game.resultFlags.forfeited {
-            return nil
-        }
-        guard !game.ends.isEmpty else {
-            return "Enter at least one end before confirmation."
-        }
-        for end in game.ends {
-            if let message = endScoreValidationMessage(game: game,
-                                                       endNumber: end.endNumber,
-                                                       teamA: end.teamA,
-                                                       teamB: end.teamB,
-                                                       isBlank: end.isBlank,
-                                                       isExtraEnd: end.isExtraEnd) {
-                return message
-            }
-        }
-        guard game.completedEnds >= game.minEndsForLocalResult || game.resultFlags.conceded else {
-            return "Game needs \(game.minEndsForLocalResult) completed ends or a concession."
-        }
-        guard game.teamATotal != game.teamBTotal || game.resultFlags.conceded else {
-            return "Tied games need an extra end or a result flag before confirmation."
-        }
-        return nil
-    }
-
-    private func participantCurlerIDs(record: BonspielRecord, game: BonspielGame) -> [String] {
-        var ids = Set<String>()
-        for lineup in game.gameLineups {
-            guard let team = record.teams.first(where: { $0.id == lineup.teamID }) else { continue }
-            for slot in lineup.deliveryRotation {
-                if let curlerID = team.members.first(where: { $0.id == slot.memberID })?.curlerID {
-                    ids.insert(curlerID)
-                }
-            }
-        }
-        return ids.sorted()
-    }
-
-    private static func normalized(_ imported: AppData) -> AppData {
-        var normalized = imported
-        normalized.schemaVersion = 4
-
-        if normalized.bonspiels.isEmpty && normalized.profile.demoMode && !normalized.spiels.isEmpty {
-            normalized.bonspiels = Seed.bonspiels
-        }
-
-        if normalized.venues.isEmpty {
-            normalized.venues = Seed.venues
-        } else {
-            let importedVenueIDs = Set(normalized.venues.map(\.id))
-            normalized.venues.append(contentsOf: Seed.venues.filter { !importedVenueIDs.contains($0.id) })
-        }
-
-        normalized.curlers = normalized.curlers.map { curler in
-            var copy = curler
-            if copy.importedHistory == nil {
-                let hasImportedHistory = copy.record != "0–0" || copy.win != "—" || copy.clubs > 0 || copy.mutual > 0 || !copy.sharedClubs.isEmpty || !copy.form.isEmpty
-                if hasImportedHistory {
-                    copy.importedHistory = ImportedCurlerHistory(record: copy.record,
-                                                                 win: copy.win,
-                                                                 rinks: copy.clubs,
-                                                                 mutual: copy.mutual,
-                                                                 sharedRinks: copy.sharedClubs,
-                                                                 form: copy.form)
-                }
-            }
-            return copy
-        }
-
-        if normalized.visits.isEmpty {
-            normalized.visits = normalized.stops
-                .filter { $0.here || !$0.met.isEmpty || $0.record != "—" }
-                .map { stop in
-                    StopVisit(stopID: stop.id,
-                              arrivedAt: stop.dates,
-                              departedAt: stop.here ? nil : stop.dates,
-                              curlerIDs: stop.met,
-                              note: "")
-                }
-        }
-
-        if normalized.attendance.isEmpty {
-            normalized.attendance = normalized.spiels.flatMap { spiel in
-                var ids = spiel.going
-                if spiel.status == "You're in" { ids.insert("me", at: 0) }
-                return ids.map { id in
-                    SpielAttendance(spielID: spiel.id,
-                                    curlerID: id,
-                                    status: .going,
-                                    updatedAt: "seed")
-                }
-            }
-        }
-
-        let venueIDs = Set(normalized.venues.map(\.id))
-        normalized.stops = normalized.stops.map { stop in
-            var copy = stop
-            if let venueID = copy.venueID, !venueIDs.contains(venueID) {
-                copy.venueID = nil
-            }
-            if copy.venueID == nil,
-               let venue = VenueResolver.resolve("\(copy.club), \(copy.prov)", venues: normalized.venues) {
-                copy.venueID = venue.id
-                if copy.latitude == nil { copy.latitude = venue.latitude }
-                if copy.longitude == nil { copy.longitude = venue.longitude }
-            }
-            return copy
-        }
-
-        let stopIDs = Set(normalized.stops.map(\.id))
-        normalized.spiels = normalized.spiels.map { spiel in
-            var copy = spiel
-            if let stopID = copy.stopID, !stopIDs.contains(stopID) {
-                copy.stopID = nil
-            }
-            if let venueID = copy.venueID, !venueIDs.contains(venueID) {
-                copy.venueID = nil
-            }
-            if copy.venueID == nil,
-               let venue = VenueResolver.resolve(copy.whereText, venues: normalized.venues) {
-                copy.venueID = venue.id
-            }
-            return copy
-        }
-
-        let curlerIDs = Set(normalized.curlers.map(\.id) + ["me"])
-        let spielIDs = Set(normalized.spiels.map(\.id))
-        let spielsByID = Dictionary(uniqueKeysWithValues: normalized.spiels.map { ($0.id, $0) })
-
-        normalized.visits = normalized.visits
-            .filter { stopIDs.contains($0.stopID) }
-            .map { visit in
-                var copy = visit
-                copy.curlerIDs = Array(Set(copy.curlerIDs.filter { curlerIDs.contains($0) })).sorted()
-                return copy
-            }
-
-        var attendanceSeen = Set<String>()
-        normalized.attendance = normalized.attendance.filter { item in
-            guard spielIDs.contains(item.spielID), curlerIDs.contains(item.curlerID) else { return false }
-            let key = "\(item.spielID)|\(item.curlerID)"
-            guard !attendanceSeen.contains(key) else { return false }
-            attendanceSeen.insert(key)
-            return true
-        }
-
-        normalized.bonspiels = normalized.bonspiels
-            .filter { spielIDs.contains($0.linkedSpielID) }
-            .map { bonspiel in
-                var copy = bonspiel
-                if let venueID = copy.venueID, !venueIDs.contains(venueID) {
-                    copy.venueID = nil
-                }
-                if copy.venueID == nil {
-                    copy.venueID = spielsByID[copy.linkedSpielID]?.venueID
-                }
-                if let venueID = copy.venueID,
-                   let venue = normalized.venues.first(where: { $0.id == venueID }) {
-                    copy.venue = venue.bonspielVenue
-                    if let timezone = venue.timezone {
-                        copy.timezone = timezone
-                    }
-                }
-                for teamIndex in copy.teams.indices {
-                    for memberIndex in copy.teams[teamIndex].members.indices {
-                        if let curlerID = copy.teams[teamIndex].members[memberIndex].curlerID,
-                           !curlerIDs.contains(curlerID) {
-                            copy.teams[teamIndex].members[memberIndex].curlerID = nil
-                        }
-                    }
-                }
-
-                let stageIDs = Set(copy.stages.map(\.id))
-                let teamIDs = Set(copy.teams.map(\.id))
-                copy.games = copy.games
-                    .filter { stageIDs.contains($0.stageID) && teamIDs.contains($0.teamAID) && teamIDs.contains($0.teamBID) }
-                    .map { game in
-                        var cleanGame = game
-                        cleanGame.gameLineups = cleanGame.gameLineups.compactMap { lineup in
-                            guard teamIDs.contains(lineup.teamID),
-                                  let team = copy.teams.first(where: { $0.id == lineup.teamID }) else { return nil }
-                            let memberIDs = Set(team.members.map(\.id))
-                            var cleanLineup = lineup
-                            cleanLineup.deliveryRotation = cleanLineup.deliveryRotation.filter { memberIDs.contains($0.memberID) }
-                            if let alternate = cleanLineup.alternateMemberID, !memberIDs.contains(alternate) {
-                                cleanLineup.alternateMemberID = nil
-                            }
-                            return cleanLineup.deliveryRotation.isEmpty ? nil : cleanLineup
-                        }
-                        cleanGame.lineupChanges = cleanGame.lineupChanges.filter { change in
-                            teamIDs.contains(change.teamID)
-                        }
-                        cleanGame.ends = cleanGame.ends.filter { end in
-                            end.endNumber > 0
-                                && end.teamA >= 0
-                                && end.teamB >= 0
-                                && !(end.teamA > 0 && end.teamB > 0)
-                                && (!end.isBlank || (end.teamA == 0 && end.teamB == 0))
-                        }
-                        return cleanGame
-                    }
-                return copy
-            }
-
-        let bonspielIDs = Set(normalized.bonspiels.map(\.id))
-        let bonspielGameIDs = Set(normalized.bonspiels.flatMap { $0.games.map(\.id) })
-
-        normalized.results = normalized.results.map { result in
-            var copy = result
-            if let stopID = copy.stopID, !stopIDs.contains(stopID) { copy.stopID = nil }
-            if let spielID = copy.spielID, !spielIDs.contains(spielID) { copy.spielID = nil }
-            if let bonspielID = copy.bonspielID, !bonspielIDs.contains(bonspielID) { copy.bonspielID = nil }
-            if let bonspielGameID = copy.bonspielGameID, !bonspielGameIDs.contains(bonspielGameID) { copy.bonspielGameID = nil }
-            copy.participantCurlerIDs = Array(Set(copy.participantCurlerIDs.filter { curlerIDs.contains($0) })).sorted()
-            return copy
-        }
-
-        return normalized
-    }
-}
-
-// MARK: - Seed data (mirrors the web build's season)
-
-enum Seed {
-    static func appData(setupComplete: Bool) -> AppData {
-        AppData(schemaVersion: 4,
-                setupComplete: setupComplete,
-                profile: .demo,
-                curlers: curlers,
-                venues: venues,
-                stops: stops,
-                visits: visits,
-                spiels: spiels,
-                attendance: attendance,
-                results: results,
-                feed: feed,
-                bonspiels: bonspiels)
-    }
-
-    static let curlers: [Curler] = [
-        Curler(id: "sam", initials: "SR", name: "Sam Reid", role: "Skip", club: "Vernon CC", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "21–9", win: "70%", clubs: 9, mutual: 3,
-               sharedClubs: ["Kelowna", "Vernon", "+4 more"],
-               form: [GameLine(label: "A-final · Kelowna", score: "8–5", res: "W"),
-                      GameLine(label: "Semi · Kelowna", score: "7–6", res: "W")]),
-        Curler(id: "jo", initials: "JM", name: "Jo Mara", role: "Lead · Spare", club: "In roster", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: true,
-               record: "15–11", win: "58%", clubs: 7, mutual: 5,
-               sharedClubs: ["Kelowna", "Kamloops", "+2 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "6–4", res: "W"),
-                      GameLine(label: "Tie-break · Vernon", score: "5–7", res: "L")]),
-        Curler(id: "dee", initials: "DT", name: "Dee Tan", role: "Lead", club: "Glenmore CC", prov: "BC",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "12–10", win: "55%", clubs: 6, mutual: 2,
-               sharedClubs: ["Kelowna", "Glenmore", "+1 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
-                      GameLine(label: "Pool · Kelowna", score: "4–8", res: "L")]),
-        Curler(id: "carter", initials: "BC", name: "Bryn Carter", role: "Skip", club: "Sage Valley CC", prov: "AB",
-               metAt: "Kelowna · Jan 2026", following: false,
-               record: "18–12", win: "60%", clubs: 8, mutual: 1,
-               sharedClubs: ["Kelowna", "Calgary", "+3 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "4–8", res: "L"),
-                      GameLine(label: "Final · Calgary", score: "9–7", res: "W")]),
-        Curler(id: "lind", initials: "EL", name: "Erik Lindqvist", role: "Third", club: "Granite City CC", prov: "MB",
-               metAt: "Kelowna · Jan 2026", following: true,
-               record: "24–8", win: "75%", clubs: 11, mutual: 2,
-               sharedClubs: ["Kelowna", "Winnipeg", "+5 more"],
-               form: [GameLine(label: "Pool · Kelowna", score: "7–5", res: "W"),
-                      GameLine(label: "Final · Winnipeg", score: "6–5", res: "W")])
-    ]
-
-    static let venues: [Venue] = [
-        Venue(id: "venue-kamloops-curling-club",
-              displayName: "Kamloops Curling Club",
-              aliases: ["Kamloops, BC", "Brier Patch Open"],
-              clubName: "Kamloops Curling Club",
-              city: "Kamloops",
-              region: "BC",
-              country: "CA",
-              postalAddress: "Kamloops, BC",
-              latitude: 50.6745,
-              longitude: -120.3273,
-              timezone: "America/Vancouver",
-              authority: .curated,
-              seasonMapX: 86,
-              seasonMapY: 54,
-              code: "KAM"),
-        Venue(id: "venue-kelowna-curling-club",
-              displayName: "Kelowna Curling Club",
-              aliases: ["Kelowna, BC", "Okanagan Classic"],
-              clubName: "Kelowna Curling Club",
-              city: "Kelowna",
-              region: "BC",
-              country: "CA",
-              postalAddress: "Kelowna, BC",
-              latitude: 49.8880,
-              longitude: -119.4960,
-              timezone: "America/Vancouver",
-              authority: .curated,
-              seasonMapX: 70,
-              seasonMapY: 32,
-              code: "KEL"),
-        Venue(id: "venue-vernon-curling-club",
-              displayName: "Vernon Curling Club",
-              aliases: ["Vernon, BC"],
-              clubName: "Vernon Curling Club",
-              city: "Vernon",
-              region: "BC",
-              country: "CA",
-              postalAddress: "Vernon, BC",
-              latitude: 50.2670,
-              longitude: -119.2720,
-              timezone: "America/Vancouver",
-              authority: .curated,
-              seasonMapX: 50,
-              seasonMapY: 68,
-              code: "VER"),
-        Venue(id: "venue-sage-valley-cc",
-              displayName: "Sage Valley CC",
-              aliases: ["Sage Valley"],
-              clubName: "Sage Valley CC",
-              city: "Calgary",
-              region: "AB",
-              country: "CA",
-              postalAddress: "Calgary, AB",
-              latitude: 51.0447,
-              longitude: -114.0719,
-              timezone: "America/Edmonton",
-              authority: .curated,
-              seasonMapX: 30,
-              seasonMapY: 39,
-              code: "CAL"),
-        Venue(id: "venue-granite-city-cc",
-              displayName: "Granite City CC",
-              aliases: ["Granite City", "Winnipeg, MB", "Prairie Cashspiel"],
-              clubName: "Granite City CC",
-              city: "Winnipeg",
-              region: "MB",
-              country: "CA",
-              postalAddress: "Winnipeg, MB",
-              latitude: 49.8951,
-              longitude: -97.1384,
-              timezone: "America/Winnipeg",
-              authority: .curated,
-              seasonMapX: 14,
-              seasonMapY: 64,
-              code: "WPG")
-    ]
-
-    static let stops: [Stop] = [
-        Stop(id: "kamloops", code: "KAM", name: "Kamloops Cashspiel", club: "Kamloops Curling Club", prov: "BC",
-             dates: "FEB 14–16", record: "—", here: false, x: 86, y: 54, big: true,
-             iceSpeed: "Fast", iceSpeedSec: "23.6s", iceCurl: "4–5", iceRec: "—",
-             games: [], met: [],
-             latitude: 50.6745, longitude: -120.3273, venueID: "venue-kamloops-curling-club"),
-        Stop(id: "kelowna", code: "KEL", name: "Kelowna Bonspiel", club: "Kelowna Curling Club", prov: "BC",
-             dates: "JAN 9–11", record: "3–1", x: 70, y: 32, plus: "+3",
-             iceSpeed: "Fast", iceSpeedSec: "24.1s", iceCurl: "5–6", iceRec: "3–1",
-             games: [GameLine(label: "vs Carter", score: "8–4", res: "W"),
-                     GameLine(label: "vs Lindqvist", score: "5–7", res: "L")],
-             met: ["sam", "jo", "dee"],
-             latitude: 49.8880, longitude: -119.4960, venueID: "venue-kelowna-curling-club"),
-        Stop(id: "vernon", code: "VER", name: "Vernon Cashspiel", club: "Vernon Curling Club", prov: "BC",
-             dates: "DEC 2", record: "2–1", x: 50, y: 68, plus: "+2",
-             iceSpeed: "Medium", iceSpeedSec: "25.0s", iceCurl: "4–5", iceRec: "2–1",
-             games: [GameLine(label: "vs Reid", score: "6–8", res: "L"),
-                     GameLine(label: "vs Mara", score: "7–5", res: "W")],
-             met: ["sam", "jo"],
-             latitude: 50.2670, longitude: -119.2720, venueID: "venue-vernon-curling-club"),
-        Stop(id: "calgary", code: "CAL", name: "Sage Valley Open", club: "Sage Valley CC", prov: "AB",
-             dates: "NOV 14–16", record: "2–2", x: 30, y: 39,
-             iceSpeed: "Keen", iceSpeedSec: "23.2s", iceCurl: "6–7", iceRec: "2–2",
-             games: [GameLine(label: "vs Carter", score: "9–7", res: "W"),
-                     GameLine(label: "vs Park", score: "4–9", res: "L")],
-             met: ["carter"],
-             latitude: 51.0447, longitude: -114.0719, venueID: "venue-sage-valley-cc"),
-        Stop(id: "winnipeg", code: "WPG", name: "Granite City Classic", club: "Granite City CC", prov: "MB",
-             dates: "OCT 24–26", record: "3–0", x: 14, y: 64,
-             iceSpeed: "Fast", iceSpeedSec: "24.4s", iceCurl: "5–6", iceRec: "3–0",
-             games: [GameLine(label: "vs Lindqvist", score: "6–5", res: "W"),
-                     GameLine(label: "vs Olsen", score: "8–3", res: "W")],
-             met: ["lind"],
-             latitude: 49.8951, longitude: -97.1384, venueID: "venue-granite-city-cc")
-    ]
-
-    static let spiels: [Spiel] = [
-        Spiel(id: "sp1", name: "Brier Patch Open", whereText: "Kamloops, BC", whenText: "FEB 14–16",
-              status: "You're in", going: ["sam", "jo", "lind"],
-              startDate: "2026-02-14", endDate: "2026-02-16", stopID: "kamloops", venueID: "venue-kamloops-curling-club"),
-        Spiel(id: "sp2", name: "Okanagan Classic", whereText: "Kelowna, BC", whenText: "MAR 6–8",
-              status: "Watching", going: ["dee", "carter"],
-              startDate: "2026-03-06", endDate: "2026-03-08", stopID: "kelowna", venueID: "venue-kelowna-curling-club"),
-        Spiel(id: "sp3", name: "Prairie Cashspiel", whereText: "Winnipeg, MB", whenText: "MAR 27–29",
-              status: "Invite", going: ["lind"],
-              startDate: "2026-03-27", endDate: "2026-03-29", stopID: "winnipeg", venueID: "venue-granite-city-cc")
-    ]
-
-    static let visits: [StopVisit] = [
-        StopVisit(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
-                  stopID: "kamloops",
-                  arrivedAt: "FEB 14",
-                  departedAt: nil,
-                  curlerIDs: [],
-                  note: "Active demo visit"),
-        StopVisit(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
-                  stopID: "kelowna",
-                  arrivedAt: "JAN 9",
-                  departedAt: "JAN 11",
-                  curlerIDs: ["sam", "jo", "dee"],
-                  note: ""),
-        StopVisit(id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
-                  stopID: "vernon",
-                  arrivedAt: "DEC 2",
-                  departedAt: "DEC 2",
-                  curlerIDs: ["sam", "jo"],
-                  note: "")
-    ]
-
-    static let attendance: [SpielAttendance] = [
-        SpielAttendance(id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!, spielID: "sp1", curlerID: "me", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!, spielID: "sp1", curlerID: "sam", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "66666666-6666-6666-6666-666666666666")!, spielID: "sp1", curlerID: "jo", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "77777777-7777-7777-7777-777777777777")!, spielID: "sp1", curlerID: "lind", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "88888888-8888-8888-8888-888888888888")!, spielID: "sp2", curlerID: "dee", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "99999999-9999-9999-9999-999999999999")!, spielID: "sp2", curlerID: "carter", status: .going, updatedAt: "seed"),
-        SpielAttendance(id: UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!, spielID: "sp3", curlerID: "lind", status: .going, updatedAt: "seed")
-    ]
-
-    static let results: [GameResult] = [
-        GameResult(id: UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!,
-                   authorID: nil,
-                   createdAt: "JAN 11",
-                   note: "A-final at Kelowna. Ice was lightning all weekend.",
-                   opponent: "Northern",
-                   scoreFor: 8,
-                   scoreAgainst: 5,
-                   stopID: "kelowna",
-                   spielID: nil,
-                   participantCurlerIDs: ["sam", "jo"],
-                   ends: [],
-                   conceded: false,
-                   forfeited: false,
-                   locallyConfirmed: true),
-        GameResult(id: UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")!,
-                   authorID: nil,
-                   createdAt: "DEC 2",
-                   note: "Tie-break at Vernon.",
-                   opponent: "Mara",
-                   scoreFor: 7,
-                   scoreAgainst: 5,
-                   stopID: "vernon",
-                   spielID: nil,
-                   participantCurlerIDs: ["jo"],
-                   ends: [],
-                   conceded: false,
-                   forfeited: false,
-                   locallyConfirmed: true)
-    ]
-
-    static let bonspiels: [BonspielRecord] = [
-        BonspielRecord(
-            id: "bon-brier-patch-open",
-            linkedSpielID: "sp1",
-            name: "Brier Patch Open",
-            shortName: "Brier Patch",
-            season: "2025-26",
-            discipline: .fourPlayer,
-            venueID: "venue-kamloops-curling-club",
-            venue: BonspielVenue(name: "Kamloops Curling Club", city: "Kamloops", region: "BC", country: "CA"),
-            timezone: "America/Vancouver",
-            startDate: "2026-02-14",
-            endDate: "2026-02-16",
-            registrationWindow: BonspielWindow(opensAt: "2025-11-01", closesAt: "2026-02-01"),
-            rulesProfile: BonspielRulesProfile(rulebookRef: "Club bonspiel rules v1",
-                                                scheduledEnds: 8,
-                                                minEndsForLocalResult: 6,
-                                                lsfeMethod: "LSD or coin toss",
-                                                tiebreakerMethods: ["Win loss", "Head to head", "Draw shot challenge"]),
-            rosterPolicy: BonspielRosterPolicy(maxPlayersOnIce: 4,
-                                                allowAlternates: true,
-                                                allowSpares: true,
-                                                allowReentry: false,
-                                                lockMinutesBeforeGame: 45),
-            privacyPolicy: BonspielPrivacyPolicy(rosterDisplayFields: ["Team", "Name", "Position", "Club"],
-                                                  internalFields: ["Birth date", "Email", "Phone", "Waiver"],
-                                                  mediaConsentRequired: false,
-                                                  consentVersion: "photo-consent-v1"),
-            stages: [
-                BonspielStage(id: "bp-pool", name: "Pool A", stageType: "round_robin", sequence: 1),
-                BonspielStage(id: "bp-playoff", name: "Playoff", stageType: "bracket", sequence: 2)
-            ],
-            teams: [
-                BonspielTeam(id: "team-mercer", displayName: "Team Mercer", shortName: "Mercer", affiliation: "Calgary Granite CC",
-                             members: [
-                                BonspielTeamMember(id: "tm-dana", curlerID: nil, displayName: "Dana Mercer", role: "player", rosterStatus: "active", declaredPosition: "Skip"),
-                                BonspielTeamMember(id: "tm-jo", curlerID: "jo", displayName: "Jo Mara", role: "player", rosterStatus: "active", declaredPosition: "Third"),
-                                BonspielTeamMember(id: "tm-dee", curlerID: "dee", displayName: "Dee Tan", role: "player", rosterStatus: "active", declaredPosition: "Second"),
-                                BonspielTeamMember(id: "tm-sam", curlerID: "sam", displayName: "Sam Reid", role: "alternate", rosterStatus: "alternate", declaredPosition: "Lead")
-                             ]),
-                BonspielTeam(id: "team-carter", displayName: "Team Carter", shortName: "Carter", affiliation: "Sage Valley CC",
-                             members: [
-                                BonspielTeamMember(id: "tc-bryn", curlerID: "carter", displayName: "Bryn Carter", role: "player", rosterStatus: "active", declaredPosition: "Skip"),
-                                BonspielTeamMember(id: "tc-lind", curlerID: "lind", displayName: "Erik Lindqvist", role: "player", rosterStatus: "active", declaredPosition: "Third"),
-                                BonspielTeamMember(id: "tc-mara", curlerID: "jo", displayName: "Jo Mara", role: "spare", rosterStatus: "spare", declaredPosition: "Second"),
-                                BonspielTeamMember(id: "tc-reid", curlerID: "sam", displayName: "Sam Reid", role: "player", rosterStatus: "active", declaredPosition: "Lead")
-                             ])
-            ],
-            games: [
-                BonspielGame(id: "bp-g1",
-                             stageID: "bp-pool",
-                             drawLabel: "Draw 2",
-                             status: .lineupLocked,
-                             scheduledStartAt: "2026-02-14 10:00",
-                             sheet: "Sheet C",
-                             teamAID: "team-mercer",
-                             teamBID: "team-carter",
-                             stoneColorAssignment: "Team A dark handles",
-                             lsfeOrPlacementDecision: BonspielLastStoneDecision(method: "LSD", teamID: "team-mercer", evidence: "Button draw 42.7 cm"),
-                             scheduledEnds: 8,
-                             minEndsForLocalResult: 6,
-                             ends: [
-                                BonspielEndScore(id: "bp-g1-e1", endNumber: 1, teamA: 0, teamB: 1, hammerTeamIDStart: "team-mercer", isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
-                                BonspielEndScore(id: "bp-g1-e2", endNumber: 2, teamA: 2, teamB: 0, hammerTeamIDStart: "team-mercer", isBlank: false, isExtraEnd: false, measureRequired: true, powerPlayUsed: false),
-                                BonspielEndScore(id: "bp-g1-e3", endNumber: 3, teamA: 0, teamB: 0, hammerTeamIDStart: "team-carter", isBlank: true, isExtraEnd: false, measureRequired: false, powerPlayUsed: false),
-                                BonspielEndScore(id: "bp-g1-e4", endNumber: 4, teamA: 1, teamB: 0, hammerTeamIDStart: "team-carter", isBlank: false, isExtraEnd: false, measureRequired: false, powerPlayUsed: false)
-                             ],
-                             gameLineups: [
-                                BonspielGameLineup(id: "bp-g1-la",
-                                                   teamID: "team-mercer",
-                                                   submittedAt: "2026-02-14 09:05",
-                                                   source: "game_lineup_form",
-                                                   deliveryRotation: [
-                                                    BonspielLineupSlot(memberID: "tm-sam", position: "Lead", isSkip: false, isViceSkip: false),
-                                                    BonspielLineupSlot(memberID: "tm-dee", position: "Second", isSkip: false, isViceSkip: false),
-                                                    BonspielLineupSlot(memberID: "tm-jo", position: "Third", isSkip: false, isViceSkip: true),
-                                                    BonspielLineupSlot(memberID: "tm-dana", position: "Fourth", isSkip: true, isViceSkip: false)
-                                                   ],
-                                                   alternateMemberID: nil,
-                                                   coachName: nil),
-                                BonspielGameLineup(id: "bp-g1-lb",
-                                                   teamID: "team-carter",
-                                                   submittedAt: "2026-02-14 09:10",
-                                                   source: "same_as_original",
-                                                   deliveryRotation: [
-                                                    BonspielLineupSlot(memberID: "tc-reid", position: "Lead", isSkip: false, isViceSkip: false),
-                                                    BonspielLineupSlot(memberID: "tc-mara", position: "Second", isSkip: false, isViceSkip: false),
-                                                    BonspielLineupSlot(memberID: "tc-lind", position: "Third", isSkip: false, isViceSkip: true),
-                                                    BonspielLineupSlot(memberID: "tc-bryn", position: "Fourth", isSkip: true, isViceSkip: false)
-                                                   ],
-                                                   alternateMemberID: nil,
-                                                   coachName: nil)
-                             ],
-                             lineupChanges: [],
-                             resultFlags: BonspielResultFlags(isFinal: false, conceded: false, forfeited: false),
-                             scoreAgreement: BonspielScoreAgreement(confirmed: false, confirmedAt: nil, confirmedBy: nil),
-                             version: 1),
-                BonspielGame(id: "bp-g2",
-                             stageID: "bp-pool",
-                             drawLabel: "Draw 5",
-                             status: .scheduled,
-                             scheduledStartAt: "2099-02-14 15:00",
-                             sheet: "Sheet A",
-                             teamAID: "team-mercer",
-                             teamBID: "team-carter",
-                             stoneColorAssignment: "Team A light handles",
-                             lsfeOrPlacementDecision: BonspielLastStoneDecision(method: "LSD pending", teamID: "team-carter", evidence: "Local lineup proof fixture"),
-                             scheduledEnds: 8,
-                             minEndsForLocalResult: 6,
-                             ends: [],
-                             gameLineups: [],
-                             lineupChanges: [],
-                             resultFlags: BonspielResultFlags(isFinal: false, conceded: false, forfeited: false),
-                             scoreAgreement: BonspielScoreAgreement(confirmed: false, confirmedAt: nil, confirmedBy: nil),
-                             version: 1)
-            ],
-            version: 1
-        ),
-        BonspielRecord.defaultLinked(spielID: "sp2",
-                                     name: "Okanagan Classic",
-                                     whereText: "Kelowna, BC",
-                                     whenText: "MAR 6-8",
-                                     discipline: .mixed,
-                                     homeClub: "Calgary Granite CC",
-                                     startDate: "2026-03-06",
-                                     endDate: "2026-03-08",
-                                     venueID: "venue-kelowna-curling-club",
-                                     venue: BonspielVenue(name: "Kelowna Curling Club", city: "Kelowna", region: "BC", country: "CA")),
-        BonspielRecord.defaultLinked(spielID: "sp3",
-                                     name: "Prairie Cashspiel",
-                                     whereText: "Winnipeg, MB",
-                                     whenText: "MAR 27-29",
-                                     discipline: .fourPlayer,
-                                     homeClub: "Calgary Granite CC",
-                                     startDate: "2026-03-27",
-                                     endDate: "2026-03-29",
-                                     venueID: "venue-granite-city-cc",
-                                     venue: BonspielVenue(name: "Granite City CC", city: "Winnipeg", region: "MB", country: "CA"),
-                                     timezone: "America/Winnipeg")
-    ]
-
-    static let feed: [FeedItem] = [
-        .spiel(SpielPost(title: "5 saved curlers are headed to", spielName: "Brier Patch Open",
-                         whereText: "KAMLOOPS", whenText: "FEB 14–16", who: ["sam", "jo", "lind"])),
-        .review(ReviewPost(author: "jo", time: "5H", club: "Granite City CC", stars: 4,
-                           note: "fast, 5–6 ft of curl"))
-    ]
 }

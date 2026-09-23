@@ -1,7 +1,8 @@
 // Runs AS 01, AS 02, and AS 03 against a deployed account backend over real HTTP.
 // Unlike verify-account-backend.mjs (which boots a local server), this targets an
 // already-running remote URL and is self-cleaning: it creates a uniquely handled
-// throwaway account and deletes it at the end (AS 03), leaving the store untouched.
+// throwaway account and deletes it at the end (AS 03). The backend retains a
+// deletion tombstone, so this check still writes disposable development data.
 //
 // Usage: CURLPLAN_ACCOUNT_BACKEND_URL=http://dominic:8787 node scripts/verify-account-remote.mjs
 //    or: node scripts/verify-account-remote.mjs http://dominic:8787
@@ -15,6 +16,9 @@ if (!baseURL) {
 const stamp = Date.now();
 const handle = `verify-${stamp}`;
 const password = `verify-pass-${stamp}`;
+let created = false;
+let deleted = false;
+let cleanupToken = null;
 
 try {
   await request("GET", "/health", { expected: 200 });
@@ -24,6 +28,7 @@ try {
     expected: 201,
     body: { handle, displayName: "Remote Verifier", homeClub: "Tailnet CC", password }
   });
+  created = true;
   assert(account.status === "active", "new account should be active");
   pass("AS 01 creates an active account");
 
@@ -38,6 +43,7 @@ try {
     expected: 200,
     body: { handle, password, deviceID: "device-a" }
   });
+  cleanupToken = sessionA.id;
   assert(sessionA.state === "active", "device A session should be active");
   pass("AS 01 signs in on device A with server session");
 
@@ -51,6 +57,7 @@ try {
   pass("AS 01 imports local season into account scope");
 
   await request("POST", "/v1/auth/sign-out", { expected: 204, token: sessionA.id });
+  cleanupToken = null;
   const afterSignOut = await request("GET", "/v1/me/season", { expected: 401, token: sessionA.id });
   assert(afterSignOut.error.code === "SESSION_INVALID", "signed out session should be rejected");
   pass("AS 01 revokes device A session on sign out");
@@ -59,11 +66,14 @@ try {
     expected: 200,
     body: { handle, password, deviceID: "device-b" }
   });
+  cleanupToken = sessionB.id;
   const restored = await request("GET", "/v1/me/season", { expected: 200, token: sessionB.id });
   assert(restored.body.profile.name === "Remote Verifier", "device B should restore account season");
   pass("AS 02 restores the same season on device B with handle and password");
 
   await request("DELETE", "/v1/me", { expected: 204, token: sessionB.id });
+  deleted = true;
+  cleanupToken = null;
   const deletedSignIn = await request("POST", "/v1/auth/sign-in", {
     expected: 401,
     body: { handle, password, deviceID: "device-c" }
@@ -76,6 +86,28 @@ try {
   console.log("\nAll deployed AS 01-03 checks passed.");
 } catch (error) {
   console.error(`\nFAIL: ${error.message}`);
+  if (created && !deleted) {
+    try {
+      if (cleanupToken) {
+        try {
+          await request("DELETE", "/v1/me", { expected: 204, token: cleanupToken });
+          deleted = true;
+        } catch {
+          cleanupToken = null;
+        }
+      }
+      if (!deleted) {
+        const token = (await request("POST", "/v1/auth/sign-in", {
+          expected: 200,
+          body: { handle, password, deviceID: "cleanup" }
+        })).id;
+        await request("DELETE", "/v1/me", { expected: 204, token });
+      }
+      console.error(`Deleted disposable account ${handle} after failure.`);
+    } catch (cleanupError) {
+      console.error(`Cleanup failed for disposable account ${handle}: ${cleanupError.message}`);
+    }
+  }
   process.exit(1);
 }
 
@@ -87,11 +119,12 @@ async function request(method, path, { expected, token, body } = {}) {
     headers["Content-Type"] = "application/json";
     payload = JSON.stringify(body);
   }
-  const response = await fetch(`${baseURL}${path}`, { method, headers, body: payload });
+  const response = await fetch(`${baseURL}${path}`, { method, headers, body: payload, signal: AbortSignal.timeout(10_000) });
   const text = await response.text();
   const parsed = text ? JSON.parse(text) : null;
   if (response.status !== expected) {
-    throw new Error(`${method} ${path} returned ${response.status}, expected ${expected}: ${text}`);
+    throw new Error(`${method} ${path} returned ${response.status}, expected ${expected}` +
+      (parsed?.error?.code ? ` (${parsed.error.code})` : ""));
   }
   return parsed;
 }

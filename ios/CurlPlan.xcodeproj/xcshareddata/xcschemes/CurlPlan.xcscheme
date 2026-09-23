@@ -5,15 +5,12 @@
          <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
             <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000002" BuildableName="CurlPlan.app" BlueprintName="CurlPlan" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="NO">
-            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000003" BuildableName="CurlPlanUITests.xctest" BlueprintName="CurlPlanUITests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
-   <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="NO">
+   <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
       <Testables>
          <TestableReference skipped="NO">
-            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000003" BuildableName="CurlPlanUITests.xctest" BlueprintName="CurlPlanUITests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
+            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000010" BuildableName="CurlPlanTests.xctest" BlueprintName="CurlPlanTests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
          </TestableReference>
       </Testables>
    </TestAction>
@@ -21,12 +18,6 @@
       <BuildableProductRunnable runnableDebuggingMode="0">
          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000002" BuildableName="CurlPlan.app" BlueprintName="CurlPlan" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
       </BuildableProductRunnable>
-      <!-- Dev-only: points Debug Run builds at the deployed account backend on the
-           dominic tailnet host. Release/Archive ship unconfigured so the app makes
-           no backend claims. Tests do not inherit this (shouldUseLaunchSchemeArgsEnv=NO). -->
-      <EnvironmentVariables>
-         <EnvironmentVariable key="CURLPLAN_ACCOUNT_BACKEND_URL" value="http://dominic.tailae148c.ts.net:8787" isEnabled="YES"></EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES">
       <BuildableProductRunnable runnableDebuggingMode="0">

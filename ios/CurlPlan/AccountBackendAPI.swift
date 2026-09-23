@@ -64,11 +64,11 @@ protocol AccountBackendTransport {
     func signOut(sessionID: String) -> AccountAPIResponse<AccountEmptyResponse>
     func exportAccountData(sessionID: String) -> AccountAPIResponse<[String]>
     func deleteAccount(sessionID: String) -> AccountAPIResponse<AccountEmptyResponse>
-    func importLocalSeason(sessionID: String, season: AppData) -> AccountAPIResponse<AccountSeasonDocument>
+    func importLocalSeason(sessionID: String, season: AccountSeasonPayload) -> AccountAPIResponse<AccountSeasonDocument>
     func season(sessionID: String) -> AccountAPIResponse<AccountSeasonDocument>
     func applySeasonChange(sessionID: String,
                            baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) -> AccountAPIResponse<SeasonChangeReceipt>
     func updateProfile(sessionID: String,
@@ -180,7 +180,7 @@ final class InMemoryAccountBackendTransport: AccountBackendTransport {
         }
     }
 
-    func importLocalSeason(sessionID: String, season: AppData) -> AccountAPIResponse<AccountSeasonDocument> {
+    func importLocalSeason(sessionID: String, season: AccountSeasonPayload) -> AccountAPIResponse<AccountSeasonDocument> {
         do {
             return .success(endpoint: AccountAPIRoutes.importSeason,
                             status: 201,
@@ -200,7 +200,7 @@ final class InMemoryAccountBackendTransport: AccountBackendTransport {
 
     func applySeasonChange(sessionID: String,
                            baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) -> AccountAPIResponse<SeasonChangeReceipt> {
         do {
@@ -434,7 +434,7 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
         persist(transport.deleteAccount(sessionID: sessionID))
     }
 
-    func importLocalSeason(sessionID: String, season: AppData) -> AccountAPIResponse<AccountSeasonDocument> {
+    func importLocalSeason(sessionID: String, season: AccountSeasonPayload) -> AccountAPIResponse<AccountSeasonDocument> {
         persist(transport.importLocalSeason(sessionID: sessionID, season: season))
     }
 
@@ -444,7 +444,7 @@ final class PersistentAccountBackendTransport: AccountBackendTransport {
 
     func applySeasonChange(sessionID: String,
                            baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) -> AccountAPIResponse<SeasonChangeReceipt> {
         persist(transport.applySeasonChange(sessionID: sessionID,
@@ -570,7 +570,7 @@ final class AccountBackendClient {
     }
 
     @discardableResult
-    func importLocalSeason(_ season: AppData) throws -> AccountSeasonDocument {
+    func importLocalSeason(_ season: AccountSeasonPayload) throws -> AccountSeasonDocument {
         try unwrap(transport.importLocalSeason(sessionID: try requireSessionID(), season: season))
     }
 
@@ -580,7 +580,7 @@ final class AccountBackendClient {
 
     @discardableResult
     func applySeasonChange(baseVersion: Int,
-                           updatedBody: AppData,
+                           updatedBody: AccountSeasonPayload,
                            domains: Set<SeasonDomain>,
                            clientMutationID: String) throws -> SeasonChangeReceipt {
         try unwrap(transport.applySeasonChange(sessionID: try requireSessionID(),

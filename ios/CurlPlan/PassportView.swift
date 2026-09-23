@@ -3,8 +3,8 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @EnvironmentObject var router: Router
     @State private var showSettings = false
-    @State private var showAllStops = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,41 +13,18 @@ struct PassportView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     hero
                     telemetry
-                    if store.stops.isEmpty {
-                        EmptyStateView(title: "No stops yet",
-                                       message: "Your season map will fill in as you visit rinks or restore an exported season.",
-                                       systemImage: "map")
-                    } else {
-                        SeasonMap()
-                    }
-                    SectionHeader(title: "Recent stops",
-                                  action: store.allActivityStops.isEmpty ? nil : "All",
-                                  actionAccessibilityLabel: "Show all stops",
-                                  onAction: { showAllStops = true })
-                    if store.recentStops.isEmpty {
-                        EmptyStateView(title: "No rink activity yet",
-                                       message: "Visit a stop from the map or log results to build your Passport history.",
-                                       systemImage: "figure.curling")
-                    } else {
-                        ForEach(store.recentStops) { stop in
-                            NavigationLink(value: Route.stop(stop.id)) {
-                                RecentStopTile(stop: stop)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("curlplan.recentStop.\(stop.id)")
-                        }
-                    }
+                    SeasonMap()
+                    SectionHeader(title: "Recent stops", action: "All") { router.tab = .spiels }
+                    recentStops
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
                 .padding(.bottom, 96)
-                .cpReadableContent()
             }
         }
         .background(settings.screen)
         .navigationBarHidden(true)
         .sheet(isPresented: $showSettings) { SettingsSheet() }
-        .sheet(isPresented: $showAllStops) { AllStopsSheet() }
     }
 
     private var header: some View {
@@ -61,13 +38,10 @@ struct PassportView: View {
                 AvatarView(initials: store.me.initials, size: 34)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open settings")
-            .accessibilityIdentifier("curlplan.settings")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
         .padding(.bottom, 12)
-        .cpReadableContent()
     }
 
     private var hero: some View {
@@ -82,28 +56,51 @@ struct PassportView: View {
     }
 
     private var telemetry: some View {
-        HStack(spacing: 0) {
-            statCell("\(store.me.clubs)", "CLUBS", identifier: "curlplan.passport.stat.clubs")
+        let s = store.me.stats
+        return HStack(spacing: 0) {
+            StatCell(value: "\(s.clubs)", label: "CLUBS")
             VRule()
-            statCell("\(store.me.prov)", "PROV", identifier: "curlplan.passport.stat.provinces")
+            StatCell(value: "\(s.prov)", label: "PROV")
             VRule()
-            statCell("\(store.me.games)", "GAMES", identifier: "curlplan.passport.stat.games")
+            StatCell(value: "\(s.games)", label: "GAMES")
             VRule()
-            statCell("\(store.me.win)%", "WIN", accent: true, identifier: "curlplan.passport.stat.win")
+            StatCell(value: "\(s.win)%", label: "WIN", accent: true)
         }
         .padding(.vertical, 13)
         .cpCard()
     }
 
-    private func statCell(_ value: String, _ label: String, accent: Bool = false, identifier: String) -> some View {
-        StatCell(value: value, label: label, accent: accent)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(value) \(label)")
-            .accessibilityIdentifier(identifier)
+    // Real accounts see the stops they've logged (with a visit count + empty state);
+    // demo keeps the seed record + met-people chrome.
+    @ViewBuilder private var recentStops: some View {
+        if store.isRealAccount {
+            let mine = store.visitedStops()
+            if mine.isEmpty {
+                Text("No stops logged yet — tap a pin, then “Log visit,” to start your season map.")
+                    .font(.grotesk(13)).foregroundStyle(settings.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .cpCard()
+            } else {
+                ForEach(mine) { entry in
+                    NavigationLink(value: Route.stop(entry.stop.id)) {
+                        VisitedStopTile(stop: entry.stop, count: entry.count)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        } else {
+            ForEach(store.recentStops) { stop in
+                NavigationLink(value: Route.stop(stop.id)) {
+                    RecentStopTile(stop: stop)
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 }
 
-// MARK: - Recent stop tile
+// MARK: - Recent stop tile (demo: record + met-people)
 
 struct RecentStopTile: View {
     @EnvironmentObject var settings: AppSettings
@@ -112,26 +109,55 @@ struct RecentStopTile: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(stop.code)
-                .font(.mono(12, .semibold))
-                .foregroundStyle(settings.accent)
-                .frame(width: 42, height: 42)
-                .background(settings.panel)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
+            StopCode(stop.code)
             VStack(alignment: .leading, spacing: 2) {
                 Text(stop.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
                 Text("\(stop.prov) · \(stop.dates)").font(.mono(11, .medium)).foregroundStyle(settings.muted)
             }
             Spacer(minLength: 8)
-
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: store.initials(for: stop.met), size: 20, plus: store.plusLabel(for: stop.met))
+                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
             }
         }
         .padding(12)
         .cpCard()
+    }
+}
+
+// MARK: - Visited stop tile (real account: visit count)
+
+struct VisitedStopTile: View {
+    @EnvironmentObject var settings: AppSettings
+    let stop: Stop
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            StopCode(stop.code)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(stop.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
+                Text("\(stop.prov) · \(stop.club)").font(.mono(11, .medium)).foregroundStyle(settings.muted)
+            }
+            Spacer(minLength: 8)
+            Text("\(count) \(count == 1 ? "visit" : "visits")").font(.serif(17)).foregroundStyle(settings.ink)
+        }
+        .padding(12)
+        .cpCard()
+    }
+}
+
+private struct StopCode: View {
+    @EnvironmentObject var settings: AppSettings
+    let code: String
+    init(_ code: String) { self.code = code }
+    var body: some View {
+        Text(code)
+            .font(.mono(12, .semibold))
+            .foregroundStyle(settings.accent)
+            .frame(width: 42, height: 42)
+            .background(settings.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -141,13 +167,21 @@ struct SeasonMap: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
 
+    private var mapMeta: String {
+        if store.isRealAccount {
+            let n = store.visitedStops().count
+            if n == 0 { return "NEW SEASON" }
+            return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
+        }
+        let n = store.demoLoggedStops.count
+        return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
+    }
+
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack {
                 settings.panel
-
-                // grid
                 Path { p in
                     for fy in [14.0, 28, 42] {
                         let y = h * fy / 56
@@ -161,13 +195,10 @@ struct SeasonMap: View {
                 .stroke(settings.line, lineWidth: 1)
                 .opacity(0.7)
 
-                // route through stops with measured coordinates
                 Path { p in
-                    let pts = store.stops
-                        .filter { $0.latitude != nil && $0.longitude != nil }
-                        .map { ($0.x, $0.y) }
+                    let pts: [(Double, Double)] = [(14, 36), (30, 22), (50, 38), (70, 18), (86, 30)]
                     for (i, pt) in pts.enumerated() {
-                        let cp = CGPoint(x: w * pt.0 / 100, y: h * pt.1 / 100)
+                        let cp = CGPoint(x: w * pt.0 / 100, y: h * pt.1 / 56)
                         if i == 0 { p.move(to: cp) } else { p.addLine(to: cp) }
                     }
                 }
@@ -176,11 +207,10 @@ struct SeasonMap: View {
 
                 PebbleOverlay(opacity: settings.pebbleOpacity)
 
-                // pins
                 ForEach(store.stops) { s in
                     NavigationLink(value: Route.stop(s.id)) {
                         HouseRing(size: s.big ? 21 : 13)
-                            .overlay(Circle().strokeBorder(.white.opacity(store.isCurrentStop(s.id) ? 0.85 : 0), lineWidth: 3))
+                            .overlay(Circle().strokeBorder(.white.opacity(s.here && !store.isRealAccount ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
                     }
                     .buttonStyle(.plain)
@@ -192,22 +222,22 @@ struct SeasonMap: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
-            let current = store.stops.first { store.isCurrentStop($0.id) }
-            HStack(spacing: 7) {
-                Circle().fill(settings.accent).frame(width: 7, height: 7)
-                Text(current.map { "\($0.club) · active visit" } ?? "Season route")
-                    .font(.grotesk(11, .semibold))
-                    .foregroundStyle(settings.ink)
+            // This is an explicit sample cue, not a live or verified location.
+            if !store.isRealAccount, let here = store.stops.first(where: { $0.here }) {
+                HStack(spacing: 7) {
+                    Circle().fill(settings.accent).frame(width: 7, height: 7)
+                    Text("\(shortName(here)) · sample stop").font(.grotesk(11, .semibold)).foregroundStyle(settings.ink)
+                }
+                .padding(.vertical, 5)
+                .padding(.horizontal, 11)
+                .background(settings.card)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+                .padding(13)
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 11)
-            .background(settings.card)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
-            .padding(13)
         }
         .overlay(alignment: .bottomTrailing) {
-            Text("\(store.seasonSummary.rinks) STOPS · \(store.seasonSummary.distanceLabel) KM")
+            Text(mapMeta)
                 .font(.mono(10, .medium))
                 .tracking(1)
                 .foregroundStyle(settings.ink)
@@ -216,51 +246,10 @@ struct SeasonMap: View {
                 .background(settings.card.opacity(0.92))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .padding(12)
-                .accessibilityIdentifier("curlplan.passport.distance")
         }
     }
-}
 
-struct AllStopsSheet: View {
-    @EnvironmentObject var settings: AppSettings
-    @EnvironmentObject var store: Store
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 13) {
-                    if store.allActivityStops.isEmpty {
-                        EmptyStateView(title: "No stops yet",
-                                       message: "Visited stops and rink activity will appear here.",
-                                       systemImage: "map")
-                    } else {
-                        ForEach(store.allActivityStops) { stop in
-                            NavigationLink(value: Route.stop(stop.id)) {
-                                RecentStopTile(stop: stop)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                .padding(20)
-            }
-            .background(settings.screen)
-            .navigationTitle("All stops")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: Route.self) { route in
-                switch route {
-                case .stop(let id): StopDetailView(stopID: id)
-                case .curler(let id): CurlerProfileView(curlerID: id)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(settings.accent)
-                }
-            }
-        }
-        .presentationBackground(settings.screen)
+    private func shortName(_ stop: Stop) -> String {
+        stop.club.split(separator: " ").first.map(String.init) ?? stop.name
     }
 }

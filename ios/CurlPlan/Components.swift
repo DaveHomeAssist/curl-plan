@@ -1,18 +1,5 @@
 import SwiftUI
 
-enum CPLayout {
-    static let readableWidth: CGFloat = 900
-    static let tabBarWidth: CGFloat = 760
-}
-
-extension View {
-    func cpReadableContent(maxWidth: CGFloat = CPLayout.readableWidth,
-                           alignment: Alignment = .center) -> some View {
-        frame(maxWidth: maxWidth, alignment: alignment)
-            .frame(maxWidth: .infinity, alignment: .center)
-    }
-}
-
 // MARK: - House ring (the signature element)
 // Concentric curling-house rings: white centre button, red ring, white, blue ring,
 // white rim — matching the concept's radial gradient.
@@ -62,27 +49,19 @@ struct AvatarStack: View {
     var plus: String? = nil
 
     var body: some View {
-        Group {
-            if initials.isEmpty && plus == nil {
-                AvatarView(initials: "?", size: size)
+        HStack(spacing: -size * 0.32) {
+            ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
+                AvatarView(initials: ini, size: size)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
-                    .opacity(0.55)
-            } else {
-                HStack(spacing: -size * 0.32) {
-                    ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
-                        AvatarView(initials: ini.isEmpty ? "?" : ini, size: size)
-                            .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
-                    }
-                    if let plus {
-                        Text(plus)
-                            .font(.system(size: size * 0.34, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: size, height: size)
-                            .background(settings.accent)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
-                    }
-                }
+            }
+            if let plus {
+                Text(plus)
+                    .font(.system(size: size * 0.34, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: size, height: size)
+                    .background(settings.accent)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
         }
     }
@@ -181,8 +160,7 @@ struct SectionHeader: View {
     @EnvironmentObject var settings: AppSettings
     let title: String
     var action: String? = nil
-    var actionAccessibilityLabel: String? = nil
-    var onAction: (() -> Void)? = nil
+    var onTap: (() -> Void)? = nil     // when set, the action label becomes a real control
 
     var body: some View {
         HStack {
@@ -192,52 +170,16 @@ struct SectionHeader: View {
                 .foregroundStyle(settings.muted)
             Spacer()
             if let action {
-                if let onAction {
-                    Button(action: onAction) {
-                        Text(action)
-                            .font(.grotesk(12, .semibold))
-                            .foregroundStyle(settings.accent)
+                if let onTap {
+                    Button(action: onTap) {
+                        Text(action).font(.grotesk(12, .semibold)).foregroundStyle(settings.accent)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(actionAccessibilityLabel ?? action)
                 } else {
-                    Text(action)
-                        .font(.grotesk(12, .semibold))
-                        .foregroundStyle(settings.accent)
+                    Text(action).font(.grotesk(12, .semibold)).foregroundStyle(settings.accent)
                 }
             }
         }
-    }
-}
-
-struct EmptyStateView: View {
-    @EnvironmentObject var settings: AppSettings
-    let title: String
-    let message: String
-    var systemImage: String = "house"
-    var actionTitle: String? = nil
-    var action: (() -> Void)? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(settings.accent)
-            Text(title)
-                .font(.grotesk(15, .bold))
-                .foregroundStyle(settings.ink)
-            Text(message)
-                .font(.grotesk(13))
-                .foregroundStyle(settings.muted)
-                .lineSpacing(2)
-            if let actionTitle, let action {
-                PillButton(title: actionTitle, filled: true, action: action)
-                    .padding(.top, 2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .cpCard(radius: 14)
     }
 }
 
@@ -294,13 +236,6 @@ struct CPField: View {
     var placeholder: String = ""
     var keyboard: UIKeyboardType = .default
 
-    private var fieldID: String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789")
-        let lower = label.lowercased()
-        let mapped = lower.map { allowed.contains($0) ? String($0) : "-" }.joined()
-        return mapped.split(separator: "-").joined(separator: "-")
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
@@ -315,7 +250,6 @@ struct CPField: View {
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .strokeBorder(settings.line, lineWidth: 1))
-                .accessibilityIdentifier("curlplan.field.\(fieldID)")
         }
     }
 }
@@ -331,24 +265,22 @@ struct CPChips: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
                 .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(options, id: \.self) { opt in
-                        let on = selection == opt
-                        Button { selection = opt } label: {
-                            Text(opt)
-                                .font(.grotesk(12, .semibold))
-                                .foregroundStyle(on ? .white : settings.ink)
-                                .lineLimit(1)
-                                .padding(.vertical, 8).padding(.horizontal, 13)
-                                .background(on ? settings.accent : settings.panel)
-                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                    .strokeBorder(on ? Color.clear : settings.line, lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
+            HStack(spacing: 8) {
+                ForEach(options, id: \.self) { opt in
+                    let on = selection == opt
+                    Button { selection = opt } label: {
+                        Text(opt)
+                            .font(.grotesk(12, .semibold))
+                            .foregroundStyle(on ? .white : settings.ink)
+                            .padding(.vertical, 8).padding(.horizontal, 13)
+                            .background(on ? settings.accent : settings.panel)
+                            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(on ? Color.clear : settings.line, lineWidth: 1))
                     }
+                    .buttonStyle(.plain)
                 }
+                Spacer(minLength: 0)
             }
         }
     }
@@ -360,7 +292,6 @@ struct CreateScaffold<Content: View>: View {
     let title: String
     let subtitle: String
     let canSave: Bool
-    var validationMessage: String? = nil
     let onCancel: () -> Void
     let onSave: () -> Void
     @ViewBuilder var content: () -> Content
@@ -376,15 +307,7 @@ struct CreateScaffold<Content: View>: View {
                 .padding(.bottom, 18)
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 14) {
-                    content()
-                    if let validationMessage, !validationMessage.isEmpty {
-                        Text(validationMessage)
-                            .font(.grotesk(12, .semibold))
-                            .foregroundStyle(settings.muted)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+                VStack(alignment: .leading, spacing: 14) { content() }
             }
 
             HStack(spacing: 10) {
@@ -395,7 +318,6 @@ struct CreateScaffold<Content: View>: View {
                             .strokeBorder(settings.ink, lineWidth: 1.5))
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("curlplan.sheet.cancel")
 
                 Button(action: onSave) {
                     Text("Save").font(.grotesk(14, .bold)).foregroundStyle(.white)
@@ -405,7 +327,6 @@ struct CreateScaffold<Content: View>: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(!canSave)
-                .accessibilityIdentifier("curlplan.sheet.save")
             }
             .padding(.top, 14)
         }
@@ -415,6 +336,72 @@ struct CreateScaffold<Content: View>: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
+    }
+}
+
+// Read-only star rating (filled accent + empty line), matching the web starsRow().
+struct StarsRow: View {
+    @EnvironmentObject var settings: AppSettings
+    let count: Int
+    var size: CGFloat = 13
+    var body: some View {
+        let n = max(0, min(5, count))
+        return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
+            + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
+            .font(.system(size: size))
+            .tracking(2)
+    }
+}
+
+// Interactive 5-star picker for review/rating inputs.
+struct StarPicker: View {
+    @EnvironmentObject var settings: AppSettings
+    @Binding var rating: Int
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(1...5, id: \.self) { i in
+                Button { rating = i } label: {
+                    Text("★")
+                        .font(.system(size: 26))
+                        .foregroundStyle(i <= rating ? settings.accent : settings.line)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// Labelled multi-line text field (compose bodies, notes, messages).
+struct CPTextArea: View {
+    @EnvironmentObject var settings: AppSettings
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var minHeight: CGFloat = 74
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !label.isEmpty {
+                Text(label.uppercased())
+                    .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
+            }
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(.grotesk(15)).foregroundStyle(settings.muted)
+                        .padding(.vertical, 11).padding(.horizontal, 13)
+                }
+                TextField("", text: $text, axis: .vertical)
+                    .font(.grotesk(15)).foregroundStyle(settings.ink)
+                    .tint(settings.accent)
+                    .padding(.vertical, 11).padding(.horizontal, 13)
+            }
+            .frame(minHeight: minHeight, alignment: .topLeading)
+            .background(settings.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(settings.line, lineWidth: 1))
+        }
     }
 }
 

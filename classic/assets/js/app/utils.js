@@ -353,7 +353,7 @@ function calculateSeasonStats(items) {
   const byRink = {};
   completed.forEach(item => {
     const position = item.position || "Unknown";
-    const rink = item.rink || "Unknown Rink";
+    const rink = item.rink || "Unknown Club";
     if (!byPosition[position]) byPosition[position] = { wins: 0, losses: 0, draws: 0, total: 0 };
     if (!byRink[rink]) byRink[rink] = { wins: 0, losses: 0, draws: 0, total: 0 };
     byPosition[position].total += 1;
