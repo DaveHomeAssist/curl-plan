@@ -41,6 +41,8 @@ jobs:
         run: node scripts/verify-merge.js
       - name: Sync API handler (routes, merge, auth, isolation)
         run: node scripts/verify-api.js
+      - name: Account backend contracts (HTTP, auth, persistence)
+        run: make account-backend-verify
 
   ios:
     runs-on: macos-14

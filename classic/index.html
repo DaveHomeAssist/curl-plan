@@ -694,7 +694,7 @@
     </main>
   </div>
 
-  <div class="overlay" id="modal-event">
+  <div class="overlay" id="modal-event" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
@@ -802,7 +802,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-game">
+  <div class="overlay" id="modal-game" role="dialog" aria-modal="true" aria-labelledby="gameModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
@@ -867,7 +867,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-practice">
+  <div class="overlay" id="modal-practice" role="dialog" aria-modal="true" aria-labelledby="practiceModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
@@ -920,7 +920,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-ice">
+  <div class="overlay" id="modal-ice" role="dialog" aria-modal="true" aria-labelledby="iceModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
@@ -1022,7 +1022,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-issue">
+  <div class="overlay" id="modal-issue" role="dialog" aria-modal="true" aria-labelledby="issueModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
@@ -1074,11 +1074,11 @@
 
   <div class="print-report" id="printReport" aria-hidden="true"></div>
 
-  <div class="overlay" id="modal-import-preview">
+  <div class="overlay" id="modal-import-preview" role="dialog" aria-modal="true" aria-labelledby="importPreviewModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
-          <h2 class="modal-title">Import Preview</h2>
+          <h2 class="modal-title" id="importPreviewModalTitle">Import Preview</h2>
           <p class="modal-copy">Review the incoming data before it replaces your current workspace.</p>
         </div>
         <button type="button" class="modal-close" aria-label="Close import preview" data-close-modal="modal-import-preview">✕</button>
@@ -1091,11 +1091,11 @@
     </div>
   </div>
 
-  <div class="overlay" id="modal-shortcuts">
+  <div class="overlay" id="modal-shortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcutsModalTitle" aria-hidden="true" inert>
     <div class="modal-panel">
       <div class="modal-head">
         <div>
-          <h2 class="modal-title">Keyboard Shortcuts</h2>
+          <h2 class="modal-title" id="shortcutsModalTitle">Keyboard Shortcuts</h2>
           <p class="modal-copy">Fast paths for navigation, logging, and save actions.</p>
         </div>
         <button type="button" class="modal-close" aria-label="Close shortcuts" data-close-modal="modal-shortcuts">✕</button>

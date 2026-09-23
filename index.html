@@ -1408,7 +1408,7 @@ function starsRow(n){
 function postHead(p, o){
   o = o || {};
   var a = person(p.author) || { id:"", initials:"?", name:"Unknown curler", role:"CURLER", club:"—" };
-  var nav = (!a.id || a.id === "me") ? "" : ' data-action="curler" data-id="' + esc(a.id) + '"';
+  var nav = (!a.id || a.id === "me") ? "" : ' role="button" tabindex="0" data-action="curler" data-id="' + esc(a.id) + '"';
   var meta = o.meta || (esc((a.role || "").toUpperCase()) + ' · ' + esc((a.club || "").toUpperCase()) + ' · ' + esc(postTime(p)));
   return '<div class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
     '<div style="flex:1;"><div class="name"' + (o.nameSize ? ' style="font-size:' + o.nameSize + 'px;"' : '') + '>' + esc(a.name) + '</div>' +
@@ -1479,7 +1479,7 @@ function viewPassport(){
     var mine = visitedStops();
     recents = mine.length ? mine.map(function(v){
       var st = stop(v.id);
-      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
         '<span class="code">' + esc(st.code) + '</span>' +
         '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
           '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
@@ -1494,7 +1494,7 @@ function viewPassport(){
       var avs = st.met.slice(0,2).map(function(m){
         return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
       }).join("");
-      return '<div class="card tile row" data-action="stop" data-id="' + st.id + '">' +
+      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
         '<span class="code">' + esc(st.code) + '</span>' +
         '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
           '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
@@ -1544,7 +1544,7 @@ function viewPassport(){
         hereChip +
         '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
-      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" data-action="tab" data-tab="spiels">All</span></div>' +
+      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" role="button" tabindex="0" data-action="tab" data-tab="spiels">All</span></div>' +
       recents +
     '</div>' +
     tabbar("passport");
@@ -1686,7 +1686,7 @@ function rosterRows(){
   return list.map(function(c){
     return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
       avatar(c.initials, 44, 'av') +
-      '<div style="flex:1; min-width:0;"><div class="nm">' + esc(c.name) + '</div>' +
+      '<div style="flex:1; min-width:0;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '"><div class="nm">' + esc(c.name) + '</div>' +
         '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
       '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
         (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
@@ -1738,8 +1738,8 @@ function viewStop(id){
       ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
       : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
     return '<div class="prow">' +
-      '<span data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
-      '<div style="flex:1; min-width:0; cursor:pointer;" data-action="curler" data-id="' + c.id + '">' +
+      '<span role="button" tabindex="0" data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
+      '<div style="flex:1; min-width:0; cursor:pointer;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
         '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
       btn + '</div>';
   }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
@@ -2202,6 +2202,15 @@ function clubDatalist(){
 /* ============================================================
    Event delegation
    ============================================================ */
+el("screen").addEventListener("keydown", function(e){
+  if(e.key !== "Enter" && e.key !== " ") return;
+  if(e.target.closest("button, a, input, select, textarea")) return;
+  var control = e.target.closest('[role="button"][data-action]');
+  if(!control) return;
+  e.preventDefault();
+  control.click();
+});
+
 el("screen").addEventListener("click", function(e){
   var t = e.target.closest("[data-action]");
 

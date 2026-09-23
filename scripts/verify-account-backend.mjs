@@ -305,6 +305,29 @@ try {
   });
   pass("AS 11 and AS 12 interactions support create, delete, report, and moderation hide");
 
+  await request("POST", `/v1/shared-objects/${scorecard.id}/members`, {
+    expected: 204,
+    token: sessionB.id,
+    body: { accountID: jo.id, role: "admin" }
+  });
+  await request("PATCH", `/v1/shared-objects/${scorecard.id}`, {
+    expected: 204,
+    token: joSession.id,
+    body: { title: "Admin edit before block" }
+  });
+  await request("POST", "/v1/blocks", {
+    expected: 204,
+    token: sessionB.id,
+    body: { targetID: jo.id }
+  });
+  const blockedAdmin = await request("PATCH", `/v1/shared-objects/${scorecard.id}`, {
+    expected: 403,
+    token: joSession.id,
+    body: { title: "Admin edit after block" }
+  });
+  assert(blockedAdmin.error.code === "INSUFFICIENT_ROLE", "block should revoke delegated admin authority");
+  pass("AS 10 block revokes delegated shared-object admin authority");
+
   await request("DELETE", "/v1/me", {
     expected: 204,
     token: sessionB.id
@@ -344,6 +367,35 @@ try {
   });
   assert(persistedDelete.error.code === "INVALID_CREDENTIALS", "deleted state should survive backend restart");
   pass("AS 03 deletion survives backend restart");
+
+  const concurrentHandles = ["parallel-a", "parallel-b"];
+  await Promise.all(concurrentHandles.map((handle) => request("POST", "/v1/accounts", {
+    expected: 201,
+    body: { handle, displayName: handle, homeClub: "Test CC", password: "parallel-pass-42" }
+  })));
+  await service.close();
+  service = await startAccountBackendServer({ storagePath, port: 0 });
+  await Promise.all(concurrentHandles.map((handle) => request("POST", "/v1/auth/sign-in", {
+    expected: 200,
+    body: { handle, password: "parallel-pass-42", deviceID: "reload" }
+  })));
+  pass("parallel account writes survive backend restart");
+
+  let rateLimited = false;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const result = await fetch(`${service.baseURL}/v1/auth/sign-in`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ handle: "unknown", password: "wrong-password", deviceID: "rate-test" })
+    });
+    if (result.status === 429) {
+      rateLimited = (await result.json()).error.code === "RATE_LIMITED";
+      break;
+    }
+    assert(result.status === 401, "credential attempts should fail before the rate limit");
+  }
+  assert(rateLimited, "credential attempts should eventually be rate limited");
+  pass("credential attempts are rate limited");
 } finally {
   await service.close().catch(() => {});
   await rm(tempDir, { recursive: true, force: true });

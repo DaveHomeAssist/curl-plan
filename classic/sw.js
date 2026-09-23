@@ -2,9 +2,9 @@
 // Cache name is version-stamped so edits to assets invalidate the old cache.
 // Renamed from the pre-promote "curlplan-sw-v5" so that the root Hi-Fi worker can
 // purge the genuinely-stale v5 cache without touching the live classic cache.
-// CacheStorage is per-origin, so KEEP also preserves the root app's cache.
+// CacheStorage is per-origin, so prune only this worker's cache lineage.
 const CACHE_NAME = "curlplan-classic-v6";
-const KEEP = [CACHE_NAME, "curlplan-hifi-v2"];
+const OWN_PREFIX = "curlplan-classic-";
 
 const PRECACHE_URLS = [
   "./",
@@ -30,7 +30,9 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(key => !KEEP.includes(key)).map(key => caches.delete(key))
+        keys
+          .filter(key => key !== CACHE_NAME && key.startsWith(OWN_PREFIX))
+          .map(key => caches.delete(key))
       )
     )
   );
