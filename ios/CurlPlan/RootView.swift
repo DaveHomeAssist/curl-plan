@@ -110,5 +110,6 @@ struct CPTabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("curlplan.tab.\(t.rawValue)")
     }
 }

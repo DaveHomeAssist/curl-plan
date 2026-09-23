@@ -141,6 +141,7 @@ private struct RosterRow: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("curlplan.curler.\(curler.id)")
             Spacer()
             PillButton(title: store.isFollowing(curler.id) ? "Following" : "Follow",
                        filled: !store.isFollowing(curler.id)) {

@@ -5,12 +5,18 @@
          <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
             <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000002" BuildableName="CurlPlan.app" BlueprintName="CurlPlan" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="NO">
+            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="00000000000000000000004B" BuildableName="CurlPlanUITests.xctest" BlueprintName="CurlPlanUITests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
       <Testables>
          <TestableReference skipped="NO">
             <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="000000000000000000000010" BuildableName="CurlPlanTests.xctest" BlueprintName="CurlPlanTests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
+         </TestableReference>
+         <TestableReference skipped="NO">
+            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="00000000000000000000004B" BuildableName="CurlPlanUITests.xctest" BlueprintName="CurlPlanUITests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
          </TestableReference>
       </Testables>
    </TestAction>

@@ -89,6 +89,7 @@ struct CurlerProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("curlplan.profile.follow")
 
             Button { showThread = true } label: {
                 Text("Message")

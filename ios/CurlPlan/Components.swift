@@ -424,5 +424,7 @@ struct CircleBackButton: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Back")
+        .accessibilityIdentifier("curlplan.detail.back")
     }
 }

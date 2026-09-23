@@ -31,6 +31,7 @@
 		000000000000000000000046 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* Theme.swift */; };
 		000000000000000000000048 /* MergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* MergeTests.swift */; };
 		00000000000000000000004A /* StoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* StoreTests.swift */; };
+		000000000000000000000057 /* CurlPlanJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* CurlPlanJourneyUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,24 @@
 			isa = PBXTargetDependency;
 			target = 000000000000000000000002 /* CurlPlan */;
 			targetProxy = 00000000000000000000001A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		000000000000000000000055 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000000000002;
+			remoteInfo = CurlPlan;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		000000000000000000000054 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000000000002 /* CurlPlan */;
+			targetProxy = 000000000000000000000055 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -78,6 +97,8 @@
 		000000000000000000000047 /* MergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MergeTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000049 /* StoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StoreTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000011 /* CurlPlanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000056 /* CurlPlanJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanJourneyUITests.swift"; sourceTree = "<group>"; };
+		00000000000000000000004C /* CurlPlanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +117,7 @@
 			children = (
 				000000000000000000000004 /* CurlPlan */,
 				000000000000000000000012 /* CurlPlanTests */,
+				00000000000000000000004D /* CurlPlanUITests */,
 				000000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -138,11 +160,20 @@
 			path = CurlPlanTests;
 			sourceTree = "<group>";
 		};
+		00000000000000000000004D /* CurlPlanUITests */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000056 /* CurlPlanJourneyUITests.swift */,
+			);
+			path = CurlPlanUITests;
+			sourceTree = "<group>";
+		};
 		000000000000000000000005 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000006 /* CurlPlan.app */,
 				000000000000000000000011 /* CurlPlanTests.xctest */,
+				00000000000000000000004C /* CurlPlanUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -185,6 +216,24 @@
 			productReference = 000000000000000000000011 /* CurlPlanTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		00000000000000000000004B /* CurlPlanUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000000000051 /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */;
+			buildPhases = (
+				00000000000000000000004E /* Sources */,
+				00000000000000000000004F /* Frameworks */,
+				000000000000000000000050 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				000000000000000000000054 /* PBXTargetDependency */,
+			);
+			name = CurlPlanUITests;
+			productName = CurlPlanUITests;
+			productReference = 00000000000000000000004C /* CurlPlanUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -199,6 +248,10 @@
 						CreatedOnToolsVersion = 15.4;
 					};
 					000000000000000000000010 = {
+						CreatedOnToolsVersion = 15.4;
+						TestTargetID = 000000000000000000000002;
+					};
+					00000000000000000000004B = {
 						CreatedOnToolsVersion = 15.4;
 						TestTargetID = 000000000000000000000002;
 					};
@@ -219,6 +272,7 @@
 			targets = (
 				000000000000000000000002 /* CurlPlan */,
 				000000000000000000000010 /* CurlPlanTests */,
+				00000000000000000000004B /* CurlPlanUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -280,6 +334,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		000000000000000000000015 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		00000000000000000000004E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				000000000000000000000057 /* CurlPlanJourneyUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		00000000000000000000004F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000050 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -429,6 +505,48 @@
 			};
 			name = Release;
 		};
+		000000000000000000000052 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlanUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CurlPlan;
+			};
+			name = Debug;
+		};
+		000000000000000000000053 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlanUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CurlPlan;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -455,6 +573,15 @@
 			buildConfigurations = (
 				000000000000000000000017 /* Debug */,
 				000000000000000000000018 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		000000000000000000000051 /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000000000052 /* Debug */,
+				000000000000000000000053 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

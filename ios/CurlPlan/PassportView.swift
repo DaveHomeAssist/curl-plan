@@ -87,6 +87,7 @@ struct PassportView: View {
                         VisitedStopTile(stop: entry.stop, count: entry.count)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("curlplan.stop.\(entry.stop.id)")
                 }
             }
         } else {
@@ -95,6 +96,7 @@ struct PassportView: View {
                     RecentStopTile(stop: stop)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("curlplan.stop.\(stop.id)")
             }
         }
     }
