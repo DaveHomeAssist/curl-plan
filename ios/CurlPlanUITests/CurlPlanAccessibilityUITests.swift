@@ -21,7 +21,7 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         try audit(app, "demo-gate")
         enter.tap()
 
-        let passport = app.buttons["curlplan.tab.passport"]
+        let passport = app.tabBars.buttons["Passport"]
         XCTAssertTrue(passport.waitForExistence(timeout: 10))
         try audit(app, "passport")
 
@@ -42,7 +42,7 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
     }
 
     private func openTab(_ app: XCUIApplication, _ id: String, title: String) throws {
-        let tab = app.buttons["curlplan.tab.\(id)"]
+        let tab = app.tabBars.buttons[title == "Locker Room" ? "Locker" : title]
         XCTAssertTrue(tab.waitForExistence(timeout: 5), "\(title) tab must be reachable")
         tab.tap()
         XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 5), "\(title) screen must render")

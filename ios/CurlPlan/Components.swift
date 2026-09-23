@@ -38,6 +38,7 @@ struct AvatarView: View {
             )
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+            .accessibilityHidden(true)
     }
 }
 
@@ -64,6 +65,14 @@ struct AvatarStack: View {
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(stackLabel)
+    }
+
+    private var stackLabel: String {
+        let people = initials.joined(separator: ", ")
+        guard let plus else { return "People: \(people)" }
+        return "People: \(people), \(plus.dropFirst()) more"
     }
 }
 
@@ -147,12 +156,14 @@ extension View {
 
 struct Eyebrow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let text: String
     var body: some View {
         Text(text.uppercased())
             .font(.mono(11, .medium))
-            .tracking(2)
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0.5 : 2)
             .foregroundStyle(settings.muted)
+            .lineLimit(nil)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -208,6 +219,7 @@ struct PillButton: View {
             Text(title)
                 .font(.grotesk(12, .bold))
                 .foregroundStyle(filled ? .white : settings.ink)
+                .fixedSize(horizontal: true, vertical: true)
                 .padding(.horizontal, 14)
                 .padding(.vertical, filled ? 8 : 6.5)
                 .background(filled ? settings.accent : Color.clear)

@@ -15,7 +15,7 @@ final class CurlPlanJourneyUITests: XCTestCase {
         capture("demo-gate")
         enter.tap()
 
-        let passport = app.buttons["curlplan.tab.passport"]
+        let passport = tab("Passport")
         XCTAssertTrue(passport.waitForExistence(timeout: 10), "Passport tab must be reachable")
         XCTAssertTrue(app.buttons["curlplan.stop.kelowna"].exists)
         XCTAssertFalse(app.staticTexts["Locker Room"].exists, "Inactive tab content must not be exposed")
@@ -26,7 +26,7 @@ final class CurlPlanJourneyUITests: XCTestCase {
         scrollUntilHittable(app.staticTexts["ICE READ"], name: "Ice read")
         capture("stop-detail")
         openTab("locker", title: "Locker Room")
-        app.buttons["curlplan.tab.passport"].tap()
+        tab("Passport").tap()
         XCTAssertTrue(app.buttons["curlplan.detail.back"].waitForExistence(timeout: 5),
                       "Stop detail must survive switching tabs")
         app.buttons["curlplan.detail.back"].tap()
@@ -52,7 +52,7 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.terminate()
         app.launchArguments = []
         app.launch()
-        XCTAssertTrue(app.buttons["curlplan.tab.passport"].waitForExistence(timeout: 10), "Demo session must survive relaunch")
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 10), "Demo session must survive relaunch")
         openTab("roster", title: "Roster")
         tapAfterScrolling(app.buttons["curlplan.curler.sam"], name: "Sam Reid profile after relaunch")
         XCTAssertEqual(app.buttons["curlplan.profile.follow"].label, after, "Follow state must survive relaunch")
@@ -60,11 +60,15 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     private func openTab(_ id: String, title: String) {
-        let tab = app.buttons["curlplan.tab.\(id)"]
-        XCTAssertTrue(tab.waitForExistence(timeout: 5), "\(title) tab must be reachable")
-        tab.tap()
+        let tabButton = tab(title == "Locker Room" ? "Locker" : title)
+        XCTAssertTrue(tabButton.waitForExistence(timeout: 5), "\(title) tab must be reachable")
+        tabButton.tap()
         XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 5), "\(title) screen must render")
         capture("tab-\(id)")
+    }
+
+    private func tab(_ title: String) -> XCUIElement {
+        app.tabBars.buttons[title]
     }
 
     private func tapAfterScrolling(_ element: XCUIElement, name: String) {

@@ -23,21 +23,23 @@ struct RootView: View {
     }
 
     private var appShell: some View {
-        ZStack {
-            settings.screen.ignoresSafeArea()
-
-            TabView(selection: $router.tab) {
-                TabStack { PassportView() }.tag(Tab.passport)
-                TabStack { LockerRoomView() }.tag(Tab.locker)
-                TabStack { SpielsView() }.tag(Tab.spiels)
-                TabStack { RosterView() }.tag(Tab.roster)
-            }
-            .toolbar(.hidden, for: .tabBar)
-
+        TabView(selection: $router.tab) {
+            TabStack { PassportView() }
+                .tabItem { Label("Passport", systemImage: "map.fill") }
+                .tag(Tab.passport)
+            TabStack { LockerRoomView() }
+                .tabItem { Label("Locker", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(Tab.locker)
+            TabStack { SpielsView() }
+                .tabItem { Label("Spiels", systemImage: "calendar") }
+                .tag(Tab.spiels)
+            TabStack { RosterView() }
+                .tabItem { Label("Roster", systemImage: "person.2.fill") }
+                .tag(Tab.roster)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            CPTabBar(tab: $router.tab)
-        }
+        .tint(settings.accent)
+        .toolbarBackground(settings.card, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 
 }
@@ -55,54 +57,5 @@ struct TabStack<Content: View>: View {
                     }
                 }
         }
-    }
-}
-
-struct CPTabBar: View {
-    @EnvironmentObject var settings: AppSettings
-    @Binding var tab: RootView.Tab
-
-    var body: some View {
-        HStack(spacing: 0) {
-            item(.passport, "Passport", symbol: nil)
-            item(.locker, "Locker", symbol: "bubble.left.and.bubble.right.fill")
-            item(.spiels, "Spiels", symbol: "calendar")
-            item(.roster, "Roster", symbol: "person.2.fill")
-        }
-        .padding(.top, 11)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        .background(
-            settings.card
-                .overlay(Rectangle().fill(settings.line).frame(height: 1), alignment: .top)
-                .ignoresSafeArea(.container, edges: .bottom)
-        )
-    }
-
-    private func item(_ t: RootView.Tab, _ title: String, symbol: String?) -> some View {
-        let active = tab == t
-        return Button {
-            tab = t
-        } label: {
-            VStack(spacing: 5) {
-                Group {
-                    if let symbol {
-                        Image(systemName: symbol)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(active ? settings.accent : settings.muted)
-                    } else {
-                        HouseRing(size: 21).saturation(active ? 1 : 0.4)
-                    }
-                }
-                .frame(height: 22)
-                Text(title)
-                    .font(.grotesk(10, active ? .semibold : .medium))
-                    .foregroundStyle(active ? settings.accent : settings.muted)
-            }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("curlplan.tab.\(t.rawValue)")
     }
 }

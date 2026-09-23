@@ -153,13 +153,16 @@ struct VisitedStopTile: View {
 
 private struct StopCode: View {
     @EnvironmentObject var settings: AppSettings
+    @ScaledMetric(relativeTo: .caption) private var dimension: CGFloat = 42
     let code: String
     init(_ code: String) { self.code = code }
     var body: some View {
         Text(code)
             .font(.mono(12, .semibold))
             .foregroundStyle(settings.accent)
-            .frame(width: 42, height: 42)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(width: dimension, height: dimension)
             .background(settings.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
