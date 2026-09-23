@@ -3,13 +3,13 @@
 // Renamed from the pre-promote "curlplan-sw-v5" so that the root Hi-Fi worker can
 // purge the genuinely-stale v5 cache without touching the live classic cache.
 // CacheStorage is per-origin, so prune only this worker's cache lineage.
-const CACHE_NAME = "curlplan-classic-v9";
+const CACHE_NAME = "curlplan-classic-v10";
 const OWN_PREFIX = "curlplan-classic-";
 
 const PRECACHE_URLS = [
   "./",
   "./index.html",
-  "./assets/css/app.css?v=20260923b",
+  "./assets/css/app.css?v=20260923c",
   "./assets/css/theme.css",
   "./assets/js/app/utils.js",
   "./assets/js/app/core.js",
