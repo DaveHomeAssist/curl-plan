@@ -29,7 +29,7 @@ struct AvatarView: View {
 
     var body: some View {
         Text(initials)
-            .font(.system(size: size * 0.36, weight: .bold))
+            .font(.grotesk(size * 0.36, .bold))
             .foregroundStyle(Color(hex: 0xEEF3F6))
             .frame(width: size, height: size)
             .background(
@@ -57,7 +57,7 @@ struct AvatarStack: View {
             }
             if let plus {
                 Text(plus)
-                    .font(.system(size: size * 0.34, weight: .bold))
+                    .font(.grotesk(size * 0.34, .bold))
                     .foregroundStyle(.white)
                     .frame(width: size, height: size)
                     .background(settings.accent)
@@ -80,6 +80,7 @@ struct AvatarStack: View {
 
 struct StatCell: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let value: String
     let label: String
     var accent: Bool = false
@@ -92,8 +93,9 @@ struct StatCell: View {
                 .foregroundStyle(accent ? settings.accent : settings.ink)
             Text(label)
                 .font(.mono(9, .medium))
-                .tracking(1.2)
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1.2)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
     }
@@ -170,6 +172,7 @@ struct Eyebrow: View {
 
 struct SectionHeader: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     var action: String? = nil
     var onTap: (() -> Void)? = nil     // when set, the action label becomes a real control
@@ -178,8 +181,9 @@ struct SectionHeader: View {
         HStack {
             Text(title.uppercased())
                 .font(.mono(11, .medium))
-                .tracking(2)
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             if let action {
                 if let onTap {
@@ -198,11 +202,12 @@ struct SectionHeader: View {
 // Win/Loss letter in accent (W) or muted (L).
 struct ResultBadge: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let res: String
     var body: some View {
         Text(res)
             .font(.mono(9, .bold))
-            .tracking(1)
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
             .foregroundStyle(res == "W" ? settings.accent : settings.muted)
     }
 }
@@ -355,14 +360,16 @@ struct CreateScaffold<Content: View>: View {
 // Read-only star rating (filled accent + empty line), matching the web starsRow().
 struct StarsRow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let count: Int
     var size: CGFloat = 13
     var body: some View {
         let n = max(0, min(5, count))
         return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
             + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
-            .font(.system(size: size))
-            .tracking(2)
+            .font(.grotesk(size))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+            .accessibilityLabel("\(n) out of 5 stars")
     }
 }
 

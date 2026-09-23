@@ -106,9 +106,12 @@ struct StopDetailView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(value).font(.serif(22)).foregroundStyle(accent ? settings.accent : settings.ink)
                 if let suffix {
-                    Text(suffix)
+                    Text(suffix.hasSuffix("s") ? "\(suffix.dropLast()) sec" : suffix)
                         .font(.grotesk(13))
                         .foregroundStyle(settings.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: true)
                         .accessibilityLabel(suffix.hasSuffix("s") ? "\(suffix.dropLast()) seconds" : suffix)
                 }
             }

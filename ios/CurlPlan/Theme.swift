@@ -56,7 +56,7 @@ final class AppSettings: ObservableObject {
     @Published var pebble: Bool { didSet { persist() } }
 
     static let accents: [(key: String, color: Color)] = [
-        ("House red", Color(hex: 0xB73726)),
+        ("House red", Color(hex: 0x9C2F20)),
         ("House blue", Color(hex: 0x2F6F93)),
         ("Granite", Color(hex: 0x41505A))
     ]
@@ -79,10 +79,19 @@ final class AppSettings: ObservableObject {
     }
 
     // Derived tokens
-    var accent: Color { AppSettings.accents.first(where: { $0.key == accentKey })?.color ?? houseRed }
+    var accent: Color {
+        if isArena {
+            switch accentKey {
+            case "House blue": return Color(hex: 0x78C8F0)
+            case "Granite": return Color(hex: 0xBCC8CE)
+            default: return Color(hex: 0xFF826E)
+            }
+        }
+        return AppSettings.accents.first(where: { $0.key == accentKey })?.color ?? Color(hex: 0x9C2F20)
+    }
     var isArena: Bool { theme == .arena }
     var ink: Color { isArena ? Color(hex: 0xEEF3F6) : Color(hex: 0x1B2227) }
-    var muted: Color { isArena ? Color(hex: 0x8A949B) : Color(hex: 0x596168) }
+    var muted: Color { isArena ? Color(hex: 0xB3BCC2) : Color(hex: 0x465159) }
     var line: Color { isArena ? Color.white.opacity(0.09) : Color(hex: 0xDDE4E8) }
     var screen: Color { isArena ? Color(hex: 0x13181B) : Color(hex: 0xECEFF1) }
     var card: Color { isArena ? Color(hex: 0x1B2228) : Color.white }
