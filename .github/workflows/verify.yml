@@ -72,4 +72,5 @@ jobs:
             -project CurlPlan.xcodeproj \
             -scheme CurlPlan \
             -destination "platform=iOS Simulator,name=${DEVICE:-iPhone 15}" \
+            -only-testing:CurlPlanTests \
             CODE_SIGNING_ALLOWED=NO
