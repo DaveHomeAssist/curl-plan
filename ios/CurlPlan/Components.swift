@@ -25,13 +25,20 @@ struct HouseRing: View {
 
 struct AvatarView: View {
     let initials: String
-    var size: CGFloat = 34
+    private let baseSize: CGFloat
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: String, size: CGFloat = 34) {
+        self.initials = initials
+        baseSize = size
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
         Text(initials)
-            .font(.grotesk(size * 0.36, .bold))
+            .font(.grotesk(baseSize * 0.36, .bold))
             .foregroundStyle(Color(hex: 0xEEF3F6))
-            .frame(width: size, height: size)
+            .frame(width: scaledSize, height: scaledSize)
             .background(
                 LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -42,24 +49,33 @@ struct AvatarView: View {
     }
 }
 
-// Overlapping avatar stack (the "met people" cluster).
+// Compact avatar stack (the "met people" cluster). Keep initials unobscured so
+// every visible avatar remains legible at larger text sizes.
 struct AvatarStack: View {
     @EnvironmentObject var settings: AppSettings
     let initials: [String]
-    var size: CGFloat = 28
-    var plus: String? = nil
+    private let baseSize: CGFloat
+    private let plus: String?
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: [String], size: CGFloat = 28, plus: String? = nil) {
+        self.initials = initials
+        baseSize = size
+        self.plus = plus
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
-        HStack(spacing: -size * 0.32) {
+        HStack(spacing: max(2, scaledSize * 0.08)) {
             ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
-                AvatarView(initials: ini, size: size)
+                AvatarView(initials: ini, size: baseSize)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
             if let plus {
                 Text(plus)
-                    .font(.grotesk(size * 0.34, .bold))
+                    .font(.grotesk(baseSize * 0.34, .bold))
                     .foregroundStyle(.white)
-                    .frame(width: size, height: size)
+                    .frame(width: scaledSize, height: scaledSize)
                     .background(settings.accent)
                     .clipShape(Circle())
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
@@ -92,7 +108,7 @@ struct StatCell: View {
                 .font(.serif(size))
                 .foregroundStyle(accent ? settings.accent : settings.ink)
             Text(label)
-                .font(.mono(9, .medium))
+                .font(.mono(11, .semibold))
                 .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1.2)
                 .foregroundStyle(settings.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -162,7 +178,7 @@ struct Eyebrow: View {
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(.mono(11, .medium))
+            .font(.mono(12, .semibold))
             .tracking(dynamicTypeSize.isAccessibilitySize ? 0.5 : 2)
             .foregroundStyle(settings.muted)
             .lineLimit(nil)
@@ -180,7 +196,7 @@ struct SectionHeader: View {
     var body: some View {
         HStack {
             Text(title.uppercased())
-                .font(.mono(11, .medium))
+                .font(.mono(12, .semibold))
                 .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -206,7 +222,7 @@ struct ResultBadge: View {
     let res: String
     var body: some View {
         Text(res)
-            .font(.mono(9, .bold))
+            .font(.mono(11, .bold))
             .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
             .foregroundStyle(res == "W" ? settings.accent : settings.muted)
     }
@@ -367,7 +383,7 @@ struct StarsRow: View {
         let n = max(0, min(5, count))
         return HStack(spacing: 0) {
             Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
-            Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line)
+            Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.muted)
         }
             .font(.grotesk(size))
             .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)

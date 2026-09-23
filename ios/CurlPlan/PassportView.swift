@@ -3,6 +3,7 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSettings = false
 
     var body: some View {
@@ -35,7 +36,7 @@ struct PassportView: View {
             Spacer()
             Button { showSettings = true } label: {
                 AvatarView(initials: store.me.initials, size: 34)
-                    .frame(width: 44, height: 44)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -59,14 +60,26 @@ struct PassportView: View {
 
     private var telemetry: some View {
         let s = store.me.stats
-        return HStack(spacing: 0) {
-            StatCell(value: "\(s.clubs)", label: "CLUBS")
-            VRule()
-            StatCell(value: "\(s.prov)", label: "PROV")
-            VRule()
-            StatCell(value: "\(s.games)", label: "GAMES")
-            VRule()
-            StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+                .padding(.horizontal, 8)
+            } else {
+                HStack(spacing: 0) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    VRule()
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    VRule()
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                    VRule()
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+            }
         }
         .padding(.vertical, 13)
         .cpCard()

@@ -126,29 +126,48 @@ struct NewCurlerSheet: View {
 private struct RosterRow: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let curler: Curler
 
     var body: some View {
-        HStack(spacing: 12) {
-            NavigationLink(value: Route.curler(curler.id)) {
-                HStack(spacing: 12) {
-                    AvatarView(initials: curler.initials, size: 44)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(curler.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
-                        Text("\(curler.role.uppercased()) · \(curler.club.uppercased())")
-                            .font(.mono(10, .medium)).foregroundStyle(settings.muted)
-                    }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 12) {
+                    curlerLink
+                    followButton
                 }
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("curlplan.curler.\(curler.id)")
-            Spacer()
-            PillButton(title: store.isFollowing(curler.id) ? "Following" : "Follow",
-                       filled: !store.isFollowing(curler.id)) {
-                store.toggleFollow(curler.id)
+            } else {
+                HStack(spacing: 12) {
+                    curlerLink
+                    Spacer()
+                    followButton
+                }
             }
         }
         .padding(12)
         .cpCard()
+    }
+
+    private var curlerLink: some View {
+        NavigationLink(value: Route.curler(curler.id)) {
+            HStack(spacing: 12) {
+                AvatarView(initials: curler.initials, size: 44)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(curler.name).font(.grotesk(15, .bold)).foregroundStyle(settings.ink)
+                    Text("\(curler.role.uppercased()) · \(curler.club.uppercased())")
+                        .font(.mono(11, .medium)).foregroundStyle(settings.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("curlplan.curler.\(curler.id)")
+    }
+
+    private var followButton: some View {
+        PillButton(title: store.isFollowing(curler.id) ? "Following" : "Follow",
+                   filled: !store.isFollowing(curler.id)) {
+            store.toggleFollow(curler.id)
+        }
     }
 }
