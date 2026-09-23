@@ -2,7 +2,7 @@ import XCTest
 
 final class CurlPlanAccessibilityUITests: XCTestCase {
     func testDemoScreenAccessibility() throws {
-        continueAfterFailure = false
+        continueAfterFailure = true
         let app = XCUIApplication()
         app.launch()
 
@@ -44,6 +44,9 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         attachment.name = "accessibility-\(name)"
         attachment.lifetime = .keepAlways
         add(attachment)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit { issue in
+            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); element=\(issue.element?.label ?? "none")")
+            return false
+        }
     }
 }
