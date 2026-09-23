@@ -86,11 +86,10 @@ private struct SpielRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(spiel.whenText)
                         .font(.mono(11, .semibold))
-                        .tracking(0.5)
+                        .tracking(0)
                         .foregroundStyle(settings.muted)
-                        .lineLimit(2)
                         .layoutPriority(1)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .fixedSize(horizontal: true, vertical: true)
                     Text(spiel.name).font(.serif(21)).foregroundStyle(settings.ink)
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted).padding(.top, 2)
                 }
@@ -140,10 +139,9 @@ struct SpielDetailSheet: View {
 
                     Text(spiel.whenText)
                         .font(.mono(11, .semibold))
-                        .tracking(0.5)
+                        .tracking(0)
                         .foregroundStyle(settings.muted)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .fixedSize(horizontal: true, vertical: true)
                     Text(spiel.name).font(.serif(26)).foregroundStyle(settings.ink)
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted)
                         .padding(.top, 2).padding(.bottom, 20)

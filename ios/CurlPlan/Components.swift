@@ -365,10 +365,14 @@ struct StarsRow: View {
     var size: CGFloat = 13
     var body: some View {
         let n = max(0, min(5, count))
-        return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
-            + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
+        return HStack(spacing: 0) {
+            Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
+            Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line)
+        }
             .font(.grotesk(size))
             .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+            .fixedSize(horizontal: true, vertical: true)
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(n) out of 5 stars")
     }
 }
