@@ -3,7 +3,6 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
-    @EnvironmentObject var router: Router
     @State private var showSettings = false
 
     var body: some View {
@@ -14,7 +13,7 @@ struct PassportView: View {
                     hero
                     telemetry
                     SeasonMap()
-                    SectionHeader(title: "Recent stops", action: "All") { router.tab = .spiels }
+                    SectionHeader(title: "Recent stops")
                     recentStops
                 }
                 .padding(.horizontal, 20)
@@ -36,8 +35,11 @@ struct PassportView: View {
             Spacer()
             Button { showSettings = true } label: {
                 AvatarView(initials: store.me.initials, size: 34)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Open settings")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
@@ -214,8 +216,12 @@ struct SeasonMap: View {
                         HouseRing(size: s.big ? 21 : 13)
                             .overlay(Circle().strokeBorder(.white.opacity(s.here && !store.isRealAccount ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(s.name), \(s.prov)")
+                    .accessibilityHint("Open stop details")
                     .position(x: w * s.x / 100, y: h * s.y / 100)
                 }
             }

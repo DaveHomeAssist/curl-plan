@@ -1,0 +1,118 @@
+{
+  "source_commit": "6845bcdd7b70e026072ef5eeaf3b2d1eda1d04d6",
+  "run_url": "https://github.com/DaveHomeAssist/curl-plan/actions/runs/35852887967",
+  "platform": "iOS 17.0.1 Simulator",
+  "starting_data": "erased simulator, fresh demo entry",
+  "test": "CurlPlanAccessibilityUITests/testDemoScreenAccessibility",
+  "expected": "No automated accessibility findings on demo gate, tabs, Stop detail, or Profile",
+  "actual": "Failed on both devices; navigation screenflow tests passed separately",
+  "devices": {
+    "standard": {
+      "model": "iPhone 15 Pro",
+      "failure_events": 872,
+      "by_screen": {
+        "demo-gate": {
+          "Contrast failed": 1,
+          "Contrast nearly passed": 1,
+          "Dynamic Type font sizes are unsupported": 7
+        },
+        "passport": {
+          "Hit area is too small": 5,
+          "Contrast nearly passed": 10,
+          "Contrast failed": 39,
+          "Dynamic Type font sizes are unsupported": 98,
+          "Element has no description": 5
+        },
+        "stop-detail": {
+          "Dynamic Type font sizes are unsupported": 102,
+          "Text clipped": 1,
+          "Contrast nearly passed": 7,
+          "Contrast failed": 54
+        },
+        "tab-locker": {
+          "Dynamic Type font sizes are unsupported": 98,
+          "Contrast failed": 27,
+          "Contrast nearly passed": 6
+        },
+        "tab-spiels": {
+          "Dynamic Type font sizes are unsupported": 98,
+          "Contrast failed": 36,
+          "Contrast nearly passed": 3
+        },
+        "tab-roster": {
+          "Contrast failed": 40,
+          "Contrast nearly passed": 2,
+          "Dynamic Type font sizes are unsupported": 98
+        },
+        "curler-profile": {
+          "Contrast failed": 25,
+          "Contrast nearly passed": 8,
+          "Dynamic Type font sizes are unsupported": 101
+        }
+      },
+      "screenshots": {
+        "curler-profile": "native-audit-ci-standard-curler-profile.png",
+        "tab-roster": "native-audit-ci-standard-tab-roster.png",
+        "tab-spiels": "native-audit-ci-standard-tab-spiels.png",
+        "tab-locker": "native-audit-ci-standard-tab-locker.png",
+        "stop-detail": "native-audit-ci-standard-stop-detail.png",
+        "passport": "native-audit-ci-standard-passport.png",
+        "demo-gate": "native-audit-ci-standard-demo-gate.png"
+      }
+    },
+    "small": {
+      "model": "iPhone SE (3rd generation)",
+      "failure_events": 854,
+      "by_screen": {
+        "demo-gate": {
+          "Contrast failed": 1,
+          "Contrast nearly passed": 1,
+          "Dynamic Type font sizes are unsupported": 7
+        },
+        "passport": {
+          "Hit area is too small": 5,
+          "Contrast nearly passed": 12,
+          "Contrast failed": 39,
+          "Dynamic Type font sizes are unsupported": 94,
+          "Element has no description": 5
+        },
+        "stop-detail": {
+          "Contrast nearly passed": 6,
+          "Contrast failed": 49,
+          "Dynamic Type font sizes are unsupported": 98,
+          "Text clipped": 2
+        },
+        "tab-locker": {
+          "Contrast failed": 28,
+          "Contrast nearly passed": 9,
+          "Dynamic Type font sizes are unsupported": 94
+        },
+        "tab-spiels": {
+          "Contrast failed": 37,
+          "Contrast nearly passed": 4,
+          "Dynamic Type font sizes are unsupported": 94
+        },
+        "tab-roster": {
+          "Contrast failed": 39,
+          "Contrast nearly passed": 3,
+          "Dynamic Type font sizes are unsupported": 94
+        },
+        "curler-profile": {
+          "Contrast failed": 26,
+          "Contrast nearly passed": 10,
+          "Dynamic Type font sizes are unsupported": 97
+        }
+      },
+      "screenshots": {
+        "curler-profile": "native-audit-ci-small-curler-profile.png",
+        "tab-roster": "native-audit-ci-small-tab-roster.png",
+        "tab-spiels": "native-audit-ci-small-tab-spiels.png",
+        "tab-locker": "native-audit-ci-small-tab-locker.png",
+        "stop-detail": "native-audit-ci-small-stop-detail.png",
+        "passport": "native-audit-ci-small-passport.png",
+        "demo-gate": "native-audit-ci-small-demo-gate.png"
+      }
+    }
+  },
+  "interpretation": "Event counts are not unique controls: all tab stacks remain alive, and some fixed-font findings recur across tab audits. Apple automated audits do not replace an actual VoiceOver pass."
+}

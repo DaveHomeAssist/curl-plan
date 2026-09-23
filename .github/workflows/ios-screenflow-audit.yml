@@ -67,6 +67,19 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/curlplan-accessibility-standard.xcresult" \
             -only-testing:CurlPlanUITests/CurlPlanAccessibilityUITests/testDemoScreenAccessibility \
             CODE_SIGNING_ALLOWED=NO
+      - name: Retest small iPhone Passport controls
+        if: always() && steps.devices.outcome == 'success'
+        shell: bash
+        run: |
+          xcrun simctl shutdown '${{ steps.devices.outputs.small }}' || true
+          xcrun simctl erase '${{ steps.devices.outputs.small }}'
+          xcodebuild test \
+            -project ios/CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'platform=iOS Simulator,id=${{ steps.devices.outputs.small }}' \
+            -resultBundlePath "$RUNNER_TEMP/curlplan-passport-controls-small.xcresult" \
+            -only-testing:CurlPlanUITests/CurlPlanAccessibilityUITests/testPassportControlAccessibility \
+            CODE_SIGNING_ALLOWED=NO
       - name: Audit small iPhone accessibility
         if: always() && steps.devices.outcome == 'success'
         shell: bash
@@ -88,5 +101,6 @@ jobs:
           path: |
             ${{ runner.temp }}/curlplan-ui-*.xcresult
             ${{ runner.temp }}/curlplan-accessibility-*.xcresult
+            ${{ runner.temp }}/curlplan-passport-controls-*.xcresult
           if-no-files-found: warn
           retention-days: 7

@@ -1,6 +1,16 @@
 import XCTest
 
 final class CurlPlanAccessibilityUITests: XCTestCase {
+    func testPassportControlAccessibility() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 3) { enter.tap() }
+
+        XCTAssertTrue(app.buttons["curlplan.stop.kelowna"].waitForExistence(timeout: 10))
+        try audit(app, "passport-controls", for: [.hitRegion, .sufficientElementDescription])
+    }
+
     func testDemoScreenAccessibility() throws {
         continueAfterFailure = true
         let app = XCUIApplication()
@@ -39,12 +49,13 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         try audit(app, "tab-\(id)")
     }
 
-    private func audit(_ app: XCUIApplication, _ name: String) throws {
+    private func audit(_ app: XCUIApplication, _ name: String,
+                       for types: XCUIAccessibilityAuditType = .all) throws {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "accessibility-\(name)"
         attachment.lifetime = .keepAlways
         add(attachment)
-        try app.performAccessibilityAudit { issue in
+        try app.performAccessibilityAudit(for: types) { issue in
             print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); element=\(issue.element?.label ?? "none")")
             return false
         }

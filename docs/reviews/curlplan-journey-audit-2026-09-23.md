@@ -2,7 +2,7 @@
 
 ## Release call
 
-**Web: Yellow. iOS: Yellow for the tested demo journey.** All scripted web journeys now pass on the deployed current and Classic apps at phone and desktop sizes. The four web findings from the initial audit were repaired and retested live. Actual VoiceOver use, Safari, first-use comprehension with representative curlers, Dynamic Type, and account release flows remain unverified, so this is not a Green release call.
+**Web: Yellow. iOS: Red.** All scripted web journeys now pass on the deployed current and Classic apps at phone and desktop sizes. The four web findings from the initial audit were repaired and retested live. The native demo journey passes on small and standard simulators, but automated accessibility audits fail on both. An iPhone SE content-size comparison confirms that the app does not scale its content with the system text setting. Actual VoiceOver use, Safari, first-use comprehension with representative curlers, and account release flows remain unverified.
 
 The native audit added stable accessibility identifiers and a simulator test harness. The web repair shipped on `main` through `e36a3dee9b18438a7e6a0613b393be70850681a6`.
 
@@ -13,7 +13,8 @@ The native audit added stable accessibility identifiers and a simulator test har
 - Live surfaces: [current web app](https://davehomeassist.github.io/curl-plan/) and [Classic planner](https://davehomeassist.github.io/curl-plan/classic/).
 - Interaction: isolated Chrome browser contexts, mobile 390 × 844 and desktop 1440 × 900 for full scripted journeys, plus focused 320 × 700 navigation and layout retests. Initial layout checks also covered 768 × 1024 and 3840 × 1080. A persistent Chrome profile seeded before the repair tested the Classic service worker upgrade. All journey writes stayed in browser local storage.
 - Baseline evidence: [web results](evidence/curlplan-journey-2026-09-23/web-results.json), [Classic results](evidence/curlplan-journey-2026-09-23/classic-results.json), [layout and navigation results](evidence/curlplan-journey-2026-09-23/crosscut-results.json). Live retest evidence: [phone web](evidence/curlplan-journey-2026-09-23/retest-phone-web-results.json), [phone Classic](evidence/curlplan-journey-2026-09-23/retest-phone-classic-results.json), [desktop web](evidence/curlplan-journey-2026-09-23/retest-desktop-web-results.json), [desktop Classic](evidence/curlplan-journey-2026-09-23/retest-desktop-classic-results.json), and screenshots linked below. Rendered screenshots were visually inspected.
-- Limits: Chrome was the only browser driven interactively. Safari, VoiceOver, Dynamic Type, recruited curler usability sessions, and broader native flows remain unverified.
+- Native accessibility method: [CI run 35852887967](https://github.com/DaveHomeAssist/curl-plan/actions/runs/35852887967) ran Apple's `performAccessibilityAudit()` across the demo gate, Passport, Stop detail, four tabs, and Profile on iPhone 15 Pro and SE (3rd generation), iOS 17.0.1. Its screenflow tests passed and accessibility tests failed. [CI findings and screenshot index](evidence/curlplan-journey-2026-09-23/native-audit-ci-results.json) include build, device, starting data, expected versus actual, and per-screen counts. A separate [local SE audit](evidence/curlplan-journey-2026-09-23/native-audit-se3-results.json) on iOS 26.5 reproduced the classes of failure. Screenshots were inspected.
+- Limits: Chrome was the only browser driven interactively. Safari, actual VoiceOver operation, recruited curler usability sessions, and broader native/account flows remain unverified. The automated audit flags issues; it is not an assistive-technology session.
 
 ## Journey results
 
@@ -27,7 +28,7 @@ The native audit added stable accessibility identifiers and a simulator test har
 | C2 | Pass | Practice and Ice Notes entries remained findable after reload. |
 | C3 | Pass for tested cases | Export included a new event; reset removed it; import restored it; malformed JSON left it intact; Classic's service worker loaded Dashboard and Planner offline. An unsaved Event draft prompted before discard. |
 | X1 | **Pass after repair** | A visible Classic link appears before demo entry and in Passport. It explains that Classic data is separate in this browser. Link activation was verified by click at 320, 390, and 1440 px and by keyboard Enter at 320 px. [Before repair](evidence/curlplan-journey-2026-09-23/root-320.png); [after repair](evidence/curlplan-journey-2026-09-23/X1-before-320.png). |
-| I1 | Pass for tested demo flow; broader review open | The [XCUITest journey](../../ios/CurlPlanUITests/CurlPlanJourneyUITests.swift) passed with zero failures on iPhone 15 Pro and iPhone SE (3rd generation), both iOS 17.0.1: fresh demo entry, four tabs, Stop/Profile detail and Back, follow state, and relaunch persistence. See the [CI run and downloadable result bundles](https://github.com/DaveHomeAssist/curl-plan/actions/runs/35845736958). [Small demo](evidence/curlplan-journey-2026-09-23/ios-small-demo.png), [Passport](evidence/curlplan-journey-2026-09-23/ios-small-passport.png), [Stop](evidence/curlplan-journey-2026-09-23/ios-small-stop.png), and [Profile](evidence/curlplan-journey-2026-09-23/ios-small-profile.png); [standard Passport](evidence/curlplan-journey-2026-09-23/ios-standard-passport.png), [Stop](evidence/curlplan-journey-2026-09-23/ios-standard-stop.png), and [Profile](evidence/curlplan-journey-2026-09-23/ios-standard-profile.png). Screenshots were visually inspected; no obvious overlap or clipping appeared on these captured states. |
+| I1 | **Navigation pass; accessibility fail** | The [XCUITest journey](../../ios/CurlPlanUITests/CurlPlanJourneyUITests.swift) passed with zero failures on iPhone 15 Pro and iPhone SE (3rd generation), both iOS 17.0.1: fresh demo entry, four tabs, Stop/Profile detail and Back, follow state, and relaunch persistence. See the [CI run and result bundles](https://github.com/DaveHomeAssist/curl-plan/actions/runs/35852887967). [Small demo](evidence/curlplan-journey-2026-09-23/ios-small-demo.png), [Passport](evidence/curlplan-journey-2026-09-23/ios-small-passport.png), [Stop](evidence/curlplan-journey-2026-09-23/ios-small-stop.png), and [Profile](evidence/curlplan-journey-2026-09-23/ios-small-profile.png); [standard Passport](evidence/curlplan-journey-2026-09-23/ios-standard-passport.png), [Stop](evidence/curlplan-journey-2026-09-23/ios-standard-stop.png), and [Profile](evidence/curlplan-journey-2026-09-23/ios-standard-profile.png). The accessibility audit failed across the tested screens, detailed below. |
 | I2 | **Not enabled for release** | Current web and iOS auth gates offer a credential-free demo, not account creation or sign in. Local backend AS 01–12 checks pass, but they cannot substitute for an in-app account screenflow or public production service. |
 
 ## Findings, in priority order
@@ -44,15 +45,31 @@ Baseline: the current site's signed-out gate and demo offered no link to `/class
 
 Baseline: “Open Calendar” and “Quick Add Event” were clipped at 320 CSS px. The state strip now wraps its action; both labels were visually and dimensionally retested at 320 and 390 px. [Before](evidence/curlplan-journey-2026-09-23/classic-320.png); [after](evidence/curlplan-journey-2026-09-23/C1-planner-320.png).
 
-### Resolved Medium — small “All” action on Passport
+### High — iOS does not scale with the system text setting
 
-The Recent Stops “All” action had a 14 × 16 px box and led to Spiels rather than an All Stops view. It was removed. The map pins look smaller, although their `::after` pseudo-element expands their effective hit area; they were not classified as a defect from visual size alone.
+Apple's audit reported unsupported Dynamic Type font sizes on every tested native screen on both devices. On an isolated iPhone SE (3rd generation) with iOS 26.5, changing system content size from Large to Accessibility Medium and relaunching the app produced [pixel-identical app content](evidence/curlplan-journey-2026-09-23/native-se3-content-size-compare.json) below the status bar. [Large](evidence/curlplan-journey-2026-09-23/native-se3-content-size-large.png); [Accessibility Medium](evidence/curlplan-journey-2026-09-23/native-se3-content-size-accessibility-medium.png). This is a systemic release blocker; no successful retest yet.
+
+### High — iOS contrast failures across the core journey
+
+The standard simulator audit recorded 222 `Contrast failed` events and the small simulator 219, spanning the gate, Passport, Stop detail, tabs, and Profile. Repeated appearances of the same underlying view make these event counts larger than the number of distinct controls. [Standard Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-standard-passport.png); [small Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-small-passport.png). Contrast needs a design-token and component-level repair followed by a new audit; no successful retest yet.
+
+### High — iOS Passport controls were small or lacked names; repaired on the audit branch
+
+Both CI devices found five undersized hit regions and five elements without descriptions on Passport. The local SE audit identified four map pins and the “All” action among the hit-region failures. “All” opened Spiels instead of an all-stops view. The branch removes that action, expands map-pin and Settings-avatar targets to 44 × 44 points, and names the controls. A [focused local retest](evidence/curlplan-journey-2026-09-23/native-retest-se3-passport-controls.json) on the SE passed: one test, zero hit-region or description failures. [Retest screenshot](evidence/curlplan-journey-2026-09-23/native-retest-se3-passport-controls.png). This branch has not been merged into `main` or released.
+
+### Medium — Stop detail text-clipping audit flags
+
+The CI audit flagged one label on the standard simulator and two on the SE. The local SE audit named “📍 KELOWNA, BC · JAN 9–11” and “SPEED · 24.1s.” A spacing/wrapping experiment still produced both failures in the focused retest, so it was not retained. The screenshot appears legible at the captured size, but that does not clear the automated finding or larger-text behavior. [Initial SE Stop](evidence/curlplan-journey-2026-09-23/native-audit-se3-stop-detail.png); [focused retest](evidence/curlplan-journey-2026-09-23/native-retest-se3-stop-labels.png).
+
+### Resolved Medium — small “All” action on the web Passport
+
+The web Recent Stops “All” action had a 14 × 16 px box and led to Spiels rather than an All Stops view. It was removed. Web map pins have an expanded effective hit area through their `::after` element; the native map pins had separate audit failures and were repaired on this branch.
 
 ## Supporting checks
 
 - `node scripts/gen-seed.js --check`, `verify-app.js`, `verify-split.js`, and `verify-parity.js`: pass.
 - `make account-backend-verify`: all local AS checks pass, including credential rejection, restore, deletion, authorization, persistence, and rate limits.
-- `swift test --scratch-path /tmp/curlplan-audit-spm-20260923`: Swift core compilation proceeded, then tests stopped at `no such module 'XCTest'` under Command Line Tools. This is host tooling, not an observed source failure.
+- Xcode 27.0 is available. `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --scratch-path /tmp/curlplan-spm-audit-20260923-final` passed 18 tests. The focused iPhone SE XCUITest passed one Passport-control audit with zero failures. An earlier `no such module 'XCTest'` error came from running under Command Line Tools and is superseded.
 - `make feature-review`: passed after mapping the current auth view and native journey. Generated Xcode project parsed as a plist and its shared scheme parsed as XML. The PR's iOS, web, and security checks passed. CI's XCUITest reported one test and zero failures on each simulator; the result bundle was downloaded and the retained screenshots were inspected.
 - Chrome keyboard activation reached Roster and Classic Planner; current-web Settings moved focus into its dialog and restored focus on Escape. Current-web Arena and Classic dark theme choices survived reload. Blank compose and blank event save showed validation messages. No page exceptions appeared during the scripted journeys.
 - The repaired live Classic shell served versioned CSS and JavaScript. A pre-repair persistent Chrome profile upgraded from service worker cache v6 through v9; after activation, Calendar → Planner browser Back returned to Calendar. Fresh-context offline Planner and Dashboard passed at phone and desktop sizes. The currently loaded page may need one reload when a waiting service worker activates.
@@ -61,7 +78,7 @@ The Recent Stops “All” action had a 14 × 16 px box and led to Spiels rather
 
 ## Remaining proof and retest gate
 
-1. Extend native review beyond the now-passing demo journey: Dynamic Type, VoiceOver focus/labels, target reachability, layout at larger text sizes, and additional mutation/recovery flows. Inspect console warnings and repeat on the actual release configuration before an iOS release.
+1. Repair native Dynamic Type and contrast across shared typography and color components; rerun the full accessibility audit on small and standard simulators. Resolve the Stop label clipping flags and retest. The tested navigation path passing does not clear these failures.
 2. Run a real assistive-technology pass on web and iOS, and interactive Safari checks for the web release. Keyboard and Chrome automation alone do not cover those environments.
 3. Keep I2 outside the production release call until an account UI and public service are enabled. Then run create → sign out → sign in → restore → export → delete, plus invalid credentials, unavailable service, and revoked session, against the actual release configuration.
 4. Have representative curlers attempt W1–C3 and X1 without route hints; record completion, wrong turns, and unclear next actions. This scripted audit cannot prove first-use comprehension by itself.
