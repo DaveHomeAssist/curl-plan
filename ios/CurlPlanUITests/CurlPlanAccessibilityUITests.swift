@@ -1,0 +1,49 @@
+import XCTest
+
+final class CurlPlanAccessibilityUITests: XCTestCase {
+    func testDemoScreenAccessibility() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launch()
+
+        let enter = app.buttons["curlplan.demo.enter"]
+        XCTAssertTrue(enter.waitForExistence(timeout: 10), "Fresh launch must show the demo gate")
+        try audit(app, "demo-gate")
+        enter.tap()
+
+        let passport = app.buttons["curlplan.tab.passport"]
+        XCTAssertTrue(passport.waitForExistence(timeout: 10))
+        try audit(app, "passport")
+
+        app.buttons["curlplan.stop.kelowna"].tap()
+        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 5))
+        try audit(app, "stop-detail")
+        app.buttons["curlplan.detail.back"].tap()
+
+        try openTab(app, "locker", title: "Locker Room")
+        try openTab(app, "spiels", title: "Spiels")
+        try openTab(app, "roster", title: "Roster")
+
+        let curler = app.buttons["curlplan.curler.sam"]
+        XCTAssertTrue(curler.waitForExistence(timeout: 5))
+        curler.tap()
+        XCTAssertTrue(app.staticTexts["Sam Reid"].waitForExistence(timeout: 5))
+        try audit(app, "curler-profile")
+    }
+
+    private func openTab(_ app: XCUIApplication, _ id: String, title: String) throws {
+        let tab = app.buttons["curlplan.tab.\(id)"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "\(title) tab must be reachable")
+        tab.tap()
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 5), "\(title) screen must render")
+        try audit(app, "tab-\(id)")
+    }
+
+    private func audit(_ app: XCUIApplication, _ name: String) throws {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "accessibility-\(name)"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        try app.performAccessibilityAudit()
+    }
+}

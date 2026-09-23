@@ -54,6 +54,32 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/curlplan-ui-small.xcresult" \
             -only-testing:CurlPlanUITests/CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch \
             CODE_SIGNING_ALLOWED=NO
+      - name: Audit standard iPhone accessibility
+        if: always() && steps.devices.outcome == 'success'
+        shell: bash
+        run: |
+          xcrun simctl shutdown '${{ steps.devices.outputs.standard }}' || true
+          xcrun simctl erase '${{ steps.devices.outputs.standard }}'
+          xcodebuild test \
+            -project ios/CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'platform=iOS Simulator,id=${{ steps.devices.outputs.standard }}' \
+            -resultBundlePath "$RUNNER_TEMP/curlplan-accessibility-standard.xcresult" \
+            -only-testing:CurlPlanUITests/CurlPlanAccessibilityUITests/testDemoScreenAccessibility \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Audit small iPhone accessibility
+        if: always() && steps.devices.outcome == 'success'
+        shell: bash
+        run: |
+          xcrun simctl shutdown '${{ steps.devices.outputs.small }}' || true
+          xcrun simctl erase '${{ steps.devices.outputs.small }}'
+          xcodebuild test \
+            -project ios/CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'platform=iOS Simulator,id=${{ steps.devices.outputs.small }}' \
+            -resultBundlePath "$RUNNER_TEMP/curlplan-accessibility-small.xcresult" \
+            -only-testing:CurlPlanUITests/CurlPlanAccessibilityUITests/testDemoScreenAccessibility \
+            CODE_SIGNING_ALLOWED=NO
       - name: Keep simulator screenshots and results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
