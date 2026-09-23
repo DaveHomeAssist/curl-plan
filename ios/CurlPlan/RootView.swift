@@ -26,14 +26,13 @@ struct RootView: View {
         ZStack {
             settings.screen.ignoresSafeArea()
 
-            // all four stacks stay alive so pushed routes and scroll positions
-            // survive tab switches; only the active one is visible and hit-testable
-            ZStack {
-                pane(.passport) { PassportView() }
-                pane(.locker) { LockerRoomView() }
-                pane(.spiels) { SpielsView() }
-                pane(.roster) { RosterView() }
+            TabView(selection: $router.tab) {
+                TabStack { PassportView() }.tag(Tab.passport)
+                TabStack { LockerRoomView() }.tag(Tab.locker)
+                TabStack { SpielsView() }.tag(Tab.spiels)
+                TabStack { RosterView() }.tag(Tab.roster)
             }
+            .toolbar(.hidden, for: .tabBar)
 
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -41,12 +40,6 @@ struct RootView: View {
         }
     }
 
-    private func pane<Content: View>(_ t: Tab, @ViewBuilder content: @escaping () -> Content) -> some View {
-        TabStack(content: content)
-            .opacity(router.tab == t ? 1 : 0)
-            .allowsHitTesting(router.tab == t)
-            .accessibilityHidden(router.tab != t)
-    }
 }
 
 // A NavigationStack that resolves the shared Route destinations.

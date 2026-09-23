@@ -58,7 +58,7 @@ function countMatches(source, pattern) {
   return (source.match(pattern) || []).length;
 }
 
-assert(html.includes('href="assets/css/app.css?v=20260923b"'), "Missing versioned app.css stylesheet include.");
+assert(html.includes('href="assets/css/app.css?v=20260923c"'), "Missing versioned app.css stylesheet include.");
 assert(html.includes('href="assets/icons/favicon/favicon.svg"'), "Missing favicon asset include.");
 
 const scriptMatches = Array.from(html.matchAll(/<script src="([^"]+)"><\/script>/g)).map(match => match[1]);

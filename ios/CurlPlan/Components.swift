@@ -153,6 +153,7 @@ struct Eyebrow: View {
             .font(.mono(11, .medium))
             .tracking(2)
             .foregroundStyle(settings.muted)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
