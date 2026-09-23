@@ -40,6 +40,7 @@ struct AuthView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("curlplan.demo.enter")
 
                         Text("Demo changes stay on this device. Real account recovery, deletion, and cross-device restore will ship only with the verified backend.")
                             .font(.grotesk(13, .medium))

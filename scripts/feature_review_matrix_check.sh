@@ -73,6 +73,9 @@ while IFS= read -r path; do
     ios/CurlPlan/CurlPlanApp.swift)
       add_rows FR-SETUP FR-SETTINGS FR-A11Y FR-CLAIMS
       ;;
+    ios/CurlPlan/AuthView.swift)
+      add_rows FR-SETUP FR-ACCOUNT FR-A11Y FR-CLAIMS
+      ;;
     ios/CurlPlan/RootView.swift)
       add_rows FR-SETUP FR-PASSPORT FR-LOCKER FR-ROSTER FR-A11Y FR-CLAIMS
       ;;
@@ -210,13 +213,14 @@ if [ -s "$rows_file" ]; then
     echo "- xcodebuild -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/curlplan-truth-derived-status CODE_SIGNING_ALLOWED=NO build"
   fi
   if grep -q 'FR-A11Y' "$rows_file"; then
-    echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<small-device-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanPrimaryScreenflowUITests/testSmallScreenAccessibilityPrimaryControlsRemainReachable"
+    echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<small-device-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch"
+    echo "- manually verify VoiceOver, Dynamic Type, and target reachability; the journey test does not prove these"
   fi
   if grep -q 'FR-BONSPIEL-SCORE' "$rows_file"; then
-    echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<simulator-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanPrimaryScreenflowUITests/testBonspielScorecardEndScoringEdgesSurviveRelaunch -only-testing:CurlPlanUITests/CurlPlanPrimaryScreenflowUITests/testBonspielForfeitResultSurvivesRelaunch"
+    echo "- run manual SF 07 scorecard edge and forfeit proof; no current UI automation covers this row"
   fi
   if grep -q 'FR-CIRCLE' "$rows_file"; then
-    echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<simulator-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanPrimaryScreenflowUITests/testRouteDistanceAndCircleMembershipSurfacesStayTruthfulAcrossRelaunch"
+    echo "- xcodebuild test -project ios/CurlPlan.xcodeproj -scheme CurlPlan -configuration Debug -destination '<simulator-id>' -derivedDataPath /tmp/curlplan-truth-derived CODE_SIGNING_ALLOWED=NO -only-testing:CurlPlanUITests/CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch"
   fi
   if grep -Eq 'FR-ACCOUNT|FR-SYNC|FR-PUBLIC-ID|FR-RELATIONSHIP|FR-SHARED-OBJECTS|FR-SOCIAL|FR-TRUST-SAFETY' "$rows_file"; then
     echo "- docs/curlplan-accounts-social-roadmap-2026-06-28.md: run the phase-specific AS screenflow and backend authorization tests before shipping backend-backed claims"

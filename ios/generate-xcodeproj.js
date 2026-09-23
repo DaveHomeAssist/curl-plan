@@ -34,6 +34,16 @@ const TEST_TARGET = id(), TEST_PRODUCT_REF = id(), TEST_GROUP = id(),
 
 const fileObjs = files.map(name => ({ name, ref: id(), build: id() }));
 const testObjs = testFiles.map(name => ({ name, ref: id(), build: id() }));
+const uiTestDir = path.join(root, "CurlPlanUITests");
+const uiTestFiles = fs.existsSync(uiTestDir)
+  ? fs.readdirSync(uiTestDir).filter(f => f.endsWith(".swift")).sort() : [];
+const hasUITests = uiTestFiles.length > 0;
+// Allocate after the existing objects to keep current project IDs stable.
+const UITEST_TARGET = id(), UITEST_PRODUCT_REF = id(), UITEST_GROUP = id(),
+      PHASE_UITEST_SOURCES = id(), PHASE_UITEST_FRAMEWORKS = id(), PHASE_UITEST_RESOURCES = id(),
+      CFGLIST_UITEST = id(), CFG_UITEST_DEBUG = id(), CFG_UITEST_RELEASE = id(),
+      UITEST_DEP = id(), UITEST_PROXY = id();
+const uiTestObjs = uiTestFiles.map(name => ({ name, ref: id(), build: id() }));
 
 const fileRefs = fileObjs.map(f =>
   `\t\t${f.ref} /* ${f.name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "${f.name}"; sourceTree = "<group>"; };`
@@ -52,6 +62,14 @@ const testBuildFiles = testObjs.map(f =>
 ).join("\n");
 const testGroupChildren = testObjs.map(f => `\t\t\t\t${f.ref} /* ${f.name} */,`).join("\n");
 const testSourcesFiles = testObjs.map(f => `\t\t\t\t${f.build} /* ${f.name} in Sources */,`).join("\n");
+const uiTestFileRefs = uiTestObjs.map(f =>
+  `\t\t${f.ref} /* ${f.name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "${f.name}"; sourceTree = "<group>"; };`
+).join("\n");
+const uiTestBuildFiles = uiTestObjs.map(f =>
+  `\t\t${f.build} /* ${f.name} in Sources */ = {isa = PBXBuildFile; fileRef = ${f.ref} /* ${f.name} */; };`
+).join("\n");
+const uiTestGroupChildren = uiTestObjs.map(f => `\t\t\t\t${f.ref} /* ${f.name} */,`).join("\n");
+const uiTestSourcesFiles = uiTestObjs.map(f => `\t\t\t\t${f.build} /* ${f.name} in Sources */,`).join("\n");
 
 const targetBuildSettings = `
 \t\t\t\tASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
@@ -89,6 +107,23 @@ const testBuildSettings = `
 \t\t\t\tSWIFT_VERSION = 5.0;
 \t\t\t\tTARGETED_DEVICE_FAMILY = "1,2";
 \t\t\t\tTEST_HOST = "$(BUILT_PRODUCTS_DIR)/CurlPlan.app/CurlPlan";`;
+
+const uiTestBuildSettings = `
+\t\t\t\tCODE_SIGN_STYLE = Automatic;
+\t\t\t\tCURRENT_PROJECT_VERSION = 1;
+\t\t\t\tGENERATE_INFOPLIST_FILE = YES;
+\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 17.0;
+\t\t\t\tLD_RUNPATH_SEARCH_PATHS = (
+\t\t\t\t\t"$(inherited)",
+\t\t\t\t\t"@executable_path/Frameworks",
+\t\t\t\t\t"@loader_path/Frameworks",
+\t\t\t\t);
+\t\t\t\tMARKETING_VERSION = 1.0;
+\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.davehomeassist.CurlPlanUITests;
+\t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";
+\t\t\t\tSWIFT_VERSION = 5.0;
+\t\t\t\tTARGETED_DEVICE_FAMILY = "1,2";
+\t\t\t\tTEST_TARGET_NAME = CurlPlan;`;
 
 const projDebug = `
 \t\t\t\tALWAYS_SEARCH_USER_PATHS = NO;
@@ -238,6 +273,111 @@ const testCfgListSection = hasTests ? `
 \t\t\tdefaultConfigurationName = Release;
 \t\t};` : "";
 
+const uiTestBuildFileSection = hasUITests ? "\n" + uiTestBuildFiles : "";
+const uiTestFileRefSection = hasUITests ? "\n" + uiTestFileRefs +
+  `\n\t\t${UITEST_PRODUCT_REF} /* CurlPlanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };` : "";
+const rootGroupUITestChild = hasUITests ? `\n\t\t\t\t${UITEST_GROUP} /* CurlPlanUITests */,` : "";
+const productsUITestChild = hasUITests ? `\n\t\t\t\t${UITEST_PRODUCT_REF} /* CurlPlanUITests.xctest */,` : "";
+const uiTestGroupSection = hasUITests ? `
+\t\t${UITEST_GROUP} /* CurlPlanUITests */ = {
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+${uiTestGroupChildren}
+\t\t\t);
+\t\t\tpath = CurlPlanUITests;
+\t\t\tsourceTree = "<group>";
+\t\t};` : "";
+const projectUITestTarget = hasUITests ? `\n\t\t\t\t${UITEST_TARGET} /* CurlPlanUITests */,` : "";
+const targetAttrUITest = hasUITests ? `
+\t\t\t\t\t${UITEST_TARGET} = {
+\t\t\t\t\t\tCreatedOnToolsVersion = 15.4;
+\t\t\t\t\t\tTestTargetID = ${TARGET};
+\t\t\t\t\t};` : "";
+const uiTestNativeTargetSection = hasUITests ? `
+\t\t${UITEST_TARGET} /* CurlPlanUITests */ = {
+\t\t\tisa = PBXNativeTarget;
+\t\t\tbuildConfigurationList = ${CFGLIST_UITEST} /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */;
+\t\t\tbuildPhases = (
+\t\t\t\t${PHASE_UITEST_SOURCES} /* Sources */,
+\t\t\t\t${PHASE_UITEST_FRAMEWORKS} /* Frameworks */,
+\t\t\t\t${PHASE_UITEST_RESOURCES} /* Resources */,
+\t\t\t);
+\t\t\tbuildRules = (
+\t\t\t);
+\t\t\tdependencies = (
+\t\t\t\t${UITEST_DEP} /* PBXTargetDependency */,
+\t\t\t);
+\t\t\tname = CurlPlanUITests;
+\t\t\tproductName = CurlPlanUITests;
+\t\t\tproductReference = ${UITEST_PRODUCT_REF} /* CurlPlanUITests.xctest */;
+\t\t\tproductType = "com.apple.product-type.bundle.ui-testing";
+\t\t};` : "";
+const uiTestPhasesSection = hasUITests ? `
+\t\t${PHASE_UITEST_SOURCES} /* Sources */ = {
+\t\t\tisa = PBXSourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+${uiTestSourcesFiles}
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};
+\t\t${PHASE_UITEST_FRAMEWORKS} /* Frameworks */ = {
+\t\t\tisa = PBXFrameworksBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};
+\t\t${PHASE_UITEST_RESOURCES} /* Resources */ = {
+\t\t\tisa = PBXResourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};` : "";
+const uiTestDepSection = hasUITests ? `
+/* Begin PBXContainerItemProxy section */
+\t\t${UITEST_PROXY} /* PBXContainerItemProxy */ = {
+\t\t\tisa = PBXContainerItemProxy;
+\t\t\tcontainerPortal = ${PROJECT} /* Project object */;
+\t\t\tproxyType = 1;
+\t\t\tremoteGlobalIDString = ${TARGET};
+\t\t\tremoteInfo = CurlPlan;
+\t\t};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+\t\t${UITEST_DEP} /* PBXTargetDependency */ = {
+\t\t\tisa = PBXTargetDependency;
+\t\t\ttarget = ${TARGET} /* CurlPlan */;
+\t\t\ttargetProxy = ${UITEST_PROXY} /* PBXContainerItemProxy */;
+\t\t};
+/* End PBXTargetDependency section */
+` : "";
+const uiTestCfgSection = hasUITests ? `
+\t\t${CFG_UITEST_DEBUG} /* Debug */ = {
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {${uiTestBuildSettings}
+\t\t\t};
+\t\t\tname = Debug;
+\t\t};
+\t\t${CFG_UITEST_RELEASE} /* Release */ = {
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {${uiTestBuildSettings}
+\t\t\t};
+\t\t\tname = Release;
+\t\t};` : "";
+const uiTestCfgListSection = hasUITests ? `
+\t\t${CFGLIST_UITEST} /* Build configuration list for PBXNativeTarget "CurlPlanUITests" */ = {
+\t\t\tisa = XCConfigurationList;
+\t\t\tbuildConfigurations = (
+\t\t\t\t${CFG_UITEST_DEBUG} /* Debug */,
+\t\t\t\t${CFG_UITEST_RELEASE} /* Release */,
+\t\t\t);
+\t\t\tdefaultConfigurationIsVisible = 0;
+\t\t\tdefaultConfigurationName = Release;
+\t\t};` : "";
+
 const pbx = `// !$*UTF8*$!
 {
 \tarchiveVersion = 1;
@@ -247,12 +387,12 @@ const pbx = `// !$*UTF8*$!
 \tobjects = {
 
 /* Begin PBXBuildFile section */
-${buildFiles}${testBuildFileSection}
+${buildFiles}${testBuildFileSection}${uiTestBuildFileSection}
 /* End PBXBuildFile section */
-${depSection}
+${depSection}${uiTestDepSection}
 /* Begin PBXFileReference section */
 \t\t${PRODUCT_REF} /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
-${fileRefs}${testFileRefSection}
+${fileRefs}${testFileRefSection}${uiTestFileRefSection}
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -269,7 +409,7 @@ ${fileRefs}${testFileRefSection}
 \t\t${GROUP_ROOT} = {
 \t\t\tisa = PBXGroup;
 \t\t\tchildren = (
-\t\t\t\t${GROUP_SRC} /* CurlPlan */,${rootGroupTestChild}
+\t\t\t\t${GROUP_SRC} /* CurlPlan */,${rootGroupTestChild}${rootGroupUITestChild}
 \t\t\t\t${GROUP_PRODUCTS} /* Products */,
 \t\t\t);
 \t\t\tsourceTree = "<group>";
@@ -281,11 +421,11 @@ ${groupChildren}
 \t\t\t);
 \t\t\tpath = CurlPlan;
 \t\t\tsourceTree = "<group>";
-\t\t};${testGroupSection}
+\t\t};${testGroupSection}${uiTestGroupSection}
 \t\t${GROUP_PRODUCTS} /* Products */ = {
 \t\t\tisa = PBXGroup;
 \t\t\tchildren = (
-\t\t\t\t${PRODUCT_REF} /* CurlPlan.app */,${productsTestChild}
+\t\t\t\t${PRODUCT_REF} /* CurlPlan.app */,${productsTestChild}${productsUITestChild}
 \t\t\t);
 \t\t\tname = Products;
 \t\t\tsourceTree = "<group>";
@@ -309,7 +449,7 @@ ${groupChildren}
 \t\t\tproductName = CurlPlan;
 \t\t\tproductReference = ${PRODUCT_REF} /* CurlPlan.app */;
 \t\t\tproductType = "com.apple.product-type.application";
-\t\t};${testNativeTargetSection}
+\t\t};${testNativeTargetSection}${uiTestNativeTargetSection}
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -322,7 +462,7 @@ ${groupChildren}
 \t\t\t\tTargetAttributes = {
 \t\t\t\t\t${TARGET} = {
 \t\t\t\t\t\tCreatedOnToolsVersion = 15.4;
-\t\t\t\t\t};${targetAttrTest}
+\t\t\t\t\t};${targetAttrTest}${targetAttrUITest}
 \t\t\t\t};
 \t\t\t};
 \t\t\tbuildConfigurationList = ${CFGLIST_PROJ} /* Build configuration list for PBXProject "CurlPlan" */;
@@ -338,7 +478,7 @@ ${groupChildren}
 \t\t\tprojectDirPath = "";
 \t\t\tprojectRoot = "";
 \t\t\ttargets = (
-\t\t\t\t${TARGET} /* CurlPlan */,${projectTestTarget}
+\t\t\t\t${TARGET} /* CurlPlan */,${projectTestTarget}${projectUITestTarget}
 \t\t\t);
 \t\t};
 /* End PBXProject section */
@@ -361,7 +501,7 @@ ${groupChildren}
 ${sourcesFiles}
 \t\t\t);
 \t\t\trunOnlyForDeploymentPostprocessing = 0;
-\t\t};${testPhasesSection}
+\t\t};${testPhasesSection}${uiTestPhasesSection}
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -388,7 +528,7 @@ ${sourcesFiles}
 \t\t\tbuildSettings = {${targetBuildSettings}
 \t\t\t};
 \t\t\tname = Release;
-\t\t};${testCfgSection}
+\t\t};${testCfgSection}${uiTestCfgSection}
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -409,7 +549,7 @@ ${sourcesFiles}
 \t\t\t);
 \t\t\tdefaultConfigurationIsVisible = 0;
 \t\t\tdefaultConfigurationName = Release;
-\t\t};${testCfgListSection}
+\t\t};${testCfgListSection}${uiTestCfgListSection}
 /* End XCConfigurationList section */
 \t};
 \trootObject = ${PROJECT} /* Project object */;
@@ -427,17 +567,27 @@ const testables = hasTests ? `
          <TestableReference skipped="NO">
             <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${TEST_TARGET}" BuildableName="CurlPlanTests.xctest" BlueprintName="CurlPlanTests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>
          </TestableReference>` : "";
+const uiTestBuildableRef =
+  `<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${UITEST_TARGET}" BuildableName="CurlPlanUITests.xctest" BlueprintName="CurlPlanUITests" ReferencedContainer="container:CurlPlan.xcodeproj"></BuildableReference>`;
+const uiTestable = hasUITests ? `
+         <TestableReference skipped="NO">
+            ${uiTestBuildableRef}
+         </TestableReference>` : "";
+const uiTestBuildEntry = hasUITests ? `
+         <BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="NO">
+            ${uiTestBuildableRef}
+         </BuildActionEntry>` : "";
 const scheme = `<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="1540" version="1.7">
    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
       <BuildActionEntries>
          <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
             ${buildableRef}
-         </BuildActionEntry>
+         </BuildActionEntry>${uiTestBuildEntry}
       </BuildActionEntries>
    </BuildAction>
    <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
-      <Testables>${testables}
+      <Testables>${testables}${uiTestable}
       </Testables>
    </TestAction>
    <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES">
@@ -461,6 +611,8 @@ fs.mkdirSync(schemeDir, { recursive: true });
 fs.writeFileSync(path.join(schemeDir, "CurlPlan.xcscheme"), scheme);
 
 console.log(`Wrote CurlPlan.xcodeproj: ${files.length} app Swift files` +
-  (hasTests ? ` + ${testFiles.length} test files (CurlPlanTests target)` : ""));
+  (hasTests ? ` + ${testFiles.length} test files (CurlPlanTests target)` : "") +
+  (hasUITests ? ` + ${uiTestFiles.length} UI test files (CurlPlanUITests target)` : ""));
 files.forEach(f => console.log("  app  - " + f));
 testFiles.forEach(f => console.log("  test - " + f));
+uiTestFiles.forEach(f => console.log("  ui   - " + f));
