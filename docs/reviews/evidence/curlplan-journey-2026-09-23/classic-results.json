@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-09-23T09:39:05.996Z",
+  "sha": "623bd18fb2da2c5ebdb5d6af5179c3039dda73b6",
+  "results": [
+    {
+      "id": "C1",
+      "status": "pass",
+      "evidence": {
+        "title": "Audit League 1790156333331",
+        "opponent": "Audit Opponent 1790156333331",
+        "saveText": "Saved ✓",
+        "gamesCount": "4",
+        "persisted": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "C2",
+      "status": "pass",
+      "evidence": {
+        "focus": "Audit draw focus 1790156333331",
+        "club": "Audit Rink 1790156333331",
+        "persisted": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "C3-recovery",
+      "status": "pass",
+      "evidence": {
+        "title": "Audit Export Event 1790156333331",
+        "exportedBytes": 10449,
+        "restored": true,
+        "malformedImportPreserved": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "C3-offline",
+      "status": "pass",
+      "evidence": {
+        "controlled": true,
+        "offlineUrl": "https://davehomeassist.github.io/curl-plan/classic/#planner",
+        "plannerVisible": true,
+        "pageErrors": []
+      }
+    }
+  ]
+}

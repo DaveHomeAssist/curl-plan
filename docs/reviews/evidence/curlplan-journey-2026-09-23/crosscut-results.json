@@ -1,0 +1,378 @@
+{
+  "timestamp": "2026-09-23T09:40:18.466Z",
+  "evidence": [
+    {
+      "app": "root",
+      "width": 320,
+      "height": 700,
+      "innerWidth": 320,
+      "documentWidth": 320,
+      "bodyWidth": 320,
+      "smallControls": [
+        {
+          "label": "Kamloops Cashspiel",
+          "width": 21,
+          "height": 21,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Kelowna Bonspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Vernon Cashspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Sage Valley Open",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Granite City Classic",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "All",
+          "width": 14,
+          "height": 16,
+          "selector": "span.act"
+        }
+      ],
+      "totalControls": 13
+    },
+    {
+      "app": "root",
+      "width": 390,
+      "height": 844,
+      "innerWidth": 390,
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "smallControls": [
+        {
+          "label": "Kamloops Cashspiel",
+          "width": 21,
+          "height": 21,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Kelowna Bonspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Vernon Cashspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Sage Valley Open",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Granite City Classic",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "All",
+          "width": 14,
+          "height": 16,
+          "selector": "span.act"
+        }
+      ],
+      "totalControls": 13
+    },
+    {
+      "app": "root",
+      "width": 768,
+      "height": 1024,
+      "innerWidth": 768,
+      "documentWidth": 768,
+      "bodyWidth": 768,
+      "smallControls": [
+        {
+          "label": "Kamloops Cashspiel",
+          "width": 21,
+          "height": 21,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Kelowna Bonspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Vernon Cashspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Sage Valley Open",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Granite City Classic",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "All",
+          "width": 14,
+          "height": 16,
+          "selector": "span.act"
+        }
+      ],
+      "totalControls": 13
+    },
+    {
+      "app": "root",
+      "width": 1440,
+      "height": 900,
+      "innerWidth": 1440,
+      "documentWidth": 1440,
+      "bodyWidth": 1440,
+      "smallControls": [
+        {
+          "label": "Kamloops Cashspiel",
+          "width": 21,
+          "height": 21,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Kelowna Bonspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Vernon Cashspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Sage Valley Open",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Granite City Classic",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "All",
+          "width": 14,
+          "height": 16,
+          "selector": "span.act"
+        }
+      ],
+      "totalControls": 13
+    },
+    {
+      "app": "root",
+      "width": 3840,
+      "height": 1080,
+      "innerWidth": 3840,
+      "documentWidth": 3840,
+      "bodyWidth": 3840,
+      "smallControls": [
+        {
+          "label": "Kamloops Cashspiel",
+          "width": 21,
+          "height": 21,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Kelowna Bonspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Vernon Cashspiel",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Sage Valley Open",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "Granite City Classic",
+          "width": 13,
+          "height": 13,
+          "selector": "button.map-pin"
+        },
+        {
+          "label": "All",
+          "width": 14,
+          "height": 16,
+          "selector": "span.act"
+        }
+      ],
+      "totalControls": 13
+    },
+    {
+      "app": "classic",
+      "width": 320,
+      "height": 700,
+      "innerWidth": 320,
+      "documentWidth": 320,
+      "bodyWidth": 320,
+      "smallControls": [
+        {
+          "label": "Close event modal",
+          "width": 17,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close game modal",
+          "width": 17,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close practice modal",
+          "width": 20,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close ice modal",
+          "width": 16,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close issue modal",
+          "width": 19,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close import preview",
+          "width": 15,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close shortcuts",
+          "width": 20,
+          "height": 34,
+          "selector": "button.modal-close"
+        }
+      ],
+      "totalControls": 28
+    },
+    {
+      "app": "classic",
+      "width": 390,
+      "height": 844,
+      "innerWidth": 390,
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "smallControls": [
+        {
+          "label": "Close event modal",
+          "width": 22,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close game modal",
+          "width": 23,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close ice modal",
+          "width": 21,
+          "height": 34,
+          "selector": "button.modal-close"
+        },
+        {
+          "label": "Close import preview",
+          "width": 20,
+          "height": 34,
+          "selector": "button.modal-close"
+        }
+      ],
+      "totalControls": 30
+    },
+    {
+      "app": "classic",
+      "width": 768,
+      "height": 1024,
+      "innerWidth": 768,
+      "documentWidth": 768,
+      "bodyWidth": 768,
+      "smallControls": [],
+      "totalControls": 41
+    },
+    {
+      "app": "classic",
+      "width": 1440,
+      "height": 900,
+      "innerWidth": 1440,
+      "documentWidth": 1440,
+      "bodyWidth": 1440,
+      "smallControls": [],
+      "totalControls": 43
+    },
+    {
+      "app": "classic",
+      "width": 3840,
+      "height": 1080,
+      "innerWidth": 3840,
+      "documentWidth": 3840,
+      "bodyWidth": 3840,
+      "smallControls": [],
+      "totalControls": 45
+    },
+    {
+      "app": "root",
+      "check": "settings focus and theme persistence",
+      "dialogFocused": "sheet",
+      "restoredFocus": "settings",
+      "theme": "arena"
+    },
+    {
+      "app": "root",
+      "check": "offline",
+      "controlled": true,
+      "offlineLoaded": true
+    },
+    {
+      "app": "classic",
+      "check": "browser Back",
+      "from": "https://davehomeassist.github.io/curl-plan/classic/#calendar",
+      "to": "https://davehomeassist.github.io/curl-plan/classic/#planner",
+      "after": "about:blank"
+    }
+  ]
+}

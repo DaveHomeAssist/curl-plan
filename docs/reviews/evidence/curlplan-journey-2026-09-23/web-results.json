@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-09-23T09:36:13.265Z",
+  "sha": "623bd18fb2da2c5ebdb5d6af5179c3039dda73b6",
+  "results": [
+    {
+      "id": "W1",
+      "status": "pass",
+      "evidence": {
+        "stopName": "Kelowna Bonspiel",
+        "returnedTo": "https://davehomeassist.github.io/curl-plan/#passport",
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "W2",
+      "status": "pass",
+      "evidence": {
+        "note": "Audit note 1790156168578",
+        "emptyText": "Nothing here yet\n\nNo posts match your search.",
+        "persisted": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "W3",
+      "status": "pass",
+      "evidence": {
+        "spielId": "sp2",
+        "curlerId": "sam",
+        "followBefore": "Follow",
+        "followAfter": "Following",
+        "joinPersisted": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "W4-deep",
+      "status": "pass",
+      "evidence": {
+        "observed": [
+          {
+            "hash": "#locker",
+            "foundExpected": true
+          },
+          {
+            "hash": "#spiels",
+            "foundExpected": true
+          },
+          {
+            "hash": "#roster",
+            "foundExpected": true
+          },
+          {
+            "hash": "#stop/kelowna",
+            "foundExpected": true
+          },
+          {
+            "hash": "#curler/sam",
+            "foundExpected": true
+          }
+        ],
+        "reload": "https://davehomeassist.github.io/curl-plan/#curler/sam",
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "W4-back",
+      "status": "fail",
+      "evidence": {
+        "url": "about:blank",
+        "pageErrors": []
+      },
+      "error": "Error: Browser Back left app or did not return to Passport: about:blank\n    at /private/tmp/curlplan-audit-20260923/web-audit.js:128:104\n    at async run (/private/tmp/curlplan-audit-20260923/web-audit.js:21:22)\n    at async main (/private/tmp/curlplan-audit-20260923/web-audit.js:120:3)"
+    },
+    {
+      "id": "W4-signout",
+      "status": "pass",
+      "evidence": {
+        "url": "https://davehomeassist.github.io/curl-plan/#passport",
+        "signedOutAfterReload": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "id": "X1",
+      "status": "fail",
+      "evidence": {
+        "url": "https://davehomeassist.github.io/curl-plan/#passport",
+        "pageErrors": []
+      },
+      "error": "Error: No route to Classic before or after demo entry\n    at /private/tmp/curlplan-audit-20260923/web-audit.js:148:44\n    at async run (/private/tmp/curlplan-audit-20260923/web-audit.js:21:22)\n    at async main (/private/tmp/curlplan-audit-20260923/web-audit.js:142:3)"
+    }
+  ]
+}
