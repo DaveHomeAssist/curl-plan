@@ -1997,6 +1997,16 @@
     }
 
     @media (max-width: 480px) {
+      .state-strip {
+        flex-wrap: wrap;
+      }
+
+      .state-strip > .btn {
+        flex: 0 0 auto;
+        max-width: 100%;
+        white-space: normal;
+      }
+
       body {
         padding: 12px 10px 24px;
       }

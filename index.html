@@ -436,6 +436,10 @@ body{
 .auth-notice{ margin:0; color:var(--ink); font:600 14px/1.5 'Hanken Grotesk'; }
 .auth-notice strong{ color:var(--accent); }
 .auth-footnote{ margin:12px 0 0; color:var(--muted); font:500 13px/1.45 'Hanken Grotesk'; }
+.classic-bridge{ padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+.classic-bridge a{ display:inline-flex; align-items:center; min-height:44px; color:var(--accent-deep); font:700 14px 'Hanken Grotesk'; text-decoration:underline; text-underline-offset:3px; }
+.classic-bridge p{ margin:0; color:var(--muted); font:500 12px/1.4 'Hanken Grotesk'; }
+.classic-bridge a:focus-visible{ outline:3px solid var(--accent); outline-offset:3px; }
 
 /* Keyboard and touch affordances stay consistent across the app shell. */
 button, [role="button"]{ touch-action:manipulation; }
@@ -1459,8 +1463,16 @@ function viewAuth(){
         '</div>' +
         '<p class="auth-footnote">Demo changes stay in this browser and can be cleared with site data. Real account recovery, deletion, and cross-device restore will ship only with the verified backend.</p>' +
       '</div>' +
+      classicBridge() +
       '<div class="auth-alt">No credentials are collected or transmitted.</div>' +
     '</div>';
+}
+
+function classicBridge(){
+  return '<div class="classic-bridge">' +
+    '<a href="./classic/">Open Classic calendar and game planner</a>' +
+    '<p>Classic saves separate data in this browser. Demo changes do not appear there automatically.</p>' +
+  '</div>';
 }
 
 function viewPassport(){
@@ -1544,7 +1556,8 @@ function viewPassport(){
         hereChip +
         '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
-      '<div class="sec-head"><span class="lab">Recent stops</span><span class="act" role="button" tabindex="0" data-action="tab" data-tab="spiels">All</span></div>' +
+      classicBridge() +
+      '<div class="sec-head"><span class="lab">Recent stops</span></div>' +
       recents +
     '</div>' +
     tabbar("passport");
@@ -1848,18 +1861,24 @@ function render(opts){
   if(sc) sc.scrollTop = keep ? kept : 0;
 }
 
-function syncHash(){
+function syncHash(mode){
   var top = state.stack[state.stack.length - 1];
   var h = top ? (top.view + "/" + top.id) : state.tab;
-  if(("#" + h) !== location.hash){ history.replaceState(null, "", "#" + h); }
+  if(("#" + h) !== location.hash){
+    if(mode === "replace") history.replaceState(null, "", "#" + h);
+    else history.pushState({curlplanRoute:true}, "", "#" + h);
+  }
 }
 function gotoTab(tab){ state.tab = tab; state.stack = []; render(); syncHash(); }
 function push(view, id){ state.stack.push({ view:view, id:id }); render(); syncHash(); }
-function back(){ state.stack.pop(); render(); syncHash(); }
+function back(){
+  if(history.state && history.state.curlplanRoute){ history.back(); return; }
+  state.stack.pop(); render(); syncHash("replace");
+}
 function enterApp(){
   // after auth success: render whatever the boot deep link restored (default
   // state is the passport) instead of resetting to the passport
-  render(); syncHash();
+  render(); syncHash("replace");
 }
 
 function applyHash(){
@@ -2263,7 +2282,7 @@ el("screen").addEventListener("click", function(e){
     case "signout": {
       signOut(); closeSettings(); refreshStore(); refreshMe();
       state.tab = "passport"; state.stack = [];
-      render(); syncHash(); toast("Signed out");
+      render(); syncHash("replace"); toast("Signed out");
       break;
     }
 

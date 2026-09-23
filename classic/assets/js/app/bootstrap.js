@@ -319,8 +319,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const validViews = ["dashboard", "calendar", "planner", "games", "practice", "ice", "issues"];
   const hashView = window.location.hash.slice(1);
-  if (validViews.includes(hashView)) showView(hashView);
-  else if (validViews.includes(currentView)) showView(currentView);
+  if (validViews.includes(hashView)) showView(hashView, true);
+  else if (validViews.includes(currentView)) showView(currentView, true);
 });
 
 window.addEventListener("hashchange", () => {

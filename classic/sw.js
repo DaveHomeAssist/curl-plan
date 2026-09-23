@@ -3,7 +3,7 @@
 // Renamed from the pre-promote "curlplan-sw-v5" so that the root Hi-Fi worker can
 // purge the genuinely-stale v5 cache without touching the live classic cache.
 // CacheStorage is per-origin, so prune only this worker's cache lineage.
-const CACHE_NAME = "curlplan-classic-v6";
+const CACHE_NAME = "curlplan-classic-v7";
 const OWN_PREFIX = "curlplan-classic-";
 
 const PRECACHE_URLS = [
@@ -39,9 +39,22 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// Cache-first for precached assets, network-first for everything else.
+// Refresh the app shell on navigation while retaining an offline fallback.
+// Static assets use the versioned cache until the updated worker activates.
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put("./index.html", clone));
+        }
+        return response;
+      }).catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

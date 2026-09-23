@@ -137,7 +137,7 @@ function getBonspielModalDraft(eventId = "") {
   });
 }
 
-function showView(name) {
+function showView(name, replaceHistory = false) {
   currentView = name;
   saveUiPrefs({ ...uiPrefs, lastView: name });
   document.querySelectorAll(".view").forEach(view => {
@@ -160,7 +160,8 @@ function showView(name) {
     });
   }
   if (window.location.hash !== `#${name}`) {
-    window.history.replaceState(null, "", `#${name}`);
+    if (replaceHistory) window.history.replaceState(null, "", `#${name}`);
+    else window.history.pushState({ curlplanView: name }, "", `#${name}`);
   }
   animateView(name);
   renderSuggestedNext();
