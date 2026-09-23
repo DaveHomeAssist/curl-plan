@@ -47,11 +47,11 @@ Baseline: “Open Calendar” and “Quick Add Event” were clipped at 320 CSS 
 
 ### High — iOS does not scale with the system text setting
 
-Apple's audit reported unsupported Dynamic Type font sizes on every tested native screen on both devices. On an isolated iPhone SE (3rd generation) with iOS 26.5, changing system content size from Large to Accessibility Medium and relaunching the app produced [pixel-identical app content](evidence/curlplan-journey-2026-09-23/native-se3-content-size-compare.json) below the status bar. [Large](evidence/curlplan-journey-2026-09-23/native-se3-content-size-large.png); [Accessibility Medium](evidence/curlplan-journey-2026-09-23/native-se3-content-size-accessibility-medium.png). This is a systemic release blocker; no successful retest yet.
+Apple's audit reported unsupported Dynamic Type font sizes on every tested native screen on both devices. On an isolated iPhone SE (3rd generation) with iOS 26.5, changing system content size from Large to Accessibility Medium and relaunching the app produced [pixel-identical app content](evidence/curlplan-journey-2026-09-23/native-se3-content-size-compare.json) below the status bar. [Large](evidence/curlplan-journey-2026-09-23/native-se3-content-size-large.png); [Accessibility Medium](evidence/curlplan-journey-2026-09-23/native-se3-content-size-accessibility-medium.png). The audit branch now uses scalable text styles in the shared font helpers, scales the Stop hero, adapts its ice-read layout, and lets the tab bar reserve its own safe area. These are repair candidates; a successful larger-text layout retest is still required.
 
 ### High — iOS contrast failures across the core journey
 
-The standard simulator audit recorded 222 `Contrast failed` events and the small simulator 219, spanning the gate, Passport, Stop detail, tabs, and Profile. Repeated appearances of the same underlying view make these event counts larger than the number of distinct controls. [Standard Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-standard-passport.png); [small Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-small-passport.png). Contrast needs a design-token and component-level repair followed by a new audit; no successful retest yet.
+The standard simulator audit recorded 222 `Contrast failed` events and the small simulator 219, spanning the gate, Passport, Stop detail, tabs, and Profile. Repeated appearances of the same underlying view make these event counts larger than the number of distinct controls. [Standard Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-standard-passport.png); [small Passport](evidence/curlplan-journey-2026-09-23/native-audit-ci-small-passport.png). The branch darkens the light muted and red tokens and removes dimming from inactive tab labels. A new screen-level audit must establish which failures remain; no successful full retest yet.
 
 ### High — iOS Passport controls were small or lacked names; repaired on the audit branch
 
@@ -59,7 +59,7 @@ Both CI devices found five undersized hit regions and five elements without desc
 
 ### Medium — Stop detail text-clipping audit flags
 
-The CI audit flagged one label on the standard simulator and two on the SE. The local SE audit named “📍 KELOWNA, BC · JAN 9–11” and “SPEED · 24.1s.” A spacing/wrapping experiment still produced both failures in the focused retest, so it was not retained. The screenshot appears legible at the captured size, but that does not clear the automated finding or larger-text behavior. [Initial SE Stop](evidence/curlplan-journey-2026-09-23/native-audit-se3-stop-detail.png); [focused retest](evidence/curlplan-journey-2026-09-23/native-retest-se3-stop-labels.png).
+The CI audit flagged one label on the standard simulator and two on the SE. The local SE audit named “📍 KELOWNA, BC · JAN 9–11” and “SPEED · 24.1s.” A spacing/wrapping experiment still produced both failures in the focused retest, so it was not retained. The branch now separates the map-pin icon from the city text and moves “24.1s” beneath the speed value; this needs a new audit. The earlier screenshot appears legible at the captured size, but that does not clear the automated finding or larger-text behavior. [Initial SE Stop](evidence/curlplan-journey-2026-09-23/native-audit-se3-stop-detail.png); [focused retest](evidence/curlplan-journey-2026-09-23/native-retest-se3-stop-labels.png).
 
 ### Resolved Medium — small “All” action on the web Passport
 

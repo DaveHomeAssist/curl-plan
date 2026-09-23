@@ -4,6 +4,8 @@ struct StopDetailView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var heroHeight: CGFloat = 232
     let stopID: String
 
     private enum Contribution: String, Identifiable { case visit, iceRead, review; var id: String { rawValue } }
@@ -58,7 +60,7 @@ struct StopDetailView: View {
             Rectangle().fill(.white.opacity(0.12)).frame(height: 2).offset(y: 22)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 232)
+        .frame(height: heroHeight)
         .clipped()
         .overlay(alignment: .topLeading) {
             CircleBackButton(onDark: true) { dismiss() }
@@ -67,9 +69,13 @@ struct StopDetailView: View {
         }
         .overlay(alignment: .bottomLeading) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("📍 \(cityLabel(stop))")
-                    .font(.mono(10, .medium)).tracking(2)
-                    .foregroundStyle(.white.opacity(0.82))
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin").accessibilityHidden(true)
+                    Text(cityLabel(stop))
+                        .font(.mono(10, .medium)).tracking(1)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(.white)
                 (Text(parts.0 + " ") + Text(parts.1).italic())
                     .font(.serif(34))
                     .foregroundColor(.white)
@@ -84,8 +90,11 @@ struct StopDetailView: View {
     private func iceRead(_ stop: Stop) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Eyebrow(text: "Ice read")
-            HStack(spacing: 9) {
-                iceCell(stop.iceSpeed, "SPEED · \(stop.iceSpeedSec)")
+            let layout: AnyLayout = dynamicTypeSize >= .xxLarge
+                ? AnyLayout(VStackLayout(spacing: 9))
+                : AnyLayout(HStackLayout(spacing: 9))
+            layout {
+                iceCell(stop.iceSpeed, "SPEED", suffix: stop.iceSpeedSec)
                 iceCell(stop.iceCurl, "CURL", suffix: "ft")
                 iceCell(stop.iceRec, "YOUR REC", accent: true)
             }
@@ -94,9 +103,9 @@ struct StopDetailView: View {
 
     private func iceCell(_ value: String, _ label: String, suffix: String? = nil, accent: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(value).font(.serif(22)).foregroundStyle(accent ? settings.accent : settings.ink)
-                if let suffix { Text(suffix).font(.system(size: 13)).foregroundStyle(settings.muted) }
+                if let suffix { Text(suffix).font(.grotesk(13)).foregroundStyle(settings.muted) }
             }
             Text(label).font(.mono(9, .medium)).tracking(1).foregroundStyle(settings.muted)
         }

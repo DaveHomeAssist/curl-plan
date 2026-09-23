@@ -8,7 +8,7 @@ on:
 jobs:
   screenflow:
     runs-on: macos-14
-    timeout-minutes: 35
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -52,6 +52,22 @@ jobs:
             -scheme CurlPlan \
             -destination 'platform=iOS Simulator,id=${{ steps.devices.outputs.small }}' \
             -resultBundlePath "$RUNNER_TEMP/curlplan-ui-small.xcresult" \
+            -only-testing:CurlPlanUITests/CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Drive small iPhone with larger text
+        shell: bash
+        run: |
+          xcrun simctl shutdown '${{ steps.devices.outputs.small }}' || true
+          xcrun simctl erase '${{ steps.devices.outputs.small }}'
+          xcrun simctl boot '${{ steps.devices.outputs.small }}'
+          xcrun simctl bootstatus '${{ steps.devices.outputs.small }}' -b
+          xcrun simctl ui '${{ steps.devices.outputs.small }}' content_size accessibility-medium
+          xcodebuild test \
+            -project ios/CurlPlan.xcodeproj \
+            -scheme CurlPlan \
+            -destination 'platform=iOS Simulator,id=${{ steps.devices.outputs.small }}' \
+            -resultBundlePath "$RUNNER_TEMP/curlplan-large-type-small.xcresult" \
+            -parallel-testing-enabled NO \
             -only-testing:CurlPlanUITests/CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch \
             CODE_SIGNING_ALLOWED=NO
       - name: Audit standard iPhone accessibility
@@ -100,6 +116,7 @@ jobs:
           name: curlplan-ios-screenflow
           path: |
             ${{ runner.temp }}/curlplan-ui-*.xcresult
+            ${{ runner.temp }}/curlplan-large-type-*.xcresult
             ${{ runner.temp }}/curlplan-accessibility-*.xcresult
             ${{ runner.temp }}/curlplan-passport-controls-*.xcresult
           if-no-files-found: warn
