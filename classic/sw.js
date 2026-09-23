@@ -9,13 +9,13 @@ const OWN_PREFIX = "curlplan-classic-";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
-  "./assets/css/app.css",
+  "./assets/css/app.css?v=20260923b",
   "./assets/css/theme.css",
   "./assets/js/app/utils.js",
   "./assets/js/app/core.js",
   "./assets/js/app/render.js",
-  "./assets/js/app/actions.js",
-  "./assets/js/app/bootstrap.js",
+  "./assets/js/app/actions.js?v=20260923b",
+  "./assets/js/app/bootstrap.js?v=20260923b",
   "./assets/icons/favicon/favicon.svg",
 ];
 

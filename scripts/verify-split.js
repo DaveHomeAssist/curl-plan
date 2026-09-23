@@ -58,14 +58,16 @@ function countMatches(source, pattern) {
   return (source.match(pattern) || []).length;
 }
 
-assert(html.includes('href="assets/css/app.css"'), "Missing app.css stylesheet include.");
+assert(html.includes('href="assets/css/app.css?v=20260923b"'), "Missing versioned app.css stylesheet include.");
 assert(html.includes('href="assets/icons/favicon/favicon.svg"'), "Missing favicon asset include.");
 
 const scriptMatches = Array.from(html.matchAll(/<script src="([^"]+)"><\/script>/g)).map(match => match[1]);
 assert(
-  JSON.stringify(scriptMatches) === JSON.stringify(expectedScripts),
+  JSON.stringify(scriptMatches.map(src => src.split("?")[0])) === JSON.stringify(expectedScripts),
   `Unexpected script load order: ${scriptMatches.join(", ")}`
 );
+assert(scriptMatches.includes("assets/js/app/actions.js?v=20260923b"), "Missing versioned actions.js include.");
+assert(scriptMatches.includes("assets/js/app/bootstrap.js?v=20260923b"), "Missing versioned bootstrap.js include.");
 
 requiredIds.forEach((id) => {
   const count = countMatches(html, new RegExp(`id="${id}"`, "g"));
