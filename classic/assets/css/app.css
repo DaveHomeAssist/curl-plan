@@ -1758,8 +1758,9 @@
     }
 
     .modal-close {
-      width: 34px;
-      height: 34px;
+      flex: 0 0 44px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       color: var(--stone-light);
       cursor: pointer;
