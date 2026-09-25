@@ -1,0 +1,237 @@
+{
+  "source_commit": "6845bcdd7b70e026072ef5eeaf3b2d1eda1d04d6",
+  "device": "iPhone SE (3rd generation)",
+  "os": "iOS 26.5 Simulator",
+  "starting_data": "fresh isolated simulator; demo entry",
+  "test": "CurlPlanAccessibilityUITests/testDemoScreenAccessibility",
+  "result": "failed",
+  "failure_events": 963,
+  "by_screen": {
+    "demo-gate": {
+      "Dynamic Type font sizes are unsupported": 7,
+      "Contrast failed": 2,
+      "Contrast nearly passed": 1
+    },
+    "passport": {
+      "Hit area is too small": 5,
+      "Dynamic Type font sizes are unsupported": 94,
+      "Element has no description": 5,
+      "Contrast nearly passed": 11,
+      "Contrast failed": 57
+    },
+    "stop-detail": {
+      "Dynamic Type font sizes are unsupported": 98,
+      "Text clipped": 2,
+      "Contrast nearly passed": 5,
+      "Contrast failed": 68
+    },
+    "tab-locker": {
+      "Dynamic Type font sizes are unsupported": 94,
+      "Contrast failed": 45,
+      "Contrast nearly passed": 9
+    },
+    "tab-spiels": {
+      "Dynamic Type font sizes are unsupported": 94,
+      "Contrast failed": 53,
+      "Contrast nearly passed": 4
+    },
+    "tab-roster": {
+      "Dynamic Type font sizes are unsupported": 94,
+      "Contrast failed": 63,
+      "Contrast nearly passed": 3
+    },
+    "curler-profile": {
+      "Dynamic Type font sizes are unsupported": 97,
+      "Contrast failed": 43,
+      "Contrast nearly passed": 9
+    }
+  },
+  "representative_labels": {
+    "Dynamic Type font sizes are unsupported": [
+      {
+        "label": "JM",
+        "events": 29
+      },
+      {
+        "label": "SR",
+        "events": 24
+      },
+      {
+        "label": "EL",
+        "events": 23
+      },
+      {
+        "label": "Details",
+        "events": 18
+      },
+      {
+        "label": "Following",
+        "events": 17
+      },
+      {
+        "label": "Follow",
+        "events": 16
+      },
+      {
+        "label": "Jo Mara",
+        "events": 12
+      },
+      {
+        "label": "Spiels",
+        "events": 12
+      },
+      {
+        "label": "BC",
+        "events": 11
+      },
+      {
+        "label": "Roster",
+        "events": 11
+      },
+      {
+        "label": "DT",
+        "events": 11
+      },
+      {
+        "label": "Sam Reid",
+        "events": 7
+      }
+    ],
+    "Contrast failed": [
+      {
+        "label": "JM",
+        "events": 17
+      },
+      {
+        "label": "EL",
+        "events": 16
+      },
+      {
+        "label": "SR",
+        "events": 15
+      },
+      {
+        "label": "Details",
+        "events": 14
+      },
+      {
+        "label": "Follow",
+        "events": 13
+      },
+      {
+        "label": "Following",
+        "events": 11
+      },
+      {
+        "label": "DT",
+        "events": 9
+      },
+      {
+        "label": "BC",
+        "events": 9
+      },
+      {
+        "label": "MAR 27–29",
+        "events": 6
+      },
+      {
+        "label": "Invite",
+        "events": 6
+      },
+      {
+        "label": "CLUBS",
+        "events": 5
+      },
+      {
+        "label": "WIN",
+        "events": 5
+      }
+    ],
+    "Contrast nearly passed": [
+      {
+        "label": "Locker",
+        "events": 5
+      },
+      {
+        "label": "Spiels",
+        "events": 5
+      },
+      {
+        "label": "Roster",
+        "events": 4
+      },
+      {
+        "label": "Vernon Cashspiel",
+        "events": 4
+      },
+      {
+        "label": "Following",
+        "events": 3
+      },
+      {
+        "label": "2–1",
+        "events": 3
+      },
+      {
+        "label": "Discover",
+        "events": 2
+      },
+      {
+        "label": "SEASON 2025–26 · IN PROGRESS",
+        "events": 2
+      },
+      {
+        "label": "YOUR CIRCLE · 5 CURLERS",
+        "events": 2
+      },
+      {
+        "label": "No credentials are collected or transmitted.",
+        "events": 1
+      },
+      {
+        "label": "YOUR SEASON AHEAD",
+        "events": 1
+      },
+      {
+        "label": "KEL",
+        "events": 1
+      }
+    ],
+    "Hit area is too small": [
+      {
+        "label": "",
+        "events": 4
+      },
+      {
+        "label": "All",
+        "events": 1
+      }
+    ],
+    "Element has no description": [
+      {
+        "label": "",
+        "events": 5
+      }
+    ],
+    "Text clipped": [
+      {
+        "label": "📍 KELOWNA, BC · JAN 9–11",
+        "events": 1
+      },
+      {
+        "label": "SPEED · 24.1s",
+        "events": 1
+      }
+    ]
+  },
+  "screenshots": {
+    "curler-profile": "native-audit-se3-curler-profile.png",
+    "tab-roster": "native-audit-se3-tab-roster.png",
+    "tab-spiels": "native-audit-se3-tab-spiels.png",
+    "tab-locker": "native-audit-se3-tab-locker.png",
+    "stop-detail": "native-audit-se3-stop-detail.png",
+    "passport": "native-audit-se3-passport.png",
+    "demo-gate": "native-audit-se3-demo-gate.png"
+  },
+  "interpretation": "The same tab stacks stay alive, so the audit reports some underlying fixed-font elements on multiple tab screens. Event counts are not unique controls. Actual VoiceOver behavior was not tested."
+}

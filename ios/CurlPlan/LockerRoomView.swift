@@ -177,6 +177,7 @@ private struct PostHead: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).font(.grotesk(nameSize, .bold)).foregroundStyle(settings.ink)
                 Text(meta).font(.mono(metaSize, .medium)).foregroundStyle(settings.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if showMenu { Image(systemName: "ellipsis").foregroundStyle(settings.muted) }
@@ -209,7 +210,7 @@ private struct ResultCard: View {
                     + Text("\(post.scoreAgainst ?? 0)").foregroundColor(settings.ink))
                     .font(.serif(28))
                 Text(post.res ?? "")
-                    .font(.mono(9, .bold)).tracking(1).foregroundStyle(.white)
+                    .font(.mono(11, .bold)).tracking(0).foregroundStyle(.white)
                     .padding(.vertical, 4).padding(.horizontal, 8)
                     .background(settings.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -244,7 +245,7 @@ private struct ReviewCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             PostHead(post: post, metaOverride: "CLUB REVIEW · \(displayTime(post))",
-                     avatarSize: 32, nameSize: 13, metaSize: 10, showMenu: false)
+                     avatarSize: 32, nameSize: 13, metaSize: 11, showMenu: false)
             Text(post.club ?? "").font(.serif(16)).foregroundStyle(settings.ink)
             HStack(spacing: 8) {
                 StarsRow(count: post.stars ?? 0)
@@ -260,21 +261,32 @@ private struct ReviewCard: View {
 private struct SpielPromoCard: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let post: Post
 
     var body: some View {
         let joined = post.spielId.map { store.spielStatus($0) == "You're in" } ?? false
         return VStack(alignment: .leading, spacing: 11) {
-            Text("SHARED SPIEL").font(.mono(10, .medium)).tracking(2).foregroundStyle(settings.accent)
+            Text("SHARED SPIEL")
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+                .foregroundStyle(settings.accent)
             (Text((post.title ?? "") + " ") + Text(post.spielName ?? "").italic())
                 .font(.serif(19))
                 .foregroundColor(settings.ink)
                 .lineSpacing(2)
-            HStack(spacing: 11) {
-                AvatarStack(initials: (post.who ?? []).map { store.curler($0)?.initials ?? "?" }, size: 28)
+            let promoLayout: AnyLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                : AnyLayout(HStackLayout(spacing: 11))
+            promoLayout {
+                AvatarStack(
+                    initials: (post.who ?? []).map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: (post.who ?? []).compactMap { store.curler($0)?.name },
+                    size: 28
+                )
                 Text("\(post.whereText ?? "")\n\(post.whenText ?? "")")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
-                Spacer()
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 if let sid = post.spielId {
                     Button {
                         if joined { store.withdrawSpiel(sid) } else { store.setSpielStatus(sid, "You're in") }

@@ -25,45 +25,105 @@ struct HouseRing: View {
 
 struct AvatarView: View {
     let initials: String
-    var size: CGFloat = 34
+    private let baseSize: CGFloat
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: String, size: CGFloat = 34) {
+        self.initials = initials
+        baseSize = size
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
         Text(initials)
-            .font(.system(size: size * 0.36, weight: .bold))
+            .font(.grotesk(baseSize * 0.36, .bold))
             .foregroundStyle(Color(hex: 0xEEF3F6))
-            .frame(width: size, height: size)
+            .frame(width: scaledSize, height: scaledSize)
             .background(
                 LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
             )
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+            .accessibilityHidden(true)
     }
 }
 
-// Overlapping avatar stack (the "met people" cluster).
+// Compact avatar stack (the "met people" cluster). Keep initials unobscured so
+// every visible avatar remains legible at larger text sizes.
 struct AvatarStack: View {
     @EnvironmentObject var settings: AppSettings
     let initials: [String]
-    var size: CGFloat = 28
-    var plus: String? = nil
+    private let accessibilityNames: [String]
+    private let baseSize: CGFloat
+    private let plus: String?
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: [String], accessibilityNames: [String]? = nil,
+         size: CGFloat = 28, plus: String? = nil) {
+        self.initials = initials
+        self.accessibilityNames = accessibilityNames ?? initials
+        baseSize = size
+        self.plus = plus
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
-        HStack(spacing: -size * 0.32) {
+        HStack(spacing: max(2, scaledSize * 0.08)) {
             ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
-                AvatarView(initials: ini, size: size)
+                AvatarStackGlyph(text: ini, baseSize: baseSize, scaledSize: scaledSize)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
             if let plus {
-                Text(plus)
-                    .font(.system(size: size * 0.34, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: size, height: size)
-                    .background(settings.accent)
-                    .clipShape(Circle())
+                AvatarStackGlyph(text: plus, baseSize: baseSize, scaledSize: scaledSize, accent: true)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(stackLabel)
+    }
+
+    private var stackLabel: String {
+        let people = accessibilityNames.joined(separator: ", ")
+        guard let plus else { return "People: \(people)" }
+        return "People: \(people), \(plus.dropFirst()) more"
+    }
+}
+
+// Initials are redundant visual shorthand. The parent stack supplies the full
+// VoiceOver label, while this canvas keeps the glyph and its circle scaling as
+// one unit instead of exposing constrained individual text elements.
+private struct AvatarStackGlyph: View {
+    @EnvironmentObject var settings: AppSettings
+    let text: String
+    let baseSize: CGFloat
+    let scaledSize: CGFloat
+    var accent = false
+
+    var body: some View {
+        ZStack {
+            if accent {
+                Circle().fill(settings.accent)
+            } else {
+                Circle().fill(
+                    LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+            }
+            Canvas { context, size in
+                let glyph = context.resolve(
+                    Text(text)
+                        .font(.grotesk(baseSize * (accent ? 0.34 : 0.36), .bold))
+                        .foregroundColor(.white)
+                )
+                context.draw(glyph,
+                             at: CGPoint(x: size.width / 2, y: size.height / 2),
+                             anchor: .center)
+            }
+        }
+        .frame(width: scaledSize, height: scaledSize)
+        .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+        .accessibilityHidden(true)
     }
 }
 
@@ -71,6 +131,7 @@ struct AvatarStack: View {
 
 struct StatCell: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let value: String
     let label: String
     var accent: Bool = false
@@ -82,9 +143,10 @@ struct StatCell: View {
                 .font(.serif(size))
                 .foregroundStyle(accent ? settings.accent : settings.ink)
             Text(label)
-                .font(.mono(9, .medium))
-                .tracking(1.2)
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1.2)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
     }
@@ -147,17 +209,21 @@ extension View {
 
 struct Eyebrow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(.mono(11, .medium))
-            .tracking(2)
+            .font(.mono(12, .semibold))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0.5 : 2)
             .foregroundStyle(settings.muted)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 struct SectionHeader: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     var action: String? = nil
     var onTap: (() -> Void)? = nil     // when set, the action label becomes a real control
@@ -165,9 +231,10 @@ struct SectionHeader: View {
     var body: some View {
         HStack {
             Text(title.uppercased())
-                .font(.mono(11, .medium))
-                .tracking(2)
+                .font(.mono(12, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             if let action {
                 if let onTap {
@@ -186,11 +253,12 @@ struct SectionHeader: View {
 // Win/Loss letter in accent (W) or muted (L).
 struct ResultBadge: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let res: String
     var body: some View {
         Text(res)
-            .font(.mono(9, .bold))
-            .tracking(1)
+            .font(.mono(11, .bold))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
             .foregroundStyle(res == "W" ? settings.accent : settings.muted)
     }
 }
@@ -207,6 +275,7 @@ struct PillButton: View {
             Text(title)
                 .font(.grotesk(12, .bold))
                 .foregroundStyle(filled ? .white : settings.ink)
+                .fixedSize(horizontal: true, vertical: true)
                 .padding(.horizontal, 14)
                 .padding(.vertical, filled ? 8 : 6.5)
                 .background(filled ? settings.accent : Color.clear)
@@ -342,14 +411,21 @@ struct CreateScaffold<Content: View>: View {
 // Read-only star rating (filled accent + empty line), matching the web starsRow().
 struct StarsRow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let count: Int
     var size: CGFloat = 13
     var body: some View {
         let n = max(0, min(5, count))
-        return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
-            + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
-            .font(.system(size: size))
-            .tracking(2)
+        return HStack(spacing: 0) {
+            Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
+            Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.muted)
+        }
+            .font(.grotesk(size))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+            .fixedSize(horizontal: true, vertical: true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(n) out of 5 stars")
+            .accessibilityRespondsToUserInteraction(false)
     }
 }
 

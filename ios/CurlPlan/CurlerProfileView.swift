@@ -4,6 +4,8 @@ struct CurlerProfileView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption2) private var identitySize: CGFloat = 92
     let curlerID: String
     @State private var showThread = false
 
@@ -60,7 +62,7 @@ struct CurlerProfileView: View {
                 Circle().strokeBorder(settings.houseBlue, lineWidth: 4).padding(7)
                 AvatarView(initials: c.initials, size: 78)
             }
-            .frame(width: 92, height: 92)
+            .frame(width: identitySize, height: identitySize)
 
             VStack(spacing: 5) {
                 Text(c.name).font(.serif(30)).foregroundStyle(settings.ink)
@@ -102,14 +104,26 @@ struct CurlerProfileView: View {
     }
 
     private func stats(_ c: Curler) -> some View {
-        HStack(spacing: 0) {
-            StatCell(value: c.record, label: "RECORD", size: 24)
-            VRule()
-            StatCell(value: c.win, label: "WIN", accent: true, size: 24)
-            VRule()
-            StatCell(value: "\(c.clubs)", label: "CLUBS", size: 24)
-            VRule()
-            StatCell(value: "\(c.mutual)", label: "MUTUAL", size: 24)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    StatCell(value: c.record, label: "RECORD", size: 24)
+                    StatCell(value: c.win, label: "WIN", accent: true, size: 24)
+                    StatCell(value: "\(c.clubs)", label: "CLUBS", size: 24)
+                    StatCell(value: "\(c.mutual)", label: "MUTUAL", size: 24)
+                }
+                .padding(.horizontal, 8)
+            } else {
+                HStack(spacing: 0) {
+                    StatCell(value: c.record, label: "RECORD", size: 24)
+                    VRule()
+                    StatCell(value: c.win, label: "WIN", accent: true, size: 24)
+                    VRule()
+                    StatCell(value: "\(c.clubs)", label: "CLUBS", size: 24)
+                    VRule()
+                    StatCell(value: "\(c.mutual)", label: "MUTUAL", size: 24)
+                }
+            }
         }
         .padding(.vertical, 14)
         .cpCard()
@@ -141,17 +155,37 @@ struct CurlerProfileView: View {
             Eyebrow(text: "Recent form")
             VStack(spacing: 0) {
                 ForEach(Array(c.form.enumerated()), id: \.element.id) { idx, g in
-                    HStack(spacing: 10) {
-                        Text(g.label).font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
-                        Spacer()
-                        Text(g.score).font(.serif(16)).foregroundStyle(settings.ink)
-                        ResultBadge(res: g.res)
+                    Group {
+                        if dynamicTypeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(g.label)
+                                    .font(.grotesk(13, .semibold))
+                                    .foregroundStyle(settings.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                formResult(g)
+                            }
+                        } else {
+                            HStack(spacing: 10) {
+                                Text(g.label)
+                                    .font(.grotesk(13, .semibold))
+                                    .foregroundStyle(settings.ink)
+                                Spacer()
+                                formResult(g)
+                            }
+                        }
                     }
                     .padding(.vertical, 11).padding(.horizontal, 13)
                     if idx < c.form.count - 1 { Rectangle().fill(settings.line).frame(height: 1) }
                 }
             }
             .cpCard(radius: 14)
+        }
+    }
+
+    private func formResult(_ game: GameLine) -> some View {
+        HStack(spacing: 10) {
+            Text(game.score).font(.serif(16)).foregroundStyle(settings.ink)
+            ResultBadge(res: game.res)
         }
     }
 }

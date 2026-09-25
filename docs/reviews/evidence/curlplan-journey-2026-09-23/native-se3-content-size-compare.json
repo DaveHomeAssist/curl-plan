@@ -1,0 +1,14 @@
+{
+  "device": "iPhone SE (3rd generation)",
+  "os": "iOS 26.5 Simulator",
+  "settings": [
+    "large",
+    "accessibility-medium"
+  ],
+  "screenshots": [
+    "native-se3-content-size-large.png",
+    "native-se3-content-size-accessibility-medium.png"
+  ],
+  "comparison": "pixel-identical below y=60 status bar",
+  "finding": "App content did not respond to the system content size change; this confirms the automated Dynamic Type finding."
+}

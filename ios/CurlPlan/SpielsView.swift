@@ -75,6 +75,7 @@ struct NewSpielSheet: View {
 private struct SpielRow: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showingDetail = false
     let spiel: Spiel
 
@@ -82,38 +83,73 @@ private struct SpielRow: View {
         let status = store.spielStatus(spiel.id)
         let solid = status == "You're in"
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(spiel.whenText).font(.mono(10, .medium)).tracking(2).foregroundStyle(settings.muted)
-                    Text(spiel.name).font(.serif(21)).foregroundStyle(settings.ink)
-                    Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted).padding(.top, 2)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) {
+                    spielIdentity
+                    statusBadge(status, solid: solid)
                 }
-                Spacer()
-                Text(status)
-                    .font(solid ? .mono(9, .bold) : .grotesk(11, .semibold))
-                    .tracking(solid ? 1 : 0)
-                    .foregroundStyle(solid ? .white : settings.muted)
-                    .padding(.vertical, solid ? 4 : 5)
-                    .padding(.horizontal, solid ? 8 : 10)
-                    .background(solid ? settings.accent : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: solid ? 6 : 99, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: solid ? 6 : 99, style: .continuous)
-                            .strokeBorder(solid ? Color.clear : settings.line, lineWidth: 1)
-                    )
+            } else {
+                HStack(alignment: .top) {
+                    spielIdentity
+                    Spacer()
+                    statusBadge(status, solid: solid)
+                }
             }
 
-            HStack(spacing: 11) {
-                AvatarStack(initials: spiel.going.map { store.curler($0)?.initials ?? "?" }, size: 28)
+            let attendeeLayout: AnyLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                : AnyLayout(HStackLayout(spacing: 11))
+            attendeeLayout {
+                AvatarStack(
+                    initials: spiel.going.map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: spiel.going.compactMap { store.curler($0)?.name },
+                    size: 28
+                )
                 Text("\(spiel.going.count) of your circle going")
                     .font(.mono(11, .medium)).foregroundStyle(settings.muted)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 PillButton(title: "Details", filled: false) { showingDetail = true }
             }
         }
         .padding(14)
         .cpCard()
         .sheet(isPresented: $showingDetail) { SpielDetailSheet(spielID: spiel.id) }
+    }
+
+    private var spielIdentity: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(spiel.whenText)
+                .font(.mono(11, .semibold))
+                .tracking(0)
+                .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(spiel.name)
+                .font(.serif(21))
+                .foregroundStyle(settings.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(spiel.whereText)
+                .font(.mono(11, .medium)).foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 2)
+        }
+        .layoutPriority(1)
+    }
+
+    private func statusBadge(_ status: String, solid: Bool) -> some View {
+        Text(status)
+            .font(solid ? .mono(11, .bold) : .grotesk(11, .semibold))
+            .tracking(solid && !dynamicTypeSize.isAccessibilitySize ? 1 : 0)
+            .foregroundStyle(solid ? .white : settings.muted)
+            .padding(.vertical, solid ? 4 : 5)
+            .padding(.horizontal, solid ? 8 : 10)
+            .background(solid ? settings.accent : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: solid ? 6 : 99, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: solid ? 6 : 99, style: .continuous)
+                    .strokeBorder(solid ? Color.clear : settings.line, lineWidth: 1)
+            )
+            .fixedSize(horizontal: true, vertical: true)
     }
 }
 
@@ -132,7 +168,11 @@ struct SpielDetailSheet: View {
                     Capsule().fill(settings.line).frame(width: 38, height: 4)
                         .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 16)
 
-                    Text(spiel.whenText).font(.mono(10, .medium)).tracking(2).foregroundStyle(settings.muted)
+                    Text(spiel.whenText)
+                        .font(.mono(11, .semibold))
+                        .tracking(0)
+                        .foregroundStyle(settings.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(spiel.name).font(.serif(26)).foregroundStyle(settings.ink)
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted)
                         .padding(.top, 2).padding(.bottom, 20)

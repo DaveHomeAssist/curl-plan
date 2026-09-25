@@ -3,7 +3,7 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
-    @EnvironmentObject var router: Router
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSettings = false
 
     var body: some View {
@@ -14,7 +14,7 @@ struct PassportView: View {
                     hero
                     telemetry
                     SeasonMap()
-                    SectionHeader(title: "Recent stops", action: "All") { router.tab = .spiels }
+                    SectionHeader(title: "Recent stops")
                     recentStops
                 }
                 .padding(.horizontal, 20)
@@ -36,8 +36,11 @@ struct PassportView: View {
             Spacer()
             Button { showSettings = true } label: {
                 AvatarView(initials: store.me.initials, size: 34)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Open settings")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
@@ -57,14 +60,26 @@ struct PassportView: View {
 
     private var telemetry: some View {
         let s = store.me.stats
-        return HStack(spacing: 0) {
-            StatCell(value: "\(s.clubs)", label: "CLUBS")
-            VRule()
-            StatCell(value: "\(s.prov)", label: "PROV")
-            VRule()
-            StatCell(value: "\(s.games)", label: "GAMES")
-            VRule()
-            StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+                .padding(.horizontal, 8)
+            } else {
+                HStack(spacing: 0) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    VRule()
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    VRule()
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                    VRule()
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+            }
         }
         .padding(.vertical, 13)
         .cpCard()
@@ -119,7 +134,12 @@ struct RecentStopTile: View {
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
+                AvatarStack(
+                    initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: stop.met.prefix(2).compactMap { store.curler($0)?.name },
+                    size: 20,
+                    plus: stop.plus
+                )
             }
         }
         .padding(12)
@@ -151,13 +171,16 @@ struct VisitedStopTile: View {
 
 private struct StopCode: View {
     @EnvironmentObject var settings: AppSettings
+    @ScaledMetric(relativeTo: .caption) private var dimension: CGFloat = 42
     let code: String
     init(_ code: String) { self.code = code }
     var body: some View {
         Text(code)
             .font(.mono(12, .semibold))
             .foregroundStyle(settings.accent)
-            .frame(width: 42, height: 42)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(width: dimension, height: dimension)
             .background(settings.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
@@ -168,6 +191,8 @@ private struct StopCode: View {
 struct SeasonMap: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var mapHeight: CGFloat = 212
 
     private var mapMeta: String {
         if store.isRealAccount {
@@ -214,13 +239,17 @@ struct SeasonMap: View {
                         HouseRing(size: s.big ? 21 : 13)
                             .overlay(Circle().strokeBorder(.white.opacity(s.here && !store.isRealAccount ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(s.name), \(s.prov)")
+                    .accessibilityHint("Open stop details")
                     .position(x: w * s.x / 100, y: h * s.y / 100)
                 }
             }
         }
-        .frame(height: 212)
+        .frame(height: mapHeight)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
@@ -240,9 +269,10 @@ struct SeasonMap: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Text(mapMeta)
-                .font(.mono(10, .medium))
-                .tracking(1)
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.ink)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, 5)
                 .padding(.horizontal, 9)
                 .background(settings.card.opacity(0.92))

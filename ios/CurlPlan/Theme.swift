@@ -21,14 +21,28 @@ extension Color {
 // them in Info.plist, then swap these helpers to `.custom(...)`.
 
 extension Font {
+    private static func scaledStyle(for size: CGFloat) -> Font.TextStyle {
+        switch size {
+        case ..<11: return .caption2
+        case ..<13: return .caption
+        case ..<15: return .footnote
+        case ..<17: return .subheadline
+        case ..<20: return .body
+        case ..<23: return .title3
+        case ..<27: return .title2
+        case ..<33: return .title
+        default: return .largeTitle
+        }
+    }
+
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .serif)
+        .system(scaledStyle(for: size), design: .serif).weight(weight)
     }
     static func mono(_ size: CGFloat, _ weight: Font.Weight = .medium) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        .system(scaledStyle(for: size), design: .monospaced).weight(weight)
     }
     static func grotesk(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight)
+        .system(scaledStyle(for: size)).weight(weight)
     }
 }
 
@@ -42,12 +56,12 @@ final class AppSettings: ObservableObject {
     @Published var pebble: Bool { didSet { persist() } }
 
     static let accents: [(key: String, color: Color)] = [
-        ("House red", Color(hex: 0xC0402C)),
+        ("House red", Color(hex: 0x9C2F20)),
         ("House blue", Color(hex: 0x2F6F93)),
         ("Granite", Color(hex: 0x41505A))
     ]
 
-    let houseRed = Color(hex: 0xC0402C)
+    let houseRed = Color(hex: 0xB73726)
     let houseBlue = Color(hex: 0x2F6F93)
 
     init() {
@@ -65,10 +79,19 @@ final class AppSettings: ObservableObject {
     }
 
     // Derived tokens
-    var accent: Color { AppSettings.accents.first(where: { $0.key == accentKey })?.color ?? houseRed }
+    var accent: Color {
+        if isArena {
+            switch accentKey {
+            case "House blue": return Color(hex: 0x78C8F0)
+            case "Granite": return Color(hex: 0xBCC8CE)
+            default: return Color(hex: 0xFF826E)
+            }
+        }
+        return AppSettings.accents.first(where: { $0.key == accentKey })?.color ?? Color(hex: 0x9C2F20)
+    }
     var isArena: Bool { theme == .arena }
     var ink: Color { isArena ? Color(hex: 0xEEF3F6) : Color(hex: 0x1B2227) }
-    var muted: Color { isArena ? Color(hex: 0x8A949B) : Color(hex: 0x6A747B) }
+    var muted: Color { isArena ? Color(hex: 0xB3BCC2) : Color(hex: 0x465159) }
     var line: Color { isArena ? Color.white.opacity(0.09) : Color(hex: 0xDDE4E8) }
     var screen: Color { isArena ? Color(hex: 0x13181B) : Color(hex: 0xECEFF1) }
     var card: Color { isArena ? Color(hex: 0x1B2228) : Color.white }

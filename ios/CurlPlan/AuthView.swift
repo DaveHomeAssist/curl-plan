@@ -23,6 +23,7 @@ struct AuthView: View {
                             .font(.serif(32)).foregroundStyle(settings.ink)
                             .multilineTextAlignment(.center)
                         Eyebrow(text: "A working CurlPlan product preview")
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, 20)
 

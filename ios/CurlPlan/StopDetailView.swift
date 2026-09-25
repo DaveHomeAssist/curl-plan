@@ -4,6 +4,8 @@ struct StopDetailView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var heroHeight: CGFloat = 232
     let stopID: String
 
     private enum Contribution: String, Identifiable { case visit, iceRead, review; var id: String { rawValue } }
@@ -58,7 +60,7 @@ struct StopDetailView: View {
             Rectangle().fill(.white.opacity(0.12)).frame(height: 2).offset(y: 22)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 232)
+        .frame(height: heroHeight)
         .clipped()
         .overlay(alignment: .topLeading) {
             CircleBackButton(onDark: true) { dismiss() }
@@ -67,9 +69,14 @@ struct StopDetailView: View {
         }
         .overlay(alignment: .bottomLeading) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("📍 \(cityLabel(stop))")
-                    .font(.mono(10, .medium)).tracking(2)
-                    .foregroundStyle(.white.opacity(0.82))
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin").accessibilityHidden(true)
+                    Text(cityLabel(stop))
+                        .font(.mono(11, .semibold))
+                        .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(.white)
                 (Text(parts.0 + " ") + Text(parts.1).italic())
                     .font(.serif(34))
                     .foregroundColor(.white)
@@ -84,8 +91,11 @@ struct StopDetailView: View {
     private func iceRead(_ stop: Stop) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Eyebrow(text: "Ice read")
-            HStack(spacing: 9) {
-                iceCell(stop.iceSpeed, "SPEED · \(stop.iceSpeedSec)")
+            let layout: AnyLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 9))
+                : AnyLayout(HStackLayout(spacing: 9))
+            layout {
+                iceCell(stop.iceSpeed, "SPEED", suffix: stop.iceSpeedSec)
                 iceCell(stop.iceCurl, "CURL", suffix: "ft")
                 iceCell(stop.iceRec, "YOUR REC", accent: true)
             }
@@ -94,11 +104,21 @@ struct StopDetailView: View {
 
     private func iceCell(_ value: String, _ label: String, suffix: String? = nil, accent: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(value).font(.serif(22)).foregroundStyle(accent ? settings.accent : settings.ink)
-                if let suffix { Text(suffix).font(.system(size: 13)).foregroundStyle(settings.muted) }
+                if let suffix {
+                    Text(suffix.hasSuffix("s") ? "\(suffix.dropLast()) sec" : suffix)
+                        .font(.grotesk(13))
+                        .foregroundStyle(settings.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(suffix.hasSuffix("s") ? "\(suffix.dropLast()) seconds" : suffix)
+                }
             }
-            Text(label).font(.mono(9, .medium)).tracking(1).foregroundStyle(settings.muted)
+            Text(label).font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+                .foregroundStyle(settings.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 11).padding(.horizontal, 12)
@@ -119,7 +139,10 @@ struct StopDetailView: View {
     // MARK: Contribution add-row
 
     private var addRow: some View {
-        HStack(spacing: 8) {
+        let layout: AnyLayout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 8))
+        return layout {
             ghostButton("Log visit") { active = .visit }
             ghostButton("Ice read") { active = .iceRead }
             ghostButton("Write review") { active = .review }
@@ -143,7 +166,7 @@ struct StopDetailView: View {
             HStack {
                 Text("Your games here").font(.grotesk(12, .semibold)).foregroundStyle(settings.ink)
                 Spacer()
-                Text("\(stop.games.count) GP").font(.mono(10, .medium)).foregroundStyle(settings.muted)
+                Text("\(stop.games.count) GP").font(.mono(11, .semibold)).foregroundStyle(settings.muted)
             }
             .padding(.vertical, 11).padding(.horizontal, 13)
             Rectangle().fill(settings.line).frame(height: 1)
@@ -156,15 +179,19 @@ struct StopDetailView: View {
                 .padding(.vertical, 11).padding(.horizontal, 13)
             } else {
                 ForEach(Array(stop.games.enumerated()), id: \.element.id) { idx, g in
-                    HStack(spacing: 10) {
-                        Circle()
-                            .fill(g.res == "W" ? settings.accent : settings.muted)
-                            .opacity(g.res == "W" ? 1 : 0.5)
-                            .frame(width: 7, height: 7)
-                        Text(g.label).font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
-                        Spacer()
-                        Text(g.score).font(.serif(16)).foregroundStyle(settings.ink)
-                        ResultBadge(res: g.res)
+                    Group {
+                        if dynamicTypeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 8) {
+                                gameLabel(g)
+                                gameResult(g)
+                            }
+                        } else {
+                            HStack(spacing: 10) {
+                                gameLabel(g)
+                                Spacer()
+                                gameResult(g)
+                            }
+                        }
                     }
                     .padding(.vertical, 10).padding(.horizontal, 13)
                     if idx < stop.games.count - 1 { Rectangle().fill(settings.line).frame(height: 1) }
@@ -172,6 +199,23 @@ struct StopDetailView: View {
             }
         }
         .cpCard()
+    }
+
+    private func gameLabel(_ game: GameLine) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(game.res == "W" ? settings.accent : settings.muted)
+                .opacity(game.res == "W" ? 1 : 0.7)
+                .frame(width: 7, height: 7)
+            Text(game.label).font(.grotesk(13, .semibold)).foregroundStyle(settings.ink)
+        }
+    }
+
+    private func gameResult(_ game: GameLine) -> some View {
+        HStack(spacing: 10) {
+            Text(game.score).font(.serif(16)).foregroundStyle(settings.ink)
+            ResultBadge(res: game.res)
+        }
     }
 
     @ViewBuilder private var yourVisits: some View {
@@ -214,26 +258,44 @@ struct StopDetailView: View {
             }
             ForEach(stop.met, id: \.self) { id in
                 if let c = store.curler(id) {
-                    HStack(spacing: 11) {
-                        NavigationLink(value: Route.curler(c.id)) {
-                            HStack(spacing: 11) {
-                                AvatarView(initials: c.initials, size: 40)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(c.name).font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
-                                    Text("\(c.role.uppercased()) · \(c.club.uppercased())")
-                                        .font(.mono(10, .medium)).foregroundStyle(settings.muted)
-                                }
+                    Group {
+                        if dynamicTypeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 10) {
+                                personLink(c)
+                                personFollowButton(c)
                             }
-                        }
-                        .buttonStyle(.plain)
-                        Spacer()
-                        PillButton(title: store.isFollowing(c.id) ? "Following" : "Follow",
-                                   filled: !store.isFollowing(c.id)) {
-                            store.toggleFollow(c.id)
+                        } else {
+                            HStack(spacing: 11) {
+                                personLink(c)
+                                Spacer()
+                                personFollowButton(c)
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+
+    private func personLink(_ curler: Curler) -> some View {
+        NavigationLink(value: Route.curler(curler.id)) {
+            HStack(spacing: 11) {
+                AvatarView(initials: curler.initials, size: 40)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(curler.name).font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
+                    Text("\(curler.role.uppercased()) · \(curler.club.uppercased())")
+                        .font(.mono(11, .medium)).foregroundStyle(settings.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func personFollowButton(_ curler: Curler) -> some View {
+        PillButton(title: store.isFollowing(curler.id) ? "Following" : "Follow",
+                   filled: !store.isFollowing(curler.id)) {
+            store.toggleFollow(curler.id)
         }
     }
 

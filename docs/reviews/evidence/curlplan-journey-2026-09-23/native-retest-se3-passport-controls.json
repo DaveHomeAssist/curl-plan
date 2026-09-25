@@ -1,0 +1,17 @@
+{
+  "device": "iPhone SE (3rd generation)",
+  "os": "iOS 26.5 Simulator",
+  "starting_data": "demo session; Passport visible",
+  "source_branch": "audit/ios-screenflow-accessibility-20260923",
+  "test": "CurlPlanAccessibilityUITests/testPassportControlAccessibility",
+  "steps": [
+    "Launch CurlPlan and enter demo if the gate is visible",
+    "Wait for the Kelowna Stop control",
+    "Run Apple accessibility audits for hit region and sufficient element description on Passport"
+  ],
+  "expected": "No undersized or unnamed Passport controls",
+  "actual": "Passed; one test, zero failures",
+  "screenshot": "native-retest-se3-passport-controls.png",
+  "result_bundle": "/tmp/curlplan-audit-passport-retest-se3-20260923.xcresult",
+  "limit": "This focused result does not clear the full Dynamic Type, contrast, or Stop text-clipping findings."
+}

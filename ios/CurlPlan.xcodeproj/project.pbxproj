@@ -31,7 +31,8 @@
 		000000000000000000000046 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* Theme.swift */; };
 		000000000000000000000048 /* MergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* MergeTests.swift */; };
 		00000000000000000000004A /* StoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* StoreTests.swift */; };
-		000000000000000000000057 /* CurlPlanJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* CurlPlanJourneyUITests.swift */; };
+		000000000000000000000057 /* CurlPlanAccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* CurlPlanAccessibilityUITests.swift */; };
+		000000000000000000000059 /* CurlPlanJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000058 /* CurlPlanJourneyUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -97,7 +98,8 @@
 		000000000000000000000047 /* MergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MergeTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000049 /* StoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StoreTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000011 /* CurlPlanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000056 /* CurlPlanJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanJourneyUITests.swift"; sourceTree = "<group>"; };
+		000000000000000000000056 /* CurlPlanAccessibilityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanAccessibilityUITests.swift"; sourceTree = "<group>"; };
+		000000000000000000000058 /* CurlPlanJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurlPlanJourneyUITests.swift"; sourceTree = "<group>"; };
 		00000000000000000000004C /* CurlPlanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -163,7 +165,8 @@
 		00000000000000000000004D /* CurlPlanUITests */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000056 /* CurlPlanJourneyUITests.swift */,
+				000000000000000000000056 /* CurlPlanAccessibilityUITests.swift */,
+				000000000000000000000058 /* CurlPlanJourneyUITests.swift */,
 			);
 			path = CurlPlanUITests;
 			sourceTree = "<group>";
@@ -344,7 +347,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000057 /* CurlPlanJourneyUITests.swift in Sources */,
+				000000000000000000000057 /* CurlPlanAccessibilityUITests.swift in Sources */,
+				000000000000000000000059 /* CurlPlanJourneyUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
