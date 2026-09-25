@@ -150,7 +150,7 @@ describe the **classic** app under `classic/`.
 ## Key data collections
 
 | Collection | Storage key      | Purpose                        |
-| ---------- | ---------------- | ------------------------------ |
+| ---------- | ----------------- | ------------------------------ |
 | events     | `curlplan-v1`    | Calendar events (all types)    |
 | games      | `curlplan-v1`    | Game logs with shot % tracking |
 | practice   | `curlplan-v1`    | Practice session logs          |
@@ -246,3 +246,16 @@ All collections share one localStorage key as a single JSON blob.
 [2026-07-06] [CurlPlan] [feat] Phase 5 — iOS AuthView (sign in/up/demo, pw meter), auth-gated RootView, Settings account row + sign out, personalized Passport (derived stats, visited stops, empty state, demo-only map chrome)
 [2026-07-06] [CurlPlan] [feat] Phase 6 — web backports: functional Locker + Roster search (focus-preserving list re-render), create-spiel/curler sheets with club datalist, Following/Discover made functional on BOTH platforms
 [2026-07-06] [CurlPlan] [test] Phase 7 — scripts/verify-parity.js (12 capabilities, CI-gated), ios/CurlPlanTests/StoreTests.swift; docs refreshed (READMEs, CLAUDE.md)
+
+## Status naming
+
+Name work with one string everywhere (chat status title, session title, Notion
+Status Check Runs "Human Name"):
+
+`Project | 🚦 | Phase | Title → state, reason | MM-DD`
+
+- 🚦: 🟢 complete and verified · 🟡 partial · 🔴 not started, blocked or failed · ⚪ unverifiable.
+  Add ⏳ scheduled, 🙋 awaiting Dave or 🚧 blocked to 🟡/🔴/⚪, never to 🟢.
+- Phase: Research, Design, Build, Audit or Scheduled. MM-DD: date of the latest light change.
+- Every light change gets a new name: a `RENAME:` line in chat and the Notion row updated.
+- Canonical source: https://github.com/DaveHomeAssist/skills/blob/master/status-naming.md
