@@ -40,7 +40,7 @@
       "expected": "Create and search a note, relaunch, and find an edit path",
       "baseline_verdict": "Fail",
       "group": "correction and recovery",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Add named compose control and functional Edit/Delete menu.",
       "acceptance": "Locker > Add > Note > text > Post > relaunch > search > inspect correction menu; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
@@ -48,11 +48,10 @@
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png",
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
         "Physical Safari plain textarea paste control also failed: runner UIPasteboard access returned PBErrorDomain code 11 (invalid general pasteboard), exact readback empty instead of WEBFIX 1234. No reliable clipboard write/restoration can be claimed. Unsupported experiment removed; original control and xcresult retained locally. /tmp/curlplan-remediation/safari-paste-control.xcresult. Preview server stopped.",
-        "Physical Ignacio Safari: visible keyboard taps passed the plain textarea control (23.917 sec), then testWebPostRecoveryOnPreparedIPad passed (75.832 sec) on current preview: created unique note, Close/reopen recovered exact draft, published, edited, read corrected card, confirmed deletion and absence. Only own prior interrupted audit note and current note removed. Synthetic per-character typeText still failed on plain control; no app input workaround introduced. Evidence: safari-key-labels.xcresult and safari-note-caret.xcresult under /tmp/curlplan-remediation; A2-web-corrected-note.png and A2-safari-note-results.csv retained. Single coordinate tap avoids accidental double-tap selection when editing."
+        "Physical Ignacio Safari: visible keyboard taps passed the plain textarea control (23.917 sec), then testWebPostRecoveryOnPreparedIPad passed (75.832 sec) on current preview: created unique note, Close/reopen recovered exact draft, published, edited, read corrected card, confirmed deletion and absence. Only own prior interrupted audit note and current note removed. Synthetic per-character typeText still failed on plain control; no app input workaround introduced. Evidence: safari-key-labels.xcresult and safari-note-caret.xcresult under /tmp/curlplan-remediation; A2-web-corrected-note.png and A2-safari-note-results.csv retained. Single coordinate tap avoids accidental double-tap selection when editing.",
+        "Physical Ignacio final A2 acceptance: Safari testWebPostRecoveryOnPreparedIPad passed 118.370 sec with zero skips: draft Close, terminate Safari, launch fresh URL on same origin, exact draft recovery, publish/correct, terminate/reload, search exact unique note, confirm original text absent, delete, close search, terminate/reload and verify deletion plus empty new draft. Native testOwnedNoteCorrectionAndDraftRecovery also passed with added corrected-note search and Clear search after relaunch; earlier draft recovery, correction, delete cancellation and durable deletion assertions retained. /tmp/curlplan-remediation/safari-note-reload.xcresult and native-note-search.xcresult. Screenshot A2-web-reload-search.png inspected. Browser search now names Search feed/Close search and labels its input. A2 verified for local demo note workflow on these two surfaces, not cloud sync or social delivery."
       ],
-      "remaining": [
-        "Physical Safari reload/relaunch and note search remain; current browser pass covers same-page draft recovery and create/edit/delete, not durable reload or full A2 acceptance."
-      ]
+      "remaining": []
     },
     {
       "id": "A3",
@@ -537,7 +536,8 @@
         "Native visit/ice-read forms now retain per-club/per-kind drafts, including date, sheet, speed, curl and note. Close retains, alert-confirmed discard preserves existing records, save clears only matching draft. Optional storage bucket preserves old-backup compatibility. 19 SwiftPM core tests passed, including contribution recovery, separate club/kind buckets, signed-out isolation, backup round-trip/legacy acceptance, discard preservation and save cleanup.",
         "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open.",
         "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png.",
-        "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open."
+        "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open.",
+        "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately."
       ],
       "remaining": [
         "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",

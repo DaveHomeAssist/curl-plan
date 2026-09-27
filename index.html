@@ -1640,13 +1640,13 @@ function lockerTabLink(id, label){
 
 function viewLocker(){
   var searchRow = ui.lockerSearch
-    ? '<div class="field" style="margin:12px 0 0;"><input id="locker-q" placeholder="Search the feed" value="' + esc(ui.lockerQ) + '" autocomplete="off"></div>'
+    ? '<div class="field" style="margin:12px 0 0;"><input id="locker-q" aria-label="Search the feed" placeholder="Search the feed" value="' + esc(ui.lockerQ) + '" autocomplete="off"></div>'
     : '';
   return statusbar(false) +
     '<div class="appbar" style="flex-direction:column; align-items:stretch; gap:0;">' +
       '<div style="display:flex; align-items:center; justify-content:space-between;">' +
         '<h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Locker Room</h1>' +
-        '<button class="backbtn" data-action="toggle-locker-search" aria-label="Search" style="font-size:17px;">' + (ui.lockerSearch ? '✕' : '⌕') + '</button></div>' +
+        '<button class="backbtn" data-action="toggle-locker-search" aria-label="' + (ui.lockerSearch ? 'Close search' : 'Search feed') + '" style="font-size:17px;">' + (ui.lockerSearch ? '✕' : '⌕') + '</button></div>' +
       searchRow +
       '<div style="display:flex; gap:22px; margin-top:12px; border-bottom:1px solid var(--line);">' +
         lockerTabLink("following", "Following") + lockerTabLink("discover", "Discover") + '</div>' +

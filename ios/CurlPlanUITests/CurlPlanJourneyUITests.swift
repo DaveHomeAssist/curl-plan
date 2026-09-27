@@ -816,6 +816,12 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
         XCTAssertTrue(app.staticTexts[corrected].waitForExistence(timeout: 4))
         XCTAssertFalse(app.staticTexts[original].exists)
+        app.buttons["Search feed"].tap()
+        let search = app.textFields["Search the feed"]
+        search.tap(); search.typeText(corrected); hideAuditKeyboard()
+        XCTAssertTrue(app.staticTexts[corrected].exists)
+        app.buttons["Clear search"].tap()
+        XCTAssertEqual(search.value as? String, "Search the feed")
         let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         proof.name = "A2-corrected-note-relaunch"; proof.lifetime = .keepAlways; add(proof)
         actions.tap(); app.buttons["Delete post"].tap()
@@ -950,6 +956,11 @@ final class CurlPlanJourneyUITests: XCTestCase {
         if demo.waitForExistence(timeout: 3) { demo.tap() }
         let locker = safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "Locker")).firstMatch
         XCTAssertTrue(locker.waitForExistence(timeout: 10))
+        func reloadLocker() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?audit=" + UUID().uuidString)!)
+            XCTAssertTrue(locker.waitForExistence(timeout: 10)); locker.tap()
+        }
         locker.tap()
         // Recover only the uniquely identified post left by the interrupted audit.
         if safari.staticTexts["Webfixsbpkwe"].exists && safari.buttons.matching(identifier: "Post actions").count == 1 {
@@ -975,6 +986,7 @@ final class CurlPlanJourneyUITests: XCTestCase {
         let hide = safari.buttons["Hide keyboard"].firstMatch
         if hide.exists { hide.tap() }
         safari.buttons["Close"].firstMatch.tap()
+        reloadLocker()
         safari.buttons["New post"].tap()
         XCTAssertEqual(body.value as? String, original)
         safari.buttons["Post"].firstMatch.tap()
@@ -986,12 +998,27 @@ final class CurlPlanJourneyUITests: XCTestCase {
         if hide.exists { hide.tap() }
         safari.buttons["Save changes"].tap()
         XCTAssertTrue(safari.staticTexts[original + " corrected"].waitForExistence(timeout: 5))
+        reloadLocker()
+        safari.buttons["Search feed"].tap()
+        let search = safari.textFields["Search the feed"]
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        tapSafariLetters(marker, into: search, in: safari)
+        if hide.exists { hide.tap() }
+        XCTAssertTrue(safari.staticTexts[original + " corrected"].waitForExistence(timeout: 5))
+        XCTAssertFalse(safari.staticTexts[original].exists)
         let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
         proof.name = "A2-web-corrected-note"; proof.lifetime = .keepAlways; add(proof)
         safari.buttons["Post actions"].firstMatch.tap(); safari.buttons["Delete post"].tap()
         XCTAssertTrue(safari.buttons["OK"].waitForExistence(timeout: 3))
         safari.buttons["OK"].tap()
         XCTAssertFalse(safari.staticTexts[original + " corrected"].exists)
+        safari.buttons["Close search"].tap()
+        XCTAssertFalse(search.exists)
+        reloadLocker()
+        XCTAssertFalse(safari.staticTexts[original + " corrected"].exists)
+        safari.buttons["New post"].tap()
+        XCTAssertTrue((body.value as? String ?? "").isEmpty || (body.value as? String ?? "").contains("Share a thought"))
+        safari.buttons["Close"].firstMatch.tap()
     }
 
     // Physical Safari can drop synthetic typeText events. Tap the visible keys and

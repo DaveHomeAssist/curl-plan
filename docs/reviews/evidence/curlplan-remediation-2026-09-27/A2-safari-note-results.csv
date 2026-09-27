@@ -2,3 +2,5 @@ activity,surface,check,result,evidence,remaining
 A2,Ignacio Safari,Plain textarea synthetic per-character input with readback,Fail,safari-paced.xcresult,Synthetic typing remains unreliable
 A2,Ignacio Safari,Plain textarea visible-key input,Pass,safari-key-labels.xcresult,Letters only in control
 A2/A30,Ignacio Safari,Note create draft Close/reopen publish edit delete,Pass,safari-note-caret.xcresult; A2-web-corrected-note.png,Reload/relaunch search and other forms remain
+A2/A30,Ignacio Safari,Draft restart/reload; correction restart/search; deletion restart and empty draft,Pass,safari-note-reload.xcresult; A2-web-reload-search.png,Other forms and real accounts remain separate
+A2,Ignacio native,Draft recovery correction relaunch search clear delete cancellation durable deletion,Pass,native-note-search.xcresult,Local demo only
