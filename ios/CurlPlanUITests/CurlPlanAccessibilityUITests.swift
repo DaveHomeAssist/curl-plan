@@ -1,6 +1,41 @@
 import XCTest
 
 final class CurlPlanAccessibilityUITests: XCTestCase {
+    func testContributionAndSettingsLabels() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(app.buttons["Passport"].firstMatch.waitForExistence(timeout: 8))
+        app.buttons["Passport"].firstMatch.tap()
+        app.buttons["Open settings"].tap()
+        for accent in ["House red", "House blue", "Granite"] {
+            let control = app.buttons["Accent: \(accent)"]
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+            XCTAssertGreaterThanOrEqual(control.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+        }
+        XCTAssertTrue(app.switches["Pebble texture"].exists)
+        let settings = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        settings.name = "A32-settings-labels"
+        settings.lifetime = .keepAlways
+        add(settings)
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["Locker"].firstMatch.waitForExistence(timeout: 8))
+        app.buttons["Locker"].firstMatch.tap()
+        app.buttons["curlplan.compose.open"].tap()
+        XCTAssertTrue(app.textFields["What's the word?"].waitForExistence(timeout: 3))
+        app.buttons["Cancel"].tap()
+        app.buttons["Passport"].firstMatch.tap()
+        app.buttons["curlplan.stop.kelowna"].tap()
+        app.buttons["Log visit"].tap()
+        XCTAssertTrue(app.textFields["Date"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["Note (optional)"].exists)
+        app.buttons["Cancel"].tap()
+    }
+
     func testPassportControlAccessibility() throws {
         let app = XCUIApplication()
         app.launch()

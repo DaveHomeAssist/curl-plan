@@ -34,14 +34,18 @@ struct SettingsSheet: View {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .strokeBorder(settings.ink, lineWidth: settings.accentKey == a.key ? 2 : 0)
                                 )
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Accent: \(a.key)")
+                        .accessibilityValue(settings.accentKey == a.key ? "Selected" : "Not selected")
                     }
                 }
             }
 
             settingRow(title: "Pebble texture", sub: "ICE GRAIN OVERLAY") {
-                Toggle("", isOn: Binding(get: { settings.pebble }, set: { settings.pebble = $0 }))
+                Toggle("Pebble texture", isOn: Binding(get: { settings.pebble }, set: { settings.pebble = $0 }))
                     .labelsHidden()
                     .tint(settings.accent)
             }

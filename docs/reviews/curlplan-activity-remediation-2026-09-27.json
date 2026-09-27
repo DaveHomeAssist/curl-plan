@@ -1,0 +1,398 @@
+{
+  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1\u2013A33",
+  "started": "2026-09-27",
+  "audit_run": "IPAD33-20260927",
+  "audit_source_sha256": "7fcb5b2e454fe4530c0249293f2ccacaf90590ca17f785df1e1868b23f558d69",
+  "audit_page": "https://app.notion.com/p/7a78d275474e42258ecd3c606c062ea6",
+  "web_audit_page": "https://app.notion.com/p/8618238b94c142cebf58b9f74191db4c",
+  "results_database": "https://app.notion.com/p/3e8255fc8f448007ac64fe409fb97ccd",
+  "baseline_commit": "b9a04d814e7b0d91d2ee7b95f260a6c9686af8b3",
+  "main_reconciled": "3c69fcb7e3df87f1b074d4ca4c208d4711d850db",
+  "rules": [
+    "Baseline grades are historical; do not overwrite them with implementation status.",
+    "A pass requires current behavior and persistence evidence for the scoped activity.",
+    "Use the physical iPad for interactive verification; one local build job and no local simulator.",
+    "Keep account, synchronization and external delivery evidence separate from local demo behavior.",
+    "Do not merge while required CI is failing.",
+    "Use existing audit/project records; do not create competing Notion pages."
+  ],
+  "items": [
+    {
+      "id": "A1",
+      "activity": "Record and retrieve a club visit",
+      "expected": "Save a date and visit note, relaunch and retrieve it",
+      "baseline_verdict": "Pass",
+      "group": "record integrity",
+      "status": "pending_reconciliation",
+      "required_action": "Reconcile record summary with game list.",
+      "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A2",
+      "activity": "Create, find and correct a personal note",
+      "expected": "Create and search a note, relaunch, and find an edit path",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "pending_reconciliation",
+      "required_action": "Add named compose control and functional Edit/Delete menu.",
+      "acceptance": "Locker > Add > Note > text > Post > relaunch > search > inspect correction menu; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A3",
+      "activity": "Plan attendance at a bonspiel",
+      "expected": "Open details, change attendance intent, relaunch and confirm",
+      "baseline_verdict": "Pass",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Clarify that status is local attendance intent.",
+      "acceptance": "Spiels > Brier Patch Details > Watching > Done > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A4",
+      "activity": "Find and follow a curler",
+      "expected": "Open profile, follow, verify list and profile after relaunch",
+      "baseline_verdict": "Pass",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Retain current behavior.",
+      "acceptance": "Roster > Sam > Follow > Back > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A5",
+      "activity": "Prepare for a game",
+      "expected": "Find game preparation fields and save/retrieve a plan",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Add native game preparation or a clearly labeled bridge to the planner.",
+      "acceptance": "Inspect all four tabs and Settings for game preparation; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A6",
+      "activity": "Understand the app and first action",
+      "expected": "Read entry gate, understand demo limits and enter",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "pending_reconciliation",
+      "required_action": "Keep the demo limitation visible near actions that resemble live social features.",
+      "acceptance": "Settings > Sign out > read gate > Explore demo > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A7",
+      "activity": "Find next game or event",
+      "expected": "Find date, time, location and preparation for next commitment",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Use structured dates/times and a next-event summary.",
+      "acceptance": "Spiels > list > Details > inspect dates, location and next-action information; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A8",
+      "activity": "Move between sections and return",
+      "expected": "Switch tabs with detail open, return and Back",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "pending_reconciliation",
+      "required_action": "Retain tab detail-state behavior.",
+      "acceptance": "Passport > Kelowna > Locker > Passport > Back; visit all tabs; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A9",
+      "activity": "Reopen a bookmarked detail",
+      "expected": "Open a supported native detail link or recover invalid target",
+      "baseline_verdict": "Unavailable",
+      "group": "navigation and accessibility",
+      "status": "pending_reconciliation",
+      "required_action": "Add supported native detail links and invalid-link recovery.",
+      "acceptance": "Inspect native Info.plist, app entry and visible controls for detail-link support; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A10",
+      "activity": "Find and return from original planner",
+      "expected": "Find Classic entry and return path",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Expose a labeled Classic route with separate-data explanation, or incorporate planning.",
+      "acceptance": "Inspect gate, Passport and Settings for Classic access; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A11",
+      "activity": "Add a league game, practice or event",
+      "expected": "Create dated event and recover it",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Name the Add control and use validated structured dates; make initial status clear.",
+      "acceptance": "Spiels > Add > name/location/dates > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A12",
+      "activity": "Reschedule or cancel an event",
+      "expected": "Change event date or remove event without stale data",
+      "baseline_verdict": "Unavailable",
+      "group": "correction and recovery",
+      "status": "pending_reconciliation",
+      "required_action": "Add editable dates and safe event cancellation/removal.",
+      "acceptance": "Spiels > Details > inspect editing and removal controls; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A13",
+      "activity": "Review bonspiel details",
+      "expected": "Find venue, dates, format, entry requirements and organizer",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Add the information needed to decide whether to attend.",
+      "acceptance": "Spiels > Details > inspect decision-making information > Done; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A14",
+      "activity": "Organize a bonspiel trip",
+      "expected": "Store draws, travel, hotel and team arrangements",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Add travel, accommodation, draw and team details when trip planning is in scope.",
+      "acceptance": "Spiels > Add and Details > inspect travel/team/draw fields; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A15",
+      "activity": "Review schedule for conflicts",
+      "expected": "Compare commitments, identify overlaps and past/upcoming",
+      "baseline_verdict": "Fail",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Represent dates as structured values and surface schedule conflicts.",
+      "acceptance": "Spiels > compare date labels > inspect calendar and conflict affordances; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A16",
+      "activity": "Record a game result",
+      "expected": "Enter opponent, scores and note, relaunch and recover",
+      "baseline_verdict": "Pass",
+      "group": "record integrity",
+      "status": "pending_reconciliation",
+      "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
+      "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A17",
+      "activity": "Correct or remove result",
+      "expected": "Find edit/delete and verify dependent totals",
+      "baseline_verdict": "Unavailable",
+      "group": "correction and recovery",
+      "status": "pending_reconciliation",
+      "required_action": "Implement result edit/delete and recompute dependent totals.",
+      "acceptance": "Locker > inspect result card ellipsis and source for edit/delete; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A18",
+      "activity": "Review season progress",
+      "expected": "Reconcile record and games and see impact of saved result",
+      "baseline_verdict": "Partial",
+      "group": "record integrity",
+      "status": "pending_reconciliation",
+      "required_action": "Label sample statistics clearly and reconcile game-level figures; connect personal results when enabled.",
+      "acceptance": "Passport > season totals > Kelowna > compare record and game list; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A19",
+      "activity": "Log practice session",
+      "expected": "Record drills, duration, focus and observations",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Add structured practice logging with retrieval.",
+      "acceptance": "Inspect tabs and form types for practice logging; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A20",
+      "activity": "Carry lessons into next game",
+      "expected": "Retrieve past notes and connect them to preparation",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "pending_reconciliation",
+      "required_action": "Add a visible route from takeaways to a saved next-game goal.",
+      "acceptance": "Locker > create practice-related note > search > relaunch; inspect onward preparation route; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A21",
+      "activity": "Record and retrieve ice conditions",
+      "expected": "Save speed, curl, note and recover by club/sheet/date",
+      "baseline_verdict": "Partial",
+      "group": "record integrity",
+      "status": "pending_reconciliation",
+      "required_action": "Add sheet/date context and labeled fields; retest landscape typing.",
+      "acceptance": "Passport > Kelowna > Ice read > curl/note > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A22",
+      "activity": "Write or revise club review",
+      "expected": "Save rating and review and discover revision path",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "pending_reconciliation",
+      "required_action": "Provide Edit/Delete for the user's own reviews and verify changed rating/text.",
+      "acceptance": "Passport > Kelowna > Write review > review > Save > relaunch; inspect revision path; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A23",
+      "activity": "Organize teammates or find a spare",
+      "expected": "Find people, positions and relevant availability",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Verify club entry manually; expose spare availability and scheduling if supported.",
+      "acceptance": "Roster > inspect positions/spare labels > Add > enter contact > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A24",
+      "activity": "Stop following someone",
+      "expected": "Unfollow and verify persistence and feed behavior",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Add a feed-specific fixture when testing filtering changes.",
+      "acceptance": "Roster > Sam > Unfollow > relaunch > reopen; feed-specific effect not exercised; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A25",
+      "activity": "Share result or review",
+      "expected": "Post and understand visibility and actual publication",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Keep local visibility explicit; require receiver-side proof when sharing is enabled.",
+      "acceptance": "Locker > Add > inspect local-publication copy > attempt Result post; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A26",
+      "activity": "Contact another curler",
+      "expected": "Save message and understand delivery state",
+      "baseline_verdict": "Pass",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Add an explicit Close control; verify receiver-side delivery when messaging is enabled.",
+      "acceptance": "Roster > Sam > Message > text > Send > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A27",
+      "activity": "Resume after closing",
+      "expected": "Background/foreground, terminate/relaunch, recover saved work",
+      "baseline_verdict": "Pass",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Consider restoring the last screen if users expect task continuity.",
+      "acceptance": "Roster > Home button > reactivate > terminate > relaunch > inspect saved state; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A28",
+      "activity": "Work through connection interruption",
+      "expected": "Use app offline and understand saved/pending state",
+      "baseline_verdict": "Not tested",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Run offline recovery with a wired device connection, then restore networking.",
+      "acceptance": "Inspect physical transport; offline disruption withheld because transport is wireless; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A29",
+      "activity": "Export and restore records",
+      "expected": "Find usable backup and restore with safe preview",
+      "baseline_verdict": "Unavailable",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Add backup export and validated restore.",
+      "acceptance": "Settings > inspect backup/restore controls; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A30",
+      "activity": "Recover from mistakes",
+      "expected": "Check empty validation and unsaved-draft dismissal/recovery",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "pending_reconciliation",
+      "required_action": "Preserve drafts or confirm discard on interactive dismissal; keep empty-field guards.",
+      "acceptance": "Open empty Note/Spiel/Ice forms > inspect disabled Save/Post; attempt draft dismissal and relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A31",
+      "activity": "Use app comfortably on device",
+      "expected": "Review landscape iPad layout, controls and clipping",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "pending_reconciliation",
+      "required_action": "Extend to Dynamic Type and split-view before release.",
+      "acceptance": "Rotate portrait/landscape > capture screens > Arena > relaunch > restore Ice; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A32",
+      "activity": "Use keyboard or assistive technology",
+      "expected": "Check labels, target sizes, focus and spoken navigation",
+      "baseline_verdict": "Partial",
+      "group": "navigation and accessibility",
+      "status": "partially_verified",
+      "required_action": "Label settings controls and text fields, then test actual keyboard and VoiceOver journeys.",
+      "acceptance": "Run hit-region/description/clipping audit on four tabs; inspect form/settings hierarchy; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testContributionAndSettingsLabels passed 2026-09-27; settings controls and compose/visit text fields expose labels; accent targets >=44 points.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-settings-labels.png",
+        "verify-app, verify-parity, generated-seed staleness and feature-review checks passed."
+      ],
+      "remaining": [
+        "Resolve existing full accessibility CI failures from run 36288266893.",
+        "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms."
+      ]
+    },
+    {
+      "id": "A33",
+      "activity": "Manage account and personal data",
+      "expected": "Sign in, restore, sign out and delete when enabled",
+      "baseline_verdict": "Unavailable",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Keep real account release gated until create/restore/delete can be tested.",
+      "acceptance": "Settings > Sign out > read gate > Explore demo; inspect account capability statement; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    }
+  ],
+  "checkpoint": {
+    "phase": "Initial reconciliation and A32 control labels",
+    "delivery": "PR18 update; merge gated on CI",
+    "next": "A2/A17 post correction and A30 draft recovery, followed by remaining requirement groups",
+    "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
+  }
+}

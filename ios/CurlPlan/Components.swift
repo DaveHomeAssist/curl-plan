@@ -310,6 +310,7 @@ struct CPField: View {
             Text(label.uppercased())
                 .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
             TextField(placeholder, text: $text)
+                .accessibilityLabel(label)
                 .font(.grotesk(15)).foregroundStyle(settings.ink)
                 .tint(settings.accent)
                 .keyboardType(keyboard)
@@ -466,8 +467,10 @@ struct CPTextArea: View {
                     Text(placeholder)
                         .font(.grotesk(15)).foregroundStyle(settings.muted)
                         .padding(.vertical, 11).padding(.horizontal, 13)
+                        .accessibilityHidden(true)
                 }
                 TextField("", text: $text, axis: .vertical)
+                    .accessibilityLabel(label.isEmpty ? placeholder : label)
                     .font(.grotesk(15)).foregroundStyle(settings.ink)
                     .tint(settings.accent)
                     .padding(.vertical, 11).padding(.horizontal, 13)

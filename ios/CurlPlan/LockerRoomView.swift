@@ -70,6 +70,8 @@ struct LockerRoomView: View {
             .buttonStyle(.plain)
             .padding(.trailing, 18)
             .padding(.bottom, 104)
+            .accessibilityLabel("New post")
+            .accessibilityIdentifier("curlplan.compose.open")
         }
         .sheet(isPresented: $showingCompose) { ComposeSheet() }
     }
