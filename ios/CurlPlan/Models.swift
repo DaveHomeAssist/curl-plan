@@ -151,6 +151,43 @@ struct AuthState: Codable {
     var session: String? = nil     // "demo" | nil
 }
 
+// Composer drafts are private local state, separate from published posts.
+struct PostDraft: Codable, Hashable {
+    enum Kind: String, Codable, CaseIterable { case note = "Note", result = "Result", review = "Review" }
+    var kind: Kind = .note
+    var body = ""
+    var opponent = ""
+    var scoreFor = ""
+    var scoreAgainst = ""
+    var club = ""
+    var stars = 5
+    var note = ""
+
+    init() {}
+    init(post: Post) {
+        kind = post.kind == .result ? .result : post.kind == .review ? .review : .note
+        body = post.body ?? ""
+        opponent = post.vs ?? ""
+        if opponent.lowercased().hasPrefix("vs ") { opponent = String(opponent.dropFirst(3)) }
+        scoreFor = post.scoreFor.map(String.init) ?? ""
+        scoreAgainst = post.scoreAgainst.map(String.init) ?? ""
+        club = post.club ?? ""
+        stars = post.stars ?? 5
+        note = post.note ?? ""
+    }
+
+    var isValid: Bool {
+        switch kind {
+        case .note: return !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .review: return !club.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (1...5).contains(stars)
+        case .result:
+            guard let f = Int(scoreFor.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let a = Int(scoreAgainst.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+            return f >= 0 && a >= 0
+        }
+    }
+}
+
 // MARK: - Per-account mutable state (the "store" blob)
 
 struct AppState: Codable, Hashable {
@@ -164,6 +201,8 @@ struct AppState: Codable, Hashable {
     var reviews: [String: [ReviewEntry]] = [:]
     var iceReads: [String: [IceReadEntry]] = [:]
     var threads: [String: [Message]] = [:]   // curlerId -> messages
+    var postDrafts: [String: PostDraft] = [:] // "new" or the owned post ID
+    var tombstones: [String: [String: Double]] = [:]
 
     init() {}
 
@@ -182,6 +221,8 @@ struct AppState: Codable, Hashable {
         if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews) { reviews = v }
         if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads) { iceReads = v }
         if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
+        if let v = try? c.decodeIfPresent([String: PostDraft].self, forKey: .postDrafts) { postDrafts = v }
+        if let v = try? c.decodeIfPresent([String: [String: Double]].self, forKey: .tombstones) { tombstones = v }
     }
 }
 
@@ -337,6 +378,66 @@ final class Store: ObservableObject {
         let p = Post(id: Store.uid("p"), kind: .review, author: "me", at: Store.now(),
                      club: club, stars: max(1, min(5, stars)), note: note)
         state.posts.insert(p, at: 0)
+    }
+
+    // MARK: Owned posts and drafts
+
+    func canEditPost(_ id: String) -> Bool {
+        !Seed.feed.contains { $0.id == id } && state.posts.contains {
+            $0.id == id && $0.author == "me" && $0.kind != .spiel
+        }
+    }
+
+    func savePostDraft(_ draft: PostDraft, editingID: String? = nil) {
+        guard currentUser() != nil, editingID.map(canEditPost) ?? true else { return }
+        state.postDrafts[editingID ?? "new"] = draft
+    }
+
+    func discardPostDraft(editingID: String? = nil) {
+        state.postDrafts.removeValue(forKey: editingID ?? "new")
+    }
+
+    @discardableResult
+    func savePost(_ draft: PostDraft, editingID: String? = nil) -> Bool {
+        guard currentUser() != nil, draft.isValid else { return false }
+        if let id = editingID, !canEditPost(id) { return false }
+        let kind: Post.Kind = draft.kind == .note ? .note : draft.kind == .result ? .result : .review
+        let existing = editingID.flatMap { id in state.posts.first { $0.id == id } }
+        if let existing, existing.kind != kind { return false }
+        var post = existing ?? Post(id: Store.uid("p"), kind: kind, author: "me")
+        post.at = max(Store.now(), (existing?.at ?? 0).nextUp)
+        post.body = draft.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        if kind == .result {
+            guard let f = Int(draft.scoreFor.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let a = Int(draft.scoreAgainst.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
+            post.scoreFor = f; post.scoreAgainst = a
+            post.res = f == a ? "TIE" : f > a ? "WIN" : "LOSS"
+            let opponent = draft.opponent.trimmingCharacters(in: .whitespacesAndNewlines)
+            post.vs = opponent.isEmpty ? "" : "vs \(opponent)"
+        } else if kind == .review {
+            post.club = draft.club.trimmingCharacters(in: .whitespacesAndNewlines)
+            post.stars = draft.stars
+            post.note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        var next = state
+        if let index = next.posts.firstIndex(where: { $0.id == post.id }) {
+            next.posts[index] = post
+        } else { next.posts.insert(post, at: 0) }
+        next.postDrafts.removeValue(forKey: editingID ?? "new")
+        state = next
+        return true
+    }
+
+    @discardableResult
+    func deletePost(_ id: String) -> Bool {
+        guard canEditPost(id), let post = state.posts.first(where: { $0.id == id }) else { return false }
+        var next = state
+        next.tombstones["posts", default: [:]][id] = max(Store.now(), post.at ?? 0)
+        next.posts.removeAll { $0.id == id }
+        next.likes.removeValue(forKey: id)
+        next.postDrafts.removeValue(forKey: id)
+        state = next
+        return true
     }
 
     // MARK: Stop-detail contributions

@@ -88,7 +88,7 @@ while IFS= read -r path; do
     ios/CurlPlan/StopDetailView.swift)
       add_rows FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-A11Y FR-CLAIMS
       ;;
-    ios/CurlPlan/LockerRoomView.swift)
+    ios/CurlPlan/ComposeSheet.swift|ios/CurlPlan/LockerRoomView.swift)
       add_rows FR-LOCKER FR-RESULTS FR-CIRCLE FR-ATTENDANCE FR-A11Y FR-CLAIMS
       ;;
     ios/CurlPlan/RosterView.swift)

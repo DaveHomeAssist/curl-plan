@@ -9,6 +9,63 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testOwnedNoteCorrectionAndDraftRecovery() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8))
+        tab("Locker").tap()
+        app.buttons["curlplan.compose.open"].tap()
+        let field = app.textFields["What's the word?"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        let existing = field.value as? String ?? ""
+        guard existing.isEmpty else { throw XCTSkip("Preserve an existing composer draft; use a dedicated empty draft to run this test") }
+        let original = "CPFIX typo " + UUID().uuidString.prefix(8)
+        field.tap(); field.typeText(original)
+        hideAuditKeyboard()
+        // Real interactive dismissal: the draft must survive the sheet and process.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.2)).tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8))
+        tab("Locker").tap(); app.buttons["curlplan.compose.open"].tap()
+        XCTAssertEqual(field.value as? String, original)
+        app.buttons["Post"].tap()
+        XCTAssertTrue(app.staticTexts[original].waitForExistence(timeout: 4))
+        let actions = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.post.actions.")).firstMatch
+        actions.tap(); app.buttons["Edit post"].tap()
+        XCTAssertEqual(field.value as? String, original)
+        let corrected = original.replacingOccurrences(of: "typo", with: "corrected")
+        field.tap()
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: original.count))
+        field.typeText(corrected)
+        hideAuditKeyboard()
+        app.buttons["Save changes"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertTrue(app.staticTexts[corrected].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.staticTexts[original].exists)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A2-corrected-note-relaunch"; proof.lifetime = .keepAlways; add(proof)
+        actions.tap(); app.buttons["Delete post"].tap()
+        app.alerts.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts[corrected].exists)
+        actions.tap(); app.buttons["Delete post"].tap()
+        app.alerts.buttons["Delete post"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertFalse(app.staticTexts[corrected].exists)
+        app.buttons["curlplan.compose.open"].tap()
+        XCTAssertEqual(field.value as? String, "", "Published/deleted drafts must not reappear")
+        app.buttons["Close"].tap()
+    }
+
+    private func hideAuditKeyboard() {
+        let hide = app.buttons["Hide keyboard"].firstMatch
+        if hide.waitForExistence(timeout: 1) { hide.tap() }
+    }
+
     func testDemoTabsDetailsAndRelaunch() {
         let enter = app.buttons["curlplan.demo.enter"]
         if !enter.waitForExistence(timeout: 3) {

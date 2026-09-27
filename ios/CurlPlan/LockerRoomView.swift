@@ -167,6 +167,8 @@ private struct PostHead: View {
     var nameSize: CGFloat = 14
     var metaSize: CGFloat = 11
     var showMenu: Bool = true
+    @State private var showingEditor = false
+    @State private var confirmingDelete = false
 
     var body: some View {
         let author = post.author.flatMap { store.curler($0) }
@@ -182,12 +184,29 @@ private struct PostHead: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            if showMenu { Image(systemName: "ellipsis").foregroundStyle(settings.muted) }
+            if showMenu && store.canEditPost(post.id) {
+                Menu {
+                    Button("Edit post") { showingEditor = true }
+                    Button("Delete post", role: .destructive) { confirmingDelete = true }
+                } label: {
+                    Image(systemName: "ellipsis").foregroundStyle(settings.ink)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .accessibilityLabel("Post actions")
+                .accessibilityIdentifier("curlplan.post.actions.\(post.id)")
+            }
         }
         if let author, !isMe {
             NavigationLink(value: Route.curler(author.id)) { head }.buttonStyle(.plain)
         } else {
             head
+                .sheet(isPresented: $showingEditor) { ComposeSheet(editingPostID: post.id) }
+                .alert("Delete this post?", isPresented: $confirmingDelete) {
+                    Button("Delete post", role: .destructive) { store.deletePost(post.id) }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This removes your local post and updates your personal result totals. This cannot be undone.")
+                }
         }
     }
 }
@@ -247,7 +266,7 @@ private struct ReviewCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             PostHead(post: post, metaOverride: "CLUB REVIEW · \(displayTime(post))",
-                     avatarSize: 32, nameSize: 13, metaSize: 11, showMenu: false)
+                     avatarSize: 32, nameSize: 13, metaSize: 11)
             Text(post.club ?? "").font(.serif(16)).foregroundStyle(settings.ink)
             HStack(spacing: 8) {
                 StarsRow(count: post.stars ?? 0)

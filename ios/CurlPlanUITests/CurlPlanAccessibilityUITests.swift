@@ -27,7 +27,7 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         app.buttons["Locker"].firstMatch.tap()
         app.buttons["curlplan.compose.open"].tap()
         XCTAssertTrue(app.textFields["What's the word?"].waitForExistence(timeout: 3))
-        app.buttons["Cancel"].tap()
+        app.buttons["Close"].tap()
         app.buttons["Passport"].firstMatch.tap()
         app.buttons["curlplan.stop.kelowna"].tap()
         app.buttons["Log visit"].tap()

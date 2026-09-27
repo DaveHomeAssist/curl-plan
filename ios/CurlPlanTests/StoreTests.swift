@@ -24,6 +24,81 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(s.isFollowing("sam"))
     }
 
+    func testOwnedPostEditPreservesIdentityAndPersists() {
+        let s = Store(); s.exploreDemo()
+        s.addNote(body: "typo")
+        let original = s.state.posts[0]
+        s.toggleLike(original.id)
+        var draft = PostDraft(post: original)
+        draft.body = "corrected"
+        s.savePostDraft(draft, editingID: original.id)
+        XCTAssertEqual(Store().state.postDrafts[original.id]?.body, "corrected")
+        XCTAssertEqual(Store().state.posts[0].body, "typo", "Draft edits must not publish")
+        XCTAssertTrue(s.savePost(draft, editingID: original.id))
+        let restored = Store()
+        XCTAssertEqual(restored.state.posts.count, 1)
+        XCTAssertEqual(restored.state.posts[0].id, original.id)
+        XCTAssertEqual(restored.state.posts[0].body, "corrected")
+        XCTAssertTrue(restored.isLiked(original.id))
+        XCTAssertNil(restored.state.postDrafts[original.id])
+    }
+
+    func testResultCorrectionAndDeletionRecomputeStats() {
+        let s = Store(); s.exploreDemo()
+        s.addResult(body: "result", scoreFor: 8, scoreAgainst: 5, vs: "North")
+        let id = s.state.posts[0].id
+        var draft = PostDraft(post: s.state.posts[0])
+        draft.scoreFor = " 2 "; draft.scoreAgainst = "5"
+        XCTAssertTrue(s.savePost(draft, editingID: id))
+        XCTAssertEqual(Store().state.posts[0].res, "LOSS")
+        XCTAssertEqual(Store().derivedStats().win, 0)
+        XCTAssertEqual(Store().state.posts[0].vs, "vs North")
+        s.savePostDraft(draft, editingID: id)
+        XCTAssertTrue(s.deletePost(id))
+        let restored = Store()
+        XCTAssertEqual(restored.derivedStats().games, 0)
+        XCTAssertFalse(restored.allPosts.contains { $0.id == id })
+        XCTAssertNotNil(restored.state.tombstones["posts"]?[id])
+        XCTAssertNil(restored.state.postDrafts[id])
+        XCTAssertFalse(s.savePost(draft, editingID: id), "Stale editor must not recreate a deleted post")
+    }
+
+    func testPostValidationAndSeedOwnership() {
+        let s = Store(); s.exploreDemo()
+        var draft = PostDraft(); draft.kind = .result
+        draft.scoreFor = "-1"; draft.scoreAgainst = "5"
+        XCTAssertFalse(s.savePost(draft))
+        draft.scoreFor = "4.5"
+        XCTAssertFalse(s.savePost(draft))
+        draft.kind = .note; draft.body = "  \n "
+        XCTAssertFalse(s.savePost(draft))
+        draft.body = "valid"
+        for post in Seed.feed {
+            XCTAssertFalse(s.deletePost(post.id))
+            XCTAssertFalse(s.savePost(draft, editingID: post.id))
+        }
+        XCTAssertTrue(s.state.posts.isEmpty)
+        XCTAssertTrue(s.state.tombstones.isEmpty)
+    }
+
+    func testDraftRecoveryIsolationAndExplicitDiscard() {
+        let s = Store(); s.exploreDemo()
+        var draft = PostDraft(); draft.body = "recover after dismissal"
+        draft.opponent = "North"; draft.scoreFor = "8"; draft.scoreAgainst = "5"
+        s.savePostDraft(draft)
+        XCTAssertEqual(Store().state.postDrafts["new"], draft)
+        s.signOut()
+        XCTAssertNil(Store().state.postDrafts["new"])
+        s.exploreDemo()
+        XCTAssertEqual(s.state.postDrafts["new"], draft)
+        s.discardPostDraft()
+        XCTAssertNil(Store().state.postDrafts["new"])
+        s.savePostDraft(draft)
+        XCTAssertTrue(s.savePost(draft))
+        XCTAssertNil(Store().state.postDrafts["new"])
+        XCTAssertEqual(Store().state.posts.count, 1)
+    }
+
     func testLikePersistsAcrossReload() {
         let s = Store(); s.exploreDemo()
         s.toggleLike("seed-1")

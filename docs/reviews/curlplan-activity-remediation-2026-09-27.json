@@ -34,10 +34,16 @@
       "expected": "Create and search a note, relaunch, and find an edit path",
       "baseline_verdict": "Fail",
       "group": "correction and recovery",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add named compose control and functional Edit/Delete menu.",
       "acceptance": "Locker > Add > Note > text > Post > relaunch > search > inspect correction menu; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: testOwnedNoteCorrectionAndDraftRecovery passed; draft survived interactive dismissal and process relaunch, published note edited in place and persisted, delete cancellation retained note, confirmed deletion persisted.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png"
+      ],
+      "remaining": [
+        "Retest search after correction; implement and verify web parity."
+      ]
     },
     {
       "id": "A3",
@@ -199,10 +205,15 @@
       "expected": "Find edit/delete and verify dependent totals",
       "baseline_verdict": "Unavailable",
       "group": "correction and recovery",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Implement result edit/delete and recompute dependent totals.",
       "acceptance": "Locker > inspect result card ellipsis and source for edit/delete; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result."
+      ],
+      "remaining": [
+        "Run the result correction journey through the physical iPad UI; implement and verify web parity."
+      ]
     },
     {
       "id": "A18",
@@ -342,10 +353,15 @@
       "expected": "Check empty validation and unsaved-draft dismissal/recovery",
       "baseline_verdict": "Fail",
       "group": "correction and recovery",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Preserve drafts or confirm discard on interactive dismissal; keep empty-field guards.",
       "acceptance": "Open empty Note/Spiel/Ice forms > inspect disabled Save/Post; attempt draft dismissal and relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: composer draft recovered after interactive dismissal and process relaunch; publishing cleared draft. Store tests verified explicit discard and account-bucket isolation."
+      ],
+      "remaining": [
+        "Verify visible discard confirmation; extend recovery to event, ice, visit and review forms; implement web parity."
+      ]
     },
     {
       "id": "A31",
@@ -390,9 +406,9 @@
     }
   ],
   "checkpoint": {
-    "phase": "Initial reconciliation and A32 control labels",
+    "phase": "Native post correction and composer draft recovery",
     "delivery": "PR18 update; merge gated on CI",
-    "next": "A2/A17 post correction and A30 draft recovery, followed by remaining requirement groups",
+    "next": "Complete correction/recovery coverage and web parity; resolve required accessibility CI failures; continue remaining activity groups",
     "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
   }
 }
