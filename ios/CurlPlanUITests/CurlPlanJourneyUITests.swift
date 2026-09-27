@@ -944,6 +944,104 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebReviewControlTargets() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        safari.open(URL(string: previewURL + "?controls=review#stop/kelowna")!)
+        XCTAssertTrue(safari.buttons["Write review"].waitForExistence(timeout: 10)); safari.buttons["Write review"].tap()
+        let field = safari.textViews.firstMatch
+        let value = field.value as? String ?? ""
+        guard value.isEmpty || value.contains("Great ice, friendly club") else { throw XCTSkip("Preserve existing review draft") }
+        for name in ["Save review", "Discard draft"] {
+            XCTAssertGreaterThanOrEqual(safari.buttons[name].frame.height, 44)
+            XCTAssertTrue(safari.buttons[name].isHittable)
+        }
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A22-web-review-controls"; proof.lifetime = .keepAlways; add(proof)
+        safari.buttons["Discard draft"].tap(); safari.buttons["Cancel"].tap()
+        XCTAssertTrue(safari.buttons["Save review"].exists)
+        safari.buttons["Discard draft"].tap(); safari.buttons["OK"].tap()
+        XCTAssertFalse(field.exists)
+    }
+
+    func testWebClubReviewCorrectionAndRecovery() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
+            throw XCTSkip("Requires a physical iPad Safari preview URL")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        func restart() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?review=" + UUID().uuidString + "#stop/kelowna")!)
+            XCTAssertTrue(safari.buttons["Write review"].waitForExistence(timeout: 10))
+        }
+        func rating(_ n: Int) -> XCUIElement {
+            safari.descendants(matching: .any)[String(n) + (n == 1 ? " star" : " stars")].firstMatch
+        }
+        func assertRating(_ n: Int) {
+            for value in 1...5 {
+                let selected = rating(value).isSelected || (rating(value).value as? String) == "1"
+                XCTAssertEqual(selected, value == n, "Exactly one rating choice is selected")
+            }
+        }
+        restart()
+        // Remove only the exact owned review left by the interrupted cancellation check.
+        if safari.staticTexts["Reviewjuuemg corrected"].exists {
+            safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Edit review"].tap()
+            XCTAssertEqual(safari.textViews.firstMatch.value as? String, "Reviewjuuemg corrected")
+            safari.webViews.firstMatch.buttons["Close"].tap()
+            safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Delete review"].tap()
+            safari.buttons["OK"].tap(); restart()
+            XCTAssertFalse(safari.staticTexts["Reviewjuuemg corrected"].exists)
+        }
+        safari.buttons["Write review"].tap()
+        let field = safari.textViews.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        let existing = field.value as? String ?? ""
+        guard existing.isEmpty || existing.contains("Great ice, friendly club") || existing == "Reviewzkcinr" else { throw XCTSkip("Preserve existing review draft") }
+        let marker = "review" + String((0..<6).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+        if existing != "Reviewzkcinr" { field.tap(); tapSafariLetters(marker, into: field, in: safari) }
+        let original = try XCTUnwrap(field.value as? String)
+        if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() }
+        rating(3).tap(); assertRating(3)
+        safari.webViews.firstMatch.buttons["Close"].tap()
+        restart(); safari.buttons["Write review"].tap()
+        XCTAssertEqual(field.value as? String, original); assertRating(3)
+        safari.buttons["Save review"].tap()
+        XCTAssertTrue(safari.staticTexts[original].waitForExistence(timeout: 5), "Wait for save acknowledgement before terminating Safari")
+        restart()
+        let saved = safari.staticTexts[original]
+        if !saved.isHittable { safari.webViews.firstMatch.swipeUp() }
+        XCTAssertTrue(saved.exists)
+        safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Edit review"].tap()
+        XCTAssertEqual(field.value as? String, original); assertRating(3)
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        tapSafariLetters(" corrected", into: field, in: safari, prefix: original)
+        if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() }
+        rating(5).tap(); assertRating(5)
+        safari.buttons["Save review"].tap()
+        XCTAssertTrue(safari.staticTexts[original + " corrected"].waitForExistence(timeout: 5))
+        restart()
+        let corrected = safari.staticTexts[original + " corrected"]
+        if !corrected.isHittable { safari.webViews.firstMatch.swipeUp() }
+        XCTAssertTrue(corrected.exists); XCTAssertFalse(saved.exists)
+        safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Edit review"].tap()
+        XCTAssertEqual(field.value as? String, original + " corrected"); assertRating(5)
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A22-web-corrected-review"; proof.lifetime = .keepAlways; add(proof)
+        safari.webViews.firstMatch.buttons["Close"].tap()
+        safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Delete review"].tap()
+        safari.buttons["Cancel"].tap()
+        safari.webViews.firstMatch.buttons["Close"].tap()
+        restart(); XCTAssertTrue(corrected.exists)
+        safari.buttons["Review actions"].firstMatch.tap(); safari.buttons["Delete review"].tap()
+        safari.buttons["OK"].tap()
+        restart(); XCTAssertFalse(corrected.exists)
+    }
+
     func testWebFollowPersistenceAndFeedFiltering() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
             throw XCTSkip("Requires a physical iPad Safari preview URL")

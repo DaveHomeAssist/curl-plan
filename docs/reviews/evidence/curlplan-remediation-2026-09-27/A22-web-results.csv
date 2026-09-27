@@ -1,0 +1,4 @@
+activity,surface,check,result,evidence,scope
+A22/A30,Ignacio Safari,Draft creation and restart recovery; immediate termination before save acknowledgement,Partial,web-review-cancel.xcresult,Draft retained; saved record not acknowledged
+A22,Ignacio Safari,Resume exact draft; acknowledged save/restart; correction text/rating/restart; cancel deletion/restart; confirmed delete/restart,Pass,web-review-ack.xcresult; A22-web-corrected-review.png,Local reviews; final run resumes prior marked draft
+A22/A30/A32,Ignacio Safari,Save/Discard44pt hittable; discard cancel/confirm,Pass,web-review-targets.xcresult; A22-web-review-controls.png,Blank owned draft only; broader accessibility open

@@ -393,18 +393,18 @@
       "expected": "Save rating and review and discover revision path",
       "baseline_verdict": "Fail",
       "group": "correction and recovery",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Provide Edit/Delete for the user's own reviews and verify changed rating/text.",
       "acceptance": "Passport > Kelowna > Write review > review > Save > relaunch; inspect revision path; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Physical Ignacio: testClubReviewCorrectionAndRecovery passed; created review, edited note/rating, closed and relaunched to recover draft, saved correction, canceled deletion, then confirmed deletion.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A22-corrected-review.png",
         "16 StoreTests passed on Ignacio; final targeted testReviewCorrectionDraftAndDeletionPersist passed after correcting deletion-marker bucket, including stale-data merge rejection.",
-        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Ignacio Safari review acceptance spans explicit runs: web-review-cancel.xcresult created marked Reviewzkcinr and recovered its 3-star draft after restart but immediate termination after Save had no acknowledged saved record; draft remained. Final web-review-ack.xcresult passed 79.341 sec, resumed that exact draft, verified 3 stars, awaited saved-review appearance, relaunched/read, corrected text and rating to5, awaited save, relaunched/reopened/read exact text and exactly one selected rating, canceled deletion and verified after restart, confirmed deletion and verified absence after restart. Earlier owned Reviewjuuemg corrected was removed after exact editor-value ownership check. No user records removed. A22-web-corrected-review.png inspected. Synthetic save-tap/termination timing is retained as an unacknowledged-save observation, not a completed-save data-loss claim.",
+        "Browser rating controls now expose only chosen rating as pressed; cumulative star fill retained. Standalone .b actions now receive shared styling and minimum44px height, fixing tiny Discard draft. Physical testWebReviewControlTargets passed12.689sec: Save/Discard each >=44pt and hittable, blank draft discard cancellation retained editor, confirmed discard closed it. A22-web-review-controls.png inspected; web-review-targets.xcresult. Local review acceptance does not establish external review publication."
       ],
-      "remaining": [
-        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control."
-      ]
+      "remaining": []
     },
     {
       "id": "A23",
@@ -541,7 +541,8 @@
         "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open.",
         "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png.",
         "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open.",
-        "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately."
+        "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately.",
+        "Physical Safari 3-star review draft text/rating recovered after process restart; exact interrupted marked draft resumed successfully. Blank-review Discard Cancel and confirm passed with44pt controls. web-review-ack.xcresult and web-review-targets.xcresult; contribution/event draft scope remains open."
       ],
       "remaining": [
         "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",
@@ -612,7 +613,8 @@
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests.",
         "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources.",
         "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance.",
-        "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open."
+        "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open.",
+        "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
