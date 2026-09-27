@@ -84,10 +84,11 @@
       "required_action": "Add native game preparation or a clearly labeled bridge to the planner.",
       "acceptance": "Inspect all four tabs and Settings for game preparation; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Native Settings now offers a verified route to the original Classic game planner with separate-data explanation."
+        "Native Settings now offers a verified route to the original Classic game planner with separate-data explanation.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
-        "Run actual game preparation and retrieval through Classic; do not treat reaching the planner as completing preparation."
+        "Complete physical Safari game preparation/retrieval acceptance; native saved preparation now verified directly."
       ]
     },
     {
@@ -269,10 +270,11 @@
       "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
-        "Native/browser result editors now select a saved event; optional event identity/name snapshot persists through drafts and result edits. Native result card opens event detail with its recorded results; browser card opens linked-event result summary. Rescheduling keeps stable links; deleting an event preserves results and saved event-name snapshot; explicit unlink supported. 21 SwiftPM tests passed, including lifecycle/backup/totals assertions. Browser actual-function checks passed for draft recovery, linked summary rendering, reschedule, deletion, correction and unlink. Native device-target build and app/parity/diff checks passed."
+        "Native/browser result editors now select a saved event; optional event identity/name snapshot persists through drafts and result edits. Native result card opens event detail with its recorded results; browser card opens linked-event result summary. Rescheduling keeps stable links; deleting an event preserves results and saved event-name snapshot; explicit unlink supported. 21 SwiftPM tests passed, including lifecycle/backup/totals assertions. Browser actual-function checks passed for draft recovery, linked summary rendering, reschedule, deletion, correction and unlink. Native device-target build and app/parity/diff checks passed.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
-        "Complete physical native and Safari event-selection/result-save/relaunch/link-opening acceptance. Event identity does not substitute for per-draw game identifiers in a multi-game bonspiel."
+        "Complete physical Safari result-link acceptance. Event linkage does not substitute for per-draw identity in multi-game bonspiels."
       ]
     },
     {
@@ -340,10 +342,11 @@
       "acceptance": "Locker > create practice-related note > search > relaunch; inspect onward preparation route; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure.",
-        "Physical practice test opened Use in game preparation and confirmed corrected observation displayed as the lesson, then canceled. Target selection/save/readback was not exercised."
+        "Physical practice test opened Use in game preparation and confirmed corrected observation displayed as the lesson, then canceled. Target selection/save/readback was not exercised.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
-        "Complete physical native and Safari source-to-target selection/save/relaunch/readback acceptance."
+        "Complete physical Safari source-to-target selection/save/relaunch/readback acceptance."
       ]
     },
     {

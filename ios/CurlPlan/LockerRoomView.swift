@@ -372,6 +372,7 @@ private struct LessonPreparationSheet: View {
                         Text("Choose a game").tag("")
                         ForEach(events) { Text($0.name + " · " + $0.scheduleLabel).tag($0.id) }
                     }
+                    .accessibilityIdentifier("curlplan.prepare.event")
                     if let event = store.spiel(eventID) {
                         Section("Existing preparation") { Text(event.preparation?.isEmpty == false ? event.preparation! : "None recorded") }
                     }

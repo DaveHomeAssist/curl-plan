@@ -9,6 +9,74 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testLessonTransferAndLinkedResult() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let marker = "FLOW20260927A", lesson = "Flow lesson balanced finish", resultNote = "Flow result 20260927A"
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        if !app.staticTexts[marker].exists {
+            app.buttons["curlplan.event.add"].tap()
+            let name = app.textFields["Name"], current = name.value as? String ?? ""
+            guard ["", "League game", "Draft 11A1F039", marker].contains(current) else { throw XCTSkip("Preserve event draft") }
+            name.tap(); name.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count)); name.typeText(marker); hideAuditKeyboard()
+            let location = app.textFields["Location"]
+            let oldLocation = location.value as? String ?? ""
+            location.tap(); location.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            location.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: oldLocation.count)); location.typeText("Flow club"); hideAuditKeyboard()
+            app.buttons["Save"].tap()
+        }
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+        tab("Locker").tap()
+        if !app.staticTexts[lesson].exists {
+            app.buttons["curlplan.compose.open"].tap()
+            let note = app.textFields["What's the word?"]
+            guard note.exists, ["", lesson].contains(note.value as? String ?? "") else { throw XCTSkip("Preserve composer draft") }
+            if note.value as? String != lesson { note.tap(); note.typeText(lesson); hideAuditKeyboard() }
+            app.buttons["Post"].tap()
+        }
+        XCTAssertTrue(app.staticTexts[lesson].waitForExistence(timeout: 4))
+        app.buttons["Use in game preparation"].firstMatch.tap()
+        app.descendants(matching: .any)["curlplan.prepare.event"].firstMatch.tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", marker)).firstMatch.tap()
+        app.buttons["Add lesson to preparation"].tap()
+        XCTAssertTrue(app.staticTexts["Lesson saved to game preparation."].waitForExistence(timeout: 4))
+        app.buttons["View game preparation"].tap()
+        XCTAssertTrue(app.staticTexts["Lesson for this game: " + lesson].waitForExistence(timeout: 4))
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.event.details.sp-")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Lesson for this game: " + lesson].exists)
+        app.terminate(); app.launch(); XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        if !app.staticTexts[resultNote].exists {
+            app.buttons["curlplan.compose.open"].tap(); app.buttons["Result"].tap()
+            app.descendants(matching: .any)["curlplan.result.event"].firstMatch.tap()
+            app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", marker)).firstMatch.tap()
+            for (label,value) in [("For","8"),("Against","3"),("Opponent","Flow opponent"),("Note (optional)",resultNote)] {
+                let field=app.textFields[label]; field.tap(); field.typeText(value); hideAuditKeyboard()
+            }
+            app.buttons["Post"].tap()
+        }
+        app.terminate(); app.launch(); XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertTrue(app.staticTexts[resultNote].waitForExistence(timeout: 4))
+        app.buttons["Event: " + marker].tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "8–3 vs Flow opponent")).firstMatch.exists)
+        let proof=XCTAttachment(screenshot:XCUIScreen.main.screenshot());proof.name="A16-A20-linked-event";proof.lifetime = .keepAlways;add(proof)
+        app.buttons["Delete event"].tap(); app.alerts.buttons["Delete event"].tap()
+        app.terminate(); app.launch(); XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertTrue(app.staticTexts["Event: " + marker + " (removed)"].waitForExistence(timeout: 4))
+        for text in [resultNote, lesson] {
+            XCTAssertTrue(app.staticTexts[text].exists)
+            app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.post.actions.")).firstMatch.tap()
+            app.buttons["Delete post"].tap(); app.alerts.buttons["Delete post"].tap()
+        }
+        app.terminate(); app.launch(); XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertFalse(app.staticTexts[resultNote].exists); XCTAssertFalse(app.staticTexts[lesson].exists)
+    }
+
     func testVisitDraftRecoveryAndDiscard() throws { try verifyContributionDraftRecovery(["Log visit"]) }
     func testIceDraftRecoveryAndDiscard() throws { try verifyContributionDraftRecovery(["Ice read"]) }
 

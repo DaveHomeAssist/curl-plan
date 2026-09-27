@@ -77,6 +77,7 @@ struct ComposeSheet: View {
                                 Text("Previously linked event (removed)").tag(id)
                             }
                         }
+                        .accessibilityIdentifier("curlplan.result.event")
                         HStack(spacing: 12) {
                             CPField(label: "For", text: $draft.scoreFor, placeholder: "8", keyboard: .numberPad)
                             CPField(label: "Against", text: $draft.scoreAgainst, placeholder: "5", keyboard: .numberPad)
