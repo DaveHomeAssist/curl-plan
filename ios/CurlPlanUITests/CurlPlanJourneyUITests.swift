@@ -9,6 +9,38 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testEventCreateEditAndDelete() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons["curlplan.event.add"].tap()
+        let marker = "Event " + UUID().uuidString.prefix(8)
+        app.textFields["Name"].tap(); app.textFields["Name"].typeText(marker); hideAuditKeyboard()
+        app.textFields["Location"].tap(); app.textFields["Location"].typeText("Club sheet 2"); hideAuditKeyboard()
+        XCTAssertEqual(app.datePickers.count, 2)
+        app.buttons["Save"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+        let detail = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.event.details.sp-")).firstMatch
+        detail.tap(); app.buttons["Edit event"].tap()
+        let name = app.textFields["Name"]
+        XCTAssertEqual(name.value as? String, marker)
+        name.tap(); name.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        name.typeText(" corrected"); hideAuditKeyboard()
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts[marker + " corrected"].waitForExistence(timeout: 4))
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A11-dated-event"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Delete event"].tap(); app.alerts.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts[marker + " corrected"].exists)
+        app.buttons["Delete event"].tap(); app.alerts.buttons["Delete event"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        XCTAssertFalse(app.staticTexts[marker + " corrected"].exists)
+    }
+
     func testBackupExportAndImportControls() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]

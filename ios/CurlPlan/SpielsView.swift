@@ -14,11 +14,13 @@ struct SpielsView: View {
                     Image(systemName: "plus")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(settings.ink)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 44, height: 44)
                         .overlay(Circle().strokeBorder(settings.line, lineWidth: 1.5))
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Add event")
+                .accessibilityIdentifier("curlplan.event.add")
             }
             .padding(.horizontal, 20)
             .padding(.top, 6)
@@ -27,9 +29,17 @@ struct SpielsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     Eyebrow(text: "Your season ahead")
-                    ForEach(store.spiels) { sp in
-                        SpielRow(spiel: sp)
+                    if let next = store.upcomingEvents().first {
+                        SectionHeader(title: "Next event")
+                        Text(next.name + " · " + next.scheduleLabel + " · " + next.whereText)
+                            .font(.grotesk(15, .semibold)).foregroundStyle(settings.ink)
                     }
+                    SectionHeader(title: "Upcoming and in progress")
+                    ForEach(store.upcomingEvents()) { SpielRow(spiel: $0) }
+                    SectionHeader(title: "Past or not going")
+                    ForEach(store.state.addedSpiels.filter { $0.startAt != nil && (($0.endAt ?? 0) < Store.now() || store.spielStatus($0.id) == "Not going") }.sorted { ($0.startAt ?? 0) > ($1.startAt ?? 0) }) { SpielRow(spiel: $0) }
+                    SectionHeader(title: "Undated events and samples")
+                    ForEach(store.spiels.filter { $0.startAt == nil }) { SpielRow(spiel: $0) }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
@@ -45,30 +55,63 @@ struct SpielsView: View {
 struct NewSpielSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    var existing: Spiel? = nil
     @State private var name = ""
     @State private var location = ""
-    @State private var dates = ""
-    @State private var status = "You're in"
-
-    private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    @State private var start = Date()
+    @State private var end = Date().addingTimeInterval(7200)
+    @State private var kind = "League game"
+    @State private var preparation = ""
+    @State private var status = "Going"
+    @State private var loaded = false
+    @State private var failed = false
+    private var zone: String { existing?.timeZoneID ?? TimeZone.current.identifier }
+    private var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && end > start
+    }
 
     var body: some View {
-        CreateScaffold(title: "New spiel",
-                       subtitle: "Add a bonspiel to your season ahead.",
-                       canSave: canSave,
-                       onCancel: { dismiss() },
-                       onSave: {
-                           store.addSpiel(name: name.trimmingCharacters(in: .whitespaces),
-                                          whereText: location.trimmingCharacters(in: .whitespaces),
-                                          whenText: dates.trimmingCharacters(in: .whitespaces).uppercased(),
-                                          status: status)
-                           dismiss()
-                       }) {
-            CPField(label: "Name", text: $name, placeholder: "Brier Patch Open")
-            CPField(label: "Location", text: $location, placeholder: "Kamloops, BC")
-            CPField(label: "Dates", text: $dates, placeholder: "FEB 14–16")
-            CPChips(label: "Your status", options: ["You're in", "Watching", "Invite"], selection: $status)
+        CreateScaffold(title: existing == nil ? "New event" : "Edit event",
+                       subtitle: "Saved on this device. Going is your intent, not registration.",
+                       canSave: canSave, onCancel: { dismiss() }, onSave: {
+            if store.saveScheduledEvent(id: existing?.id, name: name, location: location,
+                                        start: start.timeIntervalSince1970, end: end.timeIntervalSince1970,
+                                        timeZone: zone, kind: kind, preparation: preparation, status: status) { dismiss() }
+            else { failed = true }
+        }) {
+            CPField(label: "Name", text: $name, placeholder: "League game")
+            CPField(label: "Location", text: $location, placeholder: "Club and sheet")
+            Picker("Event type", selection: $kind) {
+                ForEach(["League game", "Practice", "Bonspiel", "Event"], id: \.self) { Text($0) }
+            }
+            DatePicker("Starts", selection: Binding(get: { start }, set: { value in
+                let duration = end.timeIntervalSince(start); start = value; end = value.addingTimeInterval(duration)
+            }))
+            DatePicker("Ends", selection: $end, in: start...)
+            Text("Time zone: " + zone).font(.footnote)
+            CPTextArea(label: "Preparation", text: $preparation, placeholder: "Arrival time, equipment, or focus")
+            CPChips(label: "Local attendance intent", options: ["Going", "Considering", "Not going"], selection: $status)
+            let conflicts = store.eventConflicts(start: start.timeIntervalSince1970, end: end.timeIntervalSince1970, excluding: existing?.id)
+            if !conflicts.isEmpty {
+                Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", "))
+                    .font(.body).accessibilityIdentifier("curlplan.event.conflicts")
+            }
         }
+        .environment(\.timeZone, TimeZone(identifier: zone) ?? .current)
+        .onAppear {
+            guard !loaded else { return }
+            if let existing {
+                name = existing.name; location = existing.whereText
+                start = Date(timeIntervalSince1970: existing.startAt ?? Store.now())
+                end = Date(timeIntervalSince1970: existing.endAt ?? start.timeIntervalSince1970 + 7200)
+                kind = existing.eventKind ?? "Event"; preparation = existing.preparation ?? ""
+                let saved = store.spielStatus(existing.id)
+                status = ["Going", "Considering", "Not going"].contains(saved) ? saved : "Considering"
+            }
+            loaded = true
+        }
+        .alert("Could not save event", isPresented: $failed) { Button("OK", role: .cancel) {} }
     }
 }
 
@@ -81,7 +124,7 @@ private struct SpielRow: View {
 
     var body: some View {
         let status = store.spielStatus(spiel.id)
-        let solid = status == "You're in"
+        let solid = status == "You're in" || status == "Going"
         VStack(alignment: .leading, spacing: 12) {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 10) {
@@ -96,6 +139,13 @@ private struct SpielRow: View {
                 }
             }
 
+            if let start = spiel.startAt, let end = spiel.endAt, status != "Not going" {
+                let conflicts = store.eventConflicts(start: start, end: end, excluding: spiel.id)
+                if !conflicts.isEmpty {
+                    Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", "))
+                        .font(.grotesk(14, .semibold)).foregroundStyle(settings.ink)
+                }
+            }
             let attendeeLayout: AnyLayout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
                 : AnyLayout(HStackLayout(spacing: 11))
@@ -110,6 +160,7 @@ private struct SpielRow: View {
                     .fixedSize(horizontal: false, vertical: true)
                 if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 PillButton(title: "Details", filled: false) { showingDetail = true }
+                    .accessibilityIdentifier("curlplan.event.details.\(spiel.id)")
             }
         }
         .padding(14)
@@ -119,7 +170,7 @@ private struct SpielRow: View {
 
     private var spielIdentity: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(spiel.whenText)
+            Text(spiel.scheduleLabel)
                 .font(.mono(11, .semibold))
                 .tracking(0)
                 .foregroundStyle(settings.muted)
@@ -159,16 +210,20 @@ struct SpielDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let spielID: String
 
-    private let statuses = ["You're in", "Watching", "Invite"]
+    @State private var editing = false
+    @State private var deleting = false
+    private var owned: Bool { store.state.addedSpiels.contains { $0.id == spielID } }
+    private var statuses: [String] { owned ? ["Going", "Considering", "Not going"] : ["You're in", "Watching", "Invite"] }
 
     var body: some View {
         Group {
             if let spiel = store.spiels.first(where: { $0.id == spielID }) {
+                ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     Capsule().fill(settings.line).frame(width: 38, height: 4)
                         .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 16)
 
-                    Text(spiel.whenText)
+                    Text(spiel.scheduleLabel)
                         .font(.mono(11, .semibold))
                         .tracking(0)
                         .foregroundStyle(settings.muted)
@@ -177,6 +232,20 @@ struct SpielDetailSheet: View {
                     Text(spiel.whereText).font(.mono(11, .medium)).foregroundStyle(settings.muted)
                         .padding(.top, 2).padding(.bottom, 20)
 
+                    if owned {
+                        Text(spiel.eventKind ?? "Event").font(.headline)
+                        Text(spiel.preparation?.isEmpty == false ? spiel.preparation! : "No preparation notes yet.")
+                            .font(.body).padding(.vertical, 8)
+                        Text("Attendance intent is saved on this device only.").font(.footnote)
+                        HStack {
+                            Button("Edit event") { editing = true }.frame(minHeight: 44)
+                            Button("Delete event", role: .destructive) { deleting = true }.frame(minHeight: 44)
+                        }
+                    }
+                    if let start = spiel.startAt, let end = spiel.endAt, store.spielStatus(spiel.id) != "Not going" {
+                        let conflicts = store.eventConflicts(start: start, end: end, excluding: spiel.id)
+                        if !conflicts.isEmpty { Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", ")).font(.body) }
+                    }
                     Text("YOUR STATUS").font(.mono(10, .medium)).tracking(1.5)
                         .foregroundStyle(settings.muted).padding(.bottom, 8)
                     HStack(spacing: 8) {
@@ -231,7 +300,13 @@ struct SpielDetailSheet: View {
                 }
                 .padding(.horizontal, 22).padding(.bottom, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .presentationDetents([.medium, .large])
+                }
+                .sheet(isPresented: $editing) { NewSpielSheet(existing: spiel) }
+                .alert("Delete this event?", isPresented: $deleting) {
+                    Button("Delete event", role: .destructive) { if store.deleteScheduledEvent(spielID) { dismiss() } }
+                    Button("Cancel", role: .cancel) {}
+                } message: { Text("This removes only your saved event on this device.") }
+                .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(settings.card)
             } else {

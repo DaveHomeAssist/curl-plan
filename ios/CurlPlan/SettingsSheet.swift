@@ -170,6 +170,11 @@ struct LocalBackup: Codable {
                 guard let f = post.scoreFor, let a = post.scoreAgainst, f >= 0, a >= 0,
                       post.res == (f > a ? "WIN" : f < a ? "LOSS" : "TIE") else { throw BackupError.invalid }
             }
+            for event in backup.state.addedSpiels where event.startAt != nil || event.endAt != nil {
+                guard let start = event.startAt, let end = event.endAt, start.isFinite, end.isFinite, end > start,
+                      let zone = event.timeZoneID, TimeZone(identifier: zone) != nil,
+                      let kind = event.eventKind, ["League game", "Practice", "Bonspiel", "Event"].contains(kind) else { throw BackupError.invalid }
+            }
             for reviews in backup.state.reviews.values {
                 guard reviews.allSatisfy({ (1...5).contains($0.stars) }) else { throw BackupError.invalid }
             }

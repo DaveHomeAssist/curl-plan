@@ -1649,16 +1649,23 @@ function viewLocker(){
 }
 
 function viewSpiels(){
-  var rows = allSpiels().map(function(sp){
+  var upcoming = upcomingEvents(), upcomingIDs = upcoming.map(function(s){return s.id;});
+  var dated = store.addedSpiels.filter(function(s){return Number.isFinite(s.startAt) && !upcomingIDs.includes(s.id);}).sort(function(a,b){return b.startAt-a.startAt;});
+  var undated = allSpiels().filter(function(s){return !Number.isFinite(s.startAt);});
+  var rows = upcoming.concat(dated,undated).map(function(sp){
+    var owned = store.addedSpiels.some(function(s){return s.id === sp.id;});
     var status = spielStatus(sp);
     var solid = status === "You're in";
     var btn = solid
-      ? '<button class="pill-btn ghost" style="margin-left:auto;" data-action="leave-spiel" data-id="' + sp.id + '">Withdraw</button>'
-      : '<button class="pill-btn" style="margin-left:auto;" data-action="join-spiel" data-id="' + sp.id + '">Register</button>';
-    return '<div class="card" style="padding:14px;">' +
+      ? '<button class="pill-btn ghost" style="margin-left:auto;" data-action="leave-spiel" data-id="' + sp.id + '">Change local intent</button>'
+      : '<button class="pill-btn" style="margin-left:auto;" data-action="join-spiel" data-id="' + sp.id + '">Mark going locally</button>';
+    if(owned) btn = '<button class="pill-btn ghost" data-action="edit-event" data-id="' + esc(sp.id) + '">Edit event</button><button class="pill-btn ghost" data-action="delete-event" data-id="' + esc(sp.id) + '">Delete event</button>';
+    var conflicts = Number.isFinite(sp.startAt) && status !== "Not going" ? eventConflicts(sp.startAt,sp.endAt,sp.id) : [];
+    var section = Number.isFinite(sp.startAt) ? (upcomingIDs.includes(sp.id) ? 'Upcoming / in progress' : 'Past / not going') : 'Undated / sample';
+    return '<div class="card" style="padding:14px;">' + '<div class="eyebrow">' + section + '</div>' +
       '<div class="row" style="align-items:flex-start;">' +
         '<div style="flex:1; min-width:0;">' +
-          '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--muted);">' + esc(sp.when) + '</div>' +
+          '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--muted);">' + esc(eventLabel(sp)) + '</div>' +
           '<div class="serif" style="font-size:21px; color:var(--ink); line-height:1.1; margin-top:3px;">' + esc(sp.name) + '</div>' +
           '<div class="sub" style="margin-top:4px;">' + esc(sp.where) + '</div>' +
         '</div>' +
@@ -1667,14 +1674,17 @@ function viewSpiels(){
       '<div class="row" style="margin-top:12px;">' + avatarStack(sp.going) +
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
         btn + '</div>' +
+      (sp.preparation ? '<p>Preparation: ' + esc(sp.preparation) + '</p>' : '') +
+      (conflicts.length ? '<p>Overlaps with: ' + esc(conflicts.map(function(c){return c.name;}).join(', ')) + '</p>' : '') +
     '</div>';
   }).join("");
 
   return statusbar(false) +
     '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Spiels</h1>' +
-      '<button class="backbtn" data-action="new-spiel" aria-label="New spiel" style="font-size:20px;">+</button></div>' +
+      '<button class="backbtn" data-action="new-spiel" aria-label="Add event" style="font-size:20px;">+</button></div>' +
     '<div class="scroll">' +
-      '<div class="eyebrow">Your season ahead</div>' +
+      '<p>Attendance intent is saved on this device; it is not registration.</p>' +
+      (upcoming.length ? '<div class="card" style="padding:14px;"><strong>Next event</strong><p>' + esc(upcoming[0].name + ' · ' + eventLabel(upcoming[0]) + ' · ' + upcoming[0].where) + '</p></div>' : '') +
       rows +
     '</div>' +
     tabbar("spiels");
@@ -2280,25 +2290,69 @@ function sendMessage(curlerId){
 }
 
 /* ---- create a spiel (backported from the iOS port) ---- */
-function openNewSpiel(){
-  var statusOpts = ["You're in","Watching","Invite"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h2>New spiel</h2><p class="sub">Add a bonspiel to your season ahead.</p>' +
-    '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Brier Patch Open"></div>' +
-    '<div class="field"><label for="f-where">Location</label><input id="f-where" placeholder="Kamloops, BC" list="club-list"></div>' +
-    '<div class="field"><label for="f-when">Dates</label><input id="f-when" placeholder="FEB 14–16"></div>' +
-    '<div class="field"><label for="f-status">Your status</label><select id="f-status">' + statusOpts + '</select></div>' +
-    clubDatalist() +
-    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-new-spiel">Add spiel</button></div>');
+function eventLabel(sp){
+  if(!Number.isFinite(sp.startAt) || !Number.isFinite(sp.endAt)) return sp.when;
+  var options = {dateStyle:"medium", timeStyle:"short", timeZone:sp.timeZoneID || Intl.DateTimeFormat().resolvedOptions().timeZone};
+  return new Date(sp.startAt).toLocaleString(undefined, options) + " – " + new Date(sp.endAt).toLocaleString(undefined, options) + " · " + options.timeZone;
 }
-function submitNewSpiel(){
-  var name = val("f-name");
-  if(!name){ toast("Name the spiel"); return; }
-  var sp = { id:uid("sp"), name:name, where:val("f-where") || "TBD",
-    when:(val("f-when") || "DATE TBD").toUpperCase(),
-    status:(el("f-status") ? el("f-status").value : "Watching"), going:[] };
-  store.addedSpiels.unshift(sp); saveStore();
-  closeSheet(); gotoTab("spiels"); toast("Spiel added");
+function eventConflicts(start, end, exclude){
+  return store.addedSpiels.filter(function(s){return s.id !== exclude && spielStatus(s) !== "Not going" && Number.isFinite(s.startAt) && Number.isFinite(s.endAt) && s.startAt < end && s.endAt > start;});
+}
+function upcomingEvents(now){
+  now = now === undefined ? Date.now() : now;
+  return store.addedSpiels.filter(function(s){return Number.isFinite(s.endAt) && s.endAt >= now && spielStatus(s) !== "Not going";}).sort(function(a,b){return a.startAt-b.startAt;});
+}
+function localEventTime(date){
+  return [date.getFullYear(),String(date.getMonth()+1).padStart(2,"0"),String(date.getDate()).padStart(2,"0")].join("-") + "T" + [String(date.getHours()).padStart(2,"0"),String(date.getMinutes()).padStart(2,"0")].join(":");
+}
+function openNewSpiel(id){
+  var existing = id && store.addedSpiels.find(function(s){return s.id === id;});
+  if(id && !existing) return;
+  var zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  var options = function(items){return items.map(function(s){return '<option>' + esc(s) + '</option>';}).join("");};
+  openSheet('<h2>' + (existing ? 'Edit event' : 'New event') + '</h2><p>Saved on this device. Going is your intent, not registration. Times are entered in ' + esc(zone) + '.</p>' +
+    '<div class="field"><label for="f-name">Name</label><input id="f-name"></div>' +
+    '<div class="field"><label for="f-where">Location</label><input id="f-where" placeholder="Club and sheet"></div>' +
+    '<div class="field"><label for="f-kind">Event type</label><select id="f-kind">' + options(["League game","Practice","Bonspiel","Event"]) + '</select></div>' +
+    '<div class="field"><label for="f-start">Starts</label><input id="f-start" type="datetime-local"></div>' +
+    '<div class="field"><label for="f-end">Ends</label><input id="f-end" type="datetime-local"></div>' +
+    '<div class="field"><label for="f-preparation">Preparation</label><textarea id="f-preparation"></textarea></div>' +
+    '<div class="field"><label for="f-status">Local attendance intent</label><select id="f-status">' + options(["Going","Considering","Not going"]) + '</select></div>' +
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button><button class="b solid" data-action="submit-new-spiel" data-id="' + esc(id || "") + '">Save event</button></div>');
+  el("f-name").value = existing ? existing.name : ""; el("f-where").value = existing ? existing.where : "";
+  el("f-kind").value = existing && existing.eventKind || "League game";
+  el("f-start").value = localEventTime(new Date(existing && Number.isFinite(existing.startAt) ? existing.startAt : Date.now()));
+  el("f-end").value = localEventTime(new Date(existing && Number.isFinite(existing.endAt) ? existing.endAt : Date.now()+7200000));
+  el("f-preparation").value = existing && existing.preparation || "";
+  var status = existing && spielStatus(existing);
+  el("f-status").value = ["Going","Considering","Not going"].includes(status) ? status : "Going";
+}
+function submitNewSpiel(id){
+  var existing = id && store.addedSpiels.find(function(s){return s.id === id;});
+  if(id && !existing){toast("This event no longer exists.");return false;}
+  var name=val("f-name"), location=val("f-where"), start=new Date(val("f-start")), end=new Date(val("f-end"));
+  if(!name || !location || !Number.isFinite(+start) || !Number.isFinite(+end) || +end <= +start || localEventTime(start) !== val("f-start") || localEventTime(end) !== val("f-end")){
+    toast("Add a name, location, and valid end time after the start.");return false;
+  }
+  var status=val("f-status"), kind=val("f-kind");
+  if(!["Going","Considering","Not going"].includes(status) || !["League game","Practice","Bonspiel","Event"].includes(kind)) return false;
+  var conflicts=eventConflicts(+start,+end,id);
+  if(status !== "Not going" && conflicts.length && !window.confirm("Overlaps with: " + conflicts.map(function(s){return s.name;}).join(", ") + ". Save anyway?")) return false;
+  var sp={id:id || uid("sp"),name:name,where:location,when:"",status:status,going:existing ? existing.going : [],startAt:+start,endAt:+end,timeZoneID:Intl.DateTimeFormat().resolvedOptions().timeZone,eventKind:kind,preparation:val("f-preparation"),at:Math.max(Date.now(),(existing && existing.at || 0)+1)};
+  sp.when=eventLabel(sp);
+  var next=JSON.parse(JSON.stringify(store));
+  if(id) next.addedSpiels=next.addedSpiels.map(function(s){return s.id === id ? sp : s;}); else next.addedSpiels.unshift(sp);
+  next.joins[sp.id]={v:status,at:sp.at};
+  if(!commitLocal(next)) return false;
+  closeSheet(); gotoTab("spiels"); toast("Event saved on this device"); return true;
+}
+function deleteEvent(id){
+  var existing=store.addedSpiels.find(function(s){return s.id === id;}); if(!existing) return false;
+  if(!window.confirm("Delete this saved event? This only removes your local event.")) return false;
+  var next=JSON.parse(JSON.stringify(store)); next.addedSpiels=next.addedSpiels.filter(function(s){return s.id !== id;}); delete next.joins[id];
+  (next.tombstones.addedSpiels=next.tombstones.addedSpiels || {})[id]=Math.max(Date.now(),(existing.at || 0)+1);
+  if(!commitLocal(next)) return false;
+  render({keepScroll:true}); toast("Event deleted");return true;
 }
 
 /* ---- create a curler (backported from the iOS port) ---- */
@@ -2370,7 +2424,14 @@ function validateBackup(raw){
     if(p.type === "review") {fields(p,["club","note"]); rating(p.stars);}
     if(p.type === "result") {var c=p.score; require(obj(c) && Number.isSafeInteger(c.for) && c.for >= 0 && Number.isSafeInteger(c.ag) && c.ag >= 0); fields(c,["vs","res"]); require(c.res === (c.for > c.ag ? "WIN" : c.for < c.ag ? "LOSS" : "TIE"));}
   });
-  s.addedSpiels.forEach(function(v){fields(v,["id","name","where","when","status"]); require(Array.isArray(v.going) && v.going.every(str));});
+  s.addedSpiels.forEach(function(v){
+    fields(v,["id","name","where","when","status"]); require(Array.isArray(v.going) && v.going.every(str));
+    if(v.startAt !== undefined || v.endAt !== undefined) {
+      require(num(v.startAt) && num(v.endAt) && v.endAt > v.startAt); fields(v,["timeZoneID","eventKind","preparation"]);
+      require(["League game","Practice","Bonspiel","Event"].includes(v.eventKind));
+      try { new Intl.DateTimeFormat(undefined,{timeZone:v.timeZoneID}); } catch(e) { require(false); }
+    }
+  });
   s.addedCurlers.forEach(function(v){fields(v,["id","initials","name","role","club","prov","metAt"]); require(typeof v.following === "boolean" && obj(v.stats) && Array.isArray(v.clubs) && v.clubs.every(str) && Array.isArray(v.form)); fields(v.stats,["record","win"]); require(num(v.stats.clubs) && num(v.stats.mutual)); v.form.forEach(function(g){fields(g,["label","score","res"]);});});
   Object.values(s.drafts).forEach(function(v){require(obj(v)); Object.keys(v).forEach(function(k){require(k === "stars" ? num(v[k]) : str(v[k]));});});
   Object.values(s.tombstones).forEach(function(v){require(obj(v)); Object.values(v).forEach(function(t){require(num(t));});});
@@ -2479,7 +2540,9 @@ el("screen").addEventListener("click", function(e){
     }
     // create entities (backported from iOS)
     case "new-spiel":         openNewSpiel(); break;
-    case "submit-new-spiel":  submitNewSpiel(); break;
+    case "submit-new-spiel":  submitNewSpiel(id || undefined); break;
+    case "edit-event": openNewSpiel(id); break;
+    case "delete-event": deleteEvent(id); break;
     case "new-curler":        openNewCurler(); break;
     case "submit-new-curler": submitNewCurler(); break;
 

@@ -110,3 +110,14 @@ The browser Settings has its own `curlplan-web` version 1 backup flow and recove
 copy. A browser export requests a download; users must retain that file outside site
 storage to survive clearing browser data. Native and browser backups are private,
 unencrypted files and can include drafts and messages.
+
+## Dated events
+
+Spiels → Add event supports league games, practices, bonspiels and other events.
+New events require a name, location and an end time after the start. Native editing
+preserves the event's time zone; browser editing explicitly uses the current browser
+time zone while preserving the represented instants. Preparation notes and local
+attendance intent are saved with the event. Upcoming/in-progress, past/not-going and
+undated/sample records remain distinguishable. Overlap checks treat touching endpoints
+as non-overlapping and exclude Not going events. Only user-created events can be
+edited or deleted; deletion writes a merge tombstone. Old text-only dates are not guessed.

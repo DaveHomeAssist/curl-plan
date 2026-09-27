@@ -17,6 +17,37 @@ final class StoreTests: XCTestCase {
         Store.defaults = suite
     }
 
+    func testDatedEventOrderingConflictsRescheduleAndDeletion() throws {
+        let s = Store(); s.exploreDemo()
+        func save(_ id: String? = nil, _ name: String, _ start: Double, _ end: Double) -> Bool {
+            s.saveScheduledEvent(id: id, name: name, location: "Club sheet 2", start: start, end: end,
+                                 timeZone: "America/Toronto", kind: "League game", preparation: "Arrive early", status: "Going")
+        }
+        XCTAssertFalse(save(nil, "", 100, 200))
+        XCTAssertFalse(save(nil, "invalid", 200, 100))
+        XCTAssertTrue(save(nil, "First", 100, 200))
+        let id = s.state.addedSpiels[0].id
+        XCTAssertTrue(save(nil, "Adjacent", 200, 300))
+        XCTAssertEqual(s.eventConflicts(start: 200, end: 300, excluding: s.state.addedSpiels[0].id).count, 0)
+        XCTAssertEqual(s.eventConflicts(start: 150, end: 210).count, 2)
+        XCTAssertEqual(s.upcomingEvents(now: 50).first?.id, id)
+        XCTAssertTrue(save(id, "Rescheduled", 400, 500))
+        XCTAssertEqual(Store().spiel(id)?.startAt, 400)
+        XCTAssertEqual(Store().spiel(id)?.preparation, "Arrive early")
+        XCTAssertEqual(s.upcomingEvents(now: 250).last?.id, id)
+        XCTAssertEqual(try s.previewBackup(s.backupData()).state, s.state)
+        var invalid = s.state
+        invalid.addedSpiels[0].endAt = 0
+        XCTAssertThrowsError(try LocalBackup.validate(JSONEncoder().encode(LocalBackup(account: "demo", state: invalid)), account: "demo"))
+        let stale = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(s.state))
+        XCTAssertTrue(s.deleteScheduledEvent(id))
+        XCTAssertNil(Store().spiel(id))
+        let deleted = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(s.state))
+        XCTAssertEqual(Merge.state(stale, deleted)["addedSpiels"]?.asArray?.count, 1)
+        XCTAssertFalse(save(id, "Stale", 600, 700))
+        XCTAssertFalse(s.deleteScheduledEvent(Seed.spiels[0].id))
+    }
+
     func testBackupPreviewRestoreRecoveryAndRejection() throws {
         let s = Store(); s.exploreDemo()
         s.addNote(body: "before export")

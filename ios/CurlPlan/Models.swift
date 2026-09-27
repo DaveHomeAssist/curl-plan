@@ -59,9 +59,24 @@ struct Spiel: Identifiable, Hashable, Codable {
     let id: String
     let name: String
     let whereText: String
-    let whenText: String
+    var whenText: String
     var status: String
     var going: [String]
+    var startAt: Double? = nil
+    var endAt: Double? = nil
+    var timeZoneID: String? = nil
+    var eventKind: String? = nil
+    var preparation: String? = nil
+    var at: Double? = nil
+
+    var scheduleLabel: String {
+        guard let startAt, let endAt else { return whenText }
+        let f = DateFormatter()
+        f.timeZone = timeZoneID.flatMap(TimeZone.init(identifier:)) ?? .current
+        f.dateFormat = "MMM d, yyyy h:mm a"
+        return f.string(from: Date(timeIntervalSince1970: startAt)) + " – " + f.string(from: Date(timeIntervalSince1970: endAt)) + " · " + (timeZoneID ?? TimeZone.current.identifier)
+    }
+
 }
 
 struct MeStats { let clubs: Int; let prov: Int; let games: Int; let win: Int }
@@ -363,6 +378,50 @@ final class Store: ObservableObject {
     }
 
     // MARK: Create actions (write to the per-account state)
+
+    func upcomingEvents(now: Double = Store.now()) -> [Spiel] {
+        state.addedSpiels.filter { ($0.endAt ?? -1) >= now && spielStatus($0.id) != "Not going" }
+            .sorted { ($0.startAt ?? 0) < ($1.startAt ?? 0) }
+    }
+
+    func eventConflicts(start: Double, end: Double, excluding id: String? = nil) -> [Spiel] {
+        state.addedSpiels.filter {
+            $0.id != id && spielStatus($0.id) != "Not going" &&
+            ($0.startAt ?? .infinity) < end && ($0.endAt ?? -.infinity) > start
+        }
+    }
+
+    @discardableResult
+    func saveScheduledEvent(id: String? = nil, name: String, location: String, start: Double, end: Double,
+                            timeZone: String, kind: String, preparation: String, status: String) -> Bool {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let location = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !location.isEmpty, start.isFinite, end.isFinite, end > start,
+              TimeZone(identifier: timeZone) != nil,
+              ["League game", "Practice", "Bonspiel", "Event"].contains(kind),
+              ["Going", "Considering", "Not going"].contains(status) else { return false }
+        let existing = id.flatMap { target in state.addedSpiels.first { $0.id == target } }
+        if id != nil && existing == nil { return false }
+        var event = Spiel(id: id ?? Store.uid("sp"), name: name, whereText: location,
+                          whenText: "", status: status, going: existing?.going ?? [])
+        event.startAt = start; event.endAt = end; event.timeZoneID = timeZone
+        event.eventKind = kind; event.preparation = preparation
+        event.at = max(Store.now(), (existing?.at ?? 0) + 0.001)
+        event.whenText = event.scheduleLabel
+        if let index = state.addedSpiels.firstIndex(where: { $0.id == event.id }) { state.addedSpiels[index] = event }
+        else { state.addedSpiels.insert(event, at: 0) }
+        state.joins[event.id] = status
+        return true
+    }
+
+    @discardableResult
+    func deleteScheduledEvent(_ id: String) -> Bool {
+        guard let event = state.addedSpiels.first(where: { $0.id == id }) else { return false }
+        state.addedSpiels.removeAll { $0.id == id }
+        state.joins[id] = nil
+        state.tombstones["addedSpiels", default: [:]][id] = max(Store.now(), (event.at ?? 0) + 0.001)
+        return true
+    }
 
     @discardableResult
     func addSpiel(name: String, whereText: String, whenText: String, status: String) -> Spiel {

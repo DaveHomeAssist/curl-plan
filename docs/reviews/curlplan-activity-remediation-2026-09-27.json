@@ -107,10 +107,19 @@
       "expected": "Find date, time, location and preparation for next commitment",
       "baseline_verdict": "Partial",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Use structured dates/times and a next-event summary.",
       "acceptance": "Spiels > list > Details > inspect dates, location and next-action information; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
     },
     {
       "id": "A8",
@@ -161,10 +170,19 @@
       "expected": "Create dated event and recover it",
       "baseline_verdict": "Partial",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Name the Add control and use validated structured dates; make initial status clear.",
       "acceptance": "Spiels > Add > name/location/dates > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
     },
     {
       "id": "A12",
@@ -172,10 +190,19 @@
       "expected": "Change event date or remove event without stale data",
       "baseline_verdict": "Unavailable",
       "group": "correction and recovery",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add editable dates and safe event cancellation/removal.",
       "acceptance": "Spiels > Details > inspect editing and removal controls; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
     },
     {
       "id": "A13",
@@ -205,10 +232,19 @@
       "expected": "Compare commitments, identify overlaps and past/upcoming",
       "baseline_verdict": "Fail",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Represent dates as structured values and surface schedule conflicts.",
       "acceptance": "Spiels > compare date labels > inspect calendar and conflict affordances; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
     },
     {
       "id": "A16",
@@ -465,7 +501,8 @@
       "evidence": [
         "Physical Ignacio: testContributionAndSettingsLabels passed 2026-09-27; settings controls and compose/visit text fields expose labels; accent targets >=44 points.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-settings-labels.png",
-        "verify-app, verify-parity, generated-seed staleness and feature-review checks passed."
+        "verify-app, verify-parity, generated-seed staleness and feature-review checks passed.",
+        "CI run 36300386911 completed with contrast failures on detail/profile screens; failure log retained locally at /tmp/curlplan-remediation/navigation-ci-failure.log. Assertions remain enabled; release gate is still failing."
       ],
       "remaining": [
         "Resolve existing full accessibility CI failures from run 36288266893.",
