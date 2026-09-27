@@ -38,6 +38,16 @@ function launch() {
   return c;
 }
 let app = launch();
+function assertPassportGames(count) {
+  assert.match(app.viewPassport(), new RegExp('class="num">' + count + '</div><div class="lab">GAMES'));
+}
+assertPassportGames(0);
+const seed = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/season-seed.json"), "utf8"));
+for (const stop of seed.stops.filter(s => s.games.length)) {
+  const record = stop.games.filter(g => g.res === "W").length + "–" + stop.games.filter(g => g.res === "L").length;
+  assert.equal(stop.record, record, stop.id);
+  assert.equal(stop.ice.rec, record, stop.id);
+}
 app.openCompose(); app.field("body", "original");
 assert.equal(app.persistEditorDraft(), true);
 assert.equal(app.closeSheet(), true);
@@ -70,9 +80,18 @@ app.openCompose("result"); app.field("for", "4.5"); app.field("ag", "2");
 assert.equal(app.submitCompose("result"), false);
 app.field("for", "-1"); assert.equal(app.submitCompose("result"), false);
 app.field("for", "8"); assert.equal(app.submitCompose("result"), true);
+assertPassportGames(1);
+assert.equal(app.derivedStats().win, 100);
 post = app.store.posts[0]; app.openCompose(null, post.id); app.field("for", "1");
 assert.equal(app.submitCompose("result"), true); assert.equal(app.store.posts[0].score.res, "LOSS");
 assert.equal(app.derivedStats().win, 0);
+assertPassportGames(1);
+const resultID = post.id;
+assert.equal(app.deleteOwnedRecord("post", resultID), true);
+app = launch(); assertPassportGames(0);
+app.openCompose("result"); app.field("for", "8"); app.field("ag", "2");
+assert.equal(app.submitCompose("result"), true);
+post = app.store.posts[0];
 app.openCompose(null, post.id); app.store.posts = [];
 assert.equal(app.submitCompose("result"), false); app.activeEditor = null;
 assert.equal(app.ownedPost(app.feed[0].id), null);

@@ -317,7 +317,7 @@ final class Store: ObservableObject {
     var isRealAccount: Bool { false }
     var me: MeInfo { Seed.me }
 
-    /// Live telemetry for a real account, computed from their own log (demo keeps seed numbers).
+    /// Personal telemetry comes only from the current local log, including demo additions.
     func derivedStats() -> MeStats {
         let visitedIds = state.visits.filter { !$0.value.isEmpty }.map { $0.key }
         var provs = Set<String>()

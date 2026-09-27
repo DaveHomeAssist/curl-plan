@@ -13,8 +13,10 @@ struct PassportView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     hero
                     telemetry
+                    Text("Totals reflect your saved visits and results on this device. Sample club records are separate.")
+                        .font(.grotesk(13)).foregroundStyle(settings.muted)
                     SeasonMap()
-                    SectionHeader(title: "Recent stops")
+                    SectionHeader(title: "Your visits")
                     recentStops
                 }
                 .padding(.horizontal, 20)
@@ -49,7 +51,7 @@ struct PassportView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Eyebrow(text: store.me.season)
+            Eyebrow(text: "Your device log")
             (Text("On the ice, ")
                 + Text("coast to coast").foregroundColor(settings.accent).italic())
                 .font(.serif(34))
@@ -59,13 +61,14 @@ struct PassportView: View {
     }
 
     private var telemetry: some View {
-        let s = store.me.stats
+        let s = store.derivedStats()
         return Group {
             if dynamicTypeSize.isAccessibilitySize {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     StatCell(value: "\(s.clubs)", label: "CLUBS")
                     StatCell(value: "\(s.prov)", label: "PROV")
                     StatCell(value: "\(s.games)", label: "GAMES")
+                        .accessibilityIdentifier("curlplan.stats.games")
                     StatCell(value: "\(s.win)%", label: "WIN", accent: true)
                 }
                 .padding(.horizontal, 8)
@@ -76,6 +79,7 @@ struct PassportView: View {
                     StatCell(value: "\(s.prov)", label: "PROV")
                     VRule()
                     StatCell(value: "\(s.games)", label: "GAMES")
+                        .accessibilityIdentifier("curlplan.stats.games")
                     VRule()
                     StatCell(value: "\(s.win)%", label: "WIN", accent: true)
                 }
@@ -85,33 +89,29 @@ struct PassportView: View {
         .cpCard()
     }
 
-    // Real accounts see the stops they've logged (with a visit count + empty state);
-    // demo keeps the seed record + met-people chrome.
+    // Saved visits and sample clubs are distinct; each destination appears once.
     @ViewBuilder private var recentStops: some View {
-        if store.isRealAccount {
-            let mine = store.visitedStops()
-            if mine.isEmpty {
-                Text("No stops logged yet — tap a pin, then “Log visit,” to start your season map.")
-                    .font(.grotesk(13)).foregroundStyle(settings.muted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(14)
-                    .cpCard()
-            } else {
-                ForEach(mine) { entry in
-                    NavigationLink(value: Route.stop(entry.stop.id)) {
-                        VisitedStopTile(stop: entry.stop, count: entry.count)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("curlplan.stop.\(entry.stop.id)")
-                }
-            }
+        let mine = store.visitedStops()
+        if mine.isEmpty {
+            Text("No visits logged yet — open a sample club and choose Log visit.")
+                .font(.grotesk(13)).foregroundStyle(settings.muted)
+                .padding(14).cpCard()
         } else {
-            ForEach(store.recentStops) { stop in
-                NavigationLink(value: Route.stop(stop.id)) {
-                    RecentStopTile(stop: stop)
+            ForEach(mine) { entry in
+                NavigationLink(value: Route.stop(entry.stop.id)) {
+                    VisitedStopTile(stop: entry.stop, count: entry.count)
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("curlplan.stop.\(stop.id)")
+                .accessibilityIdentifier("curlplan.stop.\(entry.stop.id)")
+            }
+        }
+        let samples = store.recentStops.filter { stop in !mine.contains { $0.id == stop.id } }
+        if !samples.isEmpty {
+            SectionHeader(title: "Sample clubs and games")
+            ForEach(samples) { stop in
+                NavigationLink(value: Route.stop(stop.id)) { RecentStopTile(stop: stop) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("curlplan.stop.\(stop.id)")
             }
         }
     }
@@ -195,13 +195,8 @@ struct SeasonMap: View {
     @ScaledMetric(relativeTo: .caption) private var mapHeight: CGFloat = 212
 
     private var mapMeta: String {
-        if store.isRealAccount {
-            let n = store.visitedStops().count
-            if n == 0 { return "NEW SEASON" }
-            return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
-        }
-        let n = store.demoLoggedStops.count
-        return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
+        let n = store.visitedStops().count
+        return "\(n) \(n == 1 ? "VISIT LOCATION" : "VISIT LOCATIONS") LOGGED"
     }
 
     var body: some View {

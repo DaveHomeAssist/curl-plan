@@ -9,6 +9,55 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testPersonalResultTotalsAfterCorrectionAndDeletion() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 8))
+        tab("Passport").tap()
+        if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+        let games = app.descendants(matching: .any)["curlplan.stats.games"].firstMatch
+        XCTAssertTrue(games.waitForExistence(timeout: 4))
+        let baseline = try XCTUnwrap(Int(games.value as? String ?? ""))
+        tab("Locker").tap(); app.buttons["curlplan.compose.open"].tap()
+        let note = app.textFields["What's the word?"]
+        guard note.exists, (note.value as? String ?? "").isEmpty else {
+            throw XCTSkip("Preserve an existing composer draft")
+        }
+        let marker = "Score " + UUID().uuidString.prefix(8)
+        app.buttons["Result"].tap()
+        let score = app.textFields["For"]
+        score.tap(); score.typeText("8"); hideAuditKeyboard()
+        app.textFields["Against"].tap(); app.textFields["Against"].typeText("2"); hideAuditKeyboard()
+        app.textFields["Opponent"].tap(); app.textFields["Opponent"].typeText(marker); hideAuditKeyboard()
+        app.buttons["Post"].tap()
+        tab("Passport").tap()
+        XCTAssertEqual(games.value as? String, String(baseline + 1))
+        tab("Locker").tap()
+        let actions = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.post.actions.")).firstMatch
+        actions.tap(); app.buttons["Edit post"].tap()
+        XCTAssertEqual(app.textFields["Opponent"].value as? String, marker)
+        score.tap(); score.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        score.typeText(XCUIKeyboardKey.delete.rawValue + "1"); hideAuditKeyboard()
+        app.buttons["Save changes"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        actions.tap(); app.buttons["Edit post"].tap()
+        XCTAssertEqual(score.value as? String, "1")
+        XCTAssertEqual(app.textFields["Against"].value as? String, "2")
+        app.buttons["Close"].tap()
+        tab("Passport").tap()
+        XCTAssertEqual(games.value as? String, String(baseline + 1))
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "A18-personal-result-totals"; proof.lifetime = .keepAlways; add(proof)
+        tab("Locker").tap(); actions.tap(); app.buttons["Delete post"].tap()
+        app.alerts.buttons["Delete post"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 8)); tab("Passport").tap()
+        XCTAssertEqual(games.value as? String, String(baseline))
+    }
+
     func testOwnedNoteCorrectionAndDraftRecovery() throws {
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .landscapeRight }

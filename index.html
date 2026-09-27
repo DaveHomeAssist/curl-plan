@@ -793,7 +793,7 @@ var stops = [
     "club": "Kelowna Curling Club",
     "prov": "BC",
     "dates": "JAN 9–11",
-    "record": "3–1",
+    "record": "1–1",
     "x": 70,
     "y": 32,
     "plus": "+3",
@@ -801,7 +801,7 @@ var stops = [
       "speed": "Fast",
       "speedSec": "24.1s",
       "curl": "5–6",
-      "rec": "3–1"
+      "rec": "1–1"
     },
     "games": [
       {
@@ -828,7 +828,7 @@ var stops = [
     "club": "Vernon Curling Club",
     "prov": "BC",
     "dates": "DEC 2",
-    "record": "2–1",
+    "record": "1–1",
     "x": 50,
     "y": 68,
     "plus": "+2",
@@ -836,7 +836,7 @@ var stops = [
       "speed": "Medium",
       "speedSec": "25.0s",
       "curl": "4–5",
-      "rec": "2–1"
+      "rec": "1–1"
     },
     "games": [
       {
@@ -862,14 +862,14 @@ var stops = [
     "club": "Sage Valley CC",
     "prov": "AB",
     "dates": "NOV 14–16",
-    "record": "2–2",
+    "record": "1–1",
     "x": 30,
     "y": 39,
     "ice": {
       "speed": "Keen",
       "speedSec": "23.2s",
       "curl": "6–7",
-      "rec": "2–2"
+      "rec": "1–1"
     },
     "games": [
       {
@@ -894,14 +894,14 @@ var stops = [
     "club": "Granite City CC",
     "prov": "MB",
     "dates": "OCT 24–26",
-    "record": "3–0",
+    "record": "2–0",
     "x": 14,
     "y": 64,
     "ice": {
       "speed": "Fast",
       "speedSec": "24.4s",
       "curl": "5–6",
-      "rec": "3–0"
+      "rec": "2–0"
     },
     "games": [
       {
@@ -1330,8 +1330,7 @@ function withdrawSpiel(id){
 
 function allPosts(){ return store.posts.concat(feed); }
 
-/* telemetry for a real account, computed live from their own log —
-   demo numbers stay with the demo session (activeMe leaves stats null here) */
+/* Personal telemetry reflects saved local records, including demo additions. */
 function derivedStats(){
   var clubIds = Object.keys(store.visits).filter(function(k){ return (store.visits[k] || []).length; });
   var provs = {};
@@ -1487,7 +1486,7 @@ function classicBridge(){
 }
 
 function viewPassport(){
-  var s = me.stats || derivedStats();
+  var s = derivedStats();
   var real = isRealAccount();
   var pins = stops.map(function(st){
     var sz = st.big ? 21 : 13;
@@ -1496,46 +1495,25 @@ function viewPassport(){
       'style="left:' + st.x + '%; top:' + st.y + '%; width:' + sz + 'px; height:' + sz + 'px;" aria-label="' + esc(st.name) + '"></button>';
   }).join("");
 
-  var recents;
-  if(real){
-    // personal: stops the user has logged, count badge instead of a seed record
-    var mine = visitedStops();
-    recents = mine.length ? mine.map(function(v){
-      var st = stop(v.id);
-      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
-        '<span class="code">' + esc(st.code) + '</span>' +
-        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
-          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
-        '<span class="score">' + v.count + (v.count === 1 ? ' visit' : ' visits') + '</span>' +
-      '</div>';
-    }).join("")
-    : '<div class="card tile" style="text-align:center; color:var(--muted); font:500 13px \'Hanken Grotesk\'; padding:18px;">' +
-        'No stops logged yet — tap a pin, then “Log visit,” to start your season map.</div>';
-  } else {
-    recents = recentStops.map(function(id){
-      var st = stop(id);
-      var avs = st.met.slice(0,2).map(function(m){
-        return '<span class="avatar" style="width:20px;height:20px;font-size:8px;"></span>';
-      }).join("");
-      return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + st.id + '">' +
-        '<span class="code">' + esc(st.code) + '</span>' +
-        '<div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
-          '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.dates) + '</div></div>' +
-        '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">' +
-          '<span class="score">' + esc(st.record) + '</span>' +
-          '<div class="stack">' + avs +
-            (st.plus ? '<span class="avatar plus-badge" style="margin-left:-7px;">' + esc(st.plus) + '</span>' : '') +
-          '</div></div>' +
-      '</div>';
-    }).join("");
-  }
-  // Map chrome: the sample-stop chip and stop/KM tally are demo flavor; a real
-  // account gets a tally derived from its own visits (no fabricated distance)
+  var mine = visitedStops();
+  var recents = mine.length ? mine.map(function(v){
+    var st = stop(v.id);
+    return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + esc(st.id) + '">' +
+      '<span class="code">' + esc(st.code) + '</span><div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+      '<div class="sub">' + esc(st.prov) + ' · ' + esc(st.club) + '</div></div>' +
+      '<span class="score">' + v.count + (v.count === 1 ? ' visit' : ' visits') + '</span></div>';
+  }).join("") : '<div class="card tile">No visits logged yet — open a sample club and choose Log visit.</div>';
+  var samples = recentStops.filter(function(id){ return !mine.some(function(v){ return v.id === id; }); });
+  if(samples.length) recents += '<div class="sec-head"><span class="lab">Sample clubs and games</span></div>' + samples.map(function(id){
+    var st = stop(id); if(!st) return "";
+    return '<div class="card tile row" role="button" tabindex="0" data-action="stop" data-id="' + esc(id) + '">' +
+      '<span class="code">' + esc(st.code) + '</span><div style="flex:1; min-width:0;"><div class="title">' + esc(st.name) + '</div>' +
+      '<div class="sub">' + esc(st.prov) + ' · Sample games</div></div><span class="score">' + esc(st.record) + '</span></div>';
+  }).join("");
+  // The highlighted sample location is labeled; the tally counts saved visits.
   var hereChip = real ? '' : '<div class="map-chip"><span class="dot"></span><span>Kamloops · sample stop</span></div>';
   var nVisited = visitedStops().length;
-  var mapMeta = real
-    ? (nVisited ? nVisited + (nVisited === 1 ? ' STOP LOGGED' : ' STOPS LOGGED') : 'NEW SEASON')
-    : '12 STOPS · 2,400 KM';
+  var mapMeta = nVisited + (nVisited === 1 ? ' VISIT LOCATION LOGGED' : ' VISIT LOCATIONS LOGGED');
 
   return statusbar(false) +
     '<div class="appbar">' +
@@ -1544,10 +1522,11 @@ function viewPassport(){
     '</div>' +
     '<div class="scroll">' +
       '<div>' +
-        '<div class="eyebrow">' + esc(me.season) + '</div>' +
+        '<div class="eyebrow">Your device log</div>' +
         '<h1 class="serif" style="font-size:34px; line-height:1.04; color:var(--ink); margin:3px 0 0;">On the ice, ' +
           '<span class="ital accent-deep">coast to coast</span></h1>' +
       '</div>' +
+      '<p style="color:var(--muted);">Totals reflect your saved visits and results on this device. Sample club records are separate.</p>' +
       '<div class="card telemetry">' +
         '<div class="cell"><div class="num">' + s.clubs + '</div><div class="lab">CLUBS</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num">' + s.prov + '</div><div class="lab">PROV</div></div><div class="vline"></div>' +
@@ -1568,7 +1547,7 @@ function viewPassport(){
         '<div class="map-meta">' + esc(mapMeta) + '</div>' +
       '</div>' +
       classicBridge() +
-      '<div class="sec-head"><span class="lab">Recent stops</span></div>' +
+      '<div class="sec-head"><span class="lab">Your visits</span></div>' +
       recents +
     '</div>' +
     tabbar("passport");
@@ -1739,7 +1718,7 @@ function viewStop(id){
   var st = stop(id);
   if(!st) return viewPassport();
   var ice = st.ice;
-  var iceReadList = submissionCard("Community ice reads", store.iceReads[st.id] || [], function(r){
+  var iceReadList = submissionCard("Your ice reads", store.iceReads[st.id] || [], function(r){
     return '<div class="subrow"><span class="nm">' + esc(r.speed) + ' · ' + esc(r.curl) + ' ft</span>' +
       (r.note ? '<span class="meta">' + esc(r.note) + '</span>' : '') + '</div>'; });
   var visitList = submissionCard("Your visits", store.visits[st.id] || [], function(v){
@@ -1786,7 +1765,7 @@ function viewStop(id){
         '<div class="iceread">' +
           '<div class="cell"><div class="v">' + esc(ice.speed) + '</div><div class="l">SPEED · ' + esc(ice.speedSec) + '</div></div>' +
           '<div class="cell"><div class="v">' + esc(ice.curl) + '<small>ft</small></div><div class="l">CURL</div></div>' +
-          '<div class="cell"><div class="v accent">' + esc(ice.rec) + '</div><div class="l">YOUR REC</div></div>' +
+          '<div class="cell"><div class="v accent">' + esc(ice.rec) + '</div><div class="l">SAMPLE W–L</div></div>' +
         '</div></div>' +
       iceReadList +
       '<div class="add-row">' +
@@ -1795,7 +1774,7 @@ function viewStop(id){
         '<button class="pill-btn ghost" data-action="add-review" data-id="' + st.id + '">Write review</button>' +
       '</div>' +
       '<div class="card glist">' +
-        '<div class="ghead"><span class="t">Your games here</span><span class="n">' + st.games.length + ' GP</span></div>' +
+        '<div class="ghead"><span class="t">Sample games here</span><span class="n">' + st.games.length + ' GP</span></div>' +
         games +
       '</div>' +
       visitList +

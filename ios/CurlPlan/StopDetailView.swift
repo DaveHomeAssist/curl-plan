@@ -113,13 +113,14 @@ struct StopDetailView: View {
     private func iceRead(_ stop: Stop) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Eyebrow(text: "Ice read")
+            Text("Sample club conditions and record").font(.grotesk(12)).foregroundStyle(settings.muted)
             let layout: AnyLayout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(spacing: 9))
                 : AnyLayout(HStackLayout(spacing: 9))
             layout {
                 iceCell(stop.iceSpeed, "SPEED", suffix: stop.iceSpeedSec)
                 iceCell(stop.iceCurl, "CURL", suffix: "ft")
-                iceCell(stop.iceRec, "YOUR REC", accent: true)
+                iceCell(stop.iceRec, "SAMPLE W–L", accent: true)
             }
         }
     }
@@ -150,7 +151,7 @@ struct StopDetailView: View {
     @ViewBuilder private var communityIceReads: some View {
         let reads = store.iceReads(stopID)
         if !reads.isEmpty {
-            listCard(title: "Community ice reads", count: reads.count) {
+            listCard(title: "Your ice reads", count: reads.count) {
                 ForEach(reads) { r in
                     subrow(name: "\(r.speed) · \(r.curl) ft", meta: r.note)
                 }
@@ -186,7 +187,7 @@ struct StopDetailView: View {
     private func gamesHere(_ stop: Stop) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Your games here").font(.grotesk(12, .semibold)).foregroundStyle(settings.ink)
+                Text("Sample games here").font(.grotesk(12, .semibold)).foregroundStyle(settings.ink)
                 Spacer()
                 Text("\(stop.games.count) GP").font(.mono(11, .semibold)).foregroundStyle(settings.muted)
             }
@@ -352,7 +353,7 @@ struct StopDetailView: View {
             Spacer()
             if !meta.isEmpty {
                 Text(meta).font(.mono(10, .medium)).foregroundStyle(settings.muted)
-                    .lineLimit(1).truncationMode(.tail).frame(maxWidth: 170, alignment: .trailing)
+                    .fixedSize(horizontal: false, vertical: true).frame(maxWidth: 170, alignment: .trailing)
             }
         }
         .padding(.vertical, 9).padding(.horizontal, 13)

@@ -23,10 +23,15 @@
       "expected": "Save a date and visit note, relaunch and retrieve it",
       "baseline_verdict": "Pass",
       "group": "record integrity",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Reconcile record summary with game list.",
       "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics."
+      ],
+      "remaining": [
+        "Complete physical Safari verification; recheck the full original activity on the current native build."
+      ]
     },
     {
       "id": "A2",
@@ -210,10 +215,15 @@
       "expected": "Enter opponent, scores and note, relaunch and recover",
       "baseline_verdict": "Pass",
       "group": "record integrity",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
       "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+      ],
+      "remaining": [
+        "Connect results to scheduled games; complete physical Safari verification."
+      ]
     },
     {
       "id": "A17",
@@ -226,7 +236,8 @@
       "acceptance": "Locker > inspect result card ellipsis and source for edit/delete; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result.",
-        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
@@ -238,10 +249,17 @@
       "expected": "Reconcile record and games and see impact of saved result",
       "baseline_verdict": "Partial",
       "group": "record integrity",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Label sample statistics clearly and reconcile game-level figures; connect personal results when enabled.",
       "acceptance": "Passport > season totals > Kelowna > compare record and game list; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png"
+      ],
+      "remaining": [
+        "Complete physical Safari verification and native sample detail comparison."
+      ]
     },
     {
       "id": "A19",

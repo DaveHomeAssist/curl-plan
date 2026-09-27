@@ -183,6 +183,17 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(Store().spielStatus("sp2") == "You're in")
     }
 
+    func testSampleClubRecordsMatchListedGames() {
+        let s = Store(); s.exploreDemo()
+        XCTAssertEqual(s.derivedStats().games, 0, "Samples are not personal results")
+        for stop in s.stops where !stop.games.isEmpty {
+            let wins = stop.games.filter { $0.res == "W" }.count
+            let losses = stop.games.filter { $0.res == "L" }.count
+            XCTAssertEqual(stop.record, "\(wins)–\(losses)", stop.id)
+            XCTAssertEqual(stop.iceRec, stop.record, stop.id)
+        }
+    }
+
     func testDerivedStatsFromDemoLog() {
         let s = Store(); s.exploreDemo()
         s.addResult(body: "", scoreFor: 8, scoreAgainst: 4, vs: "Northern")  // WIN
