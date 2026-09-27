@@ -9,6 +9,53 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testSavedIceReadingLandscapeLayout() throws {
+        XCUIDevice.shared.orientation = .landscapeRight
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 8))
+        let saved = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "Sheet A21 ", "A21 draw weight check")).firstMatch
+        guard saved.exists else { throw XCTSkip("Requires the preceding physical ice reading journey") }
+        for _ in 0..<4 {
+            if saved.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(saved.isHittable)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A21-landscape-screen"; proof.lifetime = .keepAlways; add(proof)
+    }
+
+    func testIceReadingDateAndSheetRecovery() throws {
+        XCUIDevice.shared.orientation = .landscapeRight
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        XCTAssertTrue(app.buttons["Ice read"].waitForExistence(timeout: 8))
+        app.buttons["Ice read"].tap()
+        XCTAssertTrue(app.datePickers.firstMatch.waitForExistence(timeout: 4))
+        let marker = "A21 " + UUID().uuidString.prefix(8)
+        let sheet = app.textFields["Sheet (optional)"]
+        sheet.tap(); sheet.typeText(marker); hideAuditKeyboard()
+        let curl = app.textFields["Curl (ft)"]
+        if !curl.isHittable { app.swipeUp() }
+        curl.tap(); curl.typeText("4"); hideAuditKeyboard()
+        let note = app.textFields["Note (optional)"]
+        if !note.isHittable { app.swipeUp() }
+        note.tap(); note.typeText("A21 draw weight check"); hideAuditKeyboard()
+        app.buttons["Save"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 8))
+        let saved = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Sheet " + marker)).firstMatch
+        for _ in 0..<4 {
+            if saved.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(saved.exists)
+        XCTAssertFalse(saved.label.contains("Date not recorded"))
+        XCTAssertTrue(saved.label.contains("A21 draw weight check"))
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "A21-ice-date-sheet-relaunch"; proof.lifetime = .keepAlways; add(proof)
+    }
+
     func testPersonalResultTotalsAfterCorrectionAndDeletion() throws {
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .landscapeRight }

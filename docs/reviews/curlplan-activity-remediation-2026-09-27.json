@@ -27,10 +27,11 @@
       "required_action": "Reconcile record summary with game list.",
       "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics."
+        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
       ],
       "remaining": [
-        "Complete physical Safari verification; recheck the full original activity on the current native build."
+        "Physical Safari interaction verification remains open."
       ]
     },
     {
@@ -255,10 +256,11 @@
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
         "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png",
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
       ],
       "remaining": [
-        "Complete physical Safari verification and native sample detail comparison."
+        "Physical Safari interaction verification remains open."
       ]
     },
     {
@@ -289,10 +291,18 @@
       "expected": "Save speed, curl, note and recover by club/sheet/date",
       "baseline_verdict": "Partial",
       "group": "record integrity",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add sheet/date context and labeled fields; retest landscape typing.",
       "acceptance": "Passport > Kelowna > Ice read > curl/note > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native and web ice readings now store and display the selected calendar date and optional sheet. Older readings remain readable with date/sheet explicitly not recorded.",
+        "Physical Ignacio landscape: testIceReadingDateAndSheetRecovery passed with sheet A21 CFED0BC8, curl 4 and note A21 draw weight check, retrieved after process relaunch. Read-only testSavedIceReadingLandscapeLayout passed and full-screen screenshot inspected.",
+        "20 StoreTests passed, including old-record decoding and new/old readings preserved together after persistence reload. Web actual-function checks passed: invalid date rejected, storage failure preserved form/state, date and sheet recovered and rendered after reload.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A21-landscape-screen.png"
+      ],
+      "remaining": [
+        "Physical Safari interaction verification remains open."
+      ]
     },
     {
       "id": "A22",

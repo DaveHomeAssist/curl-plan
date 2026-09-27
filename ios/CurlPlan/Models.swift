@@ -151,7 +151,7 @@ struct Post: Identifiable, Codable, Hashable {
 // MARK: - Stop-detail contribution entries + messages
 
 struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
-struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double }
+struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double; var date: String? = nil; var sheet: String? = nil }
 struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
 struct ReviewDraft: Codable, Hashable { var stars = 5; var note = "" }
 struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: String; let text: String; let at: Double }
@@ -476,8 +476,8 @@ final class Store: ObservableObject {
     func addVisit(_ stopID: String, date: String, note: String) {
         state.visits[stopID, default: []].insert(VisitEntry(date: date.isEmpty ? "Today" : date, note: note, at: Store.now()), at: 0)
     }
-    func addIceRead(_ stopID: String, speed: String, curl: String, note: String) {
-        state.iceReads[stopID, default: []].insert(IceReadEntry(speed: speed.isEmpty ? "Medium" : speed, curl: curl, note: note, at: Store.now()), at: 0)
+    func addIceRead(_ stopID: String, speed: String, curl: String, note: String, date: String? = nil, sheet: String? = nil) {
+        state.iceReads[stopID, default: []].insert(IceReadEntry(speed: speed.isEmpty ? "Medium" : speed, curl: curl, note: note, at: Store.now(), date: date, sheet: sheet?.trimmingCharacters(in: .whitespacesAndNewlines)), at: 0)
     }
     func addStopReview(_ stopID: String, stars: Int, note: String) {
         state.reviews[stopID, default: []].insert(ReviewEntry(stars: max(1, min(5, stars)), note: note, at: Store.now()), at: 0)

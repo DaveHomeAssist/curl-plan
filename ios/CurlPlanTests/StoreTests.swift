@@ -213,6 +213,24 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(s.stops.filter(\.here).count, 1)
     }
 
+    func testIceContextPersistsAndLegacyRecordsSurvive() throws {
+        let legacy = Data("{\"id\":\"00000000-0000-0000-0000-000000000001\",\"speed\":\"Fast\",\"curl\":\"5\",\"note\":\"legacy\",\"at\":1}".utf8)
+        let old = try JSONDecoder().decode(IceReadEntry.self, from: legacy)
+        XCTAssertNil(old.date); XCTAssertNil(old.sheet)
+        let initial = Store(); initial.exploreDemo()
+        var savedState = initial.state
+        savedState.iceReads["kelowna"] = [old]
+        Store.defaults.set(try JSONEncoder().encode(savedState), forKey: "cp.state.v2:demo")
+        let s = Store()
+        s.addIceRead("kelowna", speed: "Slow", curl: "3–4", note: "late draw", date: "2026-09-27", sheet: " A ")
+        let reads = Store().iceReads("kelowna")
+        XCTAssertEqual(reads.count, 2)
+        XCTAssertEqual(reads[0].date, "2026-09-27")
+        XCTAssertEqual(reads[0].sheet, "A")
+        XCTAssertEqual(reads[1].note, "legacy")
+        XCTAssertNil(reads[1].date)
+    }
+
     func testStopContributionsClampAndPersist() {
         let s = Store(); s.exploreDemo()
         s.addVisit("vernon", date: "Today", note: "hi")

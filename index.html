@@ -1216,7 +1216,7 @@ function defaultStore(){
     posts:[],     // OR-Set by id — user-authored feed items, newest-first
     visits:{},    // stopId -> OR-Set [ {id?, date, note, at} ]
     reviews:{},   // stopId -> OR-Set [ {id?, stars, note, at} ]
-    iceReads:{},  // stopId -> OR-Set [ {id?, speed, curl, note, at} ]
+    iceReads:{},  // stopId -> OR-Set [ {id?, date?, sheet?, speed, curl, note, at} ]
     threads:{},   // curlerId -> OR-Set [ {id?, from, text, at} ]
     addedSpiels:[],  // OR-Set by id — user-created spiels (seed + these = allSpiels())
     addedCurlers:[]  // OR-Set by id — user-created curlers (seed + these = allCurlers())
@@ -1719,8 +1719,8 @@ function viewStop(id){
   if(!st) return viewPassport();
   var ice = st.ice;
   var iceReadList = submissionCard("Your ice reads", store.iceReads[st.id] || [], function(r){
-    return '<div class="subrow"><span class="nm">' + esc(r.speed) + ' · ' + esc(r.curl) + ' ft</span>' +
-      (r.note ? '<span class="meta">' + esc(r.note) + '</span>' : '') + '</div>'; });
+    return '<div style="padding:8px 0;"><div>' + esc(r.date || 'Date not recorded') + ' · ' + esc(r.sheet ? 'Sheet ' + r.sheet : 'Sheet not recorded') + '</div><div class="subrow"><span class="nm">' + esc(r.speed) + ' · ' + esc(r.curl) + ' ft</span>' +
+      (r.note ? '<span class="meta">' + esc(r.note) + '</span>' : '') + '</div></div>'; });
   var visitList = submissionCard("Your visits", store.visits[st.id] || [], function(v){
     return '<div class="subrow"><span class="nm">' + esc(v.date) + '</span>' +
       (v.note ? '<span class="meta">' + esc(v.note) + '</span>' : '') + '</div>'; });
@@ -2186,16 +2186,25 @@ function openIceRead(stopId){
   var st = stop(stopId); if(!st) return;
   var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
   openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + '</p>' +
+    '<div class="field split"><div><label for="f-date">Date</label><input id="f-date" type="date" required></div><div><label for="f-sheet">Sheet (optional)</label><input id="f-sheet" placeholder="e.g. 3 or A"></div></div>' +
     '<div class="field split"><div><label for="f-speed">Speed</label><select id="f-speed">' + opts + '</select></div>' +
       '<div><label for="f-curl">Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
     '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
       '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button></div>');
+  var now = new Date();
+  el("f-date").value = [now.getFullYear(), String(now.getMonth()+1).padStart(2,"0"), String(now.getDate()).padStart(2,"0")].join("-");
 }
 function submitIceRead(stopId){
+  var date = val("f-date"), sheet = val("f-sheet");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date){ toast("Choose a valid date"); return false; }
   var curl = val("f-curl");
-  if(!curl){ toast("Add a curl figure"); return; }
-  addStopEntry("iceReads", stopId, { speed:val("f-speed") || "Medium", curl:curl, note:val("f-note"), at:Date.now() }, "Ice read added");
+  if(!curl){ toast("Add a curl figure"); return false; }
+  if(!stop(stopId)) return false;
+  var next = JSON.parse(JSON.stringify(store));
+  (next.iceReads[stopId] = next.iceReads[stopId] || []).unshift({id:uid("ice"), date:date, sheet:sheet, speed:val("f-speed") || "Medium", curl:curl, note:val("f-note"), at:Date.now()});
+  if(!commitLocal(next)) return false;
+  closeSheet(); render({keepScroll:true}); toast("Ice read added"); return true;
 }
 function openReviewActions(stopId, id){
   if(!(store.reviews[stopId] || []).some(function(r){ return r.id === id; })) return;

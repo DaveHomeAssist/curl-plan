@@ -153,7 +153,12 @@ struct StopDetailView: View {
         if !reads.isEmpty {
             listCard(title: "Your ice reads", count: reads.count) {
                 ForEach(reads) { r in
-                    subrow(name: "\(r.speed) · \(r.curl) ft", meta: r.note)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(r.date ?? "Date not recorded") · \(r.sheet.flatMap { $0.isEmpty ? nil : "Sheet " + $0 } ?? "Sheet not recorded")")
+                            .font(.grotesk(13)).foregroundStyle(settings.muted)
+                        subrow(name: "\(r.speed) · \(r.curl) ft", meta: r.note)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
@@ -400,13 +405,25 @@ private struct AddIceReadSheet: View {
     @State private var speed = "Medium"
     @State private var curl = ""
     @State private var note = ""
+    @State private var date = Date()
+    @State private var sheet = ""
+
+    private var recordedDate: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
 
     private var canSave: Bool { !curl.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         CreateScaffold(title: "Add an ice read", subtitle: store.stop(stopID)?.name ?? "",
                        canSave: canSave, onCancel: { dismiss() },
-                       onSave: { store.addIceRead(stopID, speed: speed, curl: curl.trimmingCharacters(in: .whitespaces), note: note); dismiss() }) {
+                       onSave: { store.addIceRead(stopID, speed: speed, curl: curl.trimmingCharacters(in: .whitespaces), note: note, date: recordedDate, sheet: sheet); dismiss() }) {
+            DatePicker("Date", selection: $date, displayedComponents: .date)
+            CPField(label: "Sheet (optional)", text: $sheet, placeholder: "e.g. 3 or A")
             CPChips(label: "Speed", options: ["Keen", "Fast", "Medium", "Slow"], selection: $speed)
             CPField(label: "Curl (ft)", text: $curl, placeholder: "4–5")
             CPTextArea(label: "Note (optional)", text: $note, placeholder: "Straight early, more curl after the hog…")
