@@ -1,0 +1,4 @@
+activity,surface,check,result,evidence,scope
+A3,Ignacio Safari,All attendance choices persist; feed/list agree; original restored,Pass,web-attendance-controls.xcresult,Local attendance intent only
+A3/A32,Ignacio Safari,Event guidance and planning visible in Ice and Arena,Pass,web-event-readable.xcresult; A3-web-readable-ice.png; A3-web-readable-arena.png,Visual review; not complete accessibility conformance
+A32,Ignacio Safari,Following/Discover semantic controls and selected state,Pass,web-attendance-controls.xcresult,Keyboard activation still requires separate physical acceptance

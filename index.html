@@ -104,6 +104,7 @@ body{
   border-radius:42px;
   overflow:hidden;
   background:var(--screen);
+  color:var(--ink);
   display:flex;
   flex-direction:column;
 }
@@ -1601,8 +1602,8 @@ function renderPostCard(p){
   if(p.type === "spiel"){
     var sp = spielById(p.spielId);
     var spielBtn = !sp ? '' : (spielStatus(sp) === "Going"
-      ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going locally ✓</button>'
-      : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">Mark going locally</button>');
+      ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" aria-label="' + esc("Mark not going locally: " + sp.name) + '" data-id="' + esc(sp.id) + '">Going locally ✓</button>'
+      : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" aria-label="' + esc("Mark going locally: " + sp.name) + '" data-id="' + esc(sp.id) + '">Mark going locally</button>');
     return '<div class="card spiel post" style="padding:14px;">' +
       '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent-deep); margin-bottom:7px;">SHARED SPIEL</div>' +
       '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
@@ -1633,9 +1634,9 @@ function lockerCards(){
 }
 function lockerTabLink(id, label){
   var on = ui.lockerTab === id;
-  return '<span data-action="locker-tab" data-tab="' + id + '" style="cursor:pointer; font:' +
+  return '<button type="button" data-action="locker-tab" data-tab="' + id + '" aria-pressed="' + on + '" style="border:0; background:transparent; min-height:44px; cursor:pointer; font:' +
     (on ? '700' : '500') + ' 14px \'Hanken Grotesk\'; color:' + (on ? 'var(--ink)' : 'var(--muted)') +
-    '; padding-bottom:9px;' + (on ? ' border-bottom:2.5px solid var(--accent);' : '') + '">' + label + '</span>';
+    '; padding-bottom:9px;' + (on ? ' border-bottom:2.5px solid var(--accent);' : '') + '">' + label + '</button>';
 }
 
 function viewLocker(){
@@ -1665,7 +1666,7 @@ function viewSpiels(){
     var status = spielStatus(sp);
     var solid = status === "Going";
     var btn = '<div role="group" aria-label="Local attendance intent" style="display:flex; flex-wrap:wrap; gap:8px;">' + ["Going","Considering","Not going"].map(function(option){
-      return '<button class="pill-btn' + (status === option ? '' : ' ghost') + '" aria-pressed="' + (status === option) + '" data-action="attendance-intent" data-id="' + esc(sp.id) + '" data-status="' + option + '">' + option + '</button>';
+      return '<button class="pill-btn' + (status === option ? '' : ' ghost') + '" aria-pressed="' + (status === option) + '" aria-label="' + esc(option + ': ' + sp.name) + '" data-action="attendance-intent" data-id="' + esc(sp.id) + '" data-status="' + option + '">' + option + '</button>';
     }).join('') + '</div>';
     if(owned) btn = '<button class="pill-btn ghost" data-action="edit-event" data-id="' + esc(sp.id) + '">Edit event</button><button class="pill-btn ghost" data-action="delete-event" data-id="' + esc(sp.id) + '">Delete event</button>';
     var conflicts = Number.isFinite(sp.startAt) && status !== "Not going" ? eventConflicts(sp.startAt,sp.endAt,sp.id) : [];

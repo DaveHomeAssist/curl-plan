@@ -938,6 +938,83 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebEventReadabilityBothThemes() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
+            throw XCTSkip("Requires a physical iPad Safari preview URL")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        for theme in ["ice", "arena"] {
+            safari.open(URL(string: previewURL + "?theme=" + theme)!)
+            let tab = safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "Spiels")).firstMatch
+            XCTAssertTrue(tab.waitForExistence(timeout: 10)); tab.tap()
+            XCTAssertTrue(safari.staticTexts["Attendance intent is saved on this device; it is not registration."].exists)
+            let details = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Event details and trip planning")).firstMatch
+            XCTAssertTrue(details.exists); details.tap()
+            XCTAssertTrue(safari.staticTexts["Personal notes; confirm details with the organizer."].exists)
+            let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+            proof.name = "A3-web-readable-" + theme; proof.lifetime = .keepAlways; add(proof)
+        }
+        // URL-only theme overrides do not mutate the user's saved preference.
+        safari.open(URL(string: previewURL)!)
+    }
+
+    func testWebAttendanceAndFeedNavigation() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
+            throw XCTSkip("Requires a physical iPad Safari preview URL")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        safari.open(URL(string: previewURL + "?attendance=" + UUID().uuidString)!)
+        let demo = safari.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'demo'")).firstMatch
+        if demo.waitForExistence(timeout: 3) { demo.tap() }
+        func tab(_ title: String) -> XCUIElement {
+            safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", title)).firstMatch
+        }
+        func selected(_ button: XCUIElement) -> Bool {
+            button.isSelected || (button.value as? String) == "1"
+        }
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 10)); tab("Locker").tap()
+        safari.descendants(matching: .any)["Discover"].firstMatch.tap()
+        XCTAssertTrue(selected(safari.descendants(matching: .any)["Discover"].firstMatch))
+        XCTAssertFalse(selected(safari.descendants(matching: .any)["Following"].firstMatch))
+        safari.descendants(matching: .any)["Following"].firstMatch.tap()
+        XCTAssertTrue(selected(safari.descendants(matching: .any)["Following"].firstMatch))
+        tab("Spiels").tap()
+        let options = ["Going", "Considering", "Not going"]
+        func intent(_ option: String) -> XCUIElement { safari.descendants(matching: .any)[option + ": Brier Patch Open"].firstMatch }
+        XCTAssertTrue(intent("Going").waitForExistence(timeout: 5))
+        let original = try XCTUnwrap(options.first { selected(intent($0)) }, "Read original attendance before changing it")
+        for option in options {
+            intent(option).tap()
+            XCTAssertTrue(selected(intent(option)))
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?attendance=" + UUID().uuidString)!)
+            XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 10)); tab("Spiels").tap()
+            XCTAssertTrue(selected(intent(option)), "Attendance intent must survive Safari restart")
+            for other in options where other != option { XCTAssertFalse(selected(intent(other))) }
+            tab("Locker").tap()
+            let action = option == "Going" ? "Mark not going locally: Brier Patch Open" : "Mark going locally: Brier Patch Open"
+            XCTAssertTrue(safari.buttons[action].exists, "Feed reflects saved event attendance")
+            tab("Spiels").tap()
+        }
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A3-web-attendance-reload"; proof.lifetime = .keepAlways; add(proof)
+        tab("Locker").tap()
+        safari.buttons["Mark going locally: Brier Patch Open"].tap()
+        tab("Spiels").tap(); XCTAssertTrue(selected(intent("Going")))
+        tab("Locker").tap()
+        safari.buttons["Mark not going locally: Brier Patch Open"].tap()
+        tab("Spiels").tap(); XCTAssertTrue(selected(intent("Not going")))
+        intent(original).tap()
+        safari.terminate(); safari.launch()
+        safari.open(URL(string: previewURL + "?attendance=" + UUID().uuidString)!)
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 10)); tab("Spiels").tap()
+        XCTAssertTrue(selected(intent(original)), "Restore original attendance")
+    }
+
     func testWebPostRecoveryOnPreparedIPad() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
             throw XCTSkip("Requires a physical iPad Safari preview URL")

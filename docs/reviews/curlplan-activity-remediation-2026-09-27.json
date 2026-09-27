@@ -59,18 +59,18 @@
       "expected": "Open details, change attendance intent, relaunch and confirm",
       "baseline_verdict": "Pass",
       "group": "data ownership and resilience",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Clarify that status is local attendance intent.",
       "acceptance": "Spiels > Brier Patch Details > Watching > Done > relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native and browser now use Going, Considering, Not going for local attendance intent. Removed registration success/withdrawal claims; sample seed statuses no longer imply personal decisions. Explicit legacy overrides remain readable (You're in -> Going; Watching/Invite -> Considering).",
         "Physical Ignacio: testLocalAttendanceIntentSurvivesRelaunch passed in 35 seconds. Selected each of three choices on Okanagan Classic (sp2), relaunched and read Selected plus local-only disclosure each time; restored original Considering choice and verified after relaunch. testSpielStatusUnifiedAndPersists also passed. /tmp/curlplan-remediation/attendance-physical.xcresult.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A3-local-attendance.png",
-        "24 SwiftPM core tests passed including legacy compatibility, persistence, explicit withdrawal, invalid choices and backup roundtrip. Actual browser function tests passed including reload and storage-full rollback. Static app, seed, parity and feature-review checks passed."
+        "24 SwiftPM core tests passed including legacy compatibility, persistence, explicit withdrawal, invalid choices and backup roundtrip. Actual browser function tests passed including reload and storage-full rollback. Static app, seed, parity and feature-review checks passed.",
+        "Physical Ignacio Safari testWebAttendanceAndFeedNavigation passed 56.711 sec, zero skips: Following/Discover expose and switch selected state; each Brier Patch Open attendance choice survives Safari termination/fresh-page load; feed reflects all choices; feed Going/Not going actions update event controls; original Considering restored and verified after restart. web-attendance-controls.xcresult. Accessible names identify event and intended feed action. Together with native attendance/unified-status tests, verifies local attendance flow, not registration or organizer delivery.",
+        "Screenshot review found nearly invisible event guidance/planning text in Ice: .screen inherited pale outer-frame text. Added color:var(--ink) on app surface. Physical testWebEventReadabilityBothThemes passed 15.031 sec: opened event planning disclosure in Ice and Arena, read local-only/organizer guidance, screenshots inspected. URL theme overrides do not persist; returned to saved theme. A3-web-readable-ice.png/A3-web-readable-arena.png; web-event-readable.xcresult."
       ],
-      "remaining": [
-        "Physical Safari attendance controls and feed/detail consistency journey remain to be exercised."
-      ]
+      "remaining": []
     },
     {
       "id": "A4",
@@ -606,7 +606,8 @@
         "Clipping diagnosis on physical Ignacio: vertical fixedSize, body font and vertical padding did not resolve the exact result-body finding. All production experiments reverted. testPhysicalLockerTextClipping exercises normal and accessibility5 with the exact Sam result visible; both failed in /tmp/curlplan-remediation/text-tab-controls.xcresult. Large screenshot shows complete sentence/emoji; this is visual evidence, not automated conformance.",
         "DEBUG-only minimal native controls isolate two failures without CurlPlan screen layout: standard four-tab TabView reports four Dynamic Type failures; plain body Text with the curling emoji reports clipping while the same sentence without emoji does not. /tmp/curlplan-remediation/text-tab-controls.xcresult (tab control) and /tmp/curlplan-remediation/native-text-control.xcresult. These findings narrow diagnosis to native control/rendering or audit behavior; no issue filters, exemptions or false-positive declarations were added.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests.",
-        "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources."
+        "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources.",
+        "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
