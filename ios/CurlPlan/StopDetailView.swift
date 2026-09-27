@@ -385,16 +385,17 @@ private struct LogVisitSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     let stopID: String
-    @State private var date = "Today"
-    @State private var note = ""
+
+    @State private var draft = ContributionDraft()
 
     var body: some View {
-        CreateScaffold(title: "Log a visit", subtitle: store.stop(stopID)?.name ?? "",
-                       canSave: true, onCancel: { dismiss() },
-                       onSave: { store.addVisit(stopID, date: date, note: note); dismiss() }) {
-            CPField(label: "Date", text: $date, placeholder: "Today")
-            CPTextArea(label: "Note (optional)", text: $note, placeholder: "Draw weight was up, great hosts…")
+        CreateScaffold(title: "Log a visit", subtitle: "Close keeps your draft on this device.",
+                       canSave: !draft.visitDate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, onCancel: { dismiss() },
+                       onSave: { store.addVisit(stopID, date: draft.visitDate, note: draft.note); dismiss() }, cancelTitle: "Close") {
+            CPField(label: "Date", text: $draft.visitDate, placeholder: "Today")
+            CPTextArea(label: "Note (optional)", text: $draft.note, placeholder: "Draw weight was up, great hosts…")
         }
+        .modifier(ContributionDraftRecovery(stopID: stopID, kind: "visit", draft: $draft))
     }
 }
 
@@ -402,32 +403,30 @@ private struct AddIceReadSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     let stopID: String
-    @State private var speed = "Medium"
-    @State private var curl = ""
-    @State private var note = ""
-    @State private var date = Date()
-    @State private var sheet = ""
 
     private var recordedDate: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        return formatter.string(from: draft.date)
     }
 
-    private var canSave: Bool { !curl.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canSave: Bool { !draft.curl.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    @State private var draft = ContributionDraft()
 
     var body: some View {
-        CreateScaffold(title: "Add an ice read", subtitle: store.stop(stopID)?.name ?? "",
+        CreateScaffold(title: "Add an ice read", subtitle: "Close keeps your draft on this device.",
                        canSave: canSave, onCancel: { dismiss() },
-                       onSave: { store.addIceRead(stopID, speed: speed, curl: curl.trimmingCharacters(in: .whitespaces), note: note, date: recordedDate, sheet: sheet); dismiss() }) {
-            DatePicker("Date", selection: $date, displayedComponents: .date)
-            CPField(label: "Sheet (optional)", text: $sheet, placeholder: "e.g. 3 or A")
-            CPChips(label: "Speed", options: ["Keen", "Fast", "Medium", "Slow"], selection: $speed)
-            CPField(label: "Curl (ft)", text: $curl, placeholder: "4–5")
-            CPTextArea(label: "Note (optional)", text: $note, placeholder: "Straight early, more curl after the hog…")
+                       onSave: { store.addIceRead(stopID, speed: draft.speed, curl: draft.curl.trimmingCharacters(in: .whitespaces), note: draft.note, date: recordedDate, sheet: draft.sheet); dismiss() }, cancelTitle: "Close") {
+            DatePicker("Date", selection: $draft.date, displayedComponents: .date)
+            CPField(label: "Sheet (optional)", text: $draft.sheet, placeholder: "e.g. 3 or A")
+            CPChips(label: "Speed", options: ["Keen", "Fast", "Medium", "Slow"], selection: $draft.speed)
+            CPField(label: "Curl (ft)", text: $draft.curl, placeholder: "4–5")
+            CPTextArea(label: "Note (optional)", text: $draft.note, placeholder: "Straight early, more curl after the hog…")
         }
+        .modifier(ContributionDraftRecovery(stopID: stopID, kind: "ice", draft: $draft))
     }
 }
 
@@ -476,5 +475,37 @@ private struct WriteReviewSheet: View {
         .alert("Could not save review", isPresented: $saveFailed) {
             Button("OK", role: .cancel) {}
         } message: { Text("The review may no longer exist. Your changes have not been published.") }
+    }
+}
+
+private struct ContributionDraftRecovery: ViewModifier {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let stopID: String
+    let kind: String
+    @Binding var draft: ContributionDraft
+    @State private var loaded = false
+    @State private var discard = false
+
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            content
+            Button("Discard draft", role: .destructive) { discard = true }
+                .frame(minHeight: 44)
+        }
+        .onAppear {
+            guard !loaded else { return }
+            draft = store.state.contributionDrafts?[store.contributionDraftKey(stopID, kind: kind)] ?? ContributionDraft()
+            loaded = true
+        }
+        .onChange(of: draft) { _, value in
+            if loaded { store.saveContributionDraft(stopID, kind: kind, draft: value) }
+        }
+        .alert("Discard this draft?", isPresented: $discard) {
+            Button("Discard draft", role: .destructive) {
+                store.discardContributionDraft(stopID, kind: kind); dismiss()
+            }
+            Button("Keep draft", role: .cancel) {}
+        } message: { Text("Saved visits and ice readings stay unchanged.") }
     }
 }

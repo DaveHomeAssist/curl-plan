@@ -2058,6 +2058,7 @@ function commitLocal(next){
   return true;
 }
 function editorFields(){
+  if(activeEditor && ["visit","ice"].includes(activeEditor.kind)) return ["date","sheet","speed","curl","note"];
   return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"] : ["body","for","ag","vs","club","note"];
 }
 function persistEditorDraft(){
@@ -2185,12 +2186,14 @@ function submitCompose(type){
 /* ---- stop detail submissions ---- */
 function openVisit(stopId){
   var st = stop(stopId); if(!st) return;
-  openSheet('<h2>Log a visit</h2><p class="sub">' + esc(st.name) + '</p>' +
+  if(!openSheet('<h2>Log a visit</h2><p class="sub">' + esc(st.name) + ' · Close keeps your draft.</p>' +
     '<div class="field"><label for="f-date">Date</label><input id="f-date" placeholder="Today"></div>' +
     '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
-    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button></div>');
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button>' +
+      '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button><button class="b outline" data-action="discard-draft">Discard draft</button></div>')) return;
   if(el("f-date")) el("f-date").value = "Today";
+  activeEditor = {kind:"visit", key:editorKey("visit", null, stopId), stopId:stopId};
+  if(store.drafts[activeEditor.key]) restoreEditorDraft(store.drafts[activeEditor.key]);
 }
 /* shared tail for every stop-detail submission */
 function addStopEntry(kind, stopId, entry, msg){
@@ -2198,20 +2201,28 @@ function addStopEntry(kind, stopId, entry, msg){
   saveStore(); closeSheet(); render({keepScroll:true}); toast(msg);
 }
 function submitVisit(stopId){
-  addStopEntry("visits", stopId, { date:val("f-date") || "Today", note:val("f-note"), at:Date.now() }, "Visit logged");
+  if(!currentUser() || !stop(stopId)) return false;
+  var date=val("f-date"); if(!date){toast("Add a visit date");return false;}
+  var next=JSON.parse(JSON.stringify(store));
+  (next.visits[stopId]=next.visits[stopId] || []).unshift({date:date,note:val("f-note"),at:Date.now()});
+  delete next.drafts[editorKey("visit", null, stopId)];
+  if(!commitLocal(next)) return false;
+  activeEditor=null; closeSheet(); render({keepScroll:true}); toast("Visit logged"); return true;
 }
 function openIceRead(stopId){
   var st = stop(stopId); if(!st) return;
   var opts = ["Keen","Fast","Medium","Slow"].map(function(s){ return '<option>' + s + '</option>'; }).join("");
-  openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + '</p>' +
+  if(!openSheet('<h2>Add an ice read</h2><p class="sub">' + esc(st.name) + ' · Close keeps your draft.</p>' +
     '<div class="field split"><div><label for="f-date">Date</label><input id="f-date" type="date" required></div><div><label for="f-sheet">Sheet (optional)</label><input id="f-sheet" placeholder="e.g. 3 or A"></div></div>' +
     '<div class="field split"><div><label for="f-speed">Speed</label><select id="f-speed">' + opts + '</select></div>' +
       '<div><label for="f-curl">Curl (ft)</label><input id="f-curl" placeholder="4–5"></div></div>' +
     '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Straight early, more curl after the hog…"></textarea></div>' +
-    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button></div>');
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button>' +
+      '<button class="b solid" data-action="submit-iceread" data-id="' + stopId + '">Save read</button><button class="b outline" data-action="discard-draft">Discard draft</button></div>')) return;
   var now = new Date();
   el("f-date").value = [now.getFullYear(), String(now.getMonth()+1).padStart(2,"0"), String(now.getDate()).padStart(2,"0")].join("-");
+  activeEditor = {kind:"ice", key:editorKey("ice", null, stopId), stopId:stopId};
+  if(store.drafts[activeEditor.key]) restoreEditorDraft(store.drafts[activeEditor.key]);
 }
 function submitIceRead(stopId){
   var date = val("f-date"), sheet = val("f-sheet");
@@ -2221,8 +2232,9 @@ function submitIceRead(stopId){
   if(!stop(stopId)) return false;
   var next = JSON.parse(JSON.stringify(store));
   (next.iceReads[stopId] = next.iceReads[stopId] || []).unshift({id:uid("ice"), date:date, sheet:sheet, speed:val("f-speed") || "Medium", curl:curl, note:val("f-note"), at:Date.now()});
+  delete next.drafts[editorKey("ice", null, stopId)];
   if(!commitLocal(next)) return false;
-  closeSheet(); render({keepScroll:true}); toast("Ice read added"); return true;
+  activeEditor=null; closeSheet(); render({keepScroll:true}); toast("Ice read added"); return true;
 }
 function openReviewActions(stopId, id){
   if(!(store.reviews[stopId] || []).some(function(r){ return r.id === id; })) return;

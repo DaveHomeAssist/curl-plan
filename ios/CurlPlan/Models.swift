@@ -168,6 +168,15 @@ struct Post: Identifiable, Codable, Hashable {
 struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
 struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double; var date: String? = nil; var sheet: String? = nil }
 struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
+struct ContributionDraft: Codable, Hashable {
+    var visitDate = "Today"
+    var date = Date()
+    var note = ""
+    var speed = "Medium"
+    var curl = ""
+    var sheet = ""
+}
+
 struct EventDraft: Codable, Hashable {
     var name = ""
     var location = ""
@@ -253,6 +262,7 @@ struct AppState: Codable, Hashable {
     var messageDrafts: [String: String] = [:]
     var reviewDrafts: [String: ReviewDraft] = [:]
     // Optional keeps backups created before event drafts valid without rewriting them.
+    var contributionDrafts: [String: ContributionDraft]? = nil
     var eventDrafts: [String: EventDraft]? = nil
     var postDrafts: [String: PostDraft] = [:] // "new" or the owned post ID
     var tombstones: [String: [String: Double]] = [:]
@@ -276,6 +286,7 @@ struct AppState: Codable, Hashable {
         if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
         if let v = try? c.decodeIfPresent([String: String].self, forKey: .messageDrafts) { messageDrafts = v }
         if let v = try? c.decodeIfPresent([String: ReviewDraft].self, forKey: .reviewDrafts) { reviewDrafts = v }
+        contributionDrafts = try? c.decodeIfPresent([String: ContributionDraft].self, forKey: .contributionDrafts)
         eventDrafts = try? c.decodeIfPresent([String: EventDraft].self, forKey: .eventDrafts)
         if let v = try? c.decodeIfPresent([String: PostDraft].self, forKey: .postDrafts) { postDrafts = v }
         if let v = try? c.decodeIfPresent([String: [String: Double]].self, forKey: .tombstones) { tombstones = v }
@@ -560,11 +571,27 @@ final class Store: ObservableObject {
     func iceReads(_ stopID: String) -> [IceReadEntry] { state.iceReads[stopID] ?? [] }
     func reviews(_ stopID: String) -> [ReviewEntry] { state.reviews[stopID] ?? [] }
 
+    func contributionDraftKey(_ stopID: String, kind: String) -> String { kind + ":" + stopID }
+
+    func saveContributionDraft(_ stopID: String, kind: String, draft: ContributionDraft) {
+        guard isSignedIn, stop(stopID) != nil, ["visit", "ice"].contains(kind) else { return }
+        var drafts = state.contributionDrafts ?? [:]
+        drafts[contributionDraftKey(stopID, kind: kind)] = draft
+        state.contributionDrafts = drafts
+    }
+
+    func discardContributionDraft(_ stopID: String, kind: String) {
+        state.contributionDrafts?.removeValue(forKey: contributionDraftKey(stopID, kind: kind))
+        if state.contributionDrafts?.isEmpty == true { state.contributionDrafts = nil }
+    }
+
     func addVisit(_ stopID: String, date: String, note: String) {
         state.visits[stopID, default: []].insert(VisitEntry(date: date.isEmpty ? "Today" : date, note: note, at: Store.now()), at: 0)
+        discardContributionDraft(stopID, kind: "visit")
     }
     func addIceRead(_ stopID: String, speed: String, curl: String, note: String, date: String? = nil, sheet: String? = nil) {
         state.iceReads[stopID, default: []].insert(IceReadEntry(speed: speed.isEmpty ? "Medium" : speed, curl: curl, note: note, at: Store.now(), date: date, sheet: sheet?.trimmingCharacters(in: .whitespacesAndNewlines)), at: 0)
+        discardContributionDraft(stopID, kind: "ice")
     }
     func addStopReview(_ stopID: String, stars: Int, note: String) {
         state.reviews[stopID, default: []].insert(ReviewEntry(stars: max(1, min(5, stars)), note: note, at: Store.now()), at: 0)
@@ -745,7 +772,7 @@ struct LocalBackup: Codable {
         let ice = state.iceReads.values.reduce(0) { $0 + $1.count }
         let reviews = state.reviews.values.reduce(0) { $0 + $1.count }
         let messages = state.threads.values.reduce(0) { $0 + $1.count }
-        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count + (state.eventDrafts?.count ?? 0)
+        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count + (state.eventDrafts?.count ?? 0) + (state.contributionDrafts?.count ?? 0)
         return "\(state.posts.count) posts · \(visits) visits · \(ice) ice readings · \(reviews) reviews · \(messages) messages · \(drafts) drafts · \(state.addedSpiels.count) events · \(state.addedCurlers.count) curlers"
     }
 
