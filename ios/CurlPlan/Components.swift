@@ -383,6 +383,7 @@ struct CreateScaffold<Content: View>: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) { content() }
             }
+            .accessibilityIdentifier("curlplan.editor.scroll")
 
             HStack(spacing: 10) {
                 Button(action: onCancel) {

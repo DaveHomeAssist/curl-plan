@@ -112,6 +112,7 @@ struct NewSpielSheet: View {
                     }), placeholder: "Not recorded")
                 }
             }
+            .accessibilityIdentifier("curlplan.event.planning.editor")
             CPChips(label: "Local attendance intent", options: ["Going", "Considering", "Not going"], selection: $draft.status)
             let conflicts = store.eventConflicts(start: draft.start.timeIntervalSince1970, end: draft.end.timeIntervalSince1970, excluding: existing?.id)
             if !conflicts.isEmpty {

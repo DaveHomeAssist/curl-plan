@@ -114,7 +114,9 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.buttons["curlplan.roster.add"].tap()
         func fill(_ label: String, _ value: String) {
             let field = app.textFields[label]
-            scrollUntilHittable(field, name: label); field.tap(); field.typeText(value); hideAuditKeyboard()
+            scrollUntilHittable(field, name: label)
+            if field.value as? String == value { return }
+            field.tap(); field.typeText(value); hideAuditKeyboard()
         }
         fill("Name", marker)
         app.buttons["Second"].tap()
@@ -368,6 +370,85 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.terminate(); app.launch()
         XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
         XCTAssertFalse(app.staticTexts[summary + " next game"].exists)
+    }
+
+    func testEventPlanningEntryAndCorrection() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        tab("Spiels").tap()
+        func scrollUntilHittable(_ element: XCUIElement, name: String) {
+            let editor = app.scrollViews["curlplan.editor.scroll"]
+            let detail = app.scrollViews["curlplan.event.detail.scroll"]
+            let scroll = editor.exists ? editor : (detail.exists ? detail : app.scrollViews.firstMatch)
+            for _ in 0..<12 {
+                if element.exists && scroll.frame.contains(element.frame) && element.isHittable { return }
+                let frame = element.exists ? element.frame : .zero
+                print("PLANNING REVEAL \(name): element=\(frame) viewport=\(scroll.frame)")
+                if !frame.isEmpty && frame.midY < scroll.frame.minY { scroll.swipeDown() }
+                else {
+                    scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.85))
+                        .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.20)))
+                }
+            }
+            let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            proof.name = "planning-unreachable-" + name; proof.lifetime = .keepAlways; add(proof)
+            XCTFail("Could not reveal " + name)
+        }
+        func tapAfterScrolling(_ element: XCUIElement, name: String) { scrollUntilHittable(element, name: name); element.tap() }
+        func fill(_ label: String, _ value: String) {
+            let field = app.textFields[label]
+            scrollUntilHittable(field, name: label)
+            if field.value as? String == value { return }
+            field.tap(); field.typeText(value); hideAuditKeyboard()
+        }
+        let fields = [("Format", "Eight ends"), ("Entry requirements", "Confirm eligibility"),
+                      ("Organizer", "Audit organizer"), ("Draw schedule", "Friday draw at 7"),
+                      ("Travel", "Carpool from club"), ("Accommodation", "Two rooms requested"),
+                      ("Team arrangements", "Confirm four players")]
+        let detailID: String
+        if app.buttons["curlplan.event.details.sp-f8f71f4c"].exists {
+            XCTAssertTrue(app.staticTexts["PLAN 786A7960"].exists)
+            detailID = "curlplan.event.details.sp-f8f71f4c"
+        } else {
+            let details = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.event.details."))
+            let before = Set(details.allElementsBoundByIndex.map(\.identifier))
+            app.buttons["curlplan.event.add"].tap()
+            let name = app.textFields["Name"]
+            let existingName = name.value as? String ?? ""
+            guard ["", "League game", "PLAN 786A7960"].contains(existingName) else { throw XCTSkip("Preserve existing event draft") }
+            let marker = existingName == "PLAN 786A7960" ? existingName : "PLAN " + UUID().uuidString.prefix(8)
+            fill("Name", marker); fill("Location", "Planning audit club")
+            tapAfterScrolling(app.buttons["curlplan.event.planning.editor"], name: "Planning fields")
+            for (label, value) in fields { fill(label, value) }
+            app.buttons["Save"].tap()
+            XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+            let added = details.allElementsBoundByIndex.map(\.identifier).filter { !before.contains($0) }
+            XCTAssertEqual(added.count, 1)
+            detailID = try XCTUnwrap(added.first)
+        }
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        tapAfterScrolling(app.buttons[detailID], name: "Saved planning event")
+        tapAfterScrolling(app.buttons["curlplan.event.planning.details"], name: "Saved planning")
+        for (_, value) in fields { scrollUntilHittable(app.staticTexts[value], name: value); XCTAssertTrue(app.staticTexts[value].exists) }
+        tapAfterScrolling(app.buttons["Edit event"], name: "Edit planning event")
+        tapAfterScrolling(app.buttons["curlplan.event.planning.editor"], name: "Edit planning fields")
+        let organizer = app.textFields["Organizer"]
+        scrollUntilHittable(organizer, name: "Organizer")
+        XCTAssertEqual(organizer.value as? String, "Audit organizer")
+        organizer.tap(); organizer.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        organizer.typeText(" corrected"); hideAuditKeyboard(); app.buttons["Save"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        tapAfterScrolling(app.buttons[detailID], name: "Corrected event")
+        tapAfterScrolling(app.buttons["curlplan.event.planning.details"], name: "Corrected planning")
+        scrollUntilHittable(app.staticTexts["Audit organizer corrected"], name: "Saved correction")
+        XCTAssertTrue(app.staticTexts["Audit organizer corrected"].exists)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A13-A14-planning-persisted"; proof.lifetime = .keepAlways; add(proof)
+        tapAfterScrolling(app.buttons["Delete event"], name: "Delete owned test event")
+        app.alerts.buttons["Delete event"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        XCTAssertFalse(app.buttons[detailID].exists)
     }
 
     func testEventPlanningFieldsAreReachable() throws {

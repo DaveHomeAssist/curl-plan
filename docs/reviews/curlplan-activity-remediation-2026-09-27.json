@@ -225,10 +225,12 @@
       "acceptance": "Spiels > Details > inspect decision-making information > Done; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
-        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult."
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
+        "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included."
       ],
       "remaining": [
-        "Complete physical create/edit/relaunch and Safari visual/interaction acceptance; personal notes do not prove organizer-verified details or external bookings."
+        "Physical Safari planning entry, correction, persistence and visual acceptance remain; personal notes do not prove organizer-verified details or external bookings."
       ]
     },
     {
@@ -242,10 +244,12 @@
       "acceptance": "Spiels > Add and Details > inspect travel/team/draw fields; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
-        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult."
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
+        "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included."
       ],
       "remaining": [
-        "Complete physical create/edit/relaunch and Safari visual/interaction acceptance; personal notes do not prove organizer-verified details or external bookings."
+        "Physical Safari planning entry, correction, persistence and visual acceptance remain; personal notes do not prove organizer-verified details or external bookings."
       ]
     },
     {

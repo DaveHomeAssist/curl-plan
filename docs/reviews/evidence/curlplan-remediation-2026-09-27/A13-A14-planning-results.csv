@@ -1,0 +1,6 @@
+activity,step,result,evidence
+A13/A14,Enter seven planning fields and save,Pass,planning-field-scroll.xcresult + planning-correction.xcresult
+A13/A14,Read seven exact values after relaunch,Pass,planning-field-scroll.xcresult + planning-correction.xcresult
+A13/A14,Correct organizer and read after relaunch,Pass,planning-field-scroll.xcresult + planning-correction.xcresult
+A13/A14,Delete owned test event and verify absence after relaunch,Pass,planning-field-scroll.xcresult + planning-correction.xcresult
+A13/A14,Physical Safari equivalent,Not verified,Safari input limitation remains
