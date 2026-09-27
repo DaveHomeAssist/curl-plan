@@ -131,6 +131,7 @@ struct Post: Identifiable, Codable, Hashable {
 struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
 struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double }
 struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
+struct ReviewDraft: Codable, Hashable { var stars = 5; var note = "" }
 struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: String; let text: String; let at: Double }
 
 // MARK: - Identity
@@ -201,6 +202,7 @@ struct AppState: Codable, Hashable {
     var reviews: [String: [ReviewEntry]] = [:]
     var iceReads: [String: [IceReadEntry]] = [:]
     var threads: [String: [Message]] = [:]   // curlerId -> messages
+    var reviewDrafts: [String: ReviewDraft] = [:]
     var postDrafts: [String: PostDraft] = [:] // "new" or the owned post ID
     var tombstones: [String: [String: Double]] = [:]
 
@@ -221,6 +223,7 @@ struct AppState: Codable, Hashable {
         if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews) { reviews = v }
         if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads) { iceReads = v }
         if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
+        if let v = try? c.decodeIfPresent([String: ReviewDraft].self, forKey: .reviewDrafts) { reviewDrafts = v }
         if let v = try? c.decodeIfPresent([String: PostDraft].self, forKey: .postDrafts) { postDrafts = v }
         if let v = try? c.decodeIfPresent([String: [String: Double]].self, forKey: .tombstones) { tombstones = v }
     }
@@ -454,6 +457,48 @@ final class Store: ObservableObject {
     }
     func addStopReview(_ stopID: String, stars: Int, note: String) {
         state.reviews[stopID, default: []].insert(ReviewEntry(stars: max(1, min(5, stars)), note: note, at: Store.now()), at: 0)
+    }
+
+    func reviewDraftKey(_ stopID: String, editingID: UUID? = nil) -> String {
+        "\(stopID):\(editingID?.uuidString ?? "new")"
+    }
+
+    func saveReviewDraft(_ stopID: String, draft: ReviewDraft, editingID: UUID? = nil) {
+        guard currentUser() != nil, stop(stopID) != nil else { return }
+        if let id = editingID, !reviews(stopID).contains(where: { $0.id == id }) { return }
+        state.reviewDrafts[reviewDraftKey(stopID, editingID: editingID)] = draft
+    }
+
+    func discardReviewDraft(_ stopID: String, editingID: UUID? = nil) {
+        state.reviewDrafts.removeValue(forKey: reviewDraftKey(stopID, editingID: editingID))
+    }
+
+    @discardableResult
+    func saveReview(_ stopID: String, draft: ReviewDraft, editingID: UUID? = nil) -> Bool {
+        guard currentUser() != nil, stop(stopID) != nil, (1...5).contains(draft.stars) else { return false }
+        let existing = editingID.flatMap { id in reviews(stopID).first { $0.id == id } }
+        if editingID != nil && existing == nil { return false }
+        let review = ReviewEntry(id: existing?.id ?? UUID(), stars: draft.stars,
+                                 note: draft.note.trimmingCharacters(in: .whitespacesAndNewlines),
+                                 at: max(Store.now(), (existing?.at ?? 0).nextUp))
+        var next = state
+        if let index = next.reviews[stopID]?.firstIndex(where: { $0.id == review.id }) {
+            next.reviews[stopID]?[index] = review
+        } else { next.reviews[stopID, default: []].insert(review, at: 0) }
+        next.reviewDrafts.removeValue(forKey: reviewDraftKey(stopID, editingID: editingID))
+        state = next
+        return true
+    }
+
+    @discardableResult
+    func deleteReview(_ stopID: String, id: UUID) -> Bool {
+        guard currentUser() != nil, let review = reviews(stopID).first(where: { $0.id == id }) else { return false }
+        var next = state
+        next.reviews[stopID]?.removeAll { $0.id == id }
+        next.tombstones["reviews", default: [:]][id.uuidString] = max(Store.now(), review.at)
+        next.reviewDrafts.removeValue(forKey: reviewDraftKey(stopID, editingID: id))
+        state = next
+        return true
     }
 
     // MARK: Messaging

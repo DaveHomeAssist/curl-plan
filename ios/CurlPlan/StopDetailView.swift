@@ -10,6 +10,8 @@ struct StopDetailView: View {
 
     private enum Contribution: String, Identifiable { case visit, iceRead, review; var id: String { rawValue } }
     @State private var active: Contribution? = nil
+    @State private var editingReview: ReviewEntry?
+    @State private var deletingReview: ReviewEntry?
 
     var body: some View {
         Group {
@@ -46,6 +48,18 @@ struct StopDetailView: View {
             case .review:  WriteReviewSheet(stopID: stopID)
             }
         }
+        .sheet(item: $editingReview) { review in
+            WriteReviewSheet(stopID: stopID, editingReview: review)
+        }
+        .alert("Delete this review?", isPresented: Binding(
+            get: { deletingReview != nil }, set: { if !$0 { deletingReview = nil } }
+        )) {
+            Button("Delete review", role: .destructive) {
+                if let review = deletingReview { store.deleteReview(stopID, id: review.id) }
+                deletingReview = nil
+            }
+            Button("Cancel", role: .cancel) { deletingReview = nil }
+        } message: { Text("This removes your local review. This cannot be undone.") }
     }
 
     // MARK: Hero
@@ -230,7 +244,7 @@ struct StopDetailView: View {
     @ViewBuilder private var reviews: some View {
         let list = store.reviews(stopID)
         if !list.isEmpty {
-            listCard(title: "Reviews", count: list.count) {
+            listCard(title: "Your local reviews", count: list.count) {
                 ForEach(list) { r in
                     HStack(spacing: 9) {
                         StarsRow(count: r.stars)
@@ -239,6 +253,15 @@ struct StopDetailView: View {
                             Text(r.note).font(.mono(10, .medium)).foregroundStyle(settings.muted)
                                 .multilineTextAlignment(.trailing).frame(maxWidth: 180, alignment: .trailing)
                         }
+                        Menu {
+                            Button("Edit review") { editingReview = r }
+                            Button("Delete review", role: .destructive) { deletingReview = r }
+                        } label: {
+                            Image(systemName: "ellipsis").foregroundStyle(settings.ink)
+                                .frame(width: 44, height: 44).contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Review actions")
+                        .accessibilityIdentifier("curlplan.review.actions.\(r.id)")
                     }
                     .padding(.vertical, 9).padding(.horizontal, 13)
                 }
@@ -387,18 +410,45 @@ private struct WriteReviewSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     let stopID: String
-    @State private var stars = 5
-    @State private var note = ""
+    var editingReview: ReviewEntry? = nil
+    @State private var draft = ReviewDraft()
+    @State private var loaded = false
+    @State private var confirmingDiscard = false
+    @State private var saveFailed = false
 
     var body: some View {
-        CreateScaffold(title: "Write a review", subtitle: store.stop(stopID)?.name ?? "",
-                       canSave: true, onCancel: { dismiss() },
-                       onSave: { store.addStopReview(stopID, stars: stars, note: note); dismiss() }) {
+        CreateScaffold(title: editingReview == nil ? "Write a review" : "Edit review",
+                       subtitle: "Saved on this device. Close keeps your draft.",
+                       canSave: (1...5).contains(draft.stars), onCancel: { dismiss() },
+                       onSave: {
+                           if store.saveReview(stopID, draft: draft, editingID: editingReview?.id) { dismiss() }
+                           else { saveFailed = true }
+                       }, cancelTitle: "Close") {
             VStack(alignment: .leading, spacing: 6) {
                 Text("RATING").font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
-                StarPicker(rating: $stars)
+                StarPicker(rating: $draft.stars)
             }
-            CPTextArea(label: "Review", text: $note, placeholder: "Great ice, friendly club, fast bar service.")
+            CPTextArea(label: "Review", text: $draft.note, placeholder: "Great ice, friendly club, fast bar service.")
+            Button("Discard draft", role: .destructive) { confirmingDiscard = true }
         }
+        .onAppear {
+            guard !loaded else { return }
+            draft = store.state.reviewDrafts[store.reviewDraftKey(stopID, editingID: editingReview?.id)]
+                ?? editingReview.map { ReviewDraft(stars: $0.stars, note: $0.note) } ?? ReviewDraft()
+            loaded = true
+        }
+        .onChange(of: draft) { _, value in
+            if loaded { store.saveReviewDraft(stopID, draft: value, editingID: editingReview?.id) }
+        }
+        .confirmationDialog("Discard this draft?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
+            Button("Discard draft", role: .destructive) {
+                store.discardReviewDraft(stopID, editingID: editingReview?.id)
+                dismiss()
+            }
+            Button("Keep editing", role: .cancel) {}
+        } message: { Text("Your published review stays unchanged.") }
+        .alert("Could not save review", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: { Text("The review may no longer exist. Your changes have not been published.") }
     }
 }

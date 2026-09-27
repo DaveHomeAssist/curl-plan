@@ -61,6 +61,54 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    func testClubReviewCorrectionAndRecovery() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 8))
+        tab("Passport").tap(); app.buttons["curlplan.stop.kelowna"].tap()
+        app.buttons["Write review"].tap()
+        let field = app.textFields["Review"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        guard (field.value as? String ?? "").isEmpty else { throw XCTSkip("Preserve existing review draft") }
+        let original = "Review " + UUID().uuidString.prefix(8)
+        field.tap(); field.typeText(original); hideAuditKeyboard()
+        app.buttons["Save"].tap()
+        let actions = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.review.actions.")).firstMatch
+        for _ in 0..<5 {
+            if actions.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(actions.isHittable)
+        actions.tap(); app.buttons["Edit review"].tap()
+        XCTAssertEqual(field.value as? String, original)
+        field.tap(); field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        field.typeText(" corrected"); hideAuditKeyboard()
+        app.buttons["2 stars"].tap()
+        app.buttons["Close"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 8))
+        tab("Passport").tap(); app.buttons["curlplan.stop.kelowna"].tap()
+        for _ in 0..<5 {
+            if actions.isHittable { break }
+            app.swipeUp()
+        }
+        actions.tap(); app.buttons["Edit review"].tap()
+        XCTAssertEqual(field.value as? String, original + " corrected")
+        XCTAssertEqual(app.buttons["2 stars"].value as? String, "Selected rating")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts[original + " corrected"].waitForExistence(timeout: 3))
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A22-corrected-review"; proof.lifetime = .keepAlways; add(proof)
+        actions.tap(); app.buttons["Delete review"].tap()
+        app.alerts.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts[original + " corrected"].exists)
+        actions.tap(); app.buttons["Delete review"].tap()
+        app.alerts.buttons["Delete review"].tap()
+        XCTAssertFalse(app.staticTexts[original + " corrected"].exists)
+    }
+
     private func hideAuditKeyboard() {
         let hide = app.buttons["Hide keyboard"].firstMatch
         if hide.waitForExistence(timeout: 1) { hide.tap() }

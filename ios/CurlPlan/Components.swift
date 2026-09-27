@@ -364,6 +364,7 @@ struct CreateScaffold<Content: View>: View {
     let canSave: Bool
     let onCancel: () -> Void
     let onSave: () -> Void
+    var cancelTitle = "Cancel"
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -382,7 +383,7 @@ struct CreateScaffold<Content: View>: View {
 
             HStack(spacing: 10) {
                 Button(action: onCancel) {
-                    Text("Cancel").font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
+                    Text(cancelTitle).font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
                             .strokeBorder(settings.ink, lineWidth: 1.5))
@@ -440,9 +441,12 @@ struct StarPicker: View {
                 Button { rating = i } label: {
                     Text("★")
                         .font(.system(size: 26))
+                        .frame(width: 44, height: 44)
                         .foregroundStyle(i <= rating ? settings.accent : settings.line)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(i) \(i == 1 ? "star" : "stars")")
+                .accessibilityValue(i == rating ? "Selected rating" : "")
             }
         }
     }

@@ -17,6 +17,33 @@ final class StoreTests: XCTestCase {
         Store.defaults = suite
     }
 
+    func testReviewCorrectionDraftAndDeletionPersist() throws {
+        let s = Store(); s.exploreDemo()
+        XCTAssertTrue(s.saveReview("kelowna", draft: ReviewDraft(stars: 5, note: "original")))
+        let review = s.reviews("kelowna")[0]
+        let draft = ReviewDraft(stars: 2, note: "corrected")
+        s.saveReviewDraft("kelowna", draft: draft, editingID: review.id)
+        XCTAssertEqual(Store().reviews("kelowna")[0].note, "original")
+        XCTAssertEqual(Store().state.reviewDrafts[s.reviewDraftKey("kelowna", editingID: review.id)], draft)
+        XCTAssertFalse(s.saveReview("unknown", draft: draft))
+        XCTAssertFalse(s.saveReview("kelowna", draft: ReviewDraft(stars: 6)))
+        XCTAssertTrue(s.saveReview("kelowna", draft: draft, editingID: review.id))
+        let restored = Store()
+        XCTAssertEqual(restored.reviews("kelowna").count, 1)
+        XCTAssertEqual(restored.reviews("kelowna")[0].id, review.id)
+        XCTAssertEqual(restored.reviews("kelowna")[0].stars, 2)
+        XCTAssertEqual(restored.reviews("kelowna")[0].note, "corrected")
+        XCTAssertTrue(restored.state.reviewDrafts.isEmpty)
+        XCTAssertFalse(s.deleteReview("unknown", id: review.id))
+        let stale = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(s.state))
+        XCTAssertTrue(s.deleteReview("kelowna", id: review.id))
+        XCTAssertTrue(Store().reviews("kelowna").isEmpty)
+        XCTAssertNotNil(Store().state.tombstones["reviews"]?[review.id.uuidString])
+        let deleted = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(Store().state))
+        XCTAssertEqual(Merge.state(stale, deleted)["reviews"]?["kelowna"]?.asArray?.count, 0)
+        XCTAssertFalse(s.saveReview("kelowna", draft: draft, editingID: review.id))
+    }
+
     func testFollowOverridesSeed() {
         let s = Store(); s.exploreDemo()
         XCTAssertFalse(s.isFollowing("sam"))   // seed following=false

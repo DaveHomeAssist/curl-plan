@@ -265,10 +265,17 @@
       "expected": "Save rating and review and discover revision path",
       "baseline_verdict": "Fail",
       "group": "correction and recovery",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Provide Edit/Delete for the user's own reviews and verify changed rating/text.",
       "acceptance": "Passport > Kelowna > Write review > review > Save > relaunch; inspect revision path; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: testClubReviewCorrectionAndRecovery passed; created review, edited note/rating, closed and relaunched to recover draft, saved correction, canceled deletion, then confirmed deletion.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A22-corrected-review.png",
+        "16 StoreTests passed on Ignacio; final targeted testReviewCorrectionDraftAndDeletionPersist passed after correcting deletion-marker bucket, including stale-data merge rejection."
+      ],
+      "remaining": [
+        "Implement and verify web club-review correction parity; verify review layout with accessibility text sizes."
+      ]
     },
     {
       "id": "A23",
@@ -357,10 +364,11 @@
       "required_action": "Preserve drafts or confirm discard on interactive dismissal; keep empty-field guards.",
       "acceptance": "Open empty Note/Spiel/Ice forms > inspect disabled Save/Post; attempt draft dismissal and relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Physical Ignacio: composer draft recovered after interactive dismissal and process relaunch; publishing cleared draft. Store tests verified explicit discard and account-bucket isolation."
+        "Physical Ignacio: composer draft recovered after interactive dismissal and process relaunch; publishing cleared draft. Store tests verified explicit discard and account-bucket isolation.",
+        "Physical Ignacio: club-review editing draft and selected two-star rating survived process relaunch; published review remained separate until Save."
       ],
       "remaining": [
-        "Verify visible discard confirmation; extend recovery to event, ice, visit and review forms; implement web parity."
+        "Verify visible discard confirmation; extend recovery to event, ice and visit forms; implement web parity."
       ]
     },
     {
@@ -406,7 +414,7 @@
     }
   ],
   "checkpoint": {
-    "phase": "Native post correction and composer draft recovery",
+    "phase": "Native club review correction and review draft recovery",
     "delivery": "PR18 update; merge gated on CI",
     "next": "Complete correction/recovery coverage and web parity; resolve required accessibility CI failures; continue remaining activity groups",
     "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
