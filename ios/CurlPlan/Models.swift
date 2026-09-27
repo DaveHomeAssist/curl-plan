@@ -168,6 +168,17 @@ struct Post: Identifiable, Codable, Hashable {
 struct VisitEntry: Identifiable, Codable, Hashable { var id = UUID(); let date: String; let note: String; let at: Double }
 struct IceReadEntry: Identifiable, Codable, Hashable { var id = UUID(); let speed: String; let curl: String; let note: String; let at: Double; var date: String? = nil; var sheet: String? = nil }
 struct ReviewEntry: Identifiable, Codable, Hashable { var id = UUID(); let stars: Int; let note: String; let at: Double }
+struct EventDraft: Codable, Hashable {
+    var name = ""
+    var location = ""
+    var start = Date()
+    var end = Date().addingTimeInterval(7200)
+    var kind = "League game"
+    var preparation = ""
+    var status = "Going"
+    var timeZone = TimeZone.current.identifier
+}
+
 struct ReviewDraft: Codable, Hashable { var stars = 5; var note = "" }
 struct Message: Identifiable, Codable, Hashable { var id = UUID(); let from: String; let text: String; let at: Double }
 
@@ -241,6 +252,8 @@ struct AppState: Codable, Hashable {
     var threads: [String: [Message]] = [:]   // curlerId -> messages
     var messageDrafts: [String: String] = [:]
     var reviewDrafts: [String: ReviewDraft] = [:]
+    // Optional keeps backups created before event drafts valid without rewriting them.
+    var eventDrafts: [String: EventDraft]? = nil
     var postDrafts: [String: PostDraft] = [:] // "new" or the owned post ID
     var tombstones: [String: [String: Double]] = [:]
 
@@ -263,6 +276,7 @@ struct AppState: Codable, Hashable {
         if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
         if let v = try? c.decodeIfPresent([String: String].self, forKey: .messageDrafts) { messageDrafts = v }
         if let v = try? c.decodeIfPresent([String: ReviewDraft].self, forKey: .reviewDrafts) { reviewDrafts = v }
+        eventDrafts = try? c.decodeIfPresent([String: EventDraft].self, forKey: .eventDrafts)
         if let v = try? c.decodeIfPresent([String: PostDraft].self, forKey: .postDrafts) { postDrafts = v }
         if let v = try? c.decodeIfPresent([String: [String: Double]].self, forKey: .tombstones) { tombstones = v }
     }
@@ -391,6 +405,18 @@ final class Store: ObservableObject {
         }
     }
 
+    func saveEventDraft(_ draft: EventDraft, editingID: String? = nil) {
+        guard isSignedIn else { return }
+        var drafts = state.eventDrafts ?? [:]
+        drafts[editingID ?? "new"] = draft
+        state.eventDrafts = drafts
+    }
+
+    func discardEventDraft(editingID: String? = nil) {
+        state.eventDrafts?.removeValue(forKey: editingID ?? "new")
+        if state.eventDrafts?.isEmpty == true { state.eventDrafts = nil }
+    }
+
     @discardableResult
     func saveScheduledEvent(id: String? = nil, name: String, location: String, start: Double, end: Double,
                             timeZone: String, kind: String, preparation: String, status: String) -> Bool {
@@ -411,6 +437,7 @@ final class Store: ObservableObject {
         if let index = state.addedSpiels.firstIndex(where: { $0.id == event.id }) { state.addedSpiels[index] = event }
         else { state.addedSpiels.insert(event, at: 0) }
         state.joins[event.id] = status
+        discardEventDraft(editingID: id)
         return true
     }
 
@@ -419,6 +446,7 @@ final class Store: ObservableObject {
         guard let event = state.addedSpiels.first(where: { $0.id == id }) else { return false }
         state.addedSpiels.removeAll { $0.id == id }
         state.joins[id] = nil
+        discardEventDraft(editingID: id)
         state.tombstones["addedSpiels", default: [:]][id] = max(Store.now(), (event.at ?? 0) + 0.001)
         return true
     }
@@ -717,7 +745,7 @@ struct LocalBackup: Codable {
         let ice = state.iceReads.values.reduce(0) { $0 + $1.count }
         let reviews = state.reviews.values.reduce(0) { $0 + $1.count }
         let messages = state.threads.values.reduce(0) { $0 + $1.count }
-        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count
+        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count + (state.eventDrafts?.count ?? 0)
         return "\(state.posts.count) posts · \(visits) visits · \(ice) ice readings · \(reviews) reviews · \(messages) messages · \(drafts) drafts · \(state.addedSpiels.count) events · \(state.addedCurlers.count) curlers"
     }
 
@@ -739,6 +767,11 @@ struct LocalBackup: Codable {
                 guard let start = event.startAt, let end = event.endAt, start.isFinite, end.isFinite, end > start,
                       let zone = event.timeZoneID, TimeZone(identifier: zone) != nil,
                       let kind = event.eventKind, ["League game", "Practice", "Bonspiel", "Event"].contains(kind) else { throw BackupError.invalid }
+            }
+            for draft in (backup.state.eventDrafts ?? [:]).values {
+                guard draft.end >= draft.start, TimeZone(identifier: draft.timeZone) != nil,
+                      ["League game", "Practice", "Bonspiel", "Event"].contains(draft.kind),
+                      ["Going", "Considering", "Not going"].contains(draft.status) else { throw BackupError.invalid }
             }
             for reviews in backup.state.reviews.values {
                 guard reviews.allSatisfy({ (1...5).contains($0.stars) }) else { throw BackupError.invalid }

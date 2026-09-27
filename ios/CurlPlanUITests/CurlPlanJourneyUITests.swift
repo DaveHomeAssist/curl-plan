@@ -9,6 +9,42 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testEventDraftSurvivesRelaunchAndDiscard() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons["curlplan.event.add"].tap()
+        let name = app.textFields["Name"]
+        let marker = "Draft 11A1F039"
+        let current = name.value as? String ?? ""
+        guard current.isEmpty || current == "League game" || current == marker else {
+            throw XCTSkip("Preserve existing event draft")
+        }
+        if current != marker {
+            name.tap(); name.typeText(marker); hideAuditKeyboard()
+            app.textFields["Location"].tap(); app.textFields["Location"].typeText("Sheet 4"); hideAuditKeyboard()
+        }
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons["curlplan.event.add"].tap()
+        XCTAssertEqual(app.textFields["Name"].value as? String, marker)
+        XCTAssertEqual(app.textFields["Location"].value as? String, "Sheet 4")
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A30-event-draft-recovery"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Discard draft"].tap()
+        app.buttons["Keep draft"].tap()
+        XCTAssertEqual(app.textFields["Name"].value as? String, marker)
+        app.buttons["Discard draft"].tap()
+        app.buttons["curlplan.event.discard.confirm"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons["curlplan.event.add"].tap()
+        XCTAssertTrue(app.textFields["Name"].waitForExistence(timeout: 4))
+        XCTAssertNotEqual(app.textFields["Name"].value as? String, marker)
+        app.buttons["Close"].tap()
+    }
+
     func testEventCreateEditAndDelete() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]

@@ -18,6 +18,32 @@ final class StoreTests: XCTestCase {
         Store.defaults = suite
     }
 
+    func testEventDraftRecoveryBackupAndSaveCleanup() throws {
+        let s = Store(); s.exploreDemo()
+        let oldBackup = try s.backupData()
+        var draft = EventDraft(); draft.name = "Practice"; draft.location = "Sheet 2"
+        draft.preparation = "Draw weight"; draft.timeZone = "America/Toronto"
+        s.saveEventDraft(draft)
+        XCTAssertEqual(Store().state.eventDrafts?["new"], draft)
+        XCTAssertTrue(s.state.addedSpiels.isEmpty)
+        XCTAssertEqual(try s.previewBackup(s.backupData()).state.eventDrafts?["new"], draft)
+        XCTAssertNil(try s.previewBackup(oldBackup).state.eventDrafts)
+        XCTAssertFalse(s.saveScheduledEvent(name: "", location: draft.location, start: 100, end: 200,
+                                            timeZone: draft.timeZone, kind: draft.kind, preparation: "", status: draft.status))
+        XCTAssertNotNil(s.state.eventDrafts?["new"])
+        XCTAssertTrue(s.saveScheduledEvent(name: draft.name, location: draft.location, start: 100, end: 200,
+                                           timeZone: draft.timeZone, kind: draft.kind, preparation: draft.preparation, status: draft.status))
+        XCTAssertNil(Store().state.eventDrafts)
+        let event = s.state.addedSpiels[0]
+        draft.name = "Unsaved change"; s.saveEventDraft(draft, editingID: event.id)
+        s.discardEventDraft(editingID: event.id)
+        XCTAssertEqual(Store().spiel(event.id)?.name, "Practice")
+        XCTAssertNil(Store().state.eventDrafts)
+        s.saveEventDraft(draft, editingID: event.id)
+        XCTAssertTrue(s.deleteScheduledEvent(event.id))
+        XCTAssertNil(Store().state.eventDrafts)
+    }
+
     func testThemeTextPairsMeetContrast() {
         let settings = AppSettings()
         let oldTheme = settings.theme, oldAccent = settings.accentKey

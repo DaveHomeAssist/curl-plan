@@ -56,43 +56,40 @@ struct NewSpielSheet: View {
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
     var existing: Spiel? = nil
-    @State private var name = ""
-    @State private var location = ""
-    @State private var start = Date()
-    @State private var end = Date().addingTimeInterval(7200)
-    @State private var kind = "League game"
-    @State private var preparation = ""
-    @State private var status = "Going"
+    @State private var draft = EventDraft()
+    @State private var confirmingDiscard = false
     @State private var loaded = false
     @State private var failed = false
-    private var zone: String { existing?.timeZoneID ?? TimeZone.current.identifier }
+    private var zone: String { draft.timeZone }
     private var canSave: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && end > start
+        !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !draft.location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draft.end > draft.start
     }
 
     var body: some View {
         CreateScaffold(title: existing == nil ? "New event" : "Edit event",
-                       subtitle: "Saved on this device. Going is your intent, not registration.",
+                       subtitle: "Close keeps your draft on this device. Going is intent, not registration.",
                        canSave: canSave, onCancel: { dismiss() }, onSave: {
-            if store.saveScheduledEvent(id: existing?.id, name: name, location: location,
-                                        start: start.timeIntervalSince1970, end: end.timeIntervalSince1970,
-                                        timeZone: zone, kind: kind, preparation: preparation, status: status) { dismiss() }
+            if store.saveScheduledEvent(id: existing?.id, name: draft.name, location: draft.location,
+                                        start: draft.start.timeIntervalSince1970, end: draft.end.timeIntervalSince1970,
+                                        timeZone: zone, kind: draft.kind, preparation: draft.preparation, status: draft.status) { dismiss() }
             else { failed = true }
-        }) {
-            CPField(label: "Name", text: $name, placeholder: "League game")
-            CPField(label: "Location", text: $location, placeholder: "Club and sheet")
-            Picker("Event type", selection: $kind) {
+        }, cancelTitle: "Close") {
+            Button("Discard draft", role: .destructive) { confirmingDiscard = true }
+                .frame(minHeight: 44)
+            CPField(label: "Name", text: $draft.name, placeholder: "League game")
+            CPField(label: "Location", text: $draft.location, placeholder: "Club and sheet")
+            Picker("Event type", selection: $draft.kind) {
                 ForEach(["League game", "Practice", "Bonspiel", "Event"], id: \.self) { Text($0) }
             }
-            DatePicker("Starts", selection: Binding(get: { start }, set: { value in
-                let duration = end.timeIntervalSince(start); start = value; end = value.addingTimeInterval(duration)
+            DatePicker("Starts", selection: Binding(get: { draft.start }, set: { value in
+                let duration = draft.end.timeIntervalSince(draft.start); draft.start = value; draft.end = value.addingTimeInterval(duration)
             }))
-            DatePicker("Ends", selection: $end, in: start...)
+            DatePicker("Ends", selection: $draft.end, in: draft.start...)
             Text("Time zone: " + zone).font(.footnote)
-            CPTextArea(label: "Preparation", text: $preparation, placeholder: "Arrival time, equipment, or focus")
-            CPChips(label: "Local attendance intent", options: ["Going", "Considering", "Not going"], selection: $status)
-            let conflicts = store.eventConflicts(start: start.timeIntervalSince1970, end: end.timeIntervalSince1970, excluding: existing?.id)
+            CPTextArea(label: "Preparation", text: $draft.preparation, placeholder: "Arrival time, equipment, or focus")
+            CPChips(label: "Local attendance intent", options: ["Going", "Considering", "Not going"], selection: $draft.status)
+            let conflicts = store.eventConflicts(start: draft.start.timeIntervalSince1970, end: draft.end.timeIntervalSince1970, excluding: existing?.id)
             if !conflicts.isEmpty {
                 Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", "))
                     .font(.body).accessibilityIdentifier("curlplan.event.conflicts")
@@ -102,15 +99,27 @@ struct NewSpielSheet: View {
         .onAppear {
             guard !loaded else { return }
             if let existing {
-                name = existing.name; location = existing.whereText
-                start = Date(timeIntervalSince1970: existing.startAt ?? Store.now())
-                end = Date(timeIntervalSince1970: existing.endAt ?? start.timeIntervalSince1970 + 7200)
-                kind = existing.eventKind ?? "Event"; preparation = existing.preparation ?? ""
+                draft.name = existing.name; draft.location = existing.whereText
+                draft.start = Date(timeIntervalSince1970: existing.startAt ?? Store.now())
+                draft.end = Date(timeIntervalSince1970: existing.endAt ?? draft.start.timeIntervalSince1970 + 7200)
+                draft.kind = existing.eventKind ?? "Event"; draft.preparation = existing.preparation ?? ""
                 let saved = store.spielStatus(existing.id)
-                status = ["Going", "Considering", "Not going"].contains(saved) ? saved : "Considering"
+                draft.status = ["Going", "Considering", "Not going"].contains(saved) ? saved : "Considering"
             }
+            if let saved = store.state.eventDrafts?[existing?.id ?? "new"] { draft = saved }
+            else if let zone = existing?.timeZoneID { draft.timeZone = zone }
             loaded = true
         }
+        .onChange(of: draft) { _, value in
+            if loaded { store.saveEventDraft(value, editingID: existing?.id) }
+        }
+        .alert("Discard this event draft?", isPresented: $confirmingDiscard) {
+            Button("Discard draft", role: .destructive) {
+                store.discardEventDraft(editingID: existing?.id); dismiss()
+            }
+            .accessibilityIdentifier("curlplan.event.discard.confirm")
+            Button("Keep draft", role: .cancel) {}
+        } message: { Text("Any saved event stays unchanged.") }
         .alert("Could not save event", isPresented: $failed) { Button("OK", role: .cancel) {} }
     }
 }
