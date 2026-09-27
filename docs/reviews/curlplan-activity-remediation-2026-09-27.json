@@ -1,5 +1,5 @@
 {
-  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1\u2013A33",
+  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1–A33",
   "started": "2026-09-27",
   "audit_run": "IPAD33-20260927",
   "audit_source_sha256": "7fcb5b2e454fe4530c0249293f2ccacaf90590ca17f785df1e1868b23f558d69",
@@ -28,7 +28,7 @@
       "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
-        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1–1 agrees with its two listed W/L games."
       ],
       "remaining": [
         "Physical Safari interaction verification remains open."
@@ -256,7 +256,7 @@
       "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
       "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
       ],
       "remaining": [
         "Connect results to scheduled games; complete physical Safari verification."
@@ -274,7 +274,7 @@
       "evidence": [
         "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result.",
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
@@ -291,9 +291,9 @@
       "acceptance": "Passport > season totals > Kelowna > compare record and game list; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png",
-        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1–1 agrees with its two listed W/L games."
       ],
       "remaining": [
         "Physical Safari interaction verification remains open."
@@ -449,7 +449,8 @@
         "21 StoreTests passed, including preview immutability, restore/relaunch equality, drafts and ice-context preservation, recovery reversal, invalid version/account/payload/size rejection, and signed-out isolation.",
         "Physical Ignacio: testBackupExportAndImportControls passed through export to On My iPad (CurlPlan A29 5CF9B4C6.json), file selection, visible restore preview, explicit replacement and recovery control. The restored snapshot was exported from the same unchanged device records.",
         "Web actual-function assertions passed for preview without mutation, invalid schema/version/account rejection, cancellation, storage failure, restore reload equality and previous-record recovery.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A29-restore-preview.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A29-restore-preview.png",
+        "CI exposed shared-core compilation failure because LocalBackup/BackupError were in excluded SettingsSheet.swift. Moved unchanged validation types to Models.swift; swift test --jobs 1 passed all 18 account contract tests. Evidence: /tmp/curlplan-remediation/core-repair.log."
       ],
       "remaining": [
         "Verify Safari download and file-picker import on the physical iPad. Browser, native and Classic backup formats intentionally remain distinct; this feature does not claim account synchronization."

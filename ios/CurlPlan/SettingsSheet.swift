@@ -134,56 +134,6 @@ struct SettingsSheet: View {
     }
 }
 
-// Versioned, app-specific backups. Public account credentials and preferences are excluded.
-enum BackupError: LocalizedError {
-    case invalid
-    var errorDescription: String? { "This is not a supported CurlPlan iOS backup for the current account, or its records are invalid. Nothing was restored." }
-}
-
-struct LocalBackup: Codable {
-    var format = "curlplan-ios"
-    var version = 1
-    let account: String
-    var createdAt = Date()
-    let state: AppState
-
-    var summary: String {
-        let visits = state.visits.values.reduce(0) { $0 + $1.count }
-        let ice = state.iceReads.values.reduce(0) { $0 + $1.count }
-        let reviews = state.reviews.values.reduce(0) { $0 + $1.count }
-        let messages = state.threads.values.reduce(0) { $0 + $1.count }
-        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count
-        return "\(state.posts.count) posts · \(visits) visits · \(ice) ice readings · \(reviews) reviews · \(messages) messages · \(drafts) drafts · \(state.addedSpiels.count) events · \(state.addedCurlers.count) curlers"
-    }
-
-    static func validate(_ data: Data, account: String) throws -> LocalBackup {
-        guard data.count <= 5_000_000 else { throw BackupError.invalid }
-        do {
-            let backup = try JSONDecoder().decode(LocalBackup.self, from: data)
-            guard backup.format == "curlplan-ios", backup.version == 1, backup.account == account else { throw BackupError.invalid }
-            // AppState's normal decoder tolerates old local data. Restore must reject
-            // anything it would drop, default, or silently coerce instead.
-            let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary
-            let roundTrip = try JSONSerialization.jsonObject(with: JSONEncoder().encode(backup)) as? NSDictionary
-            guard original == roundTrip else { throw BackupError.invalid }
-            for post in backup.state.posts where post.kind == .result {
-                guard let f = post.scoreFor, let a = post.scoreAgainst, f >= 0, a >= 0,
-                      post.res == (f > a ? "WIN" : f < a ? "LOSS" : "TIE") else { throw BackupError.invalid }
-            }
-            for event in backup.state.addedSpiels where event.startAt != nil || event.endAt != nil {
-                guard let start = event.startAt, let end = event.endAt, start.isFinite, end.isFinite, end > start,
-                      let zone = event.timeZoneID, TimeZone(identifier: zone) != nil,
-                      let kind = event.eventKind, ["League game", "Practice", "Bonspiel", "Event"].contains(kind) else { throw BackupError.invalid }
-            }
-            for reviews in backup.state.reviews.values {
-                guard reviews.allSatisfy({ (1...5).contains($0.stars) }) else { throw BackupError.invalid }
-            }
-            guard Set(backup.state.posts.map(\.id)).count == backup.state.posts.count else { throw BackupError.invalid }
-            return backup
-        } catch { throw BackupError.invalid }
-    }
-}
-
 struct BackupDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     var data: Data
