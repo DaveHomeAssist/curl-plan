@@ -2057,17 +2057,24 @@ function commitLocal(next){
   store = next;
   return true;
 }
+function editorFields(){
+  return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"] : ["body","for","ag","vs","club","note"];
+}
 function persistEditorDraft(){
   if(!activeEditor) return true;
   if(!currentUser()) return false;
   var d = Object.assign({}, store.drafts[activeEditor.key] || {}, { type:activeEditor.type, stars:formStars });
-  ["body","for","ag","vs","club","note"].forEach(function(k){ var n = el("f-" + k); if(n) d[k] = n.value; });
+  editorFields().forEach(function(k){ var n = el("f-" + k); if(n) d[k] = n.value; });
   var next = Object.assign({}, store, { drafts:Object.assign({}, store.drafts) });
+  if(activeEditor.kind === "event"){
+    d.zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    ["start","end"].forEach(function(k){ var at=+new Date(d[k]); d[k+"At"]=Number.isFinite(at) ? String(at) : ""; });
+  }
   next.drafts[activeEditor.key] = d;
   return commitLocal(next);
 }
 function restoreEditorDraft(d){
-  ["body","for","ag","vs","club","note"].forEach(function(k){ var n = el("f-" + k); if(n) n.value = d[k] || ""; });
+  editorFields().forEach(function(k){ var n = el("f-" + k); if(n) n.value = d[k] || ""; });
   setStars(d.stars || 5);
 }
 function discardEditorDraft(){
@@ -2308,9 +2315,10 @@ function localEventTime(date){
 function openNewSpiel(id){
   var existing = id && store.addedSpiels.find(function(s){return s.id === id;});
   if(id && !existing) return;
+  var key = editorKey("event", id);
   var zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   var options = function(items){return items.map(function(s){return '<option>' + esc(s) + '</option>';}).join("");};
-  openSheet('<h2>' + (existing ? 'Edit event' : 'New event') + '</h2><p>Saved on this device. Going is your intent, not registration. Times are entered in ' + esc(zone) + '.</p>' +
+  if(!openSheet('<h2>' + (existing ? 'Edit event' : 'New event') + '</h2><p>Close keeps your draft on this device. Going is intent, not registration. Times are entered in ' + esc(zone) + '.</p>' +
     '<div class="field"><label for="f-name">Name</label><input id="f-name"></div>' +
     '<div class="field"><label for="f-where">Location</label><input id="f-where" placeholder="Club and sheet"></div>' +
     '<div class="field"><label for="f-kind">Event type</label><select id="f-kind">' + options(["League game","Practice","Bonspiel","Event"]) + '</select></div>' +
@@ -2318,7 +2326,7 @@ function openNewSpiel(id){
     '<div class="field"><label for="f-end">Ends</label><input id="f-end" type="datetime-local"></div>' +
     '<div class="field"><label for="f-preparation">Preparation</label><textarea id="f-preparation"></textarea></div>' +
     '<div class="field"><label for="f-status">Local attendance intent</label><select id="f-status">' + options(["Going","Considering","Not going"]) + '</select></div>' +
-    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button><button class="b solid" data-action="submit-new-spiel" data-id="' + esc(id || "") + '">Save event</button></div>');
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button><button class="b solid" data-action="submit-new-spiel" data-id="' + esc(id || "") + '">Save event</button><button class="b outline" data-action="discard-draft">Discard draft</button></div>')) return;
   el("f-name").value = existing ? existing.name : ""; el("f-where").value = existing ? existing.where : "";
   el("f-kind").value = existing && existing.eventKind || "League game";
   el("f-start").value = localEventTime(new Date(existing && Number.isFinite(existing.startAt) ? existing.startAt : Date.now()));
@@ -2326,6 +2334,15 @@ function openNewSpiel(id){
   el("f-preparation").value = existing && existing.preparation || "";
   var status = existing && spielStatus(existing);
   el("f-status").value = ["Going","Considering","Not going"].includes(status) ? status : "Going";
+  activeEditor = {kind:"event", key:key, id:id || null};
+  var draft = store.drafts[key];
+  if(draft){
+    restoreEditorDraft(draft);
+    if(draft.zone && draft.zone !== zone){
+      ["start","end"].forEach(function(k){ if(draft[k+"At"] && Number.isFinite(Number(draft[k+"At"]))) el("f-"+k).value=localEventTime(new Date(Number(draft[k+"At"]))); });
+      toast("Draft times converted to your current time zone. Review before saving.");
+    }
+  }
 }
 function submitNewSpiel(id){
   var existing = id && store.addedSpiels.find(function(s){return s.id === id;});
@@ -2343,13 +2360,15 @@ function submitNewSpiel(id){
   var next=JSON.parse(JSON.stringify(store));
   if(id) next.addedSpiels=next.addedSpiels.map(function(s){return s.id === id ? sp : s;}); else next.addedSpiels.unshift(sp);
   next.joins[sp.id]={v:status,at:sp.at};
+  delete next.drafts[editorKey("event", id)];
   if(!commitLocal(next)) return false;
-  closeSheet(); gotoTab("spiels"); toast("Event saved on this device"); return true;
+  activeEditor = null; closeSheet(); gotoTab("spiels"); toast("Event saved on this device"); return true;
 }
 function deleteEvent(id){
   var existing=store.addedSpiels.find(function(s){return s.id === id;}); if(!existing) return false;
   if(!window.confirm("Delete this saved event? This only removes your local event.")) return false;
   var next=JSON.parse(JSON.stringify(store)); next.addedSpiels=next.addedSpiels.filter(function(s){return s.id !== id;}); delete next.joins[id];
+  delete next.drafts[editorKey("event", id)];
   (next.tombstones.addedSpiels=next.tombstones.addedSpiels || {})[id]=Math.max(Date.now(),(existing.at || 0)+1);
   if(!commitLocal(next)) return false;
   render({keepScroll:true}); toast("Event deleted");return true;
@@ -2619,6 +2638,7 @@ document.addEventListener("keydown", function(e){
 });
 
 el("sheet-body").addEventListener("input", persistEditorDraft);
+el("sheet-body").addEventListener("change", persistEditorDraft);
 
 /* live search: re-render only the results list so the input keeps focus */
 el("screen").addEventListener("input", function(e){

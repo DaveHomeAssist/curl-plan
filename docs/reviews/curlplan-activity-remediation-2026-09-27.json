@@ -470,11 +470,12 @@
         "Physical Ignacio: club-review editing draft and selected two-star rating survived process relaunch; published review remained separate until Save.",
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
         "Native event create/edit forms now persist per-account drafts including names, locations, type, dates, time zone, preparation and attendance intent. Close keeps the draft; explicit discard leaves the saved event unchanged; save/delete clear the matching draft. Backup summary and validation include event drafts; older backups without the optional bucket remain valid.",
-        "24 StoreTests passed, including event draft persistence, invalid-save retention, save/delete cleanup, saved-event preservation on draft discard and backward-compatible backup validation. Physical Ignacio testEventDraftSurvivesRelaunchAndDiscard passed: entry, process relaunch, recovery, Keep draft, confirmed discard, fresh-launch absence. Evidence: event-drafts-final.xcresult, event-drafts-relaunch.xcresult; A30-event-draft-recovery.png."
+        "24 StoreTests passed, including event draft persistence, invalid-save retention, save/delete cleanup, saved-event preservation on draft discard and backward-compatible backup validation. Physical Ignacio testEventDraftSurvivesRelaunchAndDiscard passed: entry, process relaunch, recovery, Keep draft, confirmed discard, fresh-launch absence. Evidence: event-drafts-final.xcresult, event-drafts-relaunch.xcresult; A30-event-draft-recovery.png.",
+        "Browser event forms use persistent per-account drafts for create/edit; Close retains, confirmed discard removes only the draft, successful save and event deletion clear matching drafts. Input/change listeners persist fields. Existing valid times convert to the current browser zone if the zone changed. verify-record-recovery.js passed actual-function checks for reload field recovery, invalid-save retention, storage failure, edit draft independence, successful-save cleanup, confirmed discard, and backup validation."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation.",
-        "Complete contribution-form draft recovery and web event drafts; do not infer these from native event recovery.",
+        "Complete contribution-form draft recovery; physical Safari event recovery remains unverified.",
         "Immediate sheet reopening after confirmed discard failed in automation before the fresh-launch check; verify presentation timing separately."
       ]
     },
