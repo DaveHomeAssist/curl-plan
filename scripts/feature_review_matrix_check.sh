@@ -94,7 +94,7 @@ while IFS= read -r path; do
     ios/CurlPlan/RosterView.swift)
       add_rows FR-ROSTER FR-CIRCLE FR-A11Y FR-CLAIMS
       ;;
-    ios/CurlPlan/CurlerProfileView.swift)
+    ios/CurlPlan/MessageThreadView.swift|ios/CurlPlan/CurlerProfileView.swift)
       add_rows FR-ROSTER FR-CIRCLE FR-STOPS FR-RESULTS FR-A11Y FR-CLAIMS
       ;;
     ios/CurlPlan/SpielsView.swift)

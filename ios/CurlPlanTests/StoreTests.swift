@@ -44,6 +44,46 @@ final class StoreTests: XCTestCase {
         XCTAssertFalse(s.saveReview("kelowna", draft: draft, editingID: review.id))
     }
 
+    func testDetailLinksAndNavigationRecovery() {
+        let s = Store(); s.exploreDemo()
+        let router = Router(defaults: Store.defaults)
+        router.restore(accountID: "demo", store: s)
+        router.receive(Route.stop("kelowna").url, store: s)
+        XCTAssertEqual(router.tab, .passport)
+        XCTAssertEqual(router.paths[.passport], [.stop("kelowna")])
+        router.tab = .roster
+        router.paths[.roster] = [.curler("sam")]
+        let restored = Router(defaults: Store.defaults)
+        restored.restore(accountID: "demo", store: s)
+        XCTAssertEqual(restored.tab, .roster)
+        XCTAssertEqual(restored.paths[.roster], [.curler("sam")])
+        restored.receive(URL(string: "curlplan://stop/missing")!, store: s)
+        XCTAssertTrue(restored.invalidLink)
+        XCTAssertEqual(restored.paths[.roster], [.curler("sam")])
+        XCTAssertNil(Route(url: URL(string: "https://stop/kelowna")!))
+        XCTAssertNil(Route(url: URL(string: "curlplan://stop/kelowna/extra")!))
+        XCTAssertNil(Route(url: URL(string: "curlplan://stop/kelowna?other=1")!))
+        restored.restore(accountID: nil, store: s)
+        XCTAssertNil(Store.defaults.data(forKey: "cp.navigation.v1:demo"), "Explicit sign-out clears navigation only")
+        XCTAssertTrue(restored.paths.isEmpty)
+        restored.receive(Route.stop("kelowna").url, store: s)
+        restored.restore(accountID: "demo", store: s)
+        XCTAssertEqual(restored.tab, .passport)
+        XCTAssertEqual(restored.paths[.passport], [.stop("kelowna")])
+    }
+
+    func testMessageDraftRecoveryAndSend() {
+        let s = Store(); s.exploreDemo()
+        s.saveMessageDraft("sam", text: "unsent")
+        XCTAssertEqual(Store().state.messageDrafts["sam"], "unsent")
+        XCTAssertTrue(Store().thread("sam").isEmpty)
+        s.signOut(); XCTAssertTrue(s.state.messageDrafts.isEmpty)
+        s.exploreDemo(); XCTAssertEqual(s.state.messageDrafts["sam"], "unsent")
+        s.sendMessage("sam", text: "ready")
+        XCTAssertNil(Store().state.messageDrafts["sam"])
+        XCTAssertEqual(Store().thread("sam").last?.text, "ready")
+    }
+
     func testFollowOverridesSeed() {
         let s = Store(); s.exploreDemo()
         XCTAssertFalse(s.isFollowing("sam"))   // seed following=false

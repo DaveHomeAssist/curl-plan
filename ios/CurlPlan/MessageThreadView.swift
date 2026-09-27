@@ -17,8 +17,13 @@ struct MessageThreadView: View {
             Capsule().fill(settings.line).frame(width: 38, height: 4)
                 .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 14)
 
-            Text(curler?.name ?? "Message").font(.serif(24)).foregroundStyle(settings.ink)
-            Text("Local thread — saved on this device, not yet delivered.")
+            HStack {
+                Text(curler?.name ?? "Message").font(.serif(24)).foregroundStyle(settings.ink)
+                Spacer()
+                Button("Close") { dismiss() }.frame(minWidth: 44, minHeight: 44)
+                    .accessibilityIdentifier("curlplan.thread.close")
+            }
+            Text("Local thread — saved on this device, not yet delivered. Close keeps your draft.")
                 .font(.grotesk(13)).foregroundStyle(settings.muted)
                 .padding(.bottom, 14)
 
@@ -43,6 +48,7 @@ struct MessageThreadView: View {
 
             HStack(spacing: 9) {
                 TextField("Message…", text: $draft, axis: .vertical)
+                    .accessibilityLabel("Message")
                     .font(.grotesk(15)).foregroundStyle(settings.ink).tint(settings.accent)
                     .padding(.vertical, 10).padding(.horizontal, 13)
                     .background(settings.panel)
@@ -65,6 +71,8 @@ struct MessageThreadView: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
+        .onAppear { draft = store.state.messageDrafts[curlerID] ?? "" }
+        .onChange(of: draft) { _, value in store.saveMessageDraft(curlerID, text: value) }
     }
 
     private var canSend: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

@@ -6,70 +6,81 @@ struct SettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Capsule().fill(settings.line).frame(width: 38, height: 4)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 12).padding(.bottom, 14)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Capsule().fill(settings.line).frame(width: 38, height: 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 12).padding(.bottom, 14)
 
-            Text("Appearance").font(.serif(24)).foregroundStyle(settings.ink)
-            Text("Same season, your circle — tune the ice.")
-                .font(.grotesk(13)).foregroundStyle(settings.muted)
-                .padding(.bottom, 4)
+                Text("Appearance").font(.serif(24)).foregroundStyle(settings.ink)
+                Text("Same season, your circle — tune the ice.")
+                    .font(.grotesk(13)).foregroundStyle(settings.muted)
+                    .padding(.bottom, 4)
 
-            settingRow(title: "Theme", sub: "ICE / ARENA") {
-                HStack(spacing: 6) {
-                    seg("Ice", on: settings.theme == .ice) { settings.theme = .ice }
-                    seg("Arena", on: settings.theme == .arena) { settings.theme = .arena }
-                }
-            }
-
-            settingRow(title: "Accent", sub: "HOUSE COLOUR") {
-                HStack(spacing: 8) {
-                    ForEach(AppSettings.accents, id: \.key) { a in
-                        Button { settings.accentKey = a.key } label: {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(a.color)
-                                .frame(width: 26, height: 26)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .strokeBorder(settings.ink, lineWidth: settings.accentKey == a.key ? 2 : 0)
-                                )
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Accent: \(a.key)")
-                        .accessibilityValue(settings.accentKey == a.key ? "Selected" : "Not selected")
+                settingRow(title: "Theme", sub: "ICE / ARENA") {
+                    HStack(spacing: 6) {
+                        seg("Ice", on: settings.theme == .ice) { settings.theme = .ice }
+                        seg("Arena", on: settings.theme == .arena) { settings.theme = .arena }
                     }
                 }
-            }
 
-            settingRow(title: "Pebble texture", sub: "ICE GRAIN OVERLAY") {
-                Toggle("Pebble texture", isOn: Binding(get: { settings.pebble }, set: { settings.pebble = $0 }))
-                    .labelsHidden()
-                    .tint(settings.accent)
-            }
-
-            settingRow(title: "Account", sub: accountMeta) {
-                Button {
-                    store.signOut()
-                    dismiss()
-                } label: {
-                    Text("Sign out")
-                        .font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
-                        .padding(.horizontal, 14).padding(.vertical, 6.5)
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(settings.ink, lineWidth: 1.5))
+                settingRow(title: "Accent", sub: "HOUSE COLOUR") {
+                    HStack(spacing: 8) {
+                        ForEach(AppSettings.accents, id: \.key) { a in
+                            Button { settings.accentKey = a.key } label: {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(a.color)
+                                    .frame(width: 26, height: 26)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(settings.ink, lineWidth: settings.accentKey == a.key ? 2 : 0)
+                                    )
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Accent: \(a.key)")
+                            .accessibilityValue(settings.accentKey == a.key ? "Selected" : "Not selected")
+                        }
+                    }
                 }
-                .buttonStyle(.plain)
-            }
 
-            Spacer(minLength: 0)
+                settingRow(title: "Pebble texture", sub: "ICE GRAIN OVERLAY") {
+                    Toggle("Pebble texture", isOn: Binding(get: { settings.pebble }, set: { settings.pebble = $0 }))
+                        .labelsHidden()
+                        .tint(settings.accent)
+                }
+
+                settingRow(title: "Account", sub: accountMeta) {
+                    Button {
+                        store.signOut()
+                        dismiss()
+                    } label: {
+                        Text("Sign out")
+                            .font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
+                            .padding(.horizontal, 14).padding(.vertical, 6.5)
+                            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(settings.ink, lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Link("Open Classic calendar and game planner",
+                         destination: URL(string: "https://davehomeassist.github.io/curl-plan/classic/")!)
+                        .font(.grotesk(14, .semibold)).frame(minHeight: 44)
+                        .accessibilityIdentifier("curlplan.classic.open")
+                    Text("Opens in Safari. Classic keeps separate browser data; native demo records do not appear there automatically. Use Return to CurlPlan to come back.")
+                        .font(.grotesk(13)).foregroundStyle(settings.muted)
+                    Button("Close settings") { dismiss() }.frame(minHeight: 44)
+                }
+                .padding(.top, 12)
+            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 22)
-        .padding(.bottom, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.height(452)])
+        .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
     }

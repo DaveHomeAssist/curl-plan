@@ -43,7 +43,7 @@
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
+        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
       ]
     },
     {
@@ -74,10 +74,15 @@
       "expected": "Find game preparation fields and save/retrieve a plan",
       "baseline_verdict": "Unavailable",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add native game preparation or a clearly labeled bridge to the planner.",
       "acceptance": "Inspect all four tabs and Settings for game preparation; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native Settings now offers a verified route to the original Classic game planner with separate-data explanation."
+      ],
+      "remaining": [
+        "Run actual game preparation and retrieval through Classic; do not treat reaching the planner as completing preparation."
+      ]
     },
     {
       "id": "A6",
@@ -107,10 +112,12 @@
       "expected": "Switch tabs with detail open, return and Back",
       "baseline_verdict": "Pass",
       "group": "navigation and accessibility",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Retain tab detail-state behavior.",
       "acceptance": "Passport > Kelowna > Locker > Passport > Back; visit all tabs; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: testDemoTabsDetailsAndRelaunch passed after navigation changes, including stop detail retained across tab switches, Back, all four tabs, profile, and cold relaunch. Explicit sign-out now clears only navigation state."
+      ]
     },
     {
       "id": "A9",
@@ -118,10 +125,14 @@
       "expected": "Open a supported native detail link or recover invalid target",
       "baseline_verdict": "Unavailable",
       "group": "navigation and accessibility",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Add supported native detail links and invalid-link recovery.",
       "acceptance": "Inspect native Info.plist, app entry and visible controls for detail-link support; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: testDetailLinksResumeAndMessageClose passed. curlplan://stop/kelowna and curlplan://curler/sam opened actual native details; a missing target showed Link unavailable and retained navigation.",
+        "StoreTests/testDetailLinksAndNavigationRecovery passed: malformed URL rejection, per-account state, deferred links and restored paths."
+      ],
+      "scope": "Native supported detail links; custom scheme requires the native app and a locally available target."
     },
     {
       "id": "A10",
@@ -129,10 +140,14 @@
       "expected": "Find Classic entry and return path",
       "baseline_verdict": "Unavailable",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Expose a labeled Classic route with separate-data explanation, or incorporate planning.",
       "acceptance": "Inspect gate, Passport and Settings for Classic access; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: native Settings opened the live Classic planner in Safari, Game Planner was visible, and reactivating CurlPlan returned to Settings.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A10-classic-return.png"
+      ],
+      "scope": "Classic is explicitly separate browser data; no synchronization is claimed."
     },
     {
       "id": "A11",
@@ -214,7 +229,7 @@
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
+        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
       ]
     },
     {
@@ -277,7 +292,7 @@
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
+        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
       ]
     },
     {
@@ -319,10 +334,16 @@
       "expected": "Save message and understand delivery state",
       "baseline_verdict": "Pass",
       "group": "people and communication",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add an explicit Close control; verify receiver-side delivery when messaging is enabled.",
       "acceptance": "Roster > Sam > Message > text > Send > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: opened Sam message thread and used the explicit Close button successfully.",
+        "StoreTests/testMessageDraftRecoveryAndSend passed: private unsent draft survived reload/sign-out/return; sending cleared it and saved one local message."
+      ],
+      "remaining": [
+        "Exercise message draft entry/recovery in the native UI; external delivery remains unavailable and must not be claimed."
+      ]
     },
     {
       "id": "A27",
@@ -330,10 +351,14 @@
       "expected": "Background/foreground, terminate/relaunch, recover saved work",
       "baseline_verdict": "Pass",
       "group": "data ownership and resilience",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Consider restoring the last screen if users expect task continuity.",
       "acceptance": "Roster > Home button > reactivate > terminate > relaunch > inspect saved state; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio: opened Kelowna through a native link, terminated and relaunched the app, and recovered the same detail screen.",
+        "18 StoreTests passed, including per-account navigation and data/draft persistence.",
+        "Final targeted navigation store test and full physical tab/back/relaunch journey passed after separating explicit sign-out from ordinary app relaunch."
+      ]
     },
     {
       "id": "A28",
@@ -372,7 +397,7 @@
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
+        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
       ]
     },
     {
@@ -423,9 +448,9 @@
     }
   ],
   "checkpoint": {
-    "phase": "Web post/review correction and draft recovery; Safari input diagnosis open",
+    "phase": "Native detail links, navigation recovery, Classic bridge and message Close",
     "delivery": "PR18 update; merge gated on CI",
-    "next": "Diagnose Safari typing against a plain textarea control, complete web journeys, then remaining native recovery/planning and CI accessibility repairs.",
+    "next": "Complete remaining record/draft recovery, backup/restore and planning activities; finish Safari interaction proof and required accessibility CI.",
     "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
   }
 }

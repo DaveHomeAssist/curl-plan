@@ -109,6 +109,55 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts[original + " corrected"].exists)
     }
 
+    func testSafariTypingControlOnIPad() throws {
+        guard let url = ProcessInfo.processInfo.environment["CURLPLAN_WEB_TYPING_CONTROL_URL"] else {
+            throw XCTSkip("Requires a plain textarea control on the physical iPad")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        safari.activate()
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        safari.buttons["NewTabButton"].tap(); safari.buttons["Address"].tap()
+        let address = safari.textFields.firstMatch
+        XCTAssertTrue(address.waitForExistence(timeout: 4))
+        address.tap(); address.typeText(url + "\n")
+        let field = safari.textViews.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap(); field.typeText("WEBFIX 1234")
+        XCTAssertEqual(field.value as? String, "WEBFIX 1234", "Plain HTML control, no CurlPlan code")
+    }
+
+    func testDetailLinksResumeAndMessageClose() throws {
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Share club link"].exists)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 8))
+        app.open(URL(string: "curlplan://curler/sam")!)
+        XCTAssertTrue(app.buttons["Share curler link"].waitForExistence(timeout: 8))
+        app.buttons["Message"].tap()
+        XCTAssertTrue(app.buttons["curlplan.thread.close"].waitForExistence(timeout: 3))
+        app.buttons["curlplan.thread.close"].tap()
+        XCTAssertTrue(app.buttons["Share curler link"].exists)
+        app.open(URL(string: "curlplan://stop/missing")!)
+        XCTAssertTrue(app.alerts["Link unavailable"].waitForExistence(timeout: 5))
+        app.alerts.buttons["OK"].tap()
+        tab("Passport").tap()
+        if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+        app.buttons["Open settings"].tap()
+        XCTAssertTrue(app.buttons["curlplan.classic.open"].exists)
+        app.buttons["curlplan.classic.open"].tap()
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCTAssertTrue(safari.buttons["Game Planner"].waitForExistence(timeout: 12))
+        app.activate()
+        XCTAssertTrue(app.buttons["Close settings"].waitForExistence(timeout: 5))
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "A10-classic-return"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Close settings"].tap()
+    }
+
     // Opt-in physical iPad check against a bounded local preview URL.
     func testWebPostRecoveryOnPreparedIPad() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {

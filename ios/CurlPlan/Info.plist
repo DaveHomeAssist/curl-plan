@@ -10,6 +10,11 @@
 	  ATS (TLS required). This host does not exist outside the tailnet, so a shipped build
 	  gains no real-world cleartext capability. Replace with TLS when the service is public.
 	-->
+	<key>CFBundleURLTypes</key>
+	<array><dict>
+		<key>CFBundleURLName</key><string>com.davehomeassist.CurlPlan.detail</string>
+		<key>CFBundleURLSchemes</key><array><string>curlplan</string></array>
+	</dict></array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSExceptionDomains</key>

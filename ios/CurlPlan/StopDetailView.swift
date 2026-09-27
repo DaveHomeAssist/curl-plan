@@ -81,6 +81,14 @@ struct StopDetailView: View {
                 .padding(.leading, 18)
                 .padding(.top, 54)
         }
+        .overlay(alignment: .topTrailing) {
+            ShareLink(item: Route.stop(stopID).url) {
+                Image(systemName: "square.and.arrow.up").foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Share club link")
+            .padding(.trailing, 18).padding(.top, 54)
+        }
         .overlay(alignment: .bottomLeading) {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 4) {

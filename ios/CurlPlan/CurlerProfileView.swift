@@ -16,13 +16,14 @@ struct CurlerProfileView: View {
                     HStack {
                         CircleBackButton { dismiss() }
                         Spacer()
-                        ShareLink(item: shareText(c)) {
+                        ShareLink(item: Route.curler(curlerID).url, message: Text(shareText(c))) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(settings.ink)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                                 .overlay(Circle().strokeBorder(settings.line, lineWidth: 1.5))
                         }
+                        .accessibilityLabel("Share curler link")
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 6)

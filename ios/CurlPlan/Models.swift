@@ -69,9 +69,31 @@ struct MeStats { let clubs: Int; let prov: Int; let games: Int; let win: Int }
 struct VisitedStop: Identifiable { let stop: Stop; let count: Int; let at: Double; var id: String { stop.id } }
 
 // Navigation routes for the per-tab NavigationStacks.
-enum Route: Hashable {
+enum Route: Hashable, Codable {
     case stop(String)
     case curler(String)
+
+    var url: URL {
+        var parts = URLComponents()
+        parts.scheme = "curlplan"
+        switch self {
+        case .stop(let id): parts.host = "stop"; parts.path = "/" + id
+        case .curler(let id): parts.host = "curler"; parts.path = "/" + id
+        }
+        return parts.url!
+    }
+
+    init?(url: URL) {
+        guard url.scheme?.lowercased() == "curlplan", url.query == nil, url.fragment == nil,
+              url.user == nil, url.password == nil, url.port == nil else { return nil }
+        let ids = url.pathComponents.filter { $0 != "/" }
+        guard ids.count == 1, !ids[0].isEmpty else { return nil }
+        switch url.host?.lowercased() {
+        case "stop": self = .stop(ids[0])
+        case "curler": self = .curler(ids[0])
+        default: return nil
+        }
+    }
 }
 
 struct MeInfo {
@@ -202,6 +224,7 @@ struct AppState: Codable, Hashable {
     var reviews: [String: [ReviewEntry]] = [:]
     var iceReads: [String: [IceReadEntry]] = [:]
     var threads: [String: [Message]] = [:]   // curlerId -> messages
+    var messageDrafts: [String: String] = [:]
     var reviewDrafts: [String: ReviewDraft] = [:]
     var postDrafts: [String: PostDraft] = [:] // "new" or the owned post ID
     var tombstones: [String: [String: Double]] = [:]
@@ -223,6 +246,7 @@ struct AppState: Codable, Hashable {
         if let v = try? c.decodeIfPresent([String: [ReviewEntry]].self, forKey: .reviews) { reviews = v }
         if let v = try? c.decodeIfPresent([String: [IceReadEntry]].self, forKey: .iceReads) { iceReads = v }
         if let v = try? c.decodeIfPresent([String: [Message]].self, forKey: .threads) { threads = v }
+        if let v = try? c.decodeIfPresent([String: String].self, forKey: .messageDrafts) { messageDrafts = v }
         if let v = try? c.decodeIfPresent([String: ReviewDraft].self, forKey: .reviewDrafts) { reviewDrafts = v }
         if let v = try? c.decodeIfPresent([String: PostDraft].self, forKey: .postDrafts) { postDrafts = v }
         if let v = try? c.decodeIfPresent([String: [String: Double]].self, forKey: .tombstones) { tombstones = v }
@@ -507,7 +531,16 @@ final class Store: ObservableObject {
     func sendMessage(_ curlerID: String, text: String) {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return }
-        state.threads[curlerID, default: []].append(Message(from: "me", text: t, at: Store.now()))
+        var next = state
+        next.threads[curlerID, default: []].append(Message(from: "me", text: t, at: Store.now()))
+        next.messageDrafts.removeValue(forKey: curlerID)
+        state = next
+    }
+
+    func saveMessageDraft(_ curlerID: String, text: String) {
+        guard currentUser() != nil, curler(curlerID) != nil else { return }
+        if text.isEmpty { state.messageDrafts.removeValue(forKey: curlerID) }
+        else { state.messageDrafts[curlerID] = text }
     }
 
     // MARK: Demo session
