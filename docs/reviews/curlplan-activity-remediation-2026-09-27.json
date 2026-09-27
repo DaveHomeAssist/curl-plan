@@ -405,10 +405,19 @@
       "expected": "Find usable backup and restore with safe preview",
       "baseline_verdict": "Unavailable",
       "group": "data ownership and resilience",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add backup export and validated restore.",
       "acceptance": "Settings > inspect backup/restore controls; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native and browser Settings now offer versioned private JSON backup export, file import with validation and record-count preview, explicit replacement confirmation, and a previous-state recovery copy. Platform/account/version mismatch and malformed records are rejected; credentials are excluded.",
+        "21 StoreTests passed, including preview immutability, restore/relaunch equality, drafts and ice-context preservation, recovery reversal, invalid version/account/payload/size rejection, and signed-out isolation.",
+        "Physical Ignacio: testBackupExportAndImportControls passed through export to On My iPad (CurlPlan A29 5CF9B4C6.json), file selection, visible restore preview, explicit replacement and recovery control. The restored snapshot was exported from the same unchanged device records.",
+        "Web actual-function assertions passed for preview without mutation, invalid schema/version/account rejection, cancellation, storage failure, restore reload equality and previous-record recovery.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A29-restore-preview.png"
+      ],
+      "remaining": [
+        "Verify Safari download and file-picker import on the physical iPad. Browser, native and Classic backup formats intentionally remain distinct; this feature does not claim account synchronization."
+      ]
     },
     {
       "id": "A30",

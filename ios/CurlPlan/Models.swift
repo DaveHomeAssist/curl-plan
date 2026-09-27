@@ -559,6 +559,28 @@ final class Store: ObservableObject {
 
     // MARK: Persistence
 
+    func backupData() throws -> Data {
+        guard let account = auth.session else { throw BackupError.invalid }
+        let data = try JSONEncoder().encode(LocalBackup(account: account, state: state))
+        guard data.count <= 5_000_000 else { throw BackupError.invalid }
+        return data
+    }
+
+    func previewBackup(_ data: Data) throws -> LocalBackup {
+        guard let account = auth.session else { throw BackupError.invalid }
+        return try LocalBackup.validate(data, account: account)
+    }
+
+    func restoreBackup(_ data: Data) throws {
+        let backup = try previewBackup(data)
+        let previous = try backupData()
+        Store.defaults.set(previous, forKey: stateKey + ":beforeRestore")
+        guard Store.defaults.data(forKey: stateKey + ":beforeRestore") == previous else { throw BackupError.invalid }
+        state = backup.state
+    }
+
+    var recoveryBackup: Data? { Store.defaults.data(forKey: stateKey + ":beforeRestore") }
+
     private func persistAuth() {
         if let d = try? JSONEncoder().encode(auth) { Store.defaults.set(d, forKey: Store.authKey) }
     }

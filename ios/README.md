@@ -94,3 +94,19 @@ journey. The Safari typing control is opt-in through
 `CURLPLAN_WEB_TYPING_CONTROL_URL` in the UI test runner environment; serve the
 plain textarea fixture under `docs/reviews/evidence/curlplan-remediation-2026-09-27/`
 to distinguish automation input loss from application behavior.
+
+## Device backup and restore
+
+Settings → Backup and restore exports a private JSON file containing saved records,
+messages, drafts, and local overrides (not account credentials or seed samples).
+Import validates the `curlplan-ios` version 1 envelope and current account, then
+shows record counts before a separate replacement confirmation. A previous-state
+copy remains available through **Preview previous device records**. Restoring that
+copy swaps the current and previous states. Files larger than 5 MB, unsupported
+versions, and records that would be silently discarded during decoding are rejected.
+Browser and Classic storage use different formats; this is not cross-device sync.
+
+The browser Settings has its own `curlplan-web` version 1 backup flow and recovery
+copy. A browser export requests a download; users must retain that file outside site
+storage to survive clearing browser data. Native and browser backups are private,
+unencrypted files and can include drafts and messages.

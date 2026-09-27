@@ -21,7 +21,7 @@ function launch() {
     for (const m of markup.matchAll(/\bid="(f-[^"]+)"/g)) nodes.set(m[1], { value:"", children:[] });
   }});
   const c = vm.createContext({
-    console, setTimeout, clearTimeout,
+    console, setTimeout, clearTimeout, TextEncoder,
     localStorage: { getItem:k => disk.get(k) || null, setItem:(k,v) => { if(full) throw Error("QuotaExceededError"); disk.set(k,v); } },
     document: { getElementById:id => id === "sheet-body" ? sheet : nodes.get(id) || null },
     window: { confirm:() => confirmed },
@@ -130,4 +130,21 @@ assert.equal(app.store.iceReads.kelowna[0].sheet, "A");
 assert.match(app.viewStop("kelowna"), /2026-09-27 · Sheet A/);
 app.store.iceReads.kelowna.push({speed:"Fast",curl:"5",note:"legacy",at:1});
 assert.match(app.viewStop("kelowna"), /Date not recorded · Sheet not recorded/);
+const backup = app.makeBackup();
+const beforePreview = JSON.stringify(app.store);
+app.previewBackup(backup);
+assert.equal(JSON.stringify(app.store), beforePreview);
+const invalidBackup = JSON.parse(JSON.stringify(backup)); invalidBackup.state.posts = "broken";
+assert.throws(() => app.validateBackup(invalidBackup));
+assert.throws(() => app.validateBackup(Object.assign({}, backup, {version:99})));
+assert.throws(() => app.validateBackup(Object.assign({}, backup, {account:"other"})));
+app.store.posts = []; app.saveStore();
+app.previewBackup(backup); confirmed = false;
+assert.equal(app.restoreBackup(), false); assert.equal(app.store.posts.length, 0);
+confirmed = true; full = true;
+assert.equal(app.restoreBackup(), false); assert.equal(app.store.posts.length, 0);
+full = false; assert.equal(app.restoreBackup(), true);
+app = launch(); assert.equal(JSON.stringify(app.store), beforePreview);
+app.previewBackup(JSON.parse(disk.get(app.storeKey()+":beforeRestore")));
+assert.equal(app.restoreBackup(), true); assert.equal(app.store.posts.length, 0);
 console.log("verify-record-recovery: draft reload, correction, rating, ownership, safe deletion, merge, validation, storage failure and account isolation passed");

@@ -17,6 +17,41 @@ final class StoreTests: XCTestCase {
         Store.defaults = suite
     }
 
+    func testBackupPreviewRestoreRecoveryAndRejection() throws {
+        let s = Store(); s.exploreDemo()
+        s.addNote(body: "before export")
+        s.addIceRead("kelowna", speed: "Fast", curl: "4", note: "saved", date: "2026-09-27", sheet: "A")
+        var draft = PostDraft(); draft.body = "private draft"
+        s.savePostDraft(draft)
+        let data = try s.backupData()
+        s.addNote(body: "after export")
+        let current = s.state
+        let preview = try s.previewBackup(data)
+        XCTAssertEqual(preview.state.posts.count, 1)
+        XCTAssertEqual(s.state, current, "Preview must not mutate records")
+        try s.restoreBackup(data)
+        XCTAssertEqual(Store().state, preview.state)
+        XCTAssertEqual(Store().state.postDrafts["new"]?.body, "private draft")
+        let recovery = try XCTUnwrap(s.recoveryBackup)
+        try s.restoreBackup(recovery)
+        XCTAssertEqual(Store().state, current, "Recovery returns all records and drafts")
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["version"] = 99
+        XCTAssertThrowsError(try s.restoreBackup(JSONSerialization.data(withJSONObject: object)))
+        object["version"] = 1; object["account"] = "someone-else"
+        XCTAssertThrowsError(try s.restoreBackup(JSONSerialization.data(withJSONObject: object)))
+        object["account"] = "demo"
+        var state = try XCTUnwrap(object["state"] as? [String: Any])
+        state["posts"] = "corrupt"; object["state"] = state
+        XCTAssertThrowsError(try s.restoreBackup(JSONSerialization.data(withJSONObject: object)))
+        XCTAssertEqual(Store().state, current)
+        XCTAssertThrowsError(try s.previewBackup(Data("{}".utf8)))
+        XCTAssertThrowsError(try s.previewBackup(Data(repeating: 32, count: 5_000_001)))
+        s.signOut()
+        XCTAssertThrowsError(try s.previewBackup(data))
+        XCTAssertNil(s.recoveryBackup)
+    }
+
     func testReviewCorrectionDraftAndDeletionPersist() throws {
         let s = Store(); s.exploreDemo()
         XCTAssertTrue(s.saveReview("kelowna", draft: ReviewDraft(stars: 5, note: "original")))

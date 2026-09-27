@@ -1,9 +1,12 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsSheet: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+
+    @State private var backupOpen = false
 
     var body: some View {
         ScrollView {
@@ -65,6 +68,8 @@ struct SettingsSheet: View {
                     .buttonStyle(.plain)
                 }
 
+                Button("Backup and restore") { backupOpen = true }.frame(minHeight: 44)
+
                 VStack(alignment: .leading, spacing: 8) {
                     Link("Open Classic calendar and game planner",
                          destination: URL(string: "https://davehomeassist.github.io/curl-plan/classic/")!)
@@ -80,6 +85,7 @@ struct SettingsSheet: View {
             .padding(.bottom, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .sheet(isPresented: $backupOpen) { BackupSheet() }
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
@@ -125,5 +131,137 @@ struct SettingsSheet: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// Versioned, app-specific backups. Public account credentials and preferences are excluded.
+enum BackupError: LocalizedError {
+    case invalid
+    var errorDescription: String? { "This is not a supported CurlPlan iOS backup for the current account, or its records are invalid. Nothing was restored." }
+}
+
+struct LocalBackup: Codable {
+    var format = "curlplan-ios"
+    var version = 1
+    let account: String
+    var createdAt = Date()
+    let state: AppState
+
+    var summary: String {
+        let visits = state.visits.values.reduce(0) { $0 + $1.count }
+        let ice = state.iceReads.values.reduce(0) { $0 + $1.count }
+        let reviews = state.reviews.values.reduce(0) { $0 + $1.count }
+        let messages = state.threads.values.reduce(0) { $0 + $1.count }
+        let drafts = state.postDrafts.count + state.reviewDrafts.count + state.messageDrafts.count
+        return "\(state.posts.count) posts · \(visits) visits · \(ice) ice readings · \(reviews) reviews · \(messages) messages · \(drafts) drafts · \(state.addedSpiels.count) events · \(state.addedCurlers.count) curlers"
+    }
+
+    static func validate(_ data: Data, account: String) throws -> LocalBackup {
+        guard data.count <= 5_000_000 else { throw BackupError.invalid }
+        do {
+            let backup = try JSONDecoder().decode(LocalBackup.self, from: data)
+            guard backup.format == "curlplan-ios", backup.version == 1, backup.account == account else { throw BackupError.invalid }
+            // AppState's normal decoder tolerates old local data. Restore must reject
+            // anything it would drop, default, or silently coerce instead.
+            let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary
+            let roundTrip = try JSONSerialization.jsonObject(with: JSONEncoder().encode(backup)) as? NSDictionary
+            guard original == roundTrip else { throw BackupError.invalid }
+            for post in backup.state.posts where post.kind == .result {
+                guard let f = post.scoreFor, let a = post.scoreAgainst, f >= 0, a >= 0,
+                      post.res == (f > a ? "WIN" : f < a ? "LOSS" : "TIE") else { throw BackupError.invalid }
+            }
+            for reviews in backup.state.reviews.values {
+                guard reviews.allSatisfy({ (1...5).contains($0.stars) }) else { throw BackupError.invalid }
+            }
+            guard Set(backup.state.posts.map(\.id)).count == backup.state.posts.count else { throw BackupError.invalid }
+            return backup
+        } catch { throw BackupError.invalid }
+    }
+}
+
+struct BackupDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else { throw BackupError.invalid }
+        self.data = data
+    }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
+}
+
+struct BackupSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    @State private var document = BackupDocument(data: Data())
+    @State private var exporting = false
+    @State private var importing = false
+    @State private var candidate: Data?
+    @State private var preview: LocalBackup?
+    @State private var message = ""
+    @State private var confirm = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Your device records") {
+                    Text("Export a private JSON file containing your saved records and drafts. Keep it somewhere safe. This backup restores into CurlPlan iOS for the same account; web and Classic backups are separate.")
+                    Button("Export backup") {
+                        do { document = BackupDocument(data: try store.backupData()); exporting = true }
+                        catch { message = error.localizedDescription }
+                    }
+                    Button("Choose backup to restore") { candidate = nil; preview = nil; message = ""; importing = true }
+                    if let recovery = store.recoveryBackup {
+                        Button("Preview previous device records") { inspect(recovery) }
+                    }
+                }
+                if let preview {
+                    Section("Restore preview") {
+                        Text(preview.createdAt.formatted(date: .abbreviated, time: .shortened))
+                        Text(preview.summary)
+                        Text("Restoring replaces the current device records, including drafts and messages. A recovery copy of the current records is kept on this device.")
+                        Button("Replace device records", role: .destructive) { confirm = true }
+                        Button("Cancel preview") { candidate = nil; self.preview = nil }
+                    }
+                }
+                if !message.isEmpty { Section { Text(message).accessibilityIdentifier("curlplan.backup.message") } }
+            }
+            .navigationTitle("Backup and restore")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+        .fileExporter(isPresented: $exporting, document: document, contentType: .json, defaultFilename: "CurlPlan iOS Backup") { result in
+            switch result {
+            case .success: message = "Backup exported."
+            case .failure(let error): message = error.localizedDescription
+            }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+            do {
+                let url = try result.get()
+                let granted = url.startAccessingSecurityScopedResource()
+                defer { if granted { url.stopAccessingSecurityScopedResource() } }
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= 5_000_000 else { throw BackupError.invalid }
+                inspect(try Data(contentsOf: url))
+            } catch { message = error.localizedDescription }
+        }
+        .confirmationDialog("Replace device records?", isPresented: $confirm, titleVisibility: .visible) {
+            Button("Replace device records", role: .destructive) {
+                do {
+                    guard let candidate else { throw BackupError.invalid }
+                    try store.restoreBackup(candidate)
+                    self.candidate = nil; preview = nil
+                    message = "Records restored. Previous records are available above."
+                } catch { message = error.localizedDescription }
+            }
+            .accessibilityIdentifier("curlplan.backup.confirm")
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func inspect(_ data: Data) {
+        candidate = nil; preview = nil; message = ""
+        do { preview = try store.previewBackup(data); candidate = data }
+        catch { message = error.localizedDescription }
     }
 }

@@ -9,6 +9,42 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testBackupExportAndImportControls() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Passport").waitForExistence(timeout: 8)); tab("Passport").tap()
+        if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+        app.buttons["Open settings"].tap()
+        let backup = app.buttons["Backup and restore"]
+        for _ in 0..<3 { if backup.isHittable { break }; app.swipeUp() }
+        backup.tap()
+        XCTAssertTrue(app.buttons["Choose backup to restore"].waitForExistence(timeout: 4))
+        app.buttons["Export backup"].tap()
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
+        let local = app.cells["DOC.sidebar.item.On My iPad"]
+        XCTAssertTrue(local.waitForExistence(timeout: 5)); local.tap()
+        let name = "CurlPlan A29 " + UUID().uuidString.prefix(8)
+        let filename = app.textFields.firstMatch
+        let old = filename.value as? String ?? ""
+        filename.tap(); filename.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count) + name)
+        app.buttons["Move"].tap()
+        XCTAssertTrue(app.staticTexts["Backup exported."].waitForExistence(timeout: 8))
+        app.buttons["Choose backup to restore"].tap()
+        XCTAssertTrue(local.waitForExistence(timeout: 5)); local.tap()
+        let file = app.cells.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
+        XCTAssertTrue(file.waitForExistence(timeout: 8)); file.tap()
+        XCTAssertTrue(app.buttons["Replace device records"].waitForExistence(timeout: 8))
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A29-restore-preview"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Replace device records"].tap()
+        XCTAssertTrue(app.buttons["curlplan.backup.confirm"].waitForExistence(timeout: 4))
+        app.buttons["curlplan.backup.confirm"].tap()
+        XCTAssertTrue(app.staticTexts["Records restored. Previous records are available above."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Preview previous device records"].exists)
+        app.buttons["Done"].tap()
+    }
+
     func testSavedIceReadingLandscapeLayout() throws {
         XCUIDevice.shared.orientation = .landscapeRight
         app.open(URL(string: "curlplan://stop/kelowna")!)

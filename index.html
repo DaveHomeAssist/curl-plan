@@ -493,6 +493,7 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
         <div class="k">Pebble texture<small>ICE GRAIN OVERLAY</small></div>
         <button type="button" class="toggle" id="toggle-pebble" aria-label="Toggle pebble texture"></button>
       </div>
+      <button class="pill-btn ghost" data-action="backup">Backup and restore</button>
       <div class="set-row">
         <div class="k">Account<small id="acct-meta">—</small></div>
         <button type="button" class="pill-btn ghost" data-action="signout">Sign out</button>
@@ -2330,9 +2331,102 @@ function clubDatalist(){
     '</datalist>';
 }
 
+/* Versioned browser backups; private local records only, no credentials. */
+var pendingBackup = null;
+function makeBackup(){
+  if(!currentUser()) throw Error("Sign in to the demo before exporting.");
+  return {format:"curlplan-web", version:1, account:auth.session, createdAt:new Date().toISOString(), state:JSON.parse(JSON.stringify(store))};
+}
+function validateBackup(raw){
+  function require(ok){ if(!ok) throw Error("Unsupported or invalid CurlPlan browser backup. Nothing was restored."); }
+  function obj(v){ return !!v && typeof v === "object" && !Array.isArray(v); }
+  function str(v){ return typeof v === "string"; }
+  function num(v){ return typeof v === "number" && Number.isFinite(v); }
+  function fields(v, names){ require(obj(v)); names.forEach(function(k){ require(str(v[k])); }); }
+  function rating(v){ require(Number.isInteger(v) && v >= 1 && v <= 5); }
+  function safe(v){ if(v && typeof v === "object") Object.keys(v).forEach(function(k){ require(!["__proto__","prototype","constructor"].includes(k)); safe(v[k]); }); }
+  require(obj(raw) && raw.format === "curlplan-web" && raw.version === 1 && currentUser() && raw.account === auth.session);
+  require(str(raw.createdAt) && Number.isFinite(Date.parse(raw.createdAt))); safe(raw);
+  require(new TextEncoder().encode(JSON.stringify(raw)).byteLength <= 5000000);
+  var s = raw.state, baseline = defaultStore();
+  require(obj(s) && s.v === STORE_SCHEMA && Object.keys(s).sort().join() === Object.keys(baseline).sort().join());
+  Object.keys(baseline).filter(function(k){return k !== "v";}).forEach(function(k){require(Array.isArray(baseline[k]) ? Array.isArray(s[k]) : obj(s[k]));});
+  ["follows","likes","joins"].forEach(function(k){Object.values(s[k]).forEach(function(v){require(obj(v) && num(v.at) && (k === "joins" ? str(v.v) : typeof v.v === "boolean"));});});
+  ["visits","iceReads","reviews","threads"].forEach(function(k){Object.values(s[k]).forEach(function(list){
+    require(Array.isArray(list)); list.forEach(function(v){
+      require(obj(v) && num(v.at)); if(v.id !== undefined) require(str(v.id));
+      if(k === "visits") fields(v,["date","note"]);
+      if(k === "iceReads") { fields(v,["speed","curl","note"]); ["date","sheet"].forEach(function(f){if(v[f] !== undefined) require(str(v[f]));}); }
+      if(k === "reviews") {fields(v,["id","note"]); rating(v.stars);}
+      if(k === "threads") fields(v,["from","text"]);
+    });
+  });});
+  var ids = new Set();
+  s.posts.forEach(function(p){
+    fields(p,["id","type","author"]); require(p.author === "me" && !ids.has(p.id) && num(p.at)); ids.add(p.id);
+    ["body","note","club"].forEach(function(k){if(p[k] !== undefined) require(str(p[k]));});
+    require(["note","result","review"].includes(p.type));
+    if(p.type === "note") fields(p,["body"]);
+    if(p.type === "review") {fields(p,["club","note"]); rating(p.stars);}
+    if(p.type === "result") {var c=p.score; require(obj(c) && Number.isSafeInteger(c.for) && c.for >= 0 && Number.isSafeInteger(c.ag) && c.ag >= 0); fields(c,["vs","res"]); require(c.res === (c.for > c.ag ? "WIN" : c.for < c.ag ? "LOSS" : "TIE"));}
+  });
+  s.addedSpiels.forEach(function(v){fields(v,["id","name","where","when","status"]); require(Array.isArray(v.going) && v.going.every(str));});
+  s.addedCurlers.forEach(function(v){fields(v,["id","initials","name","role","club","prov","metAt"]); require(typeof v.following === "boolean" && obj(v.stats) && Array.isArray(v.clubs) && v.clubs.every(str) && Array.isArray(v.form)); fields(v.stats,["record","win"]); require(num(v.stats.clubs) && num(v.stats.mutual)); v.form.forEach(function(g){fields(g,["label","score","res"]);});});
+  Object.values(s.drafts).forEach(function(v){require(obj(v)); Object.keys(v).forEach(function(k){require(k === "stars" ? num(v[k]) : str(v[k]));});});
+  Object.values(s.tombstones).forEach(function(v){require(obj(v)); Object.values(v).forEach(function(t){require(num(t));});});
+  return JSON.parse(JSON.stringify(raw));
+}
+function backupSummary(s){
+  function count(k){return Object.values(s[k]).reduce(function(n,a){return n+a.length;},0);}
+  return s.posts.length + " posts · " + count("visits") + " visits · " + count("iceReads") + " ice readings · " + count("reviews") + " reviews · " + count("threads") + " messages · " + Object.keys(s.drafts).length + " drafts · " + s.addedSpiels.length + " events · " + s.addedCurlers.length + " curlers";
+}
+function openBackup(){
+  closeSettings(); pendingBackup = null;
+  openSheet('<h2>Backup and restore</h2><p>Export a private JSON file containing browser records and drafts. Keep it somewhere safe. This restores into this browser app for the same account. iOS and Classic use separate backups.</p>' +
+    '<button class="b solid" data-action="export-backup">Export backup</button><div class="field"><label for="backup-file">Choose backup to preview</label><input id="backup-file" type="file" accept="application/json,.json"></div>' +
+    (readJSON(storeKey()+":beforeRestore") ? '<button class="b outline" data-action="recover-backup">Preview previous browser records</button>' : '') +
+    '<button class="b outline" data-action="close-sheet">Close</button>');
+}
+function exportBackup(){
+  try {
+    var data = validateBackup(makeBackup());
+    var url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+    var a = document.createElement("a"); a.href=url; a.download="CurlPlan Browser Backup.json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},60000);
+    toast("Backup download requested. Check Downloads.");
+  } catch(e){toast(e.message);}
+}
+function previewBackup(raw){
+  pendingBackup = null;
+  var checked = validateBackup(raw);
+  openSheet('<h2>Restore preview</h2><p>' + esc(checked.createdAt) + '</p><p>' + esc(backupSummary(checked.state)) + '</p>' +
+    '<p>This replaces browser records, drafts and messages. A recovery copy of current records is kept in this browser.</p>' +
+    '<button class="b solid" data-action="restore-backup">Replace browser records</button><button class="b outline" data-action="close-sheet">Cancel</button>');
+  pendingBackup = checked;
+}
+function restoreBackup(){
+  try {
+    var checked = validateBackup(pendingBackup);
+    if(!window.confirm("Replace current browser records with this backup? A recovery copy will be kept.")) return false;
+    var previous = makeBackup();
+    if(!writeJSON(storeKey()+":beforeRestore", previous)) {toast("Could not save recovery copy. Nothing was restored."); return false;}
+    if(!commitLocal(checked.state)) return false;
+    pendingBackup = null; closeSheet(); gotoTab("passport"); toast("Records restored. Previous records are available in Backup and restore."); return true;
+  } catch(e){toast(e.message);return false;}
+}
+
 /* ============================================================
    Event delegation
    ============================================================ */
+document.addEventListener("change", async function(e){
+  if(e.target.id !== "backup-file") return;
+  pendingBackup = null;
+  var file = e.target.files[0]; if(!file) return;
+  try {
+    if(file.size > 5000000) throw Error("Backup exceeds the 5 MB limit.");
+    previewBackup(JSON.parse(await file.text()));
+  } catch(error){toast(error.message);}
+});
 el("screen").addEventListener("keydown", function(e){
   if(e.key !== "Enter" && e.key !== " ") return;
   if(e.target.closest("button, a, input, select, textarea")) return;
@@ -2363,6 +2457,10 @@ el("screen").addEventListener("click", function(e){
     case "stop":     push("stop", id); break;
     case "curler":   push("curler", id); break;
     case "back":     back(); break;
+    case "backup": openBackup(); break;
+    case "export-backup": exportBackup(); break;
+    case "restore-backup": restoreBackup(); break;
+    case "recover-backup": try { previewBackup(readJSON(storeKey()+":beforeRestore")); } catch(e){toast(e.message);} break;
     case "settings": openSettings(t); break;
     case "close-settings": closeSettings(); break;
     case "close-sheet":    closeSheet(); break;
