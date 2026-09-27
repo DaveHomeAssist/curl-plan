@@ -410,10 +410,11 @@
         "Physical Ignacio: testRosterContactAvailabilityLifecycle passed in 75 seconds. Created only SPARE20260927B (Second, A23 Test Club, BC, test@example.invalid, spare, Available October 1\u20133 2026). Saved/relaunched, edited Evenings after 6 to Evenings after 7, relaunched/read back, canceled deletion, then deleted and verified absence after relaunch. Existing audit contacts preserved. /tmp/curlplan-remediation/roster-physical.xcresult.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A23-private-spare-contact.png \u2014 inspected; exact rendered club A23 TEST CLUB, position SECOND, dates, contact and corrected note visible.",
         "25 SwiftPM tests passed including invalid/reversed dates, create/edit identity, persistence, legacy contact backup roundtrip, protected seed entries, stale edit rejection and deletion marker. Actual browser functions passed create/edit/search/backup/storage failure/deletion cancellation and merge checks. App, seed, parity and feature-review checks passed.",
-        "Profile screenflow repair verified by physical testRosterContactAvailabilityLifecycle (72 seconds): Saved on your roster provenance plus explicit empty shared-club and game-history messages. No private contact details added to share text. /tmp/curlplan-remediation/screenflow-layout.xcresult contains this passing test and a separate initially failing large-text event test."
+        "Profile screenflow repair verified by physical testRosterContactAvailabilityLifecycle (72 seconds): Saved on your roster provenance plus explicit empty shared-club and game-history messages. No private contact details added to share text. /tmp/curlplan-remediation/screenflow-layout.xcresult contains this passing test and a separate initially failing large-text event test.",
+        "Physical native search passed in testPreparedRosterContactSearch (49.803 seconds): saved contact found by exact name, club, Second position, Spare flag and 2026-10-01 availability date; clear and no-result recovery verified. Reopened original contact, deleted only owned SPARE20260927B audit fixture and confirmed absence after relaunch. /tmp/curlplan-remediation/card-surfaces-search.xcresult. Initial extended lifecycle exposed a 17-point accessible clear-icon target despite its 44-point frame; explicit contentShape repaired it, and the final search assertions verified >=44 points. Search close/clear controls now have explicit state-appropriate labels."
       ],
       "remaining": [
-        "Physical Safari contact lifecycle and native search by position/availability remain to be exercised.",
+        "Physical Safari contact lifecycle and search remain to be exercised.",
         "Live team invitations, shared scheduling and other people\u2019s RSVP are not implemented; keep these claims gated under the account/social roadmap."
       ]
     },
@@ -578,13 +579,17 @@
         "CardStyle now applies shadow to its background shape, not the foreground content. Original serif font retained. Physical testActualComponentContrastControl passed for static and scrolling layouts with all contrast assertions enabled. Pill buttons have explicit card backgrounds for outlined state and minimum 44-point targets; contribution buttons also enlarged to 44 points.",
         "Physical testPhysicalContributionButtonTargets passed for Log visit, Ice read and Write review. Full testPhysicalContrastBothThemes still FAILED with 35 reports (Ice 3/8/3/5; Arena 3/5/3/5 across Passport/stop/profile/events). Preceding intermediate diagnostic run reported 100; counts alone are not conformance proof. No issue filters or waived assertions. Final result /tmp/curlplan-remediation/contrast-background-shadow.xcresult; original failed diagnostic runs retained.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-component-surfaces.png \u2014 inspected passing component control.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-remaining.csv \u2014 all 35 remaining current full-screen findings with element frames."
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-remaining.csv \u2014 all 35 remaining current full-screen findings with element frames.",
+        "Profile Follow and Message controls now have minimum 44-point heights; Message has an explicit card background. Physical testPhysicalProfileActionTargets passed, including Message open/close and unfiltered profile hit-region audit (13.513 seconds in final-surface-contrast.xcresult).",
+        "Card shadows still extended behind neighboring labels after the earlier foreground-shadow repair. Removing card shadows while preserving backgrounds/borders reduced physical contrast reports from 36 to 17. Solid dark avatar backgrounds, white/larger initials, stronger/larger event locations and attendance text, and a 44-point settings avatar resolved the remaining findings. Original diagnostic runs retained; no assertion filtering or waivers.",
+        "Physical Ignacio testPhysicalContrastBothThemes PASSED (45.697 seconds), covering Passport, stop, profile and events in Ice and Arena, eight screenshots with zero reported contrast findings. /tmp/curlplan-remediation/final-surface-contrast.xcresult. This is contrast acceptance for these rendered screens, not full VoiceOver/keyboard/all-screen accessibility acceptance.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-pass.csv \u2014 per-screen/theme final results. A32-events-contrast-passed.png and A32-profile-contrast-passed.png inspected for readable metadata, preserved hierarchy and clear card boundaries.",
+        "Older CI run 36304518919 completed with contrast failures on both standard and small iPhones; /tmp/curlplan-remediation/completed-screenflow-failures.log retained. Current changes require a new full CI gate; physical contrast success does not replace it."
       ],
       "remaining": [
-        "Resolve existing full accessibility CI failures from run 36288266893.",
+        "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
         "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms.",
-        "Resolve full-screen contrast audit failures with stronger per-element evidence; do not waive the failing CI gate based on palette tests. Full VoiceOver/keyboard acceptance remains separate.",
-        "Resolve the 35 full-screen contrast reports in A32-contrast-remaining.csv; component success does not close the full accessibility release gate."
+        "Physical eight-screen contrast passed; other routes, states, text sizes and accessibility audit types remain to be exercised."
       ]
     },
     {

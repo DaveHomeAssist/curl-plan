@@ -116,6 +116,7 @@ struct CurlerProfileView: View {
                 Text(store.isFollowing(c.id) ? "Following" : "+ Follow")
                     .font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
+                    .frame(minHeight: 44)
                     .background(settings.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
@@ -126,6 +127,8 @@ struct CurlerProfileView: View {
                 Text("Message")
                     .font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
                     .frame(maxWidth: .infinity).padding(.vertical, 11.5)
+                    .frame(minHeight: 44)
+                    .background(settings.card, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(settings.ink, lineWidth: 1.5))
             }
             .buttonStyle(.plain)

@@ -37,7 +37,7 @@ struct PassportView: View {
             }
             Spacer()
             Button { showSettings = true } label: {
-                AvatarView(initials: store.me.initials, size: 34)
+                AvatarView(initials: store.me.initials, size: 44)
                     .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }

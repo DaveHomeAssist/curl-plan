@@ -36,13 +36,10 @@ struct AvatarView: View {
 
     var body: some View {
         Text(initials)
-            .font(.grotesk(baseSize * 0.36, .bold))
-            .foregroundStyle(Color(hex: 0xEEF3F6))
+            .font(.grotesk(baseSize * 0.40, .bold))
+            .foregroundStyle(Color.white)
             .frame(width: scaledSize, height: scaledSize)
-            .background(
-                LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
+            .background(Color(hex: 0x222A30))
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
             .accessibilityHidden(true)
@@ -195,7 +192,6 @@ struct CardStyle: ViewModifier {
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(settings.card)
-                    .shadow(color: .black.opacity(settings.isArena ? 0.35 : 0.10), radius: 14, x: 0, y: 8)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)

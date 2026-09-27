@@ -86,12 +86,52 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Saved on your roster"].exists)
         XCTAssertTrue(app.staticTexts["No shared club history recorded."].exists)
         XCTAssertTrue(app.staticTexts["No game history recorded for this contact."].exists)
+        app.buttons["curlplan.detail.back"].tap()
+        verifyRosterContactSearch(marker)
         let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         proof.name = "A23-private-spare-contact"; proof.lifetime = .keepAlways; add(proof)
         tapAfterScrolling(app.buttons["Delete contact"], name: "Delete contact")
         app.alerts.buttons["Cancel"].tap()
         XCTAssertTrue(app.staticTexts["Evenings after 7"].exists)
         app.buttons["Delete contact"].tap(); app.alerts.buttons["Delete contact"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Roster").waitForExistence(timeout: 8)); tab("Roster").tap()
+        XCTAssertFalse(app.staticTexts[marker].exists)
+    }
+
+    private func verifyRosterContactSearch(_ marker: String) {
+        app.buttons["Search roster"].tap()
+        let search = app.textFields["Search your circle"]
+        for term in [marker, "A23 Test Club", "Second", "Spare", "2026-10-01"] {
+            search.tap(); search.typeText(term); hideAuditKeyboard()
+            XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 3), "Contact matches \(term)")
+            XCTAssertGreaterThanOrEqual(app.buttons["Clear roster search"].frame.height, 44)
+            app.buttons["Clear roster search"].tap()
+        }
+        search.tap(); search.typeText("NO_MATCH_A23_20260927"); hideAuditKeyboard()
+        XCTAssertFalse(app.staticTexts[marker].exists)
+        XCTAssertTrue(app.staticTexts["No curlers match \"NO_MATCH_A23_20260927\"."].exists)
+        app.buttons["Close roster search"].tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 3))
+        app.staticTexts[marker].tap()
+    }
+
+    func testPreparedRosterContactSearch() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let marker = "SPARE20260927B"
+        XCTAssertTrue(tab("Roster").waitForExistence(timeout: 8)); tab("Roster").tap()
+        if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+        if app.buttons["Close roster search"].exists { app.buttons["Close roster search"].tap() }
+        guard app.staticTexts[marker].exists else { throw XCTSkip("Requires the interrupted owned A23 audit contact") }
+        app.staticTexts[marker].tap()
+        XCTAssertTrue(app.staticTexts["Evenings after 7"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["test@example.invalid"].exists)
+        app.buttons["curlplan.detail.back"].tap()
+        verifyRosterContactSearch(marker)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A23-search-restored-contact"; proof.lifetime = .keepAlways; add(proof)
+        tapAfterScrolling(app.buttons["Delete contact"], name: "Delete owned audit contact")
+        app.alerts.buttons["Delete contact"].tap()
         app.terminate(); app.launch()
         XCTAssertTrue(tab("Roster").waitForExistence(timeout: 8)); tab("Roster").tap()
         XCTAssertFalse(app.staticTexts[marker].exists)

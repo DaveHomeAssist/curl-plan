@@ -203,7 +203,7 @@ private struct SpielRow: View {
                 .foregroundStyle(settings.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text(spiel.whereText)
-                .font(.mono(11, .medium)).foregroundStyle(settings.muted)
+                .font(.grotesk(15, .medium)).foregroundStyle(settings.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
         }
@@ -212,9 +212,9 @@ private struct SpielRow: View {
 
     private func statusBadge(_ status: String, solid: Bool) -> some View {
         Text(status)
-            .font(solid ? .mono(11, .bold) : .grotesk(11, .semibold))
+            .font(.grotesk(15, .semibold))
             .tracking(solid && !dynamicTypeSize.isAccessibilitySize ? 1 : 0)
-            .foregroundStyle(solid ? settings.onAccent : settings.muted)
+            .foregroundStyle(solid ? settings.onAccent : settings.ink)
             .padding(.vertical, solid ? 4 : 5)
             .padding(.horizontal, solid ? 8 : 10)
             .background(solid ? settings.accent : Color.clear)

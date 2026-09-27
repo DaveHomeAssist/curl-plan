@@ -29,6 +29,27 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         proof.name = "A32-contribution-targets"; proof.lifetime = .keepAlways; add(proof)
     }
 
+    func testPhysicalProfileActionTargets() throws {
+        let app = XCUIApplication(); app.launch()
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        app.open(URL(string: "curlplan://curler/sam")!)
+        XCTAssertTrue(app.buttons["Message"].waitForExistence(timeout: 8))
+        for control in [app.buttons["curlplan.profile.follow"], app.buttons["Message"]] {
+            XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+            XCTAssertGreaterThanOrEqual(control.frame.width, 44)
+            XCTAssertTrue(control.isHittable)
+        }
+        app.buttons["Message"].tap()
+        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.buttons["Message"].waitForExistence(timeout: 5))
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A32-profile-targets"; proof.lifetime = .keepAlways; add(proof)
+        try audit(app, "profile-action-targets", for: .hitRegion)
+    }
+
     func testContrastControl() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--contrast-control"]

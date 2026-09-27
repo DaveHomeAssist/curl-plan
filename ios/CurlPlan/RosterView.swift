@@ -34,7 +34,7 @@ struct RosterView: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Search roster")
+                    .accessibilityLabel(searching ? "Close roster search" : "Search roster")
                     Button { showingNew = true } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 18, weight: .medium))
@@ -61,8 +61,11 @@ struct RosterView: View {
                     if !query.isEmpty {
                         Button { query = "" } label: {
                             Image(systemName: "xmark.circle.fill").foregroundStyle(settings.muted)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Clear roster search")
                     }
                 }
                 .padding(.vertical, 9).padding(.horizontal, 13)
