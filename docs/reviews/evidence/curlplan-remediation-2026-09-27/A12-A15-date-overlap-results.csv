@@ -1,0 +1,10 @@
+activity,check,result,evidence
+A12,Create for tomorrow and read after relaunch,Pass,/tmp/curlplan-remediation/date-reschedule.xcresult
+A12,Move start to following day and check end date,Pass,/tmp/curlplan-remediation/date-reschedule.xcresult
+A12,Save and retrieve revised schedule,Pass,/tmp/curlplan-remediation/date-reschedule.xcresult
+A12,Delete own record and verify absence,Pass,/tmp/curlplan-remediation/date-reschedule.xcresult
+A15,Create overlapping pair and read editor warning,Pass,/tmp/curlplan-remediation/event-overlap.xcresult
+A15,Relaunch and read detail warning,Pass,/tmp/curlplan-remediation/event-overlap.xcresult
+A15,Reschedule to clear warning and verify after relaunch,Pass,/tmp/curlplan-remediation/event-overlap.xcresult
+A15,Delete both own records and verify absence,Pass,/tmp/curlplan-remediation/event-overlap.xcresult
+A12/A15,Physical Safari equivalents,Not verified,Safari input limitation remains

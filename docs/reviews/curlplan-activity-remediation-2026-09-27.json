@@ -208,10 +208,11 @@
         "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
         "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
         "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png",
+        "Physical Ignacio testEventDatePickerInteraction passed in 43.030 seconds: created a marked event for tomorrow through native calendar controls, verified start/end dates, relaunched/read saved date, edited start to the following day and checked corresponding end date, saved/relaunched/read revised schedule, deleted only own event and verified absence after relaunch. /tmp/curlplan-remediation/date-reschedule.xcresult. Native date pickers now have distinct start/end identifiers. Screenshot A12-date-rescheduled.png and A12-A15-date-overlap-results.csv retained."
       ],
       "remaining": [
-        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+        "Physical Safari event rescheduling/edit/delete remain; native time-of-day and timezone changes require separate interaction checks."
       ]
     },
     {
@@ -266,10 +267,11 @@
         "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
         "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
         "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png",
+        "Physical Ignacio testEventOverlapWarningAndReschedule passed: created two marked events with overlapping default intervals, read the second editor warning naming the first, saved/relaunched and read the persisted detail warning, moved the second event to tomorrow through the calendar picker, verified warning cleared in editor and after save/relaunch, deleted both own events and confirmed absence. /tmp/curlplan-remediation/event-overlap.xcresult. Screenshots A15-overlap-warning.png and A15-overlap-resolved.png retained."
       ],
       "remaining": [
-        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+        "Physical Safari overlap creation and resolution remain; real organizer conflict resolution is outside local planning notes."
       ]
     },
     {

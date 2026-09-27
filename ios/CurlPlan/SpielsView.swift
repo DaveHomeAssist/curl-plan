@@ -97,8 +97,9 @@ struct NewSpielSheet: View {
             }
             DatePicker("Starts", selection: Binding(get: { draft.start }, set: { value in
                 let duration = draft.end.timeIntervalSince(draft.start); draft.start = value; draft.end = value.addingTimeInterval(duration)
-            }))
+            })).accessibilityIdentifier("curlplan.event.starts")
             DatePicker("Ends", selection: $draft.end, in: draft.start...)
+                .accessibilityIdentifier("curlplan.event.ends")
             Text("Time zone: " + zone).font(.footnote)
             CPTextArea(label: "Preparation", text: $draft.preparation, placeholder: "Arrival time, equipment, or focus")
             DisclosureGroup("Event details and trip planning") {

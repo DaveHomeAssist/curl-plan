@@ -372,6 +372,107 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts[summary + " next game"].exists)
     }
 
+    func testEventOverlapWarningAndReschedule() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        tab("Spiels").tap()
+        let marker = "OVERLAP " + UUID().uuidString.prefix(8)
+        let details = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.event.details."))
+        func create(_ title: String, expectingConflict: Bool) throws -> String {
+            let before = Set(details.allElementsBoundByIndex.map(\.identifier))
+            app.buttons["curlplan.event.add"].tap()
+            let name = app.textFields["Name"]
+            guard ["", "League game"].contains(name.value as? String ?? "") else { throw XCTSkip("Preserve event draft") }
+            name.tap(); name.typeText(title); hideAuditKeyboard()
+            app.textFields["Location"].tap(); app.textFields["Location"].typeText("Overlap audit club"); hideAuditKeyboard()
+            if expectingConflict {
+                let warning = app.staticTexts["curlplan.event.conflicts"]
+                let scroll = app.scrollViews["curlplan.editor.scroll"]
+                for _ in 0..<6 {
+                    if warning.exists && scroll.frame.contains(warning.frame) && warning.isHittable { break }
+                    scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.85))
+                        .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.2)))
+                }
+                XCTAssertTrue(warning.label.contains(marker + " A"))
+                let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                proof.name = "A15-overlap-warning"; proof.lifetime = .keepAlways; add(proof)
+            }
+            app.buttons["Save"].tap()
+            XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 4))
+            let added = details.allElementsBoundByIndex.map(\.identifier).filter { !before.contains($0) }
+            XCTAssertEqual(added.count, 1); return try XCTUnwrap(added.first)
+        }
+        let first = try create(marker + " A", expectingConflict: false)
+        let second = try create(marker + " B", expectingConflict: true)
+        app.terminate(); app.launch(); tab("Spiels").tap(); app.buttons[second].tap()
+        XCTAssertTrue(app.staticTexts["Overlaps with: " + marker + " A"].exists)
+        app.buttons["Edit event"].tap()
+        app.datePickers["curlplan.event.starts"].buttons.firstMatch.tap()
+        let tomorrow = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 1, to: Date()))
+        let day = DateFormatter(); day.locale = Locale(identifier: "en_US"); day.dateFormat = "EEEE, MMMM d"
+        let choice = app.buttons[day.string(from: tomorrow)]
+        if !choice.exists { app.buttons["DatePicker.NextMonth"].tap() }
+        choice.tap()
+        if app.buttons["PopoverDismissRegion"].exists { app.buttons["PopoverDismissRegion"].tap() }
+        XCTAssertFalse(app.staticTexts["curlplan.event.conflicts"].exists)
+        app.buttons["Save"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap(); app.buttons[second].tap()
+        XCTAssertFalse(app.staticTexts["Overlaps with: " + marker + " A"].exists)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A15-overlap-resolved"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Delete event"].tap(); app.alerts.buttons["Delete event"].tap()
+        app.buttons[first].tap(); app.buttons["Delete event"].tap(); app.alerts.buttons["Delete event"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        XCTAssertFalse(app.buttons[first].exists); XCTAssertFalse(app.buttons[second].exists)
+    }
+
+    func testEventDatePickerInteraction() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        tab("Spiels").tap()
+        let details = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.event.details."))
+        let before = Set(details.allElementsBoundByIndex.map(\.identifier))
+        app.buttons["curlplan.event.add"].tap()
+        let name = app.textFields["Name"]
+        guard ["", "League game"].contains(name.value as? String ?? "") else { throw XCTSkip("Preserve existing event draft") }
+        let marker = "DATE " + UUID().uuidString.prefix(8)
+        name.tap(); name.typeText(marker); hideAuditKeyboard()
+        app.textFields["Location"].tap(); app.textFields["Location"].typeText("Date audit club"); hideAuditKeyboard()
+        let day = DateFormatter(); day.locale = Locale(identifier: "en_US"); day.dateFormat = "EEEE, MMMM d"
+        let short = DateFormatter(); short.locale = day.locale; short.dateFormat = "MMM d, yyyy"
+        let tomorrow = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 1, to: Date()))
+        let later = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 2, to: Date()))
+        func selectStart(_ date: Date) {
+            let starts = app.datePickers["curlplan.event.starts"]
+            starts.buttons.firstMatch.tap()
+            let choice = app.buttons[day.string(from: date)]
+            if !choice.exists { app.buttons["DatePicker.NextMonth"].tap() }
+            XCTAssertTrue(choice.waitForExistence(timeout: 3)); choice.tap()
+            if app.buttons["PopoverDismissRegion"].exists { app.buttons["PopoverDismissRegion"].tap() }
+            XCTAssertTrue(starts.buttons[short.string(from: date)].exists)
+            XCTAssertTrue(app.datePickers["curlplan.event.ends"].buttons[short.string(from: date)].exists, "Moving start preserves duration and moves the end")
+        }
+        selectStart(tomorrow)
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4))
+        let added = details.allElementsBoundByIndex.map(\.identifier).filter { !before.contains($0) }
+        XCTAssertEqual(added.count, 1); let detailID = try XCTUnwrap(added.first)
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        app.buttons[detailID].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", short.string(from: tomorrow))).firstMatch.exists)
+        app.buttons["Edit event"].tap()
+        selectStart(later); app.buttons["Save"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap(); app.buttons[detailID].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", short.string(from: later))).firstMatch.exists)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A12-date-rescheduled"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Delete event"].tap(); app.alerts.buttons["Delete event"].tap()
+        app.terminate(); app.launch(); tab("Spiels").tap()
+        XCTAssertFalse(app.buttons[detailID].exists)
+    }
+
     func testEventPlanningEntryAndCorrection() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]
