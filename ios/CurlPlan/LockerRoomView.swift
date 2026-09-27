@@ -260,11 +260,18 @@ private struct ResultCard: View {
 
 private struct NoteCard: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @State private var preparing = false
     let post: Post
     var body: some View {
         VStack(alignment: .leading, spacing: 11) {
             PostHead(post: post)
             Text(post.body ?? "").font(.grotesk(15)).foregroundStyle(settings.ink).lineSpacing(2)
+            if store.lessonText(post.id) != nil {
+                Button("Use in game preparation") { preparing = true }
+                    .frame(minHeight: 44)
+                    .sheet(isPresented: $preparing) { LessonPreparationSheet(postID: post.id) }
+            }
         }
         .padding(14)
         .cpCard(radius: 18)
@@ -338,5 +345,51 @@ private struct SpielPromoCard: View {
         }
         .padding(14)
         .cpCard(radius: 18, accentBorder: true)
+    }
+}
+
+private struct LessonPreparationSheet: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let postID: String
+    @State private var eventID = ""
+    @State private var creatingEvent = false
+    @State private var failed = false
+    @State private var saved = false
+    @State private var showingGame = false
+    private var events: [Spiel] { store.upcomingEvents().filter { $0.eventKind != "Practice" } }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Lesson") { Text(store.lessonText(postID) ?? "This source is no longer available.") }
+                if events.isEmpty {
+                    Text("Create an upcoming game to use this lesson.")
+                    Button("Create event") { creatingEvent = true }
+                        .sheet(isPresented: $creatingEvent) { NewSpielSheet() }
+                } else {
+                    Picker("Upcoming game", selection: $eventID) {
+                        Text("Choose a game").tag("")
+                        ForEach(events) { Text($0.name + " · " + $0.scheduleLabel).tag($0.id) }
+                    }
+                    if let event = store.spiel(eventID) {
+                        Section("Existing preparation") { Text(event.preparation?.isEmpty == false ? event.preparation! : "None recorded") }
+                    }
+                    Text("This adds the lesson to your preparation and any open event draft. Existing text is kept.")
+                    Button("Add lesson to preparation") {
+                        if store.useLesson(postID, eventID: eventID) { saved = true } else { failed = true }
+                    }.disabled(eventID.isEmpty || store.lessonText(postID) == nil)
+                    if saved {
+                        Text("Lesson saved to game preparation.")
+                        Button("View game preparation") { showingGame = true }
+                            .sheet(isPresented: $showingGame) { SpielDetailSheet(spielID: eventID) }
+                    }
+                }
+            }
+            .onChange(of: eventID) { _, _ in saved = false }
+            .navigationTitle("Game preparation")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(saved ? "Done" : "Cancel") { dismiss() } } }
+            .alert("Could not add lesson", isPresented: $failed) { Button("OK", role: .cancel) {} }
+        }
     }
 }

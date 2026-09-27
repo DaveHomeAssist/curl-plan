@@ -452,6 +452,35 @@ final class Store: ObservableObject {
             .sorted { ($0.startAt ?? 0) < ($1.startAt ?? 0) }
     }
 
+    func lessonText(_ postID: String) -> String? {
+        guard let post = state.posts.first(where: { $0.id == postID && $0.author == "me" }),
+              post.kind == .note || post.kind == .practice else { return nil }
+        let observation = post.practice?.observations.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let text = post.kind == .practice ? (observation.isEmpty ? post.practice?.focus ?? "" : observation) : post.body ?? ""
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    @discardableResult
+    func useLesson(_ postID: String, eventID: String) -> Bool {
+        guard isSignedIn, let lesson = lessonText(postID),
+              upcomingEvents().contains(where: { $0.id == eventID && $0.eventKind != "Practice" }),
+              let index = state.addedSpiels.firstIndex(where: { $0.id == eventID }) else { return false }
+        let block = "Lesson for this game: " + lesson
+        func appended(_ existing: String) -> String {
+            if existing.contains(block) { return existing }
+            return existing.isEmpty ? block : existing + "\n\n" + block
+        }
+        var next = state
+        next.addedSpiels[index].preparation = appended(next.addedSpiels[index].preparation ?? "")
+        next.addedSpiels[index].at = max(Store.now(), (next.addedSpiels[index].at ?? 0).nextUp)
+        if var draft = next.eventDrafts?[eventID] {
+            draft.preparation = appended(draft.preparation); next.eventDrafts?[eventID] = draft
+        }
+        state = next
+        return true
+    }
+
     func eventConflicts(start: Double, end: Double, excluding id: String? = nil) -> [Spiel] {
         state.addedSpiels.filter {
             $0.id != id && spielStatus($0.id) != "Not going" &&

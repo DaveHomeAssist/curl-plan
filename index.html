@@ -1589,6 +1589,7 @@ function renderPostCard(p){
   if(p.type === "note" || p.type === "practice"){
     return '<div class="card post">' + postHead(p) +
       '<div class="body" style="white-space:pre-line;">' + esc(p.body) + '</div>' +
+      (lessonText(p.id) ? '<button class="b outline" data-action="prepare-lesson" data-id="' + esc(p.id) + '">Use in game preparation</button>' : '') +
     '</div>';
   }
   if(p.type === "spiel"){
@@ -2400,6 +2401,28 @@ function submitNewSpiel(id){
   if(!commitLocal(next)) return false;
   activeEditor = null; closeSheet(); gotoTab("spiels"); toast("Event saved on this device"); return true;
 }
+function lessonText(id){
+  var post=ownedPost(id); if(!post || !["note","practice"].includes(post.type)) return "";
+  return (post.type === "practice" ? (post.practice.observations.trim() || post.practice.focus) : post.body || "").trim();
+}
+function openLessonPreparation(id){
+  var lesson=lessonText(id); if(!lesson) return;
+  var events=upcomingEvents().filter(function(e){return e.eventKind !== "Practice";});
+  openSheet('<h2>Game preparation</h2><p>' + esc(lesson) + '</p>' + (events.length ?
+    '<div class="field"><label for="f-event">Upcoming game</label><select id="f-event"><option value="">Choose a game</option>' + events.map(function(e){return '<option value="' + esc(e.id) + '">' + esc(e.name + ' · ' + eventLabel(e)) + '</option>';}).join('') + '</select></div><p>Adds this lesson while keeping existing preparation and event drafts.</p><button class="b solid" data-action="save-lesson" data-id="' + esc(id) + '">Add lesson to preparation</button>' :
+    '<p>Create an upcoming game, then return to this lesson.</p><button class="b solid" data-action="new-spiel">Create event</button>') + '<button class="b outline" data-action="close-sheet">Cancel</button>');
+}
+function useLesson(id, eventID){
+  var lesson=lessonText(id), event=upcomingEvents().find(function(e){return e.id === eventID && e.eventKind !== "Practice";});
+  if(!currentUser() || !lesson || !event){toast("Choose an upcoming game.");return false;}
+  var block="Lesson for this game: " + lesson;
+  function appended(text){text=text || "";return text.includes(block) ? text : text ? text + "\n\n" + block : block;}
+  var next=JSON.parse(JSON.stringify(store)), target=next.addedSpiels.find(function(e){return e.id === eventID;});
+  target.preparation=appended(target.preparation);target.at=Math.max(Date.now(),(target.at || 0)+1);
+  var draft=next.drafts[editorKey("event",eventID)]; if(draft) draft.preparation=appended(draft.preparation);
+  if(!commitLocal(next)) return false;
+  closeSheet();gotoTab("spiels");toast("Lesson added to game preparation");return true;
+}
 function openResultEvent(id){
   var event=store.addedSpiels.find(function(e){return e.id === id;}); if(!event) return;
   var results=store.posts.filter(function(p){return p.type === "result" && p.eventID === id;});
@@ -2601,6 +2624,8 @@ el("screen").addEventListener("click", function(e){
       break;
     }
     // create entities (backported from iOS)
+    case "prepare-lesson": openLessonPreparation(id); break;
+    case "save-lesson": useLesson(id,val("f-event")); break;
     case "result-event": openResultEvent(id); break;
     case "new-spiel":         openNewSpiel(); break;
     case "submit-new-spiel":  submitNewSpiel(id || undefined); break;

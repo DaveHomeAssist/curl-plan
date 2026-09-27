@@ -334,10 +334,15 @@
       "expected": "Retrieve past notes and connect them to preparation",
       "baseline_verdict": "Partial",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add a visible route from takeaways to a saved next-game goal.",
       "acceptance": "Locker > create practice-related note > search > relaunch; inspect onward preparation route; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure."
+      ],
+      "remaining": [
+        "Complete physical native and Safari source-to-target selection/save/relaunch/readback acceptance."
+      ]
     },
     {
       "id": "A21",
