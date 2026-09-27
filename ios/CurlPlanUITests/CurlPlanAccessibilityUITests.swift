@@ -1,6 +1,34 @@
 import XCTest
 
 final class CurlPlanAccessibilityUITests: XCTestCase {
+    func testActualComponentContrastControl() throws {
+        continueAfterFailure = true
+        let app = XCUIApplication()
+        XCUIDevice.shared.orientation = .portrait
+        for scroll in [false, true] {
+            app.launchArguments = ["--contrast-components"] + (scroll ? ["--control-scroll"] : [])
+            app.launch()
+            XCTAssertTrue(app.staticTexts["Component contrast control"].waitForExistence(timeout: 8))
+            XCTAssertGreaterThanOrEqual(app.buttons["Ice read"].frame.height, 44)
+            XCTAssertGreaterThanOrEqual(app.buttons["Log visit"].frame.height, 44)
+            try audit(app, scroll ? "components-scroll" : "components-static", for: .contrast)
+            app.terminate()
+        }
+        app.launchArguments = []; app.launch()
+    }
+
+    func testPhysicalContributionButtonTargets() throws {
+        let app = XCUIApplication(); app.launch()
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        XCTAssertTrue(app.buttons["Log visit"].waitForExistence(timeout: 8))
+        for title in ["Log visit", "Ice read", "Write review"] {
+            XCTAssertGreaterThanOrEqual(app.buttons[title].frame.height, 44)
+            XCTAssertTrue(app.buttons[title].isHittable)
+        }
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A32-contribution-targets"; proof.lifetime = .keepAlways; add(proof)
+    }
+
     func testContrastControl() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--contrast-control"]
@@ -125,7 +153,7 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
         try app.performAccessibilityAudit(for: types) { issue in
-            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); details=\(issue.detailedDescription); element=\(issue.element?.label ?? "none")")
+            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); details=\(issue.detailedDescription); element=\(issue.element?.label ?? "none"); frame=\(String(describing: issue.element?.frame)); id=\(issue.element?.identifier ?? "none")")
             return false
         }
     }

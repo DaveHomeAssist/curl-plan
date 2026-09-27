@@ -181,6 +181,8 @@ struct StopDetailView: View {
         Button(action: action) {
             Text(title).font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
                 .frame(maxWidth: .infinity).padding(.vertical, 9)
+                .frame(minHeight: 44)
+                .background(settings.card, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(settings.ink, lineWidth: 1.5))
         }

@@ -191,14 +191,17 @@ struct CardStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(settings.card)
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(settings.card)
+                    .shadow(color: .black.opacity(settings.isArena ? 0.35 : 0.10), radius: 14, x: 0, y: 8)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(accentBorder ? settings.accent : settings.line,
                                   lineWidth: accentBorder ? 1.5 : 1)
             )
-            .shadow(color: .black.opacity(settings.isArena ? 0.35 : 0.10), radius: 14, x: 0, y: 8)
     }
 }
 
@@ -281,7 +284,8 @@ struct PillButton: View {
                 .fixedSize(horizontal: true, vertical: true)
                 .padding(.horizontal, 14)
                 .padding(.vertical, filled ? 8 : 6.5)
-                .background(filled ? settings.accent : Color.clear)
+                .frame(minWidth: 44, minHeight: 44)
+                .background(filled ? settings.accent : settings.card)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
