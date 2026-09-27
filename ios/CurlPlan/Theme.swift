@@ -89,6 +89,8 @@ final class AppSettings: ObservableObject {
         }
         return AppSettings.accents.first(where: { $0.key == accentKey })?.color ?? Color(hex: 0x9C2F20)
     }
+    // Text/icons on a filled accent surface need the opposite luminance in Arena.
+    var onAccent: Color { isArena ? Color(hex: 0x13181B) : .white }
     var isArena: Bool { theme == .arena }
     var ink: Color { isArena ? Color(hex: 0xEEF3F6) : Color(hex: 0x1B2227) }
     var muted: Color { isArena ? Color(hex: 0xB3BCC2) : Color(hex: 0x465159) }

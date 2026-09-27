@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import CurlPlan
 
 // Unit tests for the Store derivation + persistence + identity layer (Phase 1 core).
@@ -15,6 +16,34 @@ final class StoreTests: XCTestCase {
         let suite = UserDefaults(suiteName: "curlplan.tests")!
         suite.removePersistentDomain(forName: "curlplan.tests")
         Store.defaults = suite
+    }
+
+    func testThemeTextPairsMeetContrast() {
+        let settings = AppSettings()
+        let oldTheme = settings.theme, oldAccent = settings.accentKey
+        defer { settings.theme = oldTheme; settings.accentKey = oldAccent }
+        func luminance(_ color: Color) -> Double {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            XCTAssertTrue(UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a))
+            func linear(_ c: CGFloat) -> Double { let v = Double(c); return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+            return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+        }
+        func ratio(_ a: Color, _ b: Color) -> Double {
+            let x = luminance(a), y = luminance(b)
+            return (max(x,y) + 0.05) / (min(x,y) + 0.05)
+        }
+        for theme in [AppSettings.AppTheme.ice, .arena] {
+            settings.theme = theme
+            for accent in AppSettings.accents {
+                settings.accentKey = accent.key
+                XCTAssertGreaterThanOrEqual(ratio(settings.onAccent, settings.accent), 4.5, "\(theme) \(accent.key) filled control")
+                for surface in [settings.screen, settings.card, settings.panel] {
+                    XCTAssertGreaterThanOrEqual(ratio(settings.accent, surface), 4.5)
+                    XCTAssertGreaterThanOrEqual(ratio(settings.ink, surface), 4.5)
+                    XCTAssertGreaterThanOrEqual(ratio(settings.muted, surface), 4.5)
+                }
+            }
+        }
     }
 
     func testDatedEventOrderingConflictsRescheduleAndDeletion() throws {

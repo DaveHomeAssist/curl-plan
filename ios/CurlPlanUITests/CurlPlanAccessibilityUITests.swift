@@ -1,6 +1,40 @@
 import XCTest
 
 final class CurlPlanAccessibilityUITests: XCTestCase {
+    func testContrastControl() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--contrast-control"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Black text on white"].waitForExistence(timeout: 8))
+        try audit(app, "contrast-control", for: .contrast)
+    }
+
+    func testPhysicalContrastBothThemes() throws {
+        continueAfterFailure = true
+        let app = XCUIApplication(); app.launch()
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        for theme in ["Ice", "Arena"] {
+            app.open(URL(string: "curlplan://stop/kelowna")!)
+            XCTAssertTrue(app.buttons["curlplan.detail.back"].waitForExistence(timeout: 8))
+            app.buttons["curlplan.detail.back"].tap()
+            app.buttons["Open settings"].tap(); app.buttons[theme].tap(); app.buttons["Close settings"].tap()
+            try audit(app, "physical-\(theme)-passport", for: .contrast)
+            app.open(URL(string: "curlplan://stop/kelowna")!)
+            XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 8))
+            try audit(app, "physical-\(theme)-stop", for: .contrast)
+            app.open(URL(string: "curlplan://curler/sam")!)
+            XCTAssertTrue(app.buttons["Message"].waitForExistence(timeout: 8))
+            try audit(app, "physical-\(theme)-profile", for: .contrast)
+            app.buttons["Spiels"].firstMatch.tap()
+            try audit(app, "physical-\(theme)-events", for: .contrast)
+        }
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        app.buttons["curlplan.detail.back"].tap()
+        app.buttons["Open settings"].tap(); app.buttons["Ice"].tap(); app.buttons["Close settings"].tap()
+    }
+
     func testContributionAndSettingsLabels() throws {
         let app = XCUIApplication()
         app.launch()
@@ -86,12 +120,12 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
 
     private func audit(_ app: XCUIApplication, _ name: String,
                        for types: XCUIAccessibilityAuditType = .all) throws {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "accessibility-\(name)"
         attachment.lifetime = .keepAlways
         add(attachment)
         try app.performAccessibilityAudit(for: types) { issue in
-            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); element=\(issue.element?.label ?? "none")")
+            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); details=\(issue.detailedDescription); element=\(issue.element?.label ?? "none")")
             return false
         }
     }

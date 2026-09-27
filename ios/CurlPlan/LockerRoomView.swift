@@ -61,7 +61,7 @@ struct LockerRoomView: View {
             Button { showingCompose = true } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(settings.onAccent)
                     .frame(width: 54, height: 54)
                     .background(settings.accent)
                     .clipShape(Circle())
@@ -231,7 +231,7 @@ private struct ResultCard: View {
                     + Text("\(post.scoreAgainst ?? 0)").foregroundColor(settings.ink))
                     .font(.serif(28))
                 Text(post.res ?? "")
-                    .font(.mono(11, .bold)).tracking(0).foregroundStyle(.white)
+                    .font(.mono(11, .bold)).tracking(0).foregroundStyle(settings.onAccent)
                     .padding(.vertical, 4).padding(.horizontal, 8)
                     .background(settings.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -314,7 +314,7 @@ private struct SpielPromoCard: View {
                     } label: {
                         Text(joined ? "Going ✓" : "I'm in")
                             .font(.grotesk(13, .bold))
-                            .foregroundStyle(joined ? settings.accent : .white)
+                            .foregroundStyle(joined ? settings.accent : settings.onAccent)
                             .padding(.vertical, 9).padding(.horizontal, 16)
                             .background(joined ? settings.accent.opacity(0.16) : settings.accent)
                             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))

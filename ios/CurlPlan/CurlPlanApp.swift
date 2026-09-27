@@ -10,9 +10,23 @@ struct CurlPlanApp: App {
     @StateObject private var store = Store()
     @StateObject private var router = Router()
 
+    @ViewBuilder private var content: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--contrast-control") {
+            VStack(spacing: 24) {
+                Text("Black text on white").font(.system(size: 18, weight: .bold)).foregroundStyle(.black).padding().background(.white)
+                Text("White text on black").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).padding().background(.black)
+                Text("Muted text on white").font(.mono(11, .semibold)).foregroundStyle(Color(hex: 0x465159)).padding().background(.white)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.white)
+        } else { RootView() }
+        #else
+        RootView()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            content
                 .environmentObject(settings)
                 .environmentObject(store)
                 .environmentObject(router)

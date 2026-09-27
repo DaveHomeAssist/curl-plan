@@ -114,7 +114,7 @@ private struct AvatarStackGlyph: View {
                 let glyph = context.resolve(
                     Text(text)
                         .font(.grotesk(baseSize * (accent ? 0.34 : 0.36), .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(accent ? settings.onAccent : .white)
                 )
                 context.draw(glyph,
                              at: CGPoint(x: size.width / 2, y: size.height / 2),
@@ -277,7 +277,7 @@ struct PillButton: View {
         Button(action: action) {
             Text(title)
                 .font(.grotesk(12, .bold))
-                .foregroundStyle(filled ? .white : settings.ink)
+                .foregroundStyle(filled ? settings.onAccent : settings.ink)
                 .fixedSize(horizontal: true, vertical: true)
                 .padding(.horizontal, 14)
                 .padding(.vertical, filled ? 8 : 6.5)
@@ -344,7 +344,7 @@ struct CPChips: View {
                     Button { selection = opt } label: {
                         Text(opt)
                             .font(.grotesk(12, .semibold))
-                            .foregroundStyle(on ? .white : settings.ink)
+                            .foregroundStyle(on ? settings.onAccent : settings.ink)
                             .padding(.vertical, 8).padding(.horizontal, 13)
                             .background(on ? settings.accent : settings.panel)
                             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -394,7 +394,7 @@ struct CreateScaffold<Content: View>: View {
                 .buttonStyle(.plain)
 
                 Button(action: onSave) {
-                    Text("Save").font(.grotesk(14, .bold)).foregroundStyle(.white)
+                    Text("Save").font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(canSave ? settings.accent : settings.muted.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

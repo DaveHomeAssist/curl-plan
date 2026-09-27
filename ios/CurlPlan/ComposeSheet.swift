@@ -35,7 +35,7 @@ struct ComposeSheet: View {
                         Button { draft.kind = k } label: {
                             Text(k.rawValue)
                                 .font(.grotesk(12, .semibold))
-                                .foregroundStyle(on ? .white : settings.ink)
+                                .foregroundStyle(on ? settings.onAccent : settings.ink)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 9)
                                 .background(on ? settings.accent : settings.panel)
@@ -82,7 +82,7 @@ struct ComposeSheet: View {
                 }
                 .buttonStyle(.plain)
                 Button { save() } label: {
-                    Text(editingPostID == nil ? "Post" : "Save changes").font(.grotesk(14, .bold)).foregroundStyle(.white)
+                    Text(editingPostID == nil ? "Post" : "Save changes").font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(canSave ? settings.accent : settings.muted.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

@@ -35,7 +35,7 @@ struct AuthView: View {
 
                         Button { store.exploreDemo() } label: {
                             Text("Explore the demo")
-                                .font(.grotesk(14, .bold)).foregroundStyle(.white)
+                                .font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .background(settings.accent)
                                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

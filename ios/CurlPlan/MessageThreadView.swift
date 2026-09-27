@@ -56,7 +56,7 @@ struct MessageThreadView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(settings.line, lineWidth: 1))
                 Button { send() } label: {
-                    Text("Send").font(.grotesk(12, .bold)).foregroundStyle(.white)
+                    Text("Send").font(.grotesk(12, .bold)).foregroundStyle(settings.onAccent)
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .background(canSend ? settings.accent : settings.muted.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -93,10 +93,10 @@ private struct Bubble: View {
             if mine { Spacer(minLength: 40) }
             VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
                 Text(message.text)
-                    .font(.grotesk(15)).foregroundStyle(mine ? .white : settings.ink)
+                    .font(.grotesk(15)).foregroundStyle(mine ? settings.onAccent : settings.ink)
                 Text(RelativeTime.clock(message.at))
                     .font(.mono(9, .medium)).tracking(0.5)
-                    .foregroundStyle(mine ? Color.white.opacity(0.7) : settings.muted)
+                    .foregroundStyle(mine ? settings.onAccent : settings.muted)
             }
             .padding(.vertical, 9).padding(.horizontal, 13)
             .background(mine ? settings.accent : settings.panel)

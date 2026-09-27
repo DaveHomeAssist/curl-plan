@@ -86,7 +86,7 @@ struct CurlerProfileView: View {
         HStack(spacing: 10) {
             Button { store.toggleFollow(c.id) } label: {
                 Text(store.isFollowing(c.id) ? "Following" : "+ Follow")
-                    .font(.grotesk(14, .bold)).foregroundStyle(.white)
+                    .font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
                     .background(settings.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

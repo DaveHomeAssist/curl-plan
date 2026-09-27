@@ -191,7 +191,7 @@ private struct SpielRow: View {
         Text(status)
             .font(solid ? .mono(11, .bold) : .grotesk(11, .semibold))
             .tracking(solid && !dynamicTypeSize.isAccessibilitySize ? 1 : 0)
-            .foregroundStyle(solid ? .white : settings.muted)
+            .foregroundStyle(solid ? settings.onAccent : settings.muted)
             .padding(.vertical, solid ? 4 : 5)
             .padding(.horizontal, solid ? 8 : 10)
             .background(solid ? settings.accent : Color.clear)
@@ -253,7 +253,7 @@ struct SpielDetailSheet: View {
                             let on = store.spielStatus(spiel.id) == opt
                             Button { store.setSpielStatus(spiel.id, opt) } label: {
                                 Text(opt).font(.grotesk(12, .semibold))
-                                    .foregroundStyle(on ? .white : settings.ink)
+                                    .foregroundStyle(on ? settings.onAccent : settings.ink)
                                     .padding(.vertical, 9).padding(.horizontal, 14)
                                     .background(on ? settings.accent : settings.panel)
                                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -291,7 +291,7 @@ struct SpielDetailSheet: View {
 
                     Spacer(minLength: 18)
                     Button { dismiss() } label: {
-                        Text("Done").font(.grotesk(14, .bold)).foregroundStyle(.white)
+                        Text("Done").font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                             .frame(maxWidth: .infinity).padding(.vertical, 13)
                             .background(settings.accent)
                             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

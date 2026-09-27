@@ -121,7 +121,7 @@ struct SettingsSheet: View {
         Button(action: action) {
             Text(label)
                 .font(.grotesk(12, .semibold))
-                .foregroundStyle(on ? .white : settings.ink)
+                .foregroundStyle(on ? settings.onAccent : settings.ink)
                 .padding(.vertical, 7).padding(.horizontal, 12)
                 .background(on ? settings.accent : settings.panel)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))

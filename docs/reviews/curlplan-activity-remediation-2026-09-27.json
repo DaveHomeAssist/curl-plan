@@ -502,11 +502,17 @@
         "Physical Ignacio: testContributionAndSettingsLabels passed 2026-09-27; settings controls and compose/visit text fields expose labels; accent targets >=44 points.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-settings-labels.png",
         "verify-app, verify-parity, generated-seed staleness and feature-review checks passed.",
-        "CI run 36300386911 completed with contrast failures on detail/profile screens; failure log retained locally at /tmp/curlplan-remediation/navigation-ci-failure.log. Assertions remain enabled; release gate is still failing."
+        "CI run 36300386911 completed with contrast failures on detail/profile screens; failure log retained locally at /tmp/curlplan-remediation/navigation-ci-failure.log. Assertions remain enabled; release gate is still failing.",
+        "Native filled controls now use theme-aware onAccent foregrounds: dark text on pale Arena accents, white on Ice accents. Applied to buttons, chips, score badges, message bubbles and accent avatar glyphs; message timestamps no longer reduce foreground opacity.",
+        "Physical Ignacio: testThemeTextPairsMeetContrast passed for all Ice/Arena accent combinations, accent/ink/muted text on screen/card/panel surfaces, and filled-control foregrounds (minimum 4.5:1). Plain black/white/muted-text control audit passed. DEBUG-only control retained; release builds exclude it.",
+        "Full physical contrast audit remains failing: baseline 103 failures, post-repair 102 failures across both themes. Reported Ice elements varied despite unchanged Ice palette. These counts do not establish audit conformance or prove false positives. Assertions remain enabled and unfiltered.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-arena-before.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-arena-profile.png"
       ],
       "remaining": [
         "Resolve existing full accessibility CI failures from run 36288266893.",
-        "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms."
+        "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms.",
+        "Resolve full-screen contrast audit failures with stronger per-element evidence; do not waive the failing CI gate based on palette tests. Full VoiceOver/keyboard acceptance remains separate."
       ]
     },
     {
