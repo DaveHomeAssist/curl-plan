@@ -268,10 +268,11 @@
       "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
       "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "Native/browser result editors now select a saved event; optional event identity/name snapshot persists through drafts and result edits. Native result card opens event detail with its recorded results; browser card opens linked-event result summary. Rescheduling keeps stable links; deleting an event preserves results and saved event-name snapshot; explicit unlink supported. 21 SwiftPM tests passed, including lifecycle/backup/totals assertions. Browser actual-function checks passed for draft recovery, linked summary rendering, reschedule, deletion, correction and unlink. Native device-target build and app/parity/diff checks passed."
       ],
       "remaining": [
-        "Connect results to scheduled games; complete physical Safari verification."
+        "Complete physical native and Safari event-selection/result-save/relaunch/link-opening acceptance. Event identity does not substitute for per-draw game identifiers in a multi-game bonspiel."
       ]
     },
     {

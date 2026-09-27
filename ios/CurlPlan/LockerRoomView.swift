@@ -218,10 +218,21 @@ private func displayTime(_ p: Post) -> String {
 
 private struct ResultCard: View {
     @EnvironmentObject var settings: AppSettings
+    @EnvironmentObject var store: Store
+    @State private var showingEvent = false
     let post: Post
     var body: some View {
         VStack(alignment: .leading, spacing: 11) {
             PostHead(post: post)
+            if let id = post.eventID {
+                if let event = store.spiel(id) {
+                    Button("Event: " + event.name) { showingEvent = true }
+                        .frame(minHeight: 44)
+                        .sheet(isPresented: $showingEvent) { SpielDetailSheet(spielID: id) }
+                } else {
+                    Text("Event: " + (post.eventName ?? "Removed event") + " (removed)").font(.footnote)
+                }
+            }
             if let body = post.body, !body.isEmpty {
                 Text(body).font(.grotesk(15)).foregroundStyle(settings.ink).lineSpacing(2)
             }

@@ -17,6 +17,7 @@ function launch() {
   const nodes = new Map();
   const sheet = {};
   Object.defineProperty(sheet, "innerHTML", { set(markup) {
+    sheet.markup = markup;
     nodes.clear();
     for (const m of markup.matchAll(/\bid="(f-[^"]+)"/g)) nodes.set(m[1], { value:"", children:[] });
   }});
@@ -35,6 +36,7 @@ function launch() {
   c.refreshStore();
   c.field = (id, value) => { const node = nodes.get("f-" + id); assert(node, `Missing field ${id}`); node.value = value; };
   c.value = id => nodes.get("f-" + id)?.value;
+  c.sheetMarkup = () => sheet.markup;
   return c;
 }
 let app = launch();
@@ -216,4 +218,22 @@ app=launch(); app.openIceRead("kelowna");
 assert.equal(app.value("sheet"),"7"); assert.equal(app.value("note"),"Ice draft retained");
 assert.equal(app.submitIceRead("kelowna"),true);
 assert.equal(app.store.drafts[app.editorKey("ice",null,"kelowna")],undefined);
+app.openNewSpiel(); app.field("name","Linked game"); app.field("where","Club");
+app.field("start","2028-01-01T12:00"); app.field("end","2028-01-01T14:00");
+assert.equal(app.submitNewSpiel(),true); const linkedEvent=app.store.addedSpiels[0].id;
+app.openCompose("result"); app.field("for","8"); app.field("ag","3"); app.field("event",linkedEvent);
+app.closeSheet(); app=launch(); app.openCompose("result"); assert.equal(app.value("event"),linkedEvent);
+assert.equal(app.submitCompose("result"),true); const linkedPost=app.store.posts[0].id;
+assert.equal(app.store.posts[0].eventID,linkedEvent);
+app.openResultEvent(linkedEvent); assert.match(app.sheetMarkup(), /Recorded results/); assert.match(app.sheetMarkup(), /8–3/); app.closeSheet();
+app.openNewSpiel(linkedEvent); app.field("start","2028-01-02T12:00"); app.field("end","2028-01-02T14:00");
+assert.equal(app.submitNewSpiel(linkedEvent),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventID,linkedEvent);
+confirmed=true; assert.equal(app.deleteEvent(linkedEvent),true);
+app=launch(); app.openCompose("result",linkedPost); app.field("for","7");
+assert.equal(app.submitCompose("result"),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventName,"Linked game");
+app.openCompose("result",linkedPost); app.field("event",""); assert.equal(app.submitCompose("result"),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventID,"");
+assert.doesNotThrow(()=>app.validateBackup(app.makeBackup()));
 console.log("verify-record-recovery: draft reload, correction, rating, ownership, safe deletion, merge, validation, storage failure and account isolation passed");

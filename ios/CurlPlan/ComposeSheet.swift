@@ -56,6 +56,15 @@ struct ComposeSheet: View {
                         CPTextArea(label: "What's the word?", text: $draft.body,
                                    placeholder: "Share a thought with your circle…")
                     case .result:
+                        Picker("Scheduled event", selection: Binding(get: { draft.eventID ?? "" }, set: { draft.eventID = $0.isEmpty ? nil : $0 })) {
+                            Text("No linked event").tag("")
+                            ForEach(store.state.addedSpiels) { event in
+                                Text(event.name + " · " + event.scheduleLabel).tag(event.id)
+                            }
+                            if let id = draft.eventID, !store.state.addedSpiels.contains(where: { $0.id == id }) {
+                                Text("Previously linked event (removed)").tag(id)
+                            }
+                        }
                         HStack(spacing: 12) {
                             CPField(label: "For", text: $draft.scoreFor, placeholder: "8", keyboard: .numberPad)
                             CPField(label: "Against", text: $draft.scoreAgainst, placeholder: "5", keyboard: .numberPad)

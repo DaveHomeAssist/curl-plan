@@ -1580,6 +1580,7 @@ function renderPostCard(p){
   if(p.type === "result"){
     return '<div class="card post">' + postHead(p) +
       (p.body ? '<div class="body">' + esc(p.body) + '</div>' : '') +
+      (p.eventID ? (spielById(p.eventID) ? '<button class="b outline" data-action="result-event" data-id="' + esc(p.eventID) + '">Event: ' + esc(spielById(p.eventID).name) + '</button>' : '<p>Event: ' + esc(p.eventName || 'Removed event') + ' (removed)</p>') : '') +
       '<div class="scorebar"><span class="big">' + esc(p.score.for) + '<span style="color:var(--muted);"> – </span>' + esc(p.score.ag) + '</span>' +
         '<span class="win-chip">' + esc(p.score.res) + '</span>' +
         '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
@@ -2060,7 +2061,7 @@ function commitLocal(next){
 }
 function editorFields(){
   if(activeEditor && ["visit","ice"].includes(activeEditor.kind)) return ["date","sheet","speed","curl","note"];
-  return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"].concat(eventPlanningFields.map(function(f){return f[0];})) : ["body","for","ag","vs","club","note"];
+  return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"].concat(eventPlanningFields.map(function(f){return f[0];})) : ["body","for","ag","vs","club","note","event"];
 }
 function persistEditorDraft(){
   if(!activeEditor) return true;
@@ -2120,7 +2121,7 @@ function openCompose(type, editingId){
   var key = editorKey("post", editingId);
   var d = store.drafts[key] || (existing ? { type:existing.type, body:existing.body || existing.note || "",
     for:existing.score ? String(existing.score.for) : "", ag:existing.score ? String(existing.score.ag) : "",
-    vs:existing.score ? String(existing.score.vs || "").replace(/^vs /i, "") : "", club:existing.club || "", stars:existing.stars || 5 } : {});
+    event:existing.eventID || "", vs:existing.score ? String(existing.score.vs || "").replace(/^vs /i, "") : "", club:existing.club || "", stars:existing.stars || 5 } : {});
   type = existing ? existing.type : type || d.type || "note";
   formStars = type === "review" ? 5 : 0;
   var seg = ["note","result","review"].map(function(t){
@@ -2130,7 +2131,9 @@ function openCompose(type, editingId){
 
   var body;
   if(type === "result"){
-    body = '<div class="field split"><div><label for="f-for">For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
+    var eventOptions = '<option value="">No linked event</option>' + store.addedSpiels.map(function(e){return '<option value="' + esc(e.id) + '">' + esc(e.name + ' · ' + eventLabel(e)) + '</option>';}).join('');
+    if(d.event && !store.addedSpiels.some(function(e){return e.id === d.event;})) eventOptions += '<option value="' + esc(d.event) + '">Previously linked event (removed)</option>';
+    body = '<div class="field"><label for="f-event">Scheduled event</label><select id="f-event">' + eventOptions + '</select></div>' + '<div class="field split"><div><label for="f-for">For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
       '<div><label for="f-ag">Against</label><input id="f-ag" type="number" inputmode="numeric" placeholder="5"></div></div>' +
       '<div class="field"><label for="f-vs">Opponent</label><input id="f-vs" placeholder="Northern"></div>' +
       '<div class="field"><label for="f-body">Note (optional)</label><textarea id="f-body" placeholder="How did it go?"></textarea></div>';
@@ -2157,11 +2160,13 @@ function submitCompose(type){
   if(editingId && (!existing || existing.type !== type)){ toast("This post no longer exists."); return false; }
   var post;
   if(type === "result"){
+    var eventID=val("f-event"), linked=store.addedSpiels.find(function(e){return e.id === eventID;});
+    if(eventID && !linked && (!existing || existing.eventID !== eventID)){toast("That event was removed. Choose another event or no link.");return false;}
     var f = Number(val("f-for")), a = Number(val("f-ag"));
     if(!val("f-for") || !val("f-ag") || !Number.isSafeInteger(f) || !Number.isSafeInteger(a) || f < 0 || a < 0){ toast("Add two nonnegative whole-number scores"); return false; }
     post = { id:uid("p"), type:"result", author:"me", at:Date.now(), body:val("f-body"),
       score:{ for:f, ag:a, res:(f > a ? "WIN" : f < a ? "LOSS" : "TIE"), vs:val("f-vs") ? "vs " + val("f-vs") : "" },
-      likes:0, comments:0 };
+      likes:0, comments:0, eventID:eventID, eventName:eventID ? (linked ? linked.name : existing.eventName || "Removed event") : "" };
   } else if(type === "review"){
     var club = val("f-club");
     if(!club){ toast("Name the club"); return; }
@@ -2381,6 +2386,11 @@ function submitNewSpiel(id){
   if(!commitLocal(next)) return false;
   activeEditor = null; closeSheet(); gotoTab("spiels"); toast("Event saved on this device"); return true;
 }
+function openResultEvent(id){
+  var event=store.addedSpiels.find(function(e){return e.id === id;}); if(!event) return;
+  var results=store.posts.filter(function(p){return p.type === "result" && p.eventID === id;});
+  openSheet('<h2>' + esc(event.name) + '</h2><p>' + esc(eventLabel(event)) + ' · ' + esc(event.where) + '</p><h3>Recorded results</h3>' + results.map(function(p){return '<p>' + esc(p.score.for + '–' + p.score.ag + ' ' + p.score.vs) + '<br>' + esc(p.body || '') + '</p>';}).join('') + '<button class="b outline" data-action="close-sheet">Close</button>');
+}
 function deleteEvent(id){
   var existing=store.addedSpiels.find(function(s){return s.id === id;}); if(!existing) return false;
   if(!window.confirm("Delete this saved event? This only removes your local event.")) return false;
@@ -2576,6 +2586,7 @@ el("screen").addEventListener("click", function(e){
       break;
     }
     // create entities (backported from iOS)
+    case "result-event": openResultEvent(id); break;
     case "new-spiel":         openNewSpiel(); break;
     case "submit-new-spiel":  submitNewSpiel(id || undefined); break;
     case "edit-event": openNewSpiel(id); break;

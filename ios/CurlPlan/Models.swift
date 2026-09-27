@@ -149,6 +149,8 @@ struct Post: Identifiable, Codable, Hashable {
     var time: String?        // seed/legacy relative label
     // result / note
     var body: String?
+    var eventID: String? = nil
+    var eventName: String? = nil
     var scoreFor: Int?
     var scoreAgainst: Int?
     var res: String?
@@ -231,6 +233,7 @@ struct AuthState: Codable {
 struct PostDraft: Codable, Hashable {
     enum Kind: String, Codable, CaseIterable { case note = "Note", result = "Result", review = "Review" }
     var kind: Kind = .note
+    var eventID: String? = nil
     var body = ""
     var opponent = ""
     var scoreFor = ""
@@ -242,6 +245,7 @@ struct PostDraft: Codable, Hashable {
     init() {}
     init(post: Post) {
         kind = post.kind == .result ? .result : post.kind == .review ? .review : .note
+        eventID = post.eventID
         body = post.body ?? ""
         opponent = post.vs ?? ""
         if opponent.lowercased().hasPrefix("vs ") { opponent = String(opponent.dropFirst(3)) }
@@ -552,6 +556,10 @@ final class Store: ObservableObject {
         post.at = max(Store.now(), (existing?.at ?? 0).nextUp)
         post.body = draft.body.trimmingCharacters(in: .whitespacesAndNewlines)
         if kind == .result {
+            let event = draft.eventID.flatMap { id in state.addedSpiels.first { $0.id == id } }
+            if let id = draft.eventID, event == nil && existing?.eventID != id { return false }
+            post.eventID = draft.eventID
+            post.eventName = draft.eventID == nil ? nil : event?.name ?? existing?.eventName
             guard let f = Int(draft.scoreFor.trimmingCharacters(in: .whitespacesAndNewlines)),
                   let a = Int(draft.scoreAgainst.trimmingCharacters(in: .whitespacesAndNewlines)) else { return false }
             post.scoreFor = f; post.scoreAgainst = a

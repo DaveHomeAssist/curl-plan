@@ -277,6 +277,14 @@ struct SpielDetailSheet: View {
                                 .font(.body).textSelection(.enabled)
                         }.padding(.vertical, 5)
                     }
+                    let results = store.state.posts.filter { $0.kind == .result && $0.eventID == spiel.id }
+                    if !results.isEmpty {
+                        Text("Recorded results").font(.headline)
+                        ForEach(results) { result in
+                            Text("\(result.scoreFor ?? 0)–\(result.scoreAgainst ?? 0) \(result.vs ?? "") · \(result.body ?? "")")
+                                .font(.body).padding(.vertical, 4)
+                        }
+                    }
                     Text("YOUR STATUS").font(.mono(10, .medium)).tracking(1.5)
                         .foregroundStyle(settings.muted).padding(.bottom, 8)
                     HStack(spacing: 8) {
