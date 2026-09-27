@@ -47,10 +47,11 @@
         "Physical Ignacio: testOwnedNoteCorrectionAndDraftRecovery passed; draft survived interactive dismissal and process relaunch, published note edited in place and persisted, delete cancellation retained note, confirmed deletion persisted.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png",
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
-        "Physical Safari plain textarea paste control also failed: runner UIPasteboard access returned PBErrorDomain code 11 (invalid general pasteboard), exact readback empty instead of WEBFIX 1234. No reliable clipboard write/restoration can be claimed. Unsupported experiment removed; original control and xcresult retained locally. /tmp/curlplan-remediation/safari-paste-control.xcresult. Preview server stopped."
+        "Physical Safari plain textarea paste control also failed: runner UIPasteboard access returned PBErrorDomain code 11 (invalid general pasteboard), exact readback empty instead of WEBFIX 1234. No reliable clipboard write/restoration can be claimed. Unsupported experiment removed; original control and xcresult retained locally. /tmp/curlplan-remediation/safari-paste-control.xcresult. Preview server stopped.",
+        "Physical Ignacio Safari: visible keyboard taps passed the plain textarea control (23.917 sec), then testWebPostRecoveryOnPreparedIPad passed (75.832 sec) on current preview: created unique note, Close/reopen recovered exact draft, published, edited, read corrected card, confirmed deletion and absence. Only own prior interrupted audit note and current note removed. Synthetic per-character typeText still failed on plain control; no app input workaround introduced. Evidence: safari-key-labels.xcresult and safari-note-caret.xcresult under /tmp/curlplan-remediation; A2-web-corrected-note.png and A2-safari-note-results.csv retained. Single coordinate tap avoids accidental double-tap selection when editing."
       ],
       "remaining": [
-        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
+        "Physical Safari reload/relaunch and note search remain; current browser pass covers same-page draft recovery and create/edit/delete, not durable reload or full A2 acceptance."
       ]
     },
     {
@@ -307,7 +308,7 @@
         "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
       ],
       "remaining": [
-        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
+        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control."
       ]
     },
     {
@@ -399,7 +400,7 @@
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
+        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control."
       ]
     },
     {
@@ -535,10 +536,11 @@
         "Added a stricter physical test that waits for sheet closure and reopens without process restart before checking durable discard. Ignacio run event-reopen.xcresult did not reach that assertion: XCTest repeatedly reported missing animation-completion notifications during text entry, waiting 60 seconds per action. Stopped only the owned xcodebuild run with SIGINT; exit 75 confirmed. Log retained at /tmp/curlplan-remediation/event-reopen.log. This is not a passing reopening check.",
         "Native visit/ice-read forms now retain per-club/per-kind drafts, including date, sheet, speed, curl and note. Close retains, alert-confirmed discard preserves existing records, save clears only matching draft. Optional storage bucket preserves old-backup compatibility. 19 SwiftPM core tests passed, including contribution recovery, separate club/kind buckets, signed-out isolation, backup round-trip/legacy acceptance, discard preservation and save cleanup.",
         "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open.",
-        "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png."
+        "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png.",
+        "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open."
       ],
       "remaining": [
-        "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation.",
+        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",
         "Complete physical Safari contribution/event recovery acceptance; native contribution tests covered note drafts, not changing every date/sheet/speed field.",
         "Immediate sheet reopening after confirmed discard failed in automation before the fresh-launch check; verify presentation timing separately."
       ]
@@ -603,7 +605,8 @@
         "Physical testPhysicalMainTabAccessibility ran all audit types on Passport, Locker, Spiels and Roster and FAILED with 31 findings: {'Dynamic Type font sizes are partially unsupported': 16, 'Contrast failed': 11, 'Text clipped': 1, 'Potentially inaccessible text': 3}. /tmp/curlplan-remediation/main-tab-accessibility.xcresult. Per-finding details saved in A32-main-tab-findings.csv. Some Dynamic Type findings reference removed elements; diagnostic logging now checks existence before reading label/frame/id to avoid repeated stale lookups, without suppressing findings. The earlier contrast-only run does not establish full accessibility conformance.",
         "Clipping diagnosis on physical Ignacio: vertical fixedSize, body font and vertical padding did not resolve the exact result-body finding. All production experiments reverted. testPhysicalLockerTextClipping exercises normal and accessibility5 with the exact Sam result visible; both failed in /tmp/curlplan-remediation/text-tab-controls.xcresult. Large screenshot shows complete sentence/emoji; this is visual evidence, not automated conformance.",
         "DEBUG-only minimal native controls isolate two failures without CurlPlan screen layout: standard four-tab TabView reports four Dynamic Type failures; plain body Text with the curling emoji reports clipping while the same sentence without emoji does not. /tmp/curlplan-remediation/text-tab-controls.xcresult (tab control) and /tmp/curlplan-remediation/native-text-control.xcresult. These findings narrow diagnosis to native control/rendering or audit behavior; no issue filters, exemptions or false-positive declarations were added.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests."
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests.",
+        "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",

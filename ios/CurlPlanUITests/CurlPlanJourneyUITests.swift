@@ -893,8 +893,11 @@ final class CurlPlanJourneyUITests: XCTestCase {
         address.tap(); address.typeText(url + "\n")
         let field = safari.textViews.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 8))
-        field.tap(); field.typeText("WEBFIX 1234")
-        XCTAssertEqual(field.value as? String, "WEBFIX 1234", "Plain HTML control, no CurlPlan code")
+        field.tap()
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "Safari-keyboard-control"; proof.lifetime = .keepAlways; add(proof)
+        tapSafariLetters("webfix", into: field, in: safari)
+        XCTAssertEqual((field.value as? String)?.lowercased(), "webfix", "Plain HTML control, visible keyboard input")
     }
 
     func testDetailLinksResumeAndMessageClose() throws {
@@ -947,7 +950,14 @@ final class CurlPlanJourneyUITests: XCTestCase {
         if demo.waitForExistence(timeout: 3) { demo.tap() }
         let locker = safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "Locker")).firstMatch
         XCTAssertTrue(locker.waitForExistence(timeout: 10))
-        locker.tap(); safari.buttons["New post"].tap()
+        locker.tap()
+        // Recover only the uniquely identified post left by the interrupted audit.
+        if safari.staticTexts["Webfixsbpkwe"].exists && safari.buttons.matching(identifier: "Post actions").count == 1 {
+            safari.buttons["Post actions"].tap(); safari.buttons["Delete post"].tap()
+            safari.buttons["OK"].tap()
+            XCTAssertFalse(safari.staticTexts["Webfixsbpkwe"].exists)
+        }
+        safari.buttons["New post"].tap()
         let body = safari.textViews.firstMatch
         XCTAssertTrue(body.waitForExistence(timeout: 4))
         if body.value as? String == "WEBFIX " {
@@ -957,10 +967,11 @@ final class CurlPlanJourneyUITests: XCTestCase {
         guard (body.value as? String ?? "").isEmpty || (body.value as? String ?? "").contains("Share a thought") else {
             throw XCTSkip("Preserve existing web draft")
         }
-        let original = "WEBFIX " + UUID().uuidString.prefix(8)
+        let marker = "webfix" + String((0..<6).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
         body.tap()
-        for character in original { body.typeText(String(character)) }
-        XCTAssertEqual(body.value as? String, original)
+        tapSafariLetters(marker, into: body, in: safari)
+        let original = try XCTUnwrap(body.value as? String)
+        XCTAssertEqual(original.lowercased(), marker)
         let hide = safari.buttons["Hide keyboard"].firstMatch
         if hide.exists { hide.tap() }
         safari.buttons["Close"].firstMatch.tap()
@@ -970,8 +981,8 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertTrue(safari.staticTexts[original].waitForExistence(timeout: 5))
         safari.buttons["Post actions"].firstMatch.tap(); safari.buttons["Edit post"].tap()
         XCTAssertEqual(body.value as? String, original)
-        body.tap(); body.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
-        body.typeText(" corrected")
+        body.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        tapSafariLetters(" corrected", into: body, in: safari, prefix: original)
         if hide.exists { hide.tap() }
         safari.buttons["Save changes"].tap()
         XCTAssertTrue(safari.staticTexts[original + " corrected"].waitForExistence(timeout: 5))
@@ -981,6 +992,21 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertTrue(safari.buttons["OK"].waitForExistence(timeout: 3))
         safari.buttons["OK"].tap()
         XCTAssertFalse(safari.staticTexts[original + " corrected"].exists)
+    }
+
+    // Physical Safari can drop synthetic typeText events. Tap the visible keys and
+    // check every delivered character; do not replace input through JavaScript.
+    private func tapSafariLetters(_ text: String, into field: XCUIElement, in safari: XCUIApplication, prefix: String = "") {
+        var expected = prefix
+        for character in text {
+            let label = character == " " ? "space" : String(character)
+            let key = safari.keys.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch
+            XCTAssertTrue(key.exists, "Visible keyboard key is required")
+            key.tap()
+            expected.append(character)
+            expectation(for: NSPredicate(format: "value ==[c] %@", expected), evaluatedWith: field)
+            waitForExpectations(timeout: 3)
+        }
     }
 
     private func hideAuditKeyboard() {

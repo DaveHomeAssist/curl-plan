@@ -1,0 +1,20 @@
+run,commit,check,finding
+36307367756,d587a1b,standard screenflow,Test runner never began executing tests after launching; not a completed user journey
+36307367756,d587a1b,Audit standard iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=Kelowna Bonspiel; frame=Optional((86.0, 763.3333333333334, 128.66666666666666, 18.0)); id="
+36307367756,d587a1b,Audit standard iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=BC · JAN 9–11; frame=Optional((86.0, 783.3333333333334, 96.66666666666666, 14.333333333333258)); id="
+36307367756,d587a1b,Audit standard iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=1–1; frame=Optional((338.6666666666667, 757.3333333333334, 22.333333333333314, 20.333333333333258)); id="
+36307367756,d587a1b,Audit standard iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=Vernon Cashspiel; frame=Optional((86.0, 849.6666666666666, 127.66666666666666, 18.0)); id="
+36307367756,d587a1b,Audit standard iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=1–1; frame=Optional((338.6666666666667, 843.6666666666666, 22.333333333333314, 20.33333333333337)); id="
+36307367756,d587a1b,Audit small iPhone accessibility,"[passport]: Contrast failed; details=Contrast failed for element; element=No visits logged yet — open a sample club and choose Log visit.; frame=Optional((34.0, 613.5, 285.5, 34.0)); id="
+36307367756,d587a1b,Audit small iPhone accessibility,"[stop-detail]: Contrast failed; details=Contrast failed for element; element=Kelowna Bonspiel; frame=Optional((22.0, 171.0, 258.5, 41.0)); id="
+36307367756,d587a1b,Audit small iPhone accessibility,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[tab-spiels]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,"[tab-spiels]: Contrast failed; details=Contrast failed for element; element=1 of your circle going; frame=Optional((73.0, 661.75, 163.5, 14.5)); id="
+36307367756,d587a1b,Audit small iPhone accessibility,"[tab-spiels]: Contrast failed; details=Contrast failed for element; element=Details; frame=Optional((271.0, 647.0, 70.0, 44.0)); id=curlplan.event.details.sp3"
+36307367756,d587a1b,Audit small iPhone accessibility,[curler-profile]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[curler-profile]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36307367756,d587a1b,Audit small iPhone accessibility,[curler-profile]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
