@@ -1,0 +1,3 @@
+activity,surface,check,result,evidence,restoration
+A4/A24,Ignacio Safari,Roster search profile follow/unfollow restart list agreement Following exclusion Discover retention,Pass,web-follow-back.xcresult; A24-web-unfollow-discover.png,Original unfollowed state verified after restart
+A4/A24,Ignacio native,Roster search profile unfollow restart Following exclusion Discover retention follow restoration restart,Pass,native-follow-search.xcresult,Original Following state verified after restart

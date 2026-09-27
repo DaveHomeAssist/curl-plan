@@ -78,10 +78,14 @@
       "expected": "Open profile, follow, verify list and profile after relaunch",
       "baseline_verdict": "Pass",
       "group": "people and communication",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Retain current behavior.",
       "acceptance": "Roster > Sam > Follow > Back > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio Safari testWebFollowPersistenceAndFeedFiltering passed 107.460 sec: search Sam in Roster, open named profile, follow, Back/list agreement, restart/reopen followed profile, verify Sam result in Following, unfollow, restart/reopen unfollowed profile, verify result absent in Following and retained in Discover. Original browser unfollowed state restored and verified after final restart. First attempt followed Sam then failed on ambiguous browser/page Back control; final test scopes Back to web view and uses explicitly recorded original-state override to restore that interrupted change. web-follow-back.xcresult; A24-web-unfollow-discover.png inspected.",
+        "Physical native testUnfollowChangesFollowingFeed passed with profile helper now using Roster > Search your circle > Sam > profile (not a deep link). Search/profile/unfollow/relaunch/Following exclusion/Discover retention passed, then original native Following restored and verified after final relaunch via roster search. /tmp/curlplan-remediation/native-follow-search.xcresult. Browser and native original follow states differ and were each preserved. Acceptance covers local demo follow/filtering, not a social backend relationship."
+      ],
+      "remaining": []
     },
     {
       "id": "A5",
@@ -430,16 +434,16 @@
       "expected": "Unfollow and verify persistence and feed behavior",
       "baseline_verdict": "Partial",
       "group": "people and communication",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Add a feed-specific fixture when testing filtering changes.",
       "acceptance": "Roster > Sam > Unfollow > relaunch > reopen; feed-specific effect not exercised; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Physical Ignacio testUnfollowChangesFollowingFeed passed in 44.118 seconds. Sam result visible in Following before unfollow; unfollow survived relaunch; searching Sam Reid in Following returned no posts, while Discover retained the exact seed result. Original follow state restored and verified after another relaunch. /tmp/curlplan-remediation/unfollow-feed.xcresult.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A24-unfollow-discover.png \u2014 inspected. Feed tabs expose selected state; feed search open/close and clear controls are labeled and have 44-point targets."
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A24-unfollow-discover.png \u2014 inspected. Feed tabs expose selected state; feed search open/close and clear controls are labeled and have 44-point targets.",
+        "Physical Ignacio Safari testWebFollowPersistenceAndFeedFiltering passed 107.460 sec: search Sam in Roster, open named profile, follow, Back/list agreement, restart/reopen followed profile, verify Sam result in Following, unfollow, restart/reopen unfollowed profile, verify result absent in Following and retained in Discover. Original browser unfollowed state restored and verified after final restart. First attempt followed Sam then failed on ambiguous browser/page Back control; final test scopes Back to web view and uses explicitly recorded original-state override to restore that interrupted change. web-follow-back.xcresult; A24-web-unfollow-discover.png inspected.",
+        "Physical native testUnfollowChangesFollowingFeed passed with profile helper now using Roster > Search your circle > Sam > profile (not a deep link). Search/profile/unfollow/relaunch/Following exclusion/Discover retention passed, then original native Following restored and verified after final relaunch via roster search. /tmp/curlplan-remediation/native-follow-search.xcresult. Browser and native original follow states differ and were each preserved. Acceptance covers local demo follow/filtering, not a social backend relationship."
       ],
-      "remaining": [
-        "Physical Safari follow/unfollow persistence and feed-filter interaction remain."
-      ]
+      "remaining": []
     },
     {
       "id": "A25",
@@ -607,7 +611,8 @@
         "DEBUG-only minimal native controls isolate two failures without CurlPlan screen layout: standard four-tab TabView reports four Dynamic Type failures; plain body Text with the curling emoji reports clipping while the same sentence without emoji does not. /tmp/curlplan-remediation/text-tab-controls.xcresult (tab control) and /tmp/curlplan-remediation/native-text-control.xcresult. These findings narrow diagnosis to native control/rendering or audit behavior; no issue filters, exemptions or false-positive declarations were added.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests.",
         "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources.",
-        "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance."
+        "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance.",
+        "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",

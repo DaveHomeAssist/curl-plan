@@ -1710,21 +1710,21 @@ function rosterRows(){
   return list.map(function(c){
     return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
       avatar(c.initials, 44, 'av') +
-      '<div style="flex:1; min-width:0;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '"><div class="nm">' + esc(c.name) + '</div>' +
+      '<div style="flex:1; min-width:0;" role="button" tabindex="0" aria-label="' + esc("View " + c.name + " profile") + '" data-action="curler" data-id="' + c.id + '"><div class="nm">' + esc(c.name) + '</div>' +
         '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div><div>' + esc(rosterSummary(c)) + '</div></div>' +
-      '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
+      '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" aria-label="' + esc((isFollowing(c) ? "Unfollow " : "Follow ") + c.name) + '" aria-pressed="' + isFollowing(c) + '" data-action="follow" data-id="' + c.id + '">' +
         (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
     '</div>';
   }).join("");
 }
 function viewRoster(){
   var searchRow = ui.rosterSearch
-    ? '<div class="field" style="margin:0 0 4px;"><input id="roster-q" placeholder="Search your circle" value="' + esc(ui.rosterQ) + '" autocomplete="off"></div>'
+    ? '<div class="field" style="margin:0 0 4px;"><input id="roster-q" aria-label="Search your circle" placeholder="Search your circle" value="' + esc(ui.rosterQ) + '" autocomplete="off"></div>'
     : '';
   return statusbar(false) +
     '<div class="appbar"><h1 class="serif" style="font-size:28px; color:var(--ink); margin:0;">Roster</h1>' +
       '<div style="display:flex; gap:8px;">' +
-        '<button class="backbtn" data-action="toggle-roster-search" aria-label="Search" style="font-size:17px;">' + (ui.rosterSearch ? '✕' : '⌕') + '</button>' +
+        '<button class="backbtn" data-action="toggle-roster-search" aria-label="' + (ui.rosterSearch ? 'Close roster search' : 'Search roster') + '" style="font-size:17px;">' + (ui.rosterSearch ? '✕' : '⌕') + '</button>' +
         '<button class="backbtn" data-action="new-curler" aria-label="Add curler" style="font-size:20px;">+</button>' +
       '</div></div>' +
     '<div class="scroll">' +
@@ -1760,11 +1760,11 @@ function viewStop(id){
   var people = st.met.length ? st.met.map(function(mid){
     var c = curler(mid);
     var btn = isFollowing(c)
-      ? '<button class="pill-btn ghost" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
-      : '<button class="pill-btn" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
+      ? '<button class="pill-btn ghost" aria-label="' + esc((isFollowing(c) ? "Unfollow " : "Follow ") + c.name) + '" aria-pressed="' + isFollowing(c) + '" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Following</button>'
+      : '<button class="pill-btn" aria-label="' + esc((isFollowing(c) ? "Unfollow " : "Follow ") + c.name) + '" aria-pressed="' + isFollowing(c) + '" data-action="follow" data-id="' + c.id + '" data-stop="' + st.id + '">Follow</button>';
     return '<div class="prow">' +
-      '<span role="button" tabindex="0" data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
-      '<div style="flex:1; min-width:0; cursor:pointer;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
+      '<span role="button" tabindex="0" aria-label="' + esc("View " + c.name + " profile") + '" data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
+      '<div style="flex:1; min-width:0; cursor:pointer;" role="button" tabindex="0" aria-label="' + esc("View " + c.name + " profile") + '" data-action="curler" data-id="' + c.id + '">' +
         '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div><div>' + esc(rosterSummary(c)) + '</div></div>' +
       btn + '</div>';
   }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
@@ -1830,7 +1830,7 @@ function viewCurler(id){
         '<span class="metpill"><span class="d"></span>' + esc(provenance) + '</span>' +
       '</div>' +
       '<div class="actions2">' +
-        '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (isFollowing(c) ? 'Following' : '+ Follow') + '</button>' +
+        '<button class="b solid" aria-label="' + esc((isFollowing(c) ? "Unfollow " : "Follow ") + c.name) + '" aria-pressed="' + isFollowing(c) + '" data-action="follow" data-id="' + c.id + '">' + (isFollowing(c) ? 'Following' : '+ Follow') + '</button>' +
         '<button class="b outline" data-action="message" data-id="' + c.id + '">Message</button>' +
       '</div>' +
       rosterNotes(c) +

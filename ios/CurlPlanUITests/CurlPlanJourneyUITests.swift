@@ -14,7 +14,13 @@ final class CurlPlanJourneyUITests: XCTestCase {
         let enter = app.buttons["curlplan.demo.enter"]
         if enter.waitForExistence(timeout: 2) { enter.tap() }
         func profile() {
-            app.open(URL(string: "curlplan://curler/sam")!)
+            tab("Roster").tap()
+            if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+            if app.buttons["Search roster"].exists { app.buttons["Search roster"].tap() }
+            if app.buttons["Clear roster search"].exists { app.buttons["Clear roster search"].tap() }
+            let search = app.textFields["Search your circle"]
+            search.tap(); search.typeText("Sam"); hideAuditKeyboard()
+            app.buttons["curlplan.curler.sam"].tap()
             XCTAssertTrue(app.buttons["curlplan.profile.follow"].waitForExistence(timeout: 5))
         }
         func searchFollowing() {
@@ -938,6 +944,73 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebFollowPersistenceAndFeedFiltering() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
+            throw XCTSkip("Requires a physical iPad Safari preview URL")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        func restart() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?follow=" + UUID().uuidString)!)
+        }
+        func tab(_ title: String) -> XCUIElement {
+            safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", title)).firstMatch
+        }
+        func control(_ name: String) -> XCUIElement { safari.descendants(matching: .any)[name].firstMatch }
+        func profile() {
+            XCTAssertTrue(tab("Roster").waitForExistence(timeout: 10)); tab("Roster").tap()
+            if safari.buttons["Search roster"].exists { safari.buttons["Search roster"].tap() }
+            let search = safari.textFields["Search your circle"]
+            XCTAssertTrue(search.waitForExistence(timeout: 3))
+            if (search.value as? String ?? "").lowercased() != "sam" {
+                tapSafariLetters("sam", into: search, in: safari)
+            }
+            if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() }
+            safari.buttons["View Sam Reid profile"].tap()
+            XCTAssertTrue(safari.webViews.firstMatch.buttons["Back"].waitForExistence(timeout: 3))
+        }
+        func feedSearch() {
+            tab("Locker").tap()
+            if safari.buttons["Search feed"].exists { safari.buttons["Search feed"].tap() }
+            let search = safari.textFields["Search the feed"]
+            if (search.value as? String ?? "").lowercased() != "sam" {
+                tapSafariLetters("sam", into: search, in: safari)
+            }
+            if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() }
+        }
+        restart()
+        let demo = safari.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'demo'")).firstMatch
+        if demo.waitForExistence(timeout: 3) { demo.tap() }
+        profile()
+        // Optional original state is supplied only when resuming an interrupted audit.
+        let restore = ProcessInfo.processInfo.environment["CURLPLAN_WEB_FOLLOW_RESTORE"]
+        let originallyFollowing = restore.map { $0 == "true" } ?? control("Unfollow Sam Reid").exists
+        XCTAssertTrue(control("Unfollow Sam Reid").exists || control("Follow Sam Reid").exists)
+        if control("Follow Sam Reid").exists { control("Follow Sam Reid").tap() }
+        safari.webViews.firstMatch.buttons["Back"].tap()
+        XCTAssertTrue(control("Unfollow Sam Reid").exists, "Roster agrees with profile")
+        restart(); profile()
+        XCTAssertTrue(control("Unfollow Sam Reid").exists)
+        safari.webViews.firstMatch.buttons["Back"].tap(); feedSearch()
+        let post = safari.staticTexts["Took the A-final at Kelowna. Ice was lightning all weekend. 🥌"]
+        XCTAssertTrue(post.exists)
+        profile(); control("Unfollow Sam Reid").tap()
+        safari.webViews.firstMatch.buttons["Back"].tap(); XCTAssertTrue(control("Follow Sam Reid").exists)
+        restart(); profile(); XCTAssertTrue(control("Follow Sam Reid").exists)
+        safari.webViews.firstMatch.buttons["Back"].tap(); feedSearch()
+        XCTAssertFalse(post.exists, "Unfollowed author's post is absent from Following")
+        control("Discover").tap(); XCTAssertTrue(post.exists, "Discover retains the sample post")
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A24-web-unfollow-discover"; proof.lifetime = .keepAlways; add(proof)
+        profile()
+        if originallyFollowing { control("Follow Sam Reid").tap() }
+        restart(); profile()
+        XCTAssertEqual(control("Unfollow Sam Reid").exists, originallyFollowing)
+        safari.webViews.firstMatch.buttons["Back"].tap()
+    }
+
     func testWebEventReadabilityBothThemes() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
             throw XCTSkip("Requires a physical iPad Safari preview URL")
