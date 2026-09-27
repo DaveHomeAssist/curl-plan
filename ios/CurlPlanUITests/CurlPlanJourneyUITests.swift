@@ -11,7 +11,14 @@ final class CurlPlanJourneyUITests: XCTestCase {
 
     func testDemoTabsDetailsAndRelaunch() {
         let enter = app.buttons["curlplan.demo.enter"]
-        XCTAssertTrue(enter.waitForExistence(timeout: 10), "Fresh launch must show the demo gate")
+        if !enter.waitForExistence(timeout: 3) {
+            // Repeat on an installed demo without deleting its saved data.
+            XCTAssertTrue(tab("Passport").waitForExistence(timeout: 10))
+            tab("Passport").tap()
+            app.buttons["Open settings"].tap()
+            app.buttons["Sign out"].tap()
+        }
+        XCTAssertTrue(enter.waitForExistence(timeout: 10), "Signed-out launch must show the demo gate")
         capture("demo-gate")
         enter.tap()
 
@@ -68,7 +75,10 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     private func tab(_ title: String) -> XCUIElement {
-        app.tabBars.buttons[title]
+        let phoneTab = app.tabBars.buttons[title]
+        if phoneTab.exists { return phoneTab }
+        // iPadOS 18 exposes its top tab strip as nested buttons, not a TabBar.
+        return app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
     }
 
     private func tapAfterScrolling(_ element: XCUIElement, name: String) {
