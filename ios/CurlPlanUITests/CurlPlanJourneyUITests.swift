@@ -9,6 +9,43 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testEventScreenflowOrientationsAndLargeType() throws {
+        defer { app.terminate(); app.launchArguments = []; app.launch(); XCUIDevice.shared.orientation = .portrait }
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        for large in [false, true] {
+            app.terminate(); app.launchArguments = large ? ["--large-type-audit"] : []; app.launch()
+            for landscape in [false, true] {
+                XCUIDevice.shared.orientation = landscape ? .landscapeRight : .portrait
+                XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+                tapAfterScrolling(app.buttons["curlplan.event.details.sp2"], name: "Event detail")
+                let detailScroll = app.scrollViews["curlplan.event.detail.scroll"]
+                func reveal(_ element: XCUIElement) {
+                    for _ in 0..<10 {
+                        if element.exists && detailScroll.frame.contains(element.frame) && element.isHittable { return }
+                        if element.exists && element.frame.midY < detailScroll.frame.minY { detailScroll.swipeDown() }
+                        else { detailScroll.swipeUp() }
+                    }
+                    XCTAssertTrue(element.exists && detailScroll.frame.contains(element.frame) && element.isHittable, "Control must be fully visible inside the detail sheet")
+                }
+                let going = app.buttons["curlplan.attendance.Going"], considering = app.buttons["curlplan.attendance.Considering"]
+                reveal(going)
+                XCTAssertFalse(app.staticTexts["Format"].exists, "Planning is initially collapsed")
+                if large { XCTAssertGreaterThan(considering.frame.minY, going.frame.minY, "Large text uses stacked attendance controls") }
+                let disclosure = app.buttons["curlplan.event.planning.details"]
+                reveal(disclosure); disclosure.tap()
+                reveal(app.staticTexts["Format"])
+                XCTAssertTrue(app.staticTexts["Entry requirements"].exists)
+                reveal(disclosure); disclosure.tap()
+                XCTAssertFalse(app.staticTexts["Format"].exists)
+                let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                proof.name = "A31-event-" + (large ? "large-" : "normal-") + (landscape ? "landscape" : "portrait")
+                proof.lifetime = .keepAlways; add(proof)
+                reveal(app.buttons["Done"]); app.buttons["Done"].tap()
+            }
+        }
+    }
+
     func testRosterContactAvailabilityLifecycle() throws {
         XCUIDevice.shared.orientation = .portrait
         let marker = "SPARE20260927B"
@@ -46,6 +83,9 @@ final class CurlPlanJourneyUITests: XCTestCase {
         notes.typeText("Evenings after 7"); hideAuditKeyboard(); app.buttons["Save"].tap()
         app.terminate(); app.launch()
         XCTAssertTrue(app.staticTexts["Evenings after 7"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Saved on your roster"].exists)
+        XCTAssertTrue(app.staticTexts["No shared club history recorded."].exists)
+        XCTAssertTrue(app.staticTexts["No game history recorded for this contact."].exists)
         let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         proof.name = "A23-private-spare-contact"; proof.lifetime = .keepAlways; add(proof)
         tapAfterScrolling(app.buttons["Delete contact"], name: "Delete contact")

@@ -73,6 +73,10 @@ full = true; assert.equal(app.submitNewCurler(), false); assert.equal(app.store.
 full = false; assert.equal(app.submitNewCurler(), true);
 app = launch(); const contact = app.store.addedCurlers[0];
 assert.equal(contact.rosterDetails.isSpare, true); assert.equal(contact.club, "Test club");
+assert.match(app.viewCurler(contact.id), /Saved on your roster/);
+assert.match(app.viewCurler(contact.id), /No shared club history recorded/);
+assert.match(app.viewCurler(contact.id), /No game history recorded for this contact/);
+assert(!app.viewCurler(contact.id).includes("You met at your roster"));
 app.ui.rosterQ = "Second"; assert.match(app.rosterRows(), /Roster test/);
 app.ui.rosterQ = "Spare"; assert.match(app.rosterRows(), /Roster test/); app.ui.rosterQ = "";
 app.validateBackup(app.makeBackup());

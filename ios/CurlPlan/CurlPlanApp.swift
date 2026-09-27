@@ -18,6 +18,8 @@ struct CurlPlanApp: App {
                 Text("White text on black").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).padding().background(.black)
                 Text("Muted text on white").font(.mono(11, .semibold)).foregroundStyle(Color(hex: 0x465159)).padding().background(.white)
             }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.white)
+        } else if ProcessInfo.processInfo.arguments.contains("--large-type-audit") {
+            RootView().dynamicTypeSize(.accessibility5)
         } else { RootView() }
         #else
         RootView()

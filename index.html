@@ -1808,6 +1808,7 @@ function viewCurler(id){
   var c = curler(id);
   if(!c) return viewRoster();
   var st = c.stats;
+  var provenance = store.addedCurlers.some(function(x){return x.id === id;}) ? "Saved on your roster" : "You met at " + c.metAt;
   var clubChips = c.clubs.map(function(label, i){
     var more = i === c.clubs.length - 1 && /more/.test(label);
     return '<span class="tag"' + (more ? ' style="color:var(--muted);"' : '') + '>' +
@@ -1825,7 +1826,7 @@ function viewCurler(id){
       '<div class="identity">' +
         '<span class="halo">' + avatar(c.initials, 78, 'av') + '</span>' +
         '<div><h1>' + esc(c.name) + '</h1><div class="meta">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + ' · ' + esc(c.prov) + '</div></div>' +
-        '<span class="metpill"><span class="d"></span>You met at ' + esc(c.metAt) + '</span>' +
+        '<span class="metpill"><span class="d"></span>' + esc(provenance) + '</span>' +
       '</div>' +
       '<div class="actions2">' +
         '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (isFollowing(c) ? 'Following' : '+ Follow') + '</button>' +
@@ -1839,9 +1840,9 @@ function viewCurler(id){
         '<div class="cell"><div class="num" style="font-size:24px;">' + st.mutual + '</div><div class="lab">MUTUAL</div></div>' +
       '</div>' +
       '<div><div class="eyebrow" style="margin-bottom:9px;">Clubs you\'ve both played</div>' +
-        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + clubChips + '</div></div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + (clubChips || '<p>No shared club history recorded.</p>') + '</div></div>' +
       '<div><div class="eyebrow" style="margin-bottom:9px;">Recent form</div>' +
-        '<div class="card glist">' + form + '</div></div>' +
+        '<div class="card glist">' + (form || '<p style="padding:14px;">No game history recorded for this contact.</p>') + '</div></div>' +
     '</div>';
 }
 

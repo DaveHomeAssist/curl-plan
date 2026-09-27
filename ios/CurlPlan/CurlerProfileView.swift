@@ -76,8 +76,11 @@ struct CurlerProfileView: View {
         }.frame(maxWidth: .infinity, alignment: .leading).padding(14).cpCard()
     }
 
+    private func provenance(_ c: Curler) -> String {
+        store.state.addedCurlers.contains(where: { $0.id == c.id }) ? "Saved on your roster" : "You met at \(c.metAt)"
+    }
     private func shareText(_ c: Curler) -> String {
-        "\(c.name) — \(c.role), \(c.club) (\(c.prov)). Met at \(c.metAt). Record \(c.record), \(c.win) wins."
+        "\(c.name) — \(c.role), \(c.club) (\(c.prov)). \(provenance(c))."
     }
 
     private func identity(_ c: Curler) -> some View {
@@ -98,7 +101,7 @@ struct CurlerProfileView: View {
 
             HStack(spacing: 7) {
                 Circle().fill(settings.accent).frame(width: 6, height: 6)
-                Text("You met at \(c.metAt)").font(.grotesk(11, .semibold)).foregroundStyle(settings.accent)
+                Text(provenance(c)).font(.grotesk(11, .semibold)).foregroundStyle(settings.accent)
             }
             .padding(.vertical, 5).padding(.horizontal, 12)
             .background(settings.panel)
@@ -158,6 +161,9 @@ struct CurlerProfileView: View {
     private func sharedClubs(_ c: Curler) -> some View {
         VStack(alignment: .leading, spacing: 9) {
             Eyebrow(text: "Clubs you've both played")
+            if c.sharedClubs.isEmpty {
+                Text("No shared club history recorded.").font(.body).foregroundStyle(settings.muted)
+            }
             HStack(spacing: 8) {
                 ForEach(Array(c.sharedClubs.enumerated()), id: \.offset) { _, label in
                     let isMore = label.contains("more")
@@ -179,6 +185,9 @@ struct CurlerProfileView: View {
     private func recentForm(_ c: Curler) -> some View {
         VStack(alignment: .leading, spacing: 9) {
             Eyebrow(text: "Recent form")
+            if c.form.isEmpty {
+                Text("No game history recorded for this contact.").font(.body).foregroundStyle(settings.muted)
+            }
             VStack(spacing: 0) {
                 ForEach(Array(c.form.enumerated()), id: \.element.id) { idx, g in
                     Group {

@@ -186,7 +186,9 @@ private struct SpielRow: View {
         }
         .padding(14)
         .cpCard()
-        .sheet(isPresented: $showingDetail) { SpielDetailSheet(spielID: spiel.id) }
+        .sheet(isPresented: $showingDetail) {
+            SpielDetailSheet(spielID: spiel.id).dynamicTypeSize(dynamicTypeSize)
+        }
     }
 
     private var spielIdentity: some View {
@@ -229,6 +231,7 @@ struct SpielDetailSheet: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let spielID: String
 
     @State private var editing = false
@@ -266,16 +269,6 @@ struct SpielDetailSheet: View {
                         let conflicts = store.eventConflicts(start: start, end: end, excluding: spiel.id)
                         if !conflicts.isEmpty { Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", ")).font(.body) }
                     }
-                    Text("Event details and trip planning").font(.headline)
-                    Text("Personal notes; confirm details with the organizer.").font(.footnote)
-                    ForEach(EventPlanning.fields, id: \.0) { field in
-                        let value = (spiel.planning ?? EventPlanning())[keyPath: field.1]
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(field.0).font(.subheadline.bold())
-                            Text(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Not recorded" : value)
-                                .font(.body).textSelection(.enabled)
-                        }.padding(.vertical, 5)
-                    }
                     let results = store.state.posts.filter { $0.kind == .result && $0.eventID == spiel.id }
                     if !results.isEmpty {
                         Text("Recorded results").font(.headline)
@@ -287,13 +280,17 @@ struct SpielDetailSheet: View {
                     Text("Saved on this device only; this does not register you with the organizer.").font(.footnote).padding(.vertical, 8)
                     Text("LOCAL ATTENDANCE INTENT").font(.mono(10, .medium)).tracking(1.5)
                         .foregroundStyle(settings.muted).padding(.bottom, 8)
-                    HStack(spacing: 8) {
+                    let attendanceLayout: AnyLayout = dynamicTypeSize.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                        : AnyLayout(HStackLayout(spacing: 8))
+                    attendanceLayout {
                         ForEach(statuses, id: \.self) { opt in
                             let on = store.spielStatus(spiel.id) == opt
                             Button { store.setSpielStatus(spiel.id, opt) } label: {
                                 Text(opt).font(.grotesk(12, .semibold))
                                     .foregroundStyle(on ? settings.onAccent : settings.ink)
                                     .padding(.vertical, 9).padding(.horizontal, 14)
+                                    .frame(minHeight: 44)
                                     .background(on ? settings.accent : settings.panel)
                                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                                     .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -308,10 +305,23 @@ struct SpielDetailSheet: View {
                     }
                     .padding(.bottom, 22)
 
+                    DisclosureGroup("Event details and trip planning") {
+                        Text("Personal notes; confirm details with the organizer.").font(.footnote)
+                        ForEach(EventPlanning.fields, id: \.0) { field in
+                            let value = (spiel.planning ?? EventPlanning())[keyPath: field.1]
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(field.0).font(.subheadline.bold())
+                                Text(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Not recorded" : value)
+                                    .font(.body).textSelection(.enabled)
+                            }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 5)
+                        }
+                    }.font(.headline).padding(.bottom, 20)
+                    .accessibilityIdentifier("curlplan.event.planning.details")
+
                     Text("\(spiel.going.count) OF YOUR CIRCLE GOING").font(.mono(10, .medium))
                         .tracking(1.5).foregroundStyle(settings.muted).padding(.bottom, 10)
                     if spiel.going.isEmpty {
-                        Text("No one from your circle has joined yet.")
+                        Text("No attendees recorded.")
                             .font(.grotesk(13)).foregroundStyle(settings.muted)
                     } else {
                         VStack(spacing: 10) {
@@ -343,6 +353,7 @@ struct SpielDetailSheet: View {
                 .padding(.horizontal, 22).padding(.bottom, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .accessibilityIdentifier("curlplan.event.detail.scroll")
                 .sheet(isPresented: $editing) { NewSpielSheet(existing: spiel) }
                 .alert("Delete this event?", isPresented: $deleting) {
                     Button("Delete event", role: .destructive) { if store.deleteScheduledEvent(spielID) { dismiss() } }

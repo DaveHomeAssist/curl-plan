@@ -69,8 +69,7 @@
         "24 SwiftPM core tests passed including legacy compatibility, persistence, explicit withdrawal, invalid choices and backup roundtrip. Actual browser function tests passed including reload and storage-full rollback. Static app, seed, parity and feature-review checks passed."
       ],
       "remaining": [
-        "Physical Safari attendance controls and feed/detail consistency journey remain to be exercised.",
-        "Event detail currently places seven unrecorded planning fields before attendance; improve information hierarchy as part of remaining screenflow work."
+        "Physical Safari attendance controls and feed/detail consistency journey remain to be exercised."
       ]
     },
     {
@@ -410,12 +409,12 @@
         "Native and browser owned roster contacts now support editing, confirmed deletion, contact details, separate spare flag, and Unknown/Available/Unavailable notes with validated inclusive calendar date ranges. Availability is explicitly a private local note requiring direct confirmation, not a live RSVP. Search includes position, spare flag and availability/date summary. Optional fields preserve old backups; deletion tombstones prevent stale merge resurrection.",
         "Physical Ignacio: testRosterContactAvailabilityLifecycle passed in 75 seconds. Created only SPARE20260927B (Second, A23 Test Club, BC, test@example.invalid, spare, Available October 1\u20133 2026). Saved/relaunched, edited Evenings after 6 to Evenings after 7, relaunched/read back, canceled deletion, then deleted and verified absence after relaunch. Existing audit contacts preserved. /tmp/curlplan-remediation/roster-physical.xcresult.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A23-private-spare-contact.png \u2014 inspected; exact rendered club A23 TEST CLUB, position SECOND, dates, contact and corrected note visible.",
-        "25 SwiftPM tests passed including invalid/reversed dates, create/edit identity, persistence, legacy contact backup roundtrip, protected seed entries, stale edit rejection and deletion marker. Actual browser functions passed create/edit/search/backup/storage failure/deletion cancellation and merge checks. App, seed, parity and feature-review checks passed."
+        "25 SwiftPM tests passed including invalid/reversed dates, create/edit identity, persistence, legacy contact backup roundtrip, protected seed entries, stale edit rejection and deletion marker. Actual browser functions passed create/edit/search/backup/storage failure/deletion cancellation and merge checks. App, seed, parity and feature-review checks passed.",
+        "Profile screenflow repair verified by physical testRosterContactAvailabilityLifecycle (72 seconds): Saved on your roster provenance plus explicit empty shared-club and game-history messages. No private contact details added to share text. /tmp/curlplan-remediation/screenflow-layout.xcresult contains this passing test and a separate initially failing large-text event test."
       ],
       "remaining": [
         "Physical Safari contact lifecycle and native search by position/availability remain to be exercised.",
-        "Live team invitations, shared scheduling and other people\u2019s RSVP are not implemented; keep these claims gated under the account/social roadmap.",
-        "Profile empty history sections and the inherited You met at your roster wording still need screenflow cleanup."
+        "Live team invitations, shared scheduling and other people\u2019s RSVP are not implemented; keep these claims gated under the account/social roadmap."
       ]
     },
     {
@@ -541,10 +540,19 @@
       "required_action": "Extend to Dynamic Type and split-view before release.",
       "acceptance": "Rotate portrait/landscape > capture screens > Arena > relaunch > restore Ice; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Physical Safari inspection exposed editor hidden behind keyboard in desktop phone frame. Touch layout now uses full width and visual viewport height; sheets have bounded scrolling. Device capture confirmed visible form after change."
+        "Physical Safari inspection exposed editor hidden behind keyboard in desktop phone frame. Touch layout now uses full width and visual viewport height; sheets have bounded scrolling. Device capture confirmed visible form after change.",
+        "Native and browser contact profiles now show truthful local provenance and explicit empty history. Native physical contact lifecycle passed with new assertions; screenshot docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-profile-empty-history.png inspected. Browser actual-render checks passed.",
+        "Event detail now prioritizes attendance and recorded results; seven optional planning fields live in an expandable section. Attendance controls stack for accessibility text sizes and have at least 44-point content height. The presenting row explicitly propagates text size into the sheet.",
+        "Physical Ignacio: testEventScreenflowOrientationsAndLargeType passed in 62 seconds across normal portrait, normal landscape, accessibility5 portrait and accessibility5 landscape. Verified vertical attendance geometry at the larger size, expanded/read/collapsed planning, and scrolled to Done. Debug-only --large-type-audit injects the SwiftUI size; this does not verify system Settings or every screen. Relaunched with normal arguments and restored portrait at test end.",
+        "First run found the sheet was not inheriting injected text size; fixed propagation. Second run exposed XCTest reporting an offscreen disclosure as hittable; recording confirmed the tap dismissed the sheet. Strengthened automation to require full containment in the named detail scroll view before tapping. No accessibility assertions were disabled. Final result: /tmp/curlplan-remediation/screenflow-visibility.xcresult; earlier failures retained.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-portrait.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-landscape.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-portrait.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-landscape.png"
       ],
       "remaining": [
-        "Complete physical Safari typing and portrait/landscape keyboard checks; native Dynamic Type and split-view checks remain."
+        "Complete physical Safari typing and portrait/landscape keyboard checks; native split-view and other screens/forms at larger text remain.",
+        "Full accessibility, VoiceOver and keyboard acceptance remain separate from this event-layout proof."
       ]
     },
     {
