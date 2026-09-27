@@ -129,6 +129,50 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         try audit(app, "passport-controls", for: [.hitRegion, .sufficientElementDescription])
     }
 
+    func testNativeTextClippingControl() throws {
+        let app = XCUIApplication()
+        defer { app.terminate(); app.launchArguments = []; app.launch() }
+        app.launchArguments = ["--text-accessibility-control"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Plain text control"].waitForExistence(timeout: 5))
+        try audit(app, "native-text-control", for: .textClipped)
+    }
+
+    func testNativeTabAccessibilityControl() throws {
+        let app = XCUIApplication()
+        defer { app.terminate(); app.launchArguments = []; app.launch() }
+        app.launchArguments = ["--tab-accessibility-control"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["First page"].waitForExistence(timeout: 5))
+        try audit(app, "native-tab-control")
+    }
+
+    func testPhysicalLockerTextClipping() throws {
+        let app = XCUIApplication()
+        defer { app.terminate(); app.launchArguments = []; app.launch() }
+        XCUIDevice.shared.orientation = .portrait
+        var auditFailure: Error?
+        for large in [false, true] {
+            app.launchArguments = large ? ["--large-type-audit"] : []
+            app.launch()
+            let enter = app.buttons["curlplan.demo.enter"]
+            if enter.waitForExistence(timeout: 2) { enter.tap() }
+            app.buttons["Locker"].firstMatch.tap()
+            app.buttons["curlplan.feed.discover"].tap()
+            if large {
+                app.buttons["Search feed"].tap()
+                let search = app.textFields["Search the feed"]
+                search.tap(); search.typeText("Sam Reid")
+                if app.buttons["Hide keyboard"].exists { app.buttons["Hide keyboard"].tap() }
+            }
+            XCTAssertTrue(app.staticTexts["Took the A-final at Kelowna. Ice was lightning all weekend. 🥌"].exists)
+            do { try audit(app, "physical-locker-clipping-" + (large ? "large" : "normal"), for: .textClipped) }
+            catch { auditFailure = error }
+            app.terminate()
+        }
+        if let auditFailure { throw auditFailure }
+    }
+
     func testPhysicalMainTabAccessibility() throws {
         continueAfterFailure = true
         let app = XCUIApplication(); app.launch()

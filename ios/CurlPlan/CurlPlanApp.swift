@@ -18,6 +18,19 @@ struct CurlPlanApp: App {
                 Text("White text on black").font(.system(size: 18, weight: .bold)).foregroundStyle(.white).padding().background(.black)
                 Text("Muted text on white").font(.mono(11, .semibold)).foregroundStyle(Color(hex: 0x465159)).padding().background(.white)
             }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.white)
+        } else if ProcessInfo.processInfo.arguments.contains("--text-accessibility-control") {
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Plain text control").font(.headline)
+                Text("Took the A-final at Kelowna. Ice was lightning all weekend.").font(.body)
+                Text("Took the A-final at Kelowna. Ice was lightning all weekend. 🥌").font(.body)
+            }.padding(24)
+        } else if ProcessInfo.processInfo.arguments.contains("--tab-accessibility-control") {
+            TabView {
+                Text("First page").font(.body).tabItem { Label("Passport", systemImage: "map.fill") }
+                Text("Second page").font(.body).tabItem { Label("Locker", systemImage: "bubble.left.and.bubble.right.fill") }
+                Text("Third page").font(.body).tabItem { Label("Spiels", systemImage: "calendar") }
+                Text("Fourth page").font(.body).tabItem { Label("Roster", systemImage: "person.2.fill") }
+            }
         } else if ProcessInfo.processInfo.arguments.contains("--contrast-components") {
             ContrastComponentsControl()
         } else if ProcessInfo.processInfo.arguments.contains("--large-type-audit") {
