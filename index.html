@@ -120,6 +120,14 @@ body{
   .notch{ display:none; }
 }
 
+/* Touch devices use the actual viewport, including the on-screen keyboard. */
+@media (pointer:coarse){
+  body{ align-items:stretch; min-height:var(--app-viewport-height, 100dvh); }
+  .phone{ width:100%; padding:0; border-radius:0; box-shadow:none; }
+  .screen{ width:100%; height:var(--app-viewport-height, 100dvh); max-height:none; border-radius:0; }
+  .notch{ display:none; }
+}
+
 /* ---------- status bar ---------- */
 .statusbar{
   height:50px; flex:none; display:flex; align-items:flex-end; justify-content:space-between;
@@ -349,6 +357,7 @@ body{
 .sheet{
   position:absolute; left:0; right:0; bottom:0; background:var(--card); border-radius:26px 26px 0 0;
   padding:18px 22px max(26px, env(safe-area-inset-bottom)); z-index:51; transform:translateY(100%);
+  max-height:100%; overflow-y:auto; overscroll-behavior:contain;
   transition:transform .26s cubic-bezier(.2,.8,.2,1); box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);
 }
 .sheet.open{ transform:translateY(0); }
@@ -514,7 +523,7 @@ function esc(s){
 function el(id){ return document.getElementById(id); }
 /* one localStorage-JSON idiom for prefs, store, and auth */
 function readJSON(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
-function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){} }
+function writeJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); return true; }catch(e){ return false; } }
 
 /* ============================================================
    Appearance prefs (the concept's props made real & persisted)
@@ -1203,6 +1212,7 @@ function defaultStore(){
     follows:{},   // curlerId -> { v:bool,   at }  (overrides seed `following`)
     likes:{},     // postId   -> { v:bool,   at }  (liked by me)
     joins:{},     // spielId  -> { v:status, at }  ("You're in" | "Watching" | "Invite")
+    drafts:{}, tombstones:{}, // local recovery and durable deletion markers
     posts:[],     // OR-Set by id — user-authored feed items, newest-first
     visits:{},    // stopId -> OR-Set [ {id?, date, note, at} ]
     reviews:{},   // stopId -> OR-Set [ {id?, stars, note, at} ]
@@ -1220,8 +1230,8 @@ function loadStore(){
   var d = defaultStore();
   var raw = readJSON(storeKey());
   if(raw && typeof raw === "object"){
-    ["follows","likes","joins","visits","reviews","iceReads","threads"].forEach(function(k){
-      if(raw[k] && typeof raw[k] === "object") d[k] = raw[k];
+    ["follows","likes","joins","visits","reviews","iceReads","threads","drafts","tombstones"].forEach(function(k){
+      if(raw[k] && typeof raw[k] === "object" && !Array.isArray(raw[k])) d[k] = raw[k];
     });
     if(Array.isArray(raw.posts)) d.posts = raw.posts;
     if(Array.isArray(raw.addedSpiels)) d.addedSpiels = raw.addedSpiels;
@@ -1239,7 +1249,8 @@ function sanitizeStore(d){
   d.posts = d.posts.filter(function(p){ return p && typeof p === "object" && p.id && p.type; });
   d.posts.forEach(function(p){ if(p.type === "review") p.stars = clampStars(p.stars); });
   Object.keys(d.reviews).forEach(function(id){
-    d.reviews[id].forEach(function(r){ if(r && typeof r === "object") r.stars = clampStars(r.stars); });
+    d.reviews[id] = d.reviews[id].filter(function(r){ return r && typeof r === "object"; });
+    d.reviews[id].forEach(function(r, i){ r.stars = clampStars(r.stars); if(!r.id) r.id = "legacy-review-" + id + "-" + (r.at || 0) + "-" + i; });
   });
   d.addedSpiels = d.addedSpiels.filter(function(s){ return s && typeof s === "object" && s.id && s.name; });
   d.addedCurlers = d.addedCurlers.filter(function(c){ return c && typeof c === "object" && c.id && c.name; });
@@ -1417,7 +1428,7 @@ function postHead(p, o){
   return '<div class="head"' + nav + '>' + avatar(a.initials, o.size || 38) +
     '<div style="flex:1;"><div class="name"' + (o.nameSize ? ' style="font-size:' + o.nameSize + 'px;"' : '') + '>' + esc(a.name) + '</div>' +
     '<div class="meta"' + (o.metaSize ? ' style="font-size:' + o.metaSize + 'px;"' : '') + '>' + meta + '</div></div>' +
-    (o.noMenu ? '' : '<span style="font-size:18px; color:var(--muted);">⋯</span>') +
+    (ownedPost(p.id) ? '<button class="b outline" style="min-width:44px; min-height:44px;" aria-label="Post actions" data-action="post-actions" data-id="' + esc(p.id) + '">⋯</button>' : '') +
   '</div>';
 }
 /* titled .glist card for the stop-detail submission lists; "" when empty */
@@ -1734,9 +1745,10 @@ function viewStop(id){
   var visitList = submissionCard("Your visits", store.visits[st.id] || [], function(v){
     return '<div class="subrow"><span class="nm">' + esc(v.date) + '</span>' +
       (v.note ? '<span class="meta">' + esc(v.note) + '</span>' : '') + '</div>'; });
-  var reviewList = submissionCard("Reviews", store.reviews[st.id] || [], function(r){
+  var reviewList = submissionCard("Your local reviews", store.reviews[st.id] || [], function(r){
     return '<div class="subrow">' + starsRow(r.stars) +
-      '<span class="meta" style="margin-left:auto; max-width:60%; text-align:right;">' + esc(r.note || "") + '</span></div>'; });
+      '<span class="meta" style="margin-left:auto; max-width:60%; text-align:right;">' + esc(r.note || "") + '</span>' +
+      '<button class="b outline" style="min-width:44px; min-height:44px;" aria-label="Review actions" data-action="review-actions" data-id="' + esc(r.id) + '" data-stop="' + esc(st.id) + '">⋯</button></div>'; });
   var games = st.games.length ? st.games.map(function(g, i){
     return '<div class="gline"' + (i < st.games.length - 1 ? '' : ' style="border-bottom:0;"') + '>' +
       '<span class="statusdot" style="background:' + (g.res==="W"?'var(--accent)':'var(--muted)') + '; ' + (g.res==="W"?'':'opacity:.5;') + '"></span>' +
@@ -1964,6 +1976,7 @@ function syncSettings(){
   el("toggle-pebble").classList.toggle("on", !!prefs.pebble);
 }
 function openSettings(trigger){
+  if(activeEditor && !closeSheet()) return;
   var u = currentUser(), m = el("acct-meta");
   if(m){
     // canonical team identity: "{Club short} · {Skip}" (see terminology page)
@@ -1995,11 +2008,17 @@ function toast(msg){
 var formStars = 0; // shared picker state — only one sheet is open at a time
 
 function openSheet(html){
+  if(!persistEditorDraft()) return false;
+  activeEditor = null;
   el("sheet-body").innerHTML = html;
   openManagedSheet("sheet2", "scrim2", currentActionTrigger);
+  return true;
 }
 function closeSheet(){
+  if(!persistEditorDraft()) return false;
+  activeEditor = null;
   if(activeSheet && activeSheet.sheet === el("sheet2")) closeManagedSheet(true);
+  return true;
 }
 function val(id){ var n = el(id); return n ? n.value.trim() : ""; }
 
@@ -2035,9 +2054,75 @@ function fmtAgo(at){ // relative label in the seed feed's idiom ("2H", "3D")
 }
 function postTime(p){ return p.at ? fmtAgo(p.at) : (p.time || ""); } // p.time = legacy/seed label
 
+/* ---- owned records and durable private drafts ---- */
+var activeEditor = null;
+function ownedPost(id){
+  if(feed.some(function(p){ return p.id === id; })) return null;
+  return store.posts.find(function(p){ return p.id === id && p.author === "me" && ["note","result","review"].indexOf(p.type) >= 0; }) || null;
+}
+function editorKey(kind, id, stopId){ return kind + ":" + (stopId || "") + ":" + (id || "new"); }
+function commitLocal(next){
+  flushStoreSoon();
+  if(!writeJSON(storeKey(), next)){ toast("Could not save on this device. Keep this screen open and free storage before retrying."); return false; }
+  store = next;
+  return true;
+}
+function persistEditorDraft(){
+  if(!activeEditor) return true;
+  if(!currentUser()) return false;
+  var d = Object.assign({}, store.drafts[activeEditor.key] || {}, { type:activeEditor.type, stars:formStars });
+  ["body","for","ag","vs","club","note"].forEach(function(k){ var n = el("f-" + k); if(n) d[k] = n.value; });
+  var next = Object.assign({}, store, { drafts:Object.assign({}, store.drafts) });
+  next.drafts[activeEditor.key] = d;
+  return commitLocal(next);
+}
+function restoreEditorDraft(d){
+  ["body","for","ag","vs","club","note"].forEach(function(k){ var n = el("f-" + k); if(n) n.value = d[k] || ""; });
+  setStars(d.stars || 5);
+}
+function discardEditorDraft(){
+  if(!activeEditor || !window.confirm("Discard this draft? Published records stay unchanged.")) return;
+  var next = Object.assign({}, store, { drafts:Object.assign({}, store.drafts) });
+  delete next.drafts[activeEditor.key];
+  if(commitLocal(next)){ activeEditor = null; closeSheet(); }
+}
+function deleteOwnedRecord(kind, id, stopId){
+  var record = kind === "post" ? ownedPost(id) : (store.reviews[stopId] || []).find(function(r){ return r.id === id; });
+  if(!currentUser() || !record || !window.confirm("Delete this local " + (kind === "post" ? "post" : "review") + "? This cannot be undone.")) return false;
+  var next = Object.assign({}, store, { drafts:Object.assign({}, store.drafts), tombstones:Object.assign({}, store.tombstones) });
+  var bucket = kind === "post" ? "posts" : "reviews";
+  next.tombstones[bucket] = Object.assign({}, next.tombstones[bucket]);
+  next.tombstones[bucket][id] = Math.max(Date.now(), +record.at || 0);
+  delete next.drafts[editorKey(kind, id, stopId)];
+  if(kind === "post"){
+    next.posts = store.posts.filter(function(p){ return p.id !== id; });
+    next.likes = Object.assign({}, store.likes); delete next.likes[id];
+  } else {
+    next.reviews = Object.assign({}, store.reviews);
+    next.reviews[stopId] = store.reviews[stopId].filter(function(r){ return r.id !== id; });
+  }
+  if(!commitLocal(next)) return false;
+  activeEditor = null; closeSheet(); render({keepScroll:true}); toast("Deleted from this device"); return true;
+}
+function openPostActions(id){
+  if(!ownedPost(id)) return;
+  openSheet('<h2>Post actions</h2><p class="sub">Manage your local post.</p><div class="sheet-actions">' +
+    '<button class="b outline" data-action="edit-post" data-id="' + esc(id) + '">Edit post</button>' +
+    '<button class="b outline" data-action="delete-post" data-id="' + esc(id) + '">Delete post</button></div>' +
+    '<button class="b outline" data-action="close-sheet">Close</button>');
+}
 /* ---- compose a feed post ---- */
-function openCompose(type){
-  type = type || "note";
+function openCompose(type, editingId){
+  if(!currentUser()) return;
+  var existing = editingId ? ownedPost(editingId) : null;
+  if(editingId && !existing) return;
+  if(!persistEditorDraft()) return;
+  activeEditor = null;
+  var key = editorKey("post", editingId);
+  var d = store.drafts[key] || (existing ? { type:existing.type, body:existing.body || existing.note || "",
+    for:existing.score ? String(existing.score.for) : "", ag:existing.score ? String(existing.score.ag) : "",
+    vs:existing.score ? String(existing.score.vs || "").replace(/^vs /i, "") : "", club:existing.club || "", stars:existing.stars || 5 } : {});
+  type = existing ? existing.type : type || d.type || "note";
   formStars = type === "review" ? 5 : 0;
   var seg = ["note","result","review"].map(function(t){
     var lab = t === "note" ? "Note" : t === "result" ? "Result" : "Review";
@@ -2058,18 +2143,23 @@ function openCompose(type){
     body = '<div class="field"><label for="f-body">What\'s the word?</label><textarea id="f-body" placeholder="Share a thought with your circle…"></textarea></div>';
   }
 
-  openSheet('<h2>Share</h2><p class="sub">Posts to your Locker Room — saved on this device.</p>' +
-    '<div class="seg-type">' + seg + '</div>' + body +
+  if(!openSheet('<h2>' + (editingId ? "Edit post" : "Share") + '</h2><p class="sub">Saved on this device. Close keeps your draft.</p>' +
+    (editingId ? "" : '<div class="seg-type">' + seg + '</div>') + body +
     '<div class="sheet-actions">' +
-      '<button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-compose" data-type="' + type + '">Post</button>' +
-    '</div>');
+      '<button class="b outline" data-action="close-sheet">Close</button>' +
+      '<button class="b solid" data-action="submit-compose" data-type="' + type + '">' + (editingId ? 'Save changes' : 'Post') + '</button>' +
+    '</div><button class="b outline" data-action="discard-draft">Discard draft</button>')) return;
+  activeEditor = { kind:"post", key:key, id:editingId || null, type:type };
+  restoreEditorDraft(d);
 }
 function submitCompose(type){
+  if(!currentUser() || !activeEditor || activeEditor.kind !== "post") return false;
+  var editingId = activeEditor.id, existing = editingId ? ownedPost(editingId) : null;
+  if(editingId && (!existing || existing.type !== type)){ toast("This post no longer exists."); return false; }
   var post;
   if(type === "result"){
-    var f = parseInt(val("f-for"), 10), a = parseInt(val("f-ag"), 10);
-    if(isNaN(f) || isNaN(a)){ toast("Add both scores"); return; }
+    var f = Number(val("f-for")), a = Number(val("f-ag"));
+    if(!val("f-for") || !val("f-ag") || !Number.isSafeInteger(f) || !Number.isSafeInteger(a) || f < 0 || a < 0){ toast("Add two nonnegative whole-number scores"); return false; }
     post = { id:uid("p"), type:"result", author:"me", at:Date.now(), body:val("f-body"),
       score:{ for:f, ag:a, res:(f > a ? "WIN" : f < a ? "LOSS" : "TIE"), vs:val("f-vs") ? "vs " + val("f-vs") : "" },
       likes:0, comments:0 };
@@ -2082,11 +2172,17 @@ function submitCompose(type){
     if(!b){ toast("Write something first"); return; }
     post = { id:uid("p"), type:"note", author:"me", at:Date.now(), body:b, likes:0, comments:0 };
   }
-  store.posts.unshift(post);
-  saveStore();
+  if(existing) post = Object.assign({}, existing, post, { id:existing.id, at:Math.max(Date.now(), (+existing.at || 0) + 1), likes:existing.likes, comments:existing.comments });
+  var next = Object.assign({}, store, { posts:store.posts.slice(), drafts:Object.assign({}, store.drafts) });
+  if(existing) next.posts[next.posts.findIndex(function(p){ return p.id === editingId; })] = post;
+  else next.posts.unshift(post);
+  delete next.drafts[activeEditor.key];
+  if(!commitLocal(next)) return false;
+  activeEditor = null;
   closeSheet();
   gotoTab("locker");
-  toast("Posted to your Locker Room");
+  toast(existing ? "Post updated" : "Posted to your Locker Room");
+  return true;
 }
 
 /* ---- stop detail submissions ---- */
@@ -2122,17 +2218,45 @@ function submitIceRead(stopId){
   if(!curl){ toast("Add a curl figure"); return; }
   addStopEntry("iceReads", stopId, { speed:val("f-speed") || "Medium", curl:curl, note:val("f-note"), at:Date.now() }, "Ice read added");
 }
-function openReview(stopId){
-  var st = stop(stopId); if(!st) return;
-  formStars = 5;
-  openSheet('<h2>Write a review</h2><p class="sub">' + esc(st.name) + '</p>' +
+function openReviewActions(stopId, id){
+  if(!(store.reviews[stopId] || []).some(function(r){ return r.id === id; })) return;
+  var attrs = ' data-id="' + esc(id) + '" data-stop="' + esc(stopId) + '"';
+  openSheet('<h2>Review actions</h2><p class="sub">Manage your local review.</p><div class="sheet-actions">' +
+    '<button class="b outline" data-action="edit-review"' + attrs + '>Edit review</button>' +
+    '<button class="b outline" data-action="delete-review"' + attrs + '>Delete review</button></div>' +
+    '<button class="b outline" data-action="close-sheet">Close</button>');
+}
+function openReview(stopId, editingId){
+  var st = stop(stopId); if(!st || !currentUser()) return;
+  var existing = (store.reviews[stopId] || []).find(function(r){ return r.id === editingId; });
+  if(editingId && !existing) return;
+  if(!persistEditorDraft()) return;
+  activeEditor = null;
+  var key = editorKey("review", editingId, stopId), d = store.drafts[key] || existing || { stars:5, note:"" };
+  formStars = d.stars || 5;
+  if(!openSheet('<h2>' + (editingId ? 'Edit review' : 'Write a review') + '</h2><p class="sub">' + esc(st.name) + ' — saved on this device. Close keeps your draft.</p>' +
     '<div class="field"><label id="f-stars-label">Rating</label>' + starPicker() + '</div>' +
     '<div class="field"><label for="f-note">Review</label><textarea id="f-note" placeholder="Great ice, friendly club, fast bar service."></textarea></div>' +
-    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-review" data-id="' + stopId + '">Post review</button></div>');
+    '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button>' +
+      '<button class="b solid" data-action="submit-review" data-id="' + esc(stopId) + '">Save review</button></div>' +
+      '<button class="b outline" data-action="discard-draft">Discard draft</button>')) return;
+  activeEditor = { kind:"review", key:key, id:editingId || null, stopId:stopId };
+  restoreEditorDraft(d);
 }
 function submitReview(stopId){
-  addStopEntry("reviews", stopId, { stars:formStars || 1, note:val("f-note"), at:Date.now() }, "Review posted");
+  if(!currentUser() || !activeEditor || activeEditor.kind !== "review" || activeEditor.stopId !== stopId) return false;
+  var editingId = activeEditor.id, list = store.reviews[stopId] || [];
+  var existing = list.find(function(r){ return r.id === editingId; });
+  if(editingId && !existing){ toast("This review no longer exists."); return false; }
+  if(!Number.isInteger(formStars) || formStars < 1 || formStars > 5) return false;
+  var review = { id:editingId || uid("review"), stars:formStars, note:val("f-note"), at:Math.max(Date.now(), (existing ? +existing.at || 0 : 0) + 1) };
+  var next = Object.assign({}, store, { reviews:Object.assign({}, store.reviews), drafts:Object.assign({}, store.drafts) });
+  next.reviews[stopId] = list.slice();
+  if(existing) next.reviews[stopId][list.findIndex(function(r){ return r.id === editingId; })] = review;
+  else next.reviews[stopId].unshift(review);
+  delete next.drafts[activeEditor.key];
+  if(!commitLocal(next)) return false;
+  activeEditor = null; closeSheet(); render({keepScroll:true}); toast("Review saved on this device"); return true;
 }
 
 /* ---- local message thread ---- */
@@ -2302,13 +2426,12 @@ el("screen").addEventListener("click", function(e){
     }
 
     // compose
-    case "compose":      openCompose("note"); break;
-    case "compose-type": {
-      var draft = el("f-body") ? el("f-body").value : ""; // carry the typed body across the type switch
-      openCompose(type);
-      if(draft && el("f-body")) el("f-body").value = draft;
-      break;
-    }
+    case "compose":      openCompose(); break;
+    case "post-actions": openPostActions(id); break;
+    case "edit-post": openCompose(null, id); break;
+    case "delete-post": deleteOwnedRecord("post", id); break;
+    case "discard-draft": discardEditorDraft(); break;
+    case "compose-type": openCompose(type); break;
     case "submit-compose": submitCompose(type); break;
 
     // stop detail submissions
@@ -2317,8 +2440,11 @@ el("screen").addEventListener("click", function(e){
     case "add-iceread":    openIceRead(id); break;
     case "submit-iceread": submitIceRead(id); break;
     case "add-review":     openReview(id); break;
+    case "review-actions": openReviewActions(t.getAttribute("data-stop"), id); break;
+    case "edit-review": openReview(t.getAttribute("data-stop"), id); break;
+    case "delete-review": deleteOwnedRecord("review", id, t.getAttribute("data-stop")); break;
     case "submit-review":  submitReview(id); break;
-    case "pick-star":      setStars(parseInt(t.getAttribute("data-val"), 10)); break;
+    case "pick-star":      setStars(parseInt(t.getAttribute("data-val"), 10)); persistEditorDraft(); break;
 
     // messaging
     case "message":   openThread(id); break;
@@ -2343,6 +2469,8 @@ document.addEventListener("keydown", function(e){
   else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
 });
 
+el("sheet-body").addEventListener("input", persistEditorDraft);
+
 /* live search: re-render only the results list so the input keeps focus */
 el("screen").addEventListener("input", function(e){
   if(!e.target || !e.target.id) return;
@@ -2354,6 +2482,13 @@ el("screen").addEventListener("input", function(e){
    Boot
    ============================================================ */
 window.addEventListener("hashchange", function(){ applyHash(); render(); });
+function updateVisualViewport(){
+  var height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty("--app-viewport-height", height + "px");
+}
+if(window.visualViewport) window.visualViewport.addEventListener("resize", updateVisualViewport);
+window.addEventListener("resize", updateVisualViewport);
+updateVisualViewport();
 
 applyQueryOverrides();
 applyPrefs();

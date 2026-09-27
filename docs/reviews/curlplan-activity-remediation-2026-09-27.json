@@ -39,10 +39,11 @@
       "acceptance": "Locker > Add > Note > text > Post > relaunch > search > inspect correction menu; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Physical Ignacio: testOwnedNoteCorrectionAndDraftRecovery passed; draft survived interactive dismissal and process relaunch, published note edited in place and persisted, delete cancellation retained note, confirmed deletion persisted.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Retest search after correction; implement and verify web parity."
+        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
       ]
     },
     {
@@ -209,10 +210,11 @@
       "required_action": "Implement result edit/delete and recompute dependent totals.",
       "acceptance": "Locker > inspect result card ellipsis and source for edit/delete; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result."
+        "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Run the result correction journey through the physical iPad UI; implement and verify web parity."
+        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
       ]
     },
     {
@@ -271,10 +273,11 @@
       "evidence": [
         "Physical Ignacio: testClubReviewCorrectionAndRecovery passed; created review, edited note/rating, closed and relaunched to recover draft, saved correction, canceled deletion, then confirmed deletion.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A22-corrected-review.png",
-        "16 StoreTests passed on Ignacio; final targeted testReviewCorrectionDraftAndDeletionPersist passed after correcting deletion-marker bucket, including stale-data merge rejection."
+        "16 StoreTests passed on Ignacio; final targeted testReviewCorrectionDraftAndDeletionPersist passed after correcting deletion-marker bucket, including stale-data merge rejection.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Implement and verify web club-review correction parity; verify review layout with accessibility text sizes."
+        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
       ]
     },
     {
@@ -365,10 +368,11 @@
       "acceptance": "Open empty Note/Spiel/Ice forms > inspect disabled Save/Post; attempt draft dismissal and relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Physical Ignacio: composer draft recovered after interactive dismissal and process relaunch; publishing cleared draft. Store tests verified explicit discard and account-bucket isolation.",
-        "Physical Ignacio: club-review editing draft and selected two-star rating survived process relaunch; published review remained separate until Save."
+        "Physical Ignacio: club-review editing draft and selected two-star rating survived process relaunch; published review remained separate until Save.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
       ],
       "remaining": [
-        "Verify visible discard confirmation; extend recovery to event, ice and visit forms; implement web parity."
+        "Complete physical iPad Safari journeys: current automation loses characters before Save; diagnose with a plain textarea control. Do not treat the logic harness as browser UI proof."
       ]
     },
     {
@@ -377,10 +381,15 @@
       "expected": "Review landscape iPad layout, controls and clipping",
       "baseline_verdict": "Pass",
       "group": "navigation and accessibility",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Extend to Dynamic Type and split-view before release.",
       "acceptance": "Rotate portrait/landscape > capture screens > Arena > relaunch > restore Ice; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Safari inspection exposed editor hidden behind keyboard in desktop phone frame. Touch layout now uses full width and visual viewport height; sheets have bounded scrolling. Device capture confirmed visible form after change."
+      ],
+      "remaining": [
+        "Complete physical Safari typing and portrait/landscape keyboard checks; native Dynamic Type and split-view checks remain."
+      ]
     },
     {
       "id": "A32",
@@ -414,9 +423,9 @@
     }
   ],
   "checkpoint": {
-    "phase": "Native club review correction and review draft recovery",
+    "phase": "Web post/review correction and draft recovery; Safari input diagnosis open",
     "delivery": "PR18 update; merge gated on CI",
-    "next": "Complete correction/recovery coverage and web parity; resolve required accessibility CI failures; continue remaining activity groups",
+    "next": "Diagnose Safari typing against a plain textarea control, complete web journeys, then remaining native recovery/planning and CI accessibility repairs.",
     "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
   }
 }

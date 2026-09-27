@@ -109,6 +109,61 @@ final class CurlPlanJourneyUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts[original + " corrected"].exists)
     }
 
+    // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebPostRecoveryOnPreparedIPad() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else {
+            throw XCTSkip("Requires a physical iPad Safari preview URL")
+        }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        safari.activate()
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        if safari.textViews["Discard this draft? Published records stay unchanged."].exists { safari.buttons["OK"].tap() }
+        safari.buttons["NewTabButton"].tap()
+        safari.buttons["Address"].tap()
+        let address = safari.textFields.firstMatch
+        XCTAssertTrue(address.waitForExistence(timeout: 4))
+        address.tap(); address.typeText(previewURL + "\n")
+        let demo = safari.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'demo'")).firstMatch
+        if demo.waitForExistence(timeout: 3) { demo.tap() }
+        let locker = safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "Locker")).firstMatch
+        XCTAssertTrue(locker.waitForExistence(timeout: 10))
+        locker.tap(); safari.buttons["New post"].tap()
+        let body = safari.textViews.firstMatch
+        XCTAssertTrue(body.waitForExistence(timeout: 4))
+        if body.value as? String == "WEBFIX " {
+            safari.buttons["Discard draft"].tap(); safari.buttons["OK"].tap()
+            safari.buttons["New post"].tap()
+        }
+        guard (body.value as? String ?? "").isEmpty || (body.value as? String ?? "").contains("Share a thought") else {
+            throw XCTSkip("Preserve existing web draft")
+        }
+        let original = "WEBFIX " + UUID().uuidString.prefix(8)
+        body.tap()
+        for character in original { body.typeText(String(character)) }
+        XCTAssertEqual(body.value as? String, original)
+        let hide = safari.buttons["Hide keyboard"].firstMatch
+        if hide.exists { hide.tap() }
+        safari.buttons["Close"].firstMatch.tap()
+        safari.buttons["New post"].tap()
+        XCTAssertEqual(body.value as? String, original)
+        safari.buttons["Post"].firstMatch.tap()
+        XCTAssertTrue(safari.staticTexts[original].waitForExistence(timeout: 5))
+        safari.buttons["Post actions"].firstMatch.tap(); safari.buttons["Edit post"].tap()
+        XCTAssertEqual(body.value as? String, original)
+        body.tap(); body.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        body.typeText(" corrected")
+        if hide.exists { hide.tap() }
+        safari.buttons["Save changes"].tap()
+        XCTAssertTrue(safari.staticTexts[original + " corrected"].waitForExistence(timeout: 5))
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A2-web-corrected-note"; proof.lifetime = .keepAlways; add(proof)
+        safari.buttons["Post actions"].firstMatch.tap(); safari.buttons["Delete post"].tap()
+        XCTAssertTrue(safari.buttons["OK"].waitForExistence(timeout: 3))
+        safari.buttons["OK"].tap()
+        XCTAssertFalse(safari.staticTexts[original + " corrected"].exists)
+    }
+
     private func hideAuditKeyboard() {
         let hide = app.buttons["Hide keyboard"].firstMatch
         if hide.waitForExistence(timeout: 1) { hide.tap() }
