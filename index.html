@@ -1693,7 +1693,7 @@ function viewSpiels(){
       '<button class="backbtn" data-action="new-spiel" aria-label="Add event" style="font-size:20px;">+</button></div>' +
     '<div class="scroll">' +
       '<p>Attendance intent is saved on this device; it is not registration.</p>' +
-      (upcoming.length ? '<div class="card" style="padding:14px;"><strong>Next event</strong><p>' + esc(upcoming[0].name + ' · ' + eventLabel(upcoming[0]) + ' · ' + upcoming[0].where) + '</p></div>' : '') +
+      (upcoming.length ? '<div class="card" style="padding:14px;"><strong>Next event</strong><p>' + esc(upcoming[0].name + ' · ' + eventLabel(upcoming[0]) + ' · ' + upcoming[0].where) + '</p></div>' : '<p>No upcoming dated events. Use Add event to plan your next game, practice or bonspiel.</p>') +
       rows +
     '</div>' +
     tabbar("spiels");

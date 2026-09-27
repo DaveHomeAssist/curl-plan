@@ -9,6 +9,63 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testUnfollowChangesFollowingFeed() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        func profile() {
+            app.open(URL(string: "curlplan://curler/sam")!)
+            XCTAssertTrue(app.buttons["curlplan.profile.follow"].waitForExistence(timeout: 5))
+        }
+        func searchFollowing() {
+            tab("Locker").tap()
+            app.buttons["curlplan.feed.following"].tap()
+            if app.buttons["Search feed"].exists { app.buttons["Search feed"].tap() }
+            if app.buttons["Clear search"].exists { app.buttons["Clear search"].tap() }
+            let field = app.textFields["Search the feed"]
+            field.tap(); field.typeText("Sam Reid"); hideAuditKeyboard()
+        }
+        profile()
+        let original = app.buttons["curlplan.profile.follow"].label
+        if original != "Following" { app.buttons["curlplan.profile.follow"].tap() }
+        searchFollowing()
+        let post = app.staticTexts["Took the A-final at Kelowna. Ice was lightning all weekend. 🥌"]
+        XCTAssertTrue(post.waitForExistence(timeout: 3))
+        profile(); app.buttons["curlplan.profile.follow"].tap()
+        app.terminate(); app.launch(); profile()
+        XCTAssertEqual(app.buttons["curlplan.profile.follow"].label, "+ Follow")
+        searchFollowing()
+        XCTAssertFalse(post.exists)
+        XCTAssertTrue(app.staticTexts["No posts match \"Sam Reid\"."].exists)
+        app.buttons["curlplan.feed.discover"].tap()
+        XCTAssertTrue(post.waitForExistence(timeout: 3))
+        XCTAssertEqual(app.buttons["curlplan.feed.discover"].value as? String, "Selected")
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A24-unfollow-discover"; proof.lifetime = .keepAlways; add(proof)
+        profile()
+        if original == "Following" { app.buttons["curlplan.profile.follow"].tap() }
+        app.terminate(); app.launch(); profile()
+        XCTAssertEqual(app.buttons["curlplan.profile.follow"].label, original)
+    }
+
+    func testEventListEmptyUpcomingState() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        let empty = app.staticTexts["No upcoming dated events. Use Add event to plan your next game, practice or bonspiel."]
+        guard empty.waitForExistence(timeout: 3) else { throw XCTSkip("Requires an account without upcoming dated events") }
+        XCTAssertFalse(app.staticTexts["UPCOMING AND IN PROGRESS"].exists)
+        XCTAssertTrue(app.staticTexts["UNDATED EVENTS AND SAMPLES"].exists)
+        XCTAssertTrue(app.buttons["curlplan.event.add"].isHittable)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A31-event-empty-upcoming"; proof.lifetime = .keepAlways; add(proof)
+        tapAfterScrolling(app.buttons["curlplan.event.details.sp2"], name: "Sample event detail")
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        XCTAssertTrue(empty.waitForExistence(timeout: 3))
+    }
+
     func testEventScreenflowOrientationsAndLargeType() throws {
         defer { app.terminate(); app.launchArguments = []; app.launch(); XCUIDevice.shared.orientation = .portrait }
         let enter = app.buttons["curlplan.demo.enter"]

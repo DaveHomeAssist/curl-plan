@@ -88,11 +88,12 @@ struct LockerRoomView: View {
                     Image(systemName: searching ? "xmark" : "magnifyingglass")
                         .font(.system(size: 16))
                         .foregroundStyle(settings.ink)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 44, height: 44)
                         .overlay(Circle().strokeBorder(settings.line, lineWidth: 1.5))
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(searching ? "Close feed search" : "Search feed")
             }
             HStack(spacing: 22) {
                 feedTab("Following", .following)
@@ -116,8 +117,12 @@ struct LockerRoomView: View {
                 (on ? settings.accent : Color.clear).frame(height: 2.5)
             }
             .fixedSize()
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityValue(on ? "Selected" : "Not selected")
+        .accessibilityIdentifier("curlplan.feed." + title.lowercased())
     }
 }
 
@@ -135,8 +140,11 @@ struct SearchField: View {
             if !query.isEmpty {
                 Button { query = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(settings.muted)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
             }
         }
         .padding(.vertical, 9).padding(.horizontal, 13)

@@ -129,6 +129,20 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         try audit(app, "passport-controls", for: [.hitRegion, .sufficientElementDescription])
     }
 
+    func testPhysicalMainTabAccessibility() throws {
+        continueAfterFailure = true
+        let app = XCUIApplication(); app.launch()
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        for title in ["Passport", "Locker", "Spiels", "Roster"] {
+            let tab = app.buttons[title].firstMatch
+            XCTAssertTrue(tab.waitForExistence(timeout: 5)); tab.tap()
+            if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+            try audit(app, "physical-main-" + title.lowercased())
+        }
+    }
+
     func testDemoScreenAccessibility() throws {
         continueAfterFailure = true
         let app = XCUIApplication()
@@ -174,7 +188,10 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
         try app.performAccessibilityAudit(for: types) { issue in
-            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); details=\(issue.detailedDescription); element=\(issue.element?.label ?? "none"); frame=\(String(describing: issue.element?.frame)); id=\(issue.element?.identifier ?? "none")")
+            // Some Dynamic Type findings refer to elements removed during the audit.
+            // Avoid three slow stale-element lookups without suppressing the finding.
+            let element = issue.element.flatMap { $0.exists ? $0 : nil }
+            print("ACCESSIBILITY AUDIT [\(name)]: \(issue.compactDescription); details=\(issue.detailedDescription); element=\(element?.label ?? "none"); frame=\(String(describing: element?.frame)); id=\(element?.identifier ?? "none")")
             return false
         }
     }

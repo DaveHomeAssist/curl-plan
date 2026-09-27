@@ -28,18 +28,31 @@ struct SpielsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Eyebrow(text: "Your season ahead")
-                    if let next = store.upcomingEvents().first {
+                    let upcoming = store.upcomingEvents()
+                    let past = store.state.addedSpiels.filter {
+                        $0.startAt != nil && (($0.endAt ?? 0) < Store.now() || store.spielStatus($0.id) == "Not going")
+                    }.sorted { ($0.startAt ?? 0) > ($1.startAt ?? 0) }
+                    let undated = store.spiels.filter { $0.startAt == nil }
+                    Eyebrow(text: "Your season")
+                    if let next = upcoming.first {
                         SectionHeader(title: "Next event")
                         Text(next.name + " · " + next.scheduleLabel + " · " + next.whereText)
                             .font(.grotesk(15, .semibold)).foregroundStyle(settings.ink)
+                        SectionHeader(title: "Upcoming and in progress")
+                        ForEach(upcoming) { SpielRow(spiel: $0) }
+                    } else {
+                        Text("No upcoming dated events. Use Add event to plan your next game, practice or bonspiel.")
+                            .font(.body).foregroundStyle(settings.muted)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    SectionHeader(title: "Upcoming and in progress")
-                    ForEach(store.upcomingEvents()) { SpielRow(spiel: $0) }
-                    SectionHeader(title: "Past or not going")
-                    ForEach(store.state.addedSpiels.filter { $0.startAt != nil && (($0.endAt ?? 0) < Store.now() || store.spielStatus($0.id) == "Not going") }.sorted { ($0.startAt ?? 0) > ($1.startAt ?? 0) }) { SpielRow(spiel: $0) }
-                    SectionHeader(title: "Undated events and samples")
-                    ForEach(store.spiels.filter { $0.startAt == nil }) { SpielRow(spiel: $0) }
+                    if !past.isEmpty {
+                        SectionHeader(title: "Past or not going")
+                        ForEach(past) { SpielRow(spiel: $0) }
+                    }
+                    if !undated.isEmpty {
+                        SectionHeader(title: "Undated events and samples")
+                        ForEach(undated) { SpielRow(spiel: $0) }
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 4)

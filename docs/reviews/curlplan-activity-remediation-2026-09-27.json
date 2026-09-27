@@ -424,10 +424,16 @@
       "expected": "Unfollow and verify persistence and feed behavior",
       "baseline_verdict": "Partial",
       "group": "people and communication",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add a feed-specific fixture when testing filtering changes.",
       "acceptance": "Roster > Sam > Unfollow > relaunch > reopen; feed-specific effect not exercised; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio testUnfollowChangesFollowingFeed passed in 44.118 seconds. Sam result visible in Following before unfollow; unfollow survived relaunch; searching Sam Reid in Following returned no posts, while Discover retained the exact seed result. Original follow state restored and verified after another relaunch. /tmp/curlplan-remediation/unfollow-feed.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A24-unfollow-discover.png \u2014 inspected. Feed tabs expose selected state; feed search open/close and clear controls are labeled and have 44-point targets."
+      ],
+      "remaining": [
+        "Physical Safari follow/unfollow persistence and feed-filter interaction remain."
+      ]
     },
     {
       "id": "A25",
@@ -549,7 +555,10 @@
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-portrait.png",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-landscape.png",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-portrait.png",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-landscape.png"
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-landscape.png",
+        "Event list now explains absence of upcoming dated events and points to Add event; empty group headings are hidden, undated/sample records preserved. Same empty-state explanation added to web. Actual web view function passed empty/populated branches in VM; not Safari acceptance.",
+        "Physical Ignacio testEventListEmptyUpcomingState passed 14.065 seconds: explanation, no empty upcoming heading, Add event reachable, sample detail open/return. testEventScreenflowOrientationsAndLargeType passed 61.054 seconds across portrait/landscape and normal/accessibility5 text after shared card/font changes. /tmp/curlplan-remediation/event-empty-layout.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-empty-upcoming.png \u2014 inspected."
       ],
       "remaining": [
         "Complete physical Safari typing and portrait/landscape keyboard checks; native split-view and other screens/forms at larger text remain.",
@@ -584,12 +593,14 @@
         "Card shadows still extended behind neighboring labels after the earlier foreground-shadow repair. Removing card shadows while preserving backgrounds/borders reduced physical contrast reports from 36 to 17. Solid dark avatar backgrounds, white/larger initials, stronger/larger event locations and attendance text, and a 44-point settings avatar resolved the remaining findings. Original diagnostic runs retained; no assertion filtering or waivers.",
         "Physical Ignacio testPhysicalContrastBothThemes PASSED (45.697 seconds), covering Passport, stop, profile and events in Ice and Arena, eight screenshots with zero reported contrast findings. /tmp/curlplan-remediation/final-surface-contrast.xcresult. This is contrast acceptance for these rendered screens, not full VoiceOver/keyboard/all-screen accessibility acceptance.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-pass.csv \u2014 per-screen/theme final results. A32-events-contrast-passed.png and A32-profile-contrast-passed.png inspected for readable metadata, preserved hierarchy and clear card boundaries.",
-        "Older CI run 36304518919 completed with contrast failures on both standard and small iPhones; /tmp/curlplan-remediation/completed-screenflow-failures.log retained. Current changes require a new full CI gate; physical contrast success does not replace it."
+        "Older CI run 36304518919 completed with contrast failures on both standard and small iPhones; /tmp/curlplan-remediation/completed-screenflow-failures.log retained. Current changes require a new full CI gate; physical contrast success does not replace it.",
+        "Physical testPhysicalMainTabAccessibility ran all audit types on Passport, Locker, Spiels and Roster and FAILED with 31 findings: {'Dynamic Type font sizes are partially unsupported': 16, 'Contrast failed': 11, 'Text clipped': 1, 'Potentially inaccessible text': 3}. /tmp/curlplan-remediation/main-tab-accessibility.xcresult. Per-finding details saved in A32-main-tab-findings.csv. Some Dynamic Type findings reference removed elements; diagnostic logging now checks existence before reading label/frame/id to avoid repeated stale lookups, without suppressing findings. The earlier contrast-only run does not establish full accessibility conformance."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
         "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms.",
-        "Physical eight-screen contrast passed; other routes, states, text sizes and accessibility audit types remain to be exercised."
+        "Physical eight-screen contrast passed; other routes, states, text sizes and accessibility audit types remain to be exercised.",
+        "Resolve A32-main-tab-findings.csv: Dynamic Type, inaccessible text and contrast in full-audit states. Inspect result-bundle diagnostic images where the element reference is absent."
       ]
     },
     {
