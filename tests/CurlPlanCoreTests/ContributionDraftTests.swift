@@ -2,6 +2,33 @@ import XCTest
 @testable import CurlPlanCore
 
 final class ContributionDraftTests: XCTestCase {
+    func testEventPlanningPersistsThroughDraftSaveEditAndBackup() throws {
+        let suiteName = "curlplan.planning.tests"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        let previous = Store.defaults; Store.defaults = defaults
+        defer { Store.defaults = previous; defaults.removePersistentDomain(forName: suiteName) }
+        let store = Store(); store.exploreDemo()
+        let oldBackup = try store.backupData()
+        var plan = EventPlanning()
+        plan.format = "Four teams"; plan.entry = "Confirm fee with host"; plan.organizer = "Club office"
+        plan.draws = "Friday 18:00 sheet 2"; plan.travel = "Carpool 16:00"
+        plan.accommodation = "Hotel pending"; plan.team = "Confirm lead"
+        var draft = EventDraft(); draft.planning = plan
+        store.saveEventDraft(draft)
+        XCTAssertEqual(Store().state.eventDrafts?["new"]?.planning, plan)
+        XCTAssertTrue(store.saveScheduledEvent(name: "Trip", location: "Club", start: 100, end: 200,
+            timeZone: "America/Toronto", kind: "Bonspiel", preparation: "Arrive early", status: "Considering", planning: plan))
+        let id = store.state.addedSpiels[0].id
+        XCTAssertEqual(Store().spiel(id)?.planning, plan)
+        XCTAssertEqual(try store.previewBackup(store.backupData()).state, store.state)
+        XCTAssertTrue(try store.previewBackup(oldBackup).state.addedSpiels.isEmpty)
+        plan.accommodation = "Booked by team"
+        XCTAssertTrue(store.saveScheduledEvent(id: id, name: "Trip", location: "Club", start: 100, end: 200,
+            timeZone: "America/Toronto", kind: "Bonspiel", preparation: "Arrive early", status: "Going", planning: plan))
+        XCTAssertEqual(Store().spiel(id)?.planning?.accommodation, "Booked by team")
+    }
+
     func testRecoveryIsolationSaveCleanupAndBackupCompatibility() throws {
         let suiteName = "curlplan.contribution.tests"
         let defaults = UserDefaults(suiteName: suiteName)!

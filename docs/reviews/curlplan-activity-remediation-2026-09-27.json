@@ -210,10 +210,16 @@
       "expected": "Find venue, dates, format, entry requirements and organizer",
       "baseline_verdict": "Partial",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add the information needed to decide whether to attend.",
       "acceptance": "Spiels > Details > inspect decision-making information > Done; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult."
+      ],
+      "remaining": [
+        "Complete physical create/edit/relaunch and Safari visual/interaction acceptance; personal notes do not prove organizer-verified details or external bookings."
+      ]
     },
     {
       "id": "A14",
@@ -221,10 +227,16 @@
       "expected": "Store draws, travel, hotel and team arrangements",
       "baseline_verdict": "Unavailable",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add travel, accommodation, draw and team details when trip planning is in scope.",
       "acceptance": "Spiels > Add and Details > inspect travel/team/draw fields; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult."
+      ],
+      "remaining": [
+        "Complete physical create/edit/relaunch and Safari visual/interaction acceptance; personal notes do not prove organizer-verified details or external bookings."
+      ]
     },
     {
       "id": "A15",

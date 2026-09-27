@@ -9,6 +9,27 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testEventPlanningFieldsAreReachable() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+        app.buttons["curlplan.event.add"].tap()
+        let disclosure = app.buttons["Event details and trip planning"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 4))
+        disclosure.tap()
+        XCTAssertTrue(app.textFields["Format"].exists)
+        XCTAssertTrue(app.textFields["Entry requirements"].exists)
+        XCTAssertTrue(app.textFields["Organizer"].exists)
+        XCTAssertTrue(app.textFields["Draw schedule"].exists)
+        XCTAssertTrue(app.textFields["Travel"].exists)
+        XCTAssertTrue(app.textFields["Accommodation"].exists)
+        XCTAssertTrue(app.textFields["Team arrangements"].exists)
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A13-A14-planning-fields"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["Close"].tap()
+    }
+
     func testEventDraftSurvivesRelaunchAndDiscard() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]

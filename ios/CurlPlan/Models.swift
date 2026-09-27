@@ -55,6 +55,22 @@ struct Stop: Identifiable, Hashable {
     let met: [String]
 }
 
+struct EventPlanning: Codable, Hashable {
+    var format = ""
+    var entry = ""
+    var organizer = ""
+    var draws = ""
+    var travel = ""
+    var accommodation = ""
+    var team = ""
+
+    static let fields: [(String, WritableKeyPath<EventPlanning, String>)] = [
+        ("Format", \.format), ("Entry requirements", \.entry), ("Organizer", \.organizer),
+        ("Draw schedule", \.draws), ("Travel", \.travel), ("Accommodation", \.accommodation),
+        ("Team arrangements", \.team)
+    ]
+}
+
 struct Spiel: Identifiable, Hashable, Codable {
     let id: String
     let name: String
@@ -66,6 +82,7 @@ struct Spiel: Identifiable, Hashable, Codable {
     var endAt: Double? = nil
     var timeZoneID: String? = nil
     var eventKind: String? = nil
+    var planning: EventPlanning? = nil
     var preparation: String? = nil
     var at: Double? = nil
 
@@ -183,6 +200,7 @@ struct EventDraft: Codable, Hashable {
     var start = Date()
     var end = Date().addingTimeInterval(7200)
     var kind = "League game"
+    var planning: EventPlanning? = nil
     var preparation = ""
     var status = "Going"
     var timeZone = TimeZone.current.identifier
@@ -430,7 +448,7 @@ final class Store: ObservableObject {
 
     @discardableResult
     func saveScheduledEvent(id: String? = nil, name: String, location: String, start: Double, end: Double,
-                            timeZone: String, kind: String, preparation: String, status: String) -> Bool {
+                            timeZone: String, kind: String, preparation: String, status: String, planning: EventPlanning? = nil) -> Bool {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let location = location.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !location.isEmpty, start.isFinite, end.isFinite, end > start,
@@ -442,6 +460,7 @@ final class Store: ObservableObject {
         var event = Spiel(id: id ?? Store.uid("sp"), name: name, whereText: location,
                           whenText: "", status: status, going: existing?.going ?? [])
         event.startAt = start; event.endAt = end; event.timeZoneID = timeZone
+        event.planning = planning ?? existing?.planning
         event.eventKind = kind; event.preparation = preparation
         event.at = max(Store.now(), (existing?.at ?? 0) + 0.001)
         event.whenText = event.scheduleLabel

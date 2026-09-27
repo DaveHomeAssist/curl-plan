@@ -72,7 +72,7 @@ struct NewSpielSheet: View {
                        canSave: canSave, onCancel: { dismiss() }, onSave: {
             if store.saveScheduledEvent(id: existing?.id, name: draft.name, location: draft.location,
                                         start: draft.start.timeIntervalSince1970, end: draft.end.timeIntervalSince1970,
-                                        timeZone: zone, kind: draft.kind, preparation: draft.preparation, status: draft.status) { dismiss() }
+                                        timeZone: zone, kind: draft.kind, preparation: draft.preparation, status: draft.status, planning: draft.planning) { dismiss() }
             else { failed = true }
         }, cancelTitle: "Close") {
             Button("Discard draft", role: .destructive) { confirmingDiscard = true }
@@ -88,6 +88,17 @@ struct NewSpielSheet: View {
             DatePicker("Ends", selection: $draft.end, in: draft.start...)
             Text("Time zone: " + zone).font(.footnote)
             CPTextArea(label: "Preparation", text: $draft.preparation, placeholder: "Arrival time, equipment, or focus")
+            DisclosureGroup("Event details and trip planning") {
+                Text("Your planning notes. Confirm details with the organizer.").font(.footnote)
+                ForEach(EventPlanning.fields, id: \.0) { field in
+                    CPTextArea(label: field.0, text: Binding(get: {
+                        (draft.planning ?? EventPlanning())[keyPath: field.1]
+                    }, set: { value in
+                        var planning = draft.planning ?? EventPlanning()
+                        planning[keyPath: field.1] = value; draft.planning = planning
+                    }), placeholder: "Not recorded")
+                }
+            }
             CPChips(label: "Local attendance intent", options: ["Going", "Considering", "Not going"], selection: $draft.status)
             let conflicts = store.eventConflicts(start: draft.start.timeIntervalSince1970, end: draft.end.timeIntervalSince1970, excluding: existing?.id)
             if !conflicts.isEmpty {
@@ -103,6 +114,7 @@ struct NewSpielSheet: View {
                 draft.start = Date(timeIntervalSince1970: existing.startAt ?? Store.now())
                 draft.end = Date(timeIntervalSince1970: existing.endAt ?? draft.start.timeIntervalSince1970 + 7200)
                 draft.kind = existing.eventKind ?? "Event"; draft.preparation = existing.preparation ?? ""
+                draft.planning = existing.planning
                 let saved = store.spielStatus(existing.id)
                 draft.status = ["Going", "Considering", "Not going"].contains(saved) ? saved : "Considering"
             }
@@ -254,6 +266,16 @@ struct SpielDetailSheet: View {
                     if let start = spiel.startAt, let end = spiel.endAt, store.spielStatus(spiel.id) != "Not going" {
                         let conflicts = store.eventConflicts(start: start, end: end, excluding: spiel.id)
                         if !conflicts.isEmpty { Text("Overlaps with: " + conflicts.map(\.name).joined(separator: ", ")).font(.body) }
+                    }
+                    Text("Event details and trip planning").font(.headline)
+                    Text("Personal notes; confirm details with the organizer.").font(.footnote)
+                    ForEach(EventPlanning.fields, id: \.0) { field in
+                        let value = (spiel.planning ?? EventPlanning())[keyPath: field.1]
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(field.0).font(.subheadline.bold())
+                            Text(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Not recorded" : value)
+                                .font(.body).textSelection(.enabled)
+                        }.padding(.vertical, 5)
                     }
                     Text("YOUR STATUS").font(.mono(10, .medium)).tracking(1.5)
                         .foregroundStyle(settings.muted).padding(.bottom, 8)

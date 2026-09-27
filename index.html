@@ -1675,6 +1675,7 @@ function viewSpiels(){
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
         btn + '</div>' +
       (sp.preparation ? '<p>Preparation: ' + esc(sp.preparation) + '</p>' : '') +
+      '<details><summary>Event details and trip planning</summary><p>Personal notes; confirm details with the organizer.</p><dl>' + eventPlanningFields.map(function(f){return '<dt>' + f[1] + '</dt><dd>' + esc(sp.planning && sp.planning[f[0]] || 'Not recorded') + '</dd>';}).join('') + '</dl></details>' +
       (conflicts.length ? '<p>Overlaps with: ' + esc(conflicts.map(function(c){return c.name;}).join(', ')) + '</p>' : '') +
     '</div>';
   }).join("");
@@ -2059,7 +2060,7 @@ function commitLocal(next){
 }
 function editorFields(){
   if(activeEditor && ["visit","ice"].includes(activeEditor.kind)) return ["date","sheet","speed","curl","note"];
-  return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"] : ["body","for","ag","vs","club","note"];
+  return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"].concat(eventPlanningFields.map(function(f){return f[0];})) : ["body","for","ag","vs","club","note"];
 }
 function persistEditorDraft(){
   if(!activeEditor) return true;
@@ -2324,6 +2325,7 @@ function upcomingEvents(now){
 function localEventTime(date){
   return [date.getFullYear(),String(date.getMonth()+1).padStart(2,"0"),String(date.getDate()).padStart(2,"0")].join("-") + "T" + [String(date.getHours()).padStart(2,"0"),String(date.getMinutes()).padStart(2,"0")].join(":");
 }
+var eventPlanningFields = [["format","Format"],["entry","Entry requirements"],["organizer","Organizer"],["draws","Draw schedule"],["travel","Travel"],["accommodation","Accommodation"],["team","Team arrangements"]];
 function openNewSpiel(id){
   var existing = id && store.addedSpiels.find(function(s){return s.id === id;});
   if(id && !existing) return;
@@ -2337,6 +2339,7 @@ function openNewSpiel(id){
     '<div class="field"><label for="f-start">Starts</label><input id="f-start" type="datetime-local"></div>' +
     '<div class="field"><label for="f-end">Ends</label><input id="f-end" type="datetime-local"></div>' +
     '<div class="field"><label for="f-preparation">Preparation</label><textarea id="f-preparation"></textarea></div>' +
+    '<details><summary>Event details and trip planning</summary><p>Personal notes; confirm details with the organizer.</p>' + eventPlanningFields.map(function(f){return '<div class="field"><label for="f-' + f[0] + '">' + f[1] + '</label><textarea id="f-' + f[0] + '" placeholder="Not recorded"></textarea></div>';}).join("") + '</details>' +
     '<div class="field"><label for="f-status">Local attendance intent</label><select id="f-status">' + options(["Going","Considering","Not going"]) + '</select></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button><button class="b solid" data-action="submit-new-spiel" data-id="' + esc(id || "") + '">Save event</button><button class="b outline" data-action="discard-draft">Discard draft</button></div>')) return;
   el("f-name").value = existing ? existing.name : ""; el("f-where").value = existing ? existing.where : "";
@@ -2346,6 +2349,7 @@ function openNewSpiel(id){
   el("f-preparation").value = existing && existing.preparation || "";
   var status = existing && spielStatus(existing);
   el("f-status").value = ["Going","Considering","Not going"].includes(status) ? status : "Going";
+  eventPlanningFields.forEach(function(f){el("f-"+f[0]).value=existing && existing.planning && existing.planning[f[0]] || "";});
   activeEditor = {kind:"event", key:key, id:id || null};
   var draft = store.drafts[key];
   if(draft){
@@ -2368,6 +2372,7 @@ function submitNewSpiel(id){
   var conflicts=eventConflicts(+start,+end,id);
   if(status !== "Not going" && conflicts.length && !window.confirm("Overlaps with: " + conflicts.map(function(s){return s.name;}).join(", ") + ". Save anyway?")) return false;
   var sp={id:id || uid("sp"),name:name,where:location,when:"",status:status,going:existing ? existing.going : [],startAt:+start,endAt:+end,timeZoneID:Intl.DateTimeFormat().resolvedOptions().timeZone,eventKind:kind,preparation:val("f-preparation"),at:Math.max(Date.now(),(existing && existing.at || 0)+1)};
+  sp.planning={}; eventPlanningFields.forEach(function(f){sp.planning[f[0]]=val("f-"+f[0]);});
   sp.when=eventLabel(sp);
   var next=JSON.parse(JSON.stringify(store));
   if(id) next.addedSpiels=next.addedSpiels.map(function(s){return s.id === id ? sp : s;}); else next.addedSpiels.unshift(sp);
@@ -2456,6 +2461,7 @@ function validateBackup(raw){
     if(p.type === "result") {var c=p.score; require(obj(c) && Number.isSafeInteger(c.for) && c.for >= 0 && Number.isSafeInteger(c.ag) && c.ag >= 0); fields(c,["vs","res"]); require(c.res === (c.for > c.ag ? "WIN" : c.for < c.ag ? "LOSS" : "TIE"));}
   });
   s.addedSpiels.forEach(function(v){
+    if(v.planning !== undefined) fields(v.planning,eventPlanningFields.map(function(f){return f[0];}));
     fields(v,["id","name","where","when","status"]); require(Array.isArray(v.going) && v.going.every(str));
     if(v.startAt !== undefined || v.endAt !== undefined) {
       require(num(v.startAt) && num(v.endAt) && v.endAt > v.startAt); fields(v,["timeZoneID","eventKind","preparation"]);
