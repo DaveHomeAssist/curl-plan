@@ -17,6 +17,12 @@ struct ComposeSheet: View {
     init(editingPostID: String? = nil) { self.editingPostID = editingPostID }
     private var canSave: Bool { draft.isValid }
 
+    private func practiceBinding(_ key: WritableKeyPath<PracticeLog, String>) -> Binding<String> {
+        Binding(get: { (draft.practice ?? PracticeLog())[keyPath: key] }, set: { value in
+            var practice = draft.practice ?? PracticeLog(); practice[keyPath: key] = value; draft.practice = practice
+        })
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Capsule().fill(settings.line).frame(width: 38, height: 4)
@@ -52,6 +58,12 @@ struct ComposeSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
                     switch draft.kind {
+                    case .practice:
+                        CPField(label: "Practice date (YYYY-MM-DD)", text: practiceBinding(\.date), placeholder: "2026-09-27")
+                        CPField(label: "Duration (minutes)", text: practiceBinding(\.minutes), placeholder: "60", keyboard: .numberPad)
+                        CPTextArea(label: "Drills", text: practiceBinding(\.drills), placeholder: "What did you practise?")
+                        CPTextArea(label: "Focus", text: practiceBinding(\.focus), placeholder: "What were you working on?")
+                        CPTextArea(label: "Observations", text: practiceBinding(\.observations), placeholder: "What will you carry into your next game?")
                     case .note:
                         CPTextArea(label: "What's the word?", text: $draft.body,
                                    placeholder: "Share a thought with your circle…")

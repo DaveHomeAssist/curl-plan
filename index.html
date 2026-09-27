@@ -1586,9 +1586,9 @@ function renderPostCard(p){
         '<span style="margin-left:auto;" class="meta">' + esc(p.score.vs) + '</span></div>' +
     '</div>';
   }
-  if(p.type === "note"){
+  if(p.type === "note" || p.type === "practice"){
     return '<div class="card post">' + postHead(p) +
-      '<div class="body">' + esc(p.body) + '</div>' +
+      '<div class="body" style="white-space:pre-line;">' + esc(p.body) + '</div>' +
     '</div>';
   }
   if(p.type === "spiel"){
@@ -2050,7 +2050,7 @@ function postTime(p){ return p.at ? fmtAgo(p.at) : (p.time || ""); } // p.time =
 var activeEditor = null;
 function ownedPost(id){
   if(feed.some(function(p){ return p.id === id; })) return null;
-  return store.posts.find(function(p){ return p.id === id && p.author === "me" && ["note","result","review"].indexOf(p.type) >= 0; }) || null;
+  return store.posts.find(function(p){ return p.id === id && p.author === "me" && ["note","result","review","practice"].indexOf(p.type) >= 0; }) || null;
 }
 function editorKey(kind, id, stopId){ return kind + ":" + (stopId || "") + ":" + (id || "new"); }
 function commitLocal(next){
@@ -2060,6 +2060,7 @@ function commitLocal(next){
   return true;
 }
 function editorFields(){
+  if(activeEditor && activeEditor.type === "practice") return ["date","minutes","drills","focus","observations"];
   if(activeEditor && ["visit","ice"].includes(activeEditor.kind)) return ["date","sheet","speed","curl","note"];
   return activeEditor && activeEditor.kind === "event" ? ["name","where","kind","start","end","preparation","status"].concat(eventPlanningFields.map(function(f){return f[0];})) : ["body","for","ag","vs","club","note","event"];
 }
@@ -2124,13 +2125,16 @@ function openCompose(type, editingId){
     event:existing.eventID || "", vs:existing.score ? String(existing.score.vs || "").replace(/^vs /i, "") : "", club:existing.club || "", stars:existing.stars || 5 } : {});
   type = existing ? existing.type : type || d.type || "note";
   formStars = type === "review" ? 5 : 0;
-  var seg = ["note","result","review"].map(function(t){
-    var lab = t === "note" ? "Note" : t === "result" ? "Result" : "Review";
+  if(existing && existing.practice && !store.drafts[key]) Object.assign(d,existing.practice);
+  var seg = ["note","result","review","practice"].map(function(t){
+    var lab = t === "note" ? "Note" : t === "result" ? "Result" : t === "practice" ? "Practice" : "Review";
     return '<button type="button" class="' + (t === type ? "on" : "") + '" data-action="compose-type" data-type="' + t + '">' + lab + '</button>';
   }).join("");
 
   var body;
-  if(type === "result"){
+  if(type === "practice"){
+    body = '<div class="field"><label for="f-date">Practice date</label><input id="f-date" type="date"></div><div class="field"><label for="f-minutes">Duration (minutes)</label><input id="f-minutes" type="number" min="1" step="1" inputmode="numeric"></div>' + ["drills","focus","observations"].map(function(k){return '<div class="field"><label for="f-' + k + '">' + k[0].toUpperCase() + k.slice(1) + '</label><textarea id="f-' + k + '"></textarea></div>';}).join('');
+  } else if(type === "result"){
     var eventOptions = '<option value="">No linked event</option>' + store.addedSpiels.map(function(e){return '<option value="' + esc(e.id) + '">' + esc(e.name + ' · ' + eventLabel(e)) + '</option>';}).join('');
     if(d.event && !store.addedSpiels.some(function(e){return e.id === d.event;})) eventOptions += '<option value="' + esc(d.event) + '">Previously linked event (removed)</option>';
     body = '<div class="field"><label for="f-event">Scheduled event</label><select id="f-event">' + eventOptions + '</select></div>' + '<div class="field split"><div><label for="f-for">For</label><input id="f-for" type="number" inputmode="numeric" placeholder="8"></div>' +
@@ -2154,12 +2158,22 @@ function openCompose(type, editingId){
   activeEditor = { kind:"post", key:key, id:editingId || null, type:type };
   restoreEditorDraft(d);
 }
+function validPractice(p){
+  return p && ["date","minutes","drills","focus","observations"].every(function(k){return typeof p[k] === "string";}) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(p.date) && Number.isFinite(Date.parse(p.date)) && new Date(p.date).toISOString().slice(0,10) === p.date &&
+    /^\d+$/.test(p.minutes.trim()) && Number.isSafeInteger(Number(p.minutes)) && Number(p.minutes) > 0 && p.drills.trim() && p.focus.trim();
+}
 function submitCompose(type){
   if(!currentUser() || !activeEditor || activeEditor.kind !== "post") return false;
   var editingId = activeEditor.id, existing = editingId ? ownedPost(editingId) : null;
   if(editingId && (!existing || existing.type !== type)){ toast("This post no longer exists."); return false; }
   var post;
-  if(type === "result"){
+  if(type === "practice"){
+    var practice={}; ["date","minutes","drills","focus","observations"].forEach(function(k){practice[k]=val("f-"+k);});
+    if(!validPractice(practice)){toast("Add a valid date, positive whole-number duration, drills and focus.");return false;}
+    post={id:uid("p"),type:"practice",author:"me",at:Date.now(),practice:practice,likes:0,comments:0,
+      body:"Practice · " + practice.date + " · " + practice.minutes + " minutes\nFocus: " + practice.focus + "\nDrills: " + practice.drills + "\n" + practice.observations};
+  } else if(type === "result"){
     var eventID=val("f-event"), linked=store.addedSpiels.find(function(e){return e.id === eventID;});
     if(eventID && !linked && (!existing || existing.eventID !== eventID)){toast("That event was removed. Choose another event or no link.");return false;}
     var f = Number(val("f-for")), a = Number(val("f-ag"));
@@ -2465,7 +2479,8 @@ function validateBackup(raw){
   s.posts.forEach(function(p){
     fields(p,["id","type","author"]); require(p.author === "me" && !ids.has(p.id) && num(p.at)); ids.add(p.id);
     ["body","note","club"].forEach(function(k){if(p[k] !== undefined) require(str(p[k]));});
-    require(["note","result","review"].includes(p.type));
+    require(["note","result","review","practice"].includes(p.type));
+    if(p.type === "practice") {require(validPractice(p.practice)); fields(p,["body"]);}
     if(p.type === "note") fields(p,["body"]);
     if(p.type === "review") {fields(p,["club","note"]); rating(p.stars);}
     if(p.type === "result") {var c=p.score; require(obj(c) && Number.isSafeInteger(c.for) && c.for >= 0 && Number.isSafeInteger(c.ag) && c.ag >= 0); fields(c,["vs","res"]); require(c.res === (c.for > c.ag ? "WIN" : c.for < c.ag ? "LOSS" : "TIE"));}

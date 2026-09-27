@@ -318,10 +318,15 @@
       "expected": "Record drills, duration, focus and observations",
       "baseline_verdict": "Unavailable",
       "group": "planning and progression",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Add structured practice logging with retrieval.",
       "acceptance": "Inspect tabs and form types for practice logging; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native/browser composers now offer Practice with date, positive whole-number duration, drills, focus and observations. Distinct practice records support existing draft recovery, search, edit/delete and backup validation; game totals count only results. 22 SwiftPM tests and browser actual-function checks passed for invalid dates/durations, draft/reload, correction, deletion, backup and unchanged game totals."
+      ],
+      "remaining": [
+        "Complete physical native and Safari practice entry/edit/relaunch/search acceptance. A20 lessons-to-preparation is a separate remaining workflow."
+      ]
     },
     {
       "id": "A20",

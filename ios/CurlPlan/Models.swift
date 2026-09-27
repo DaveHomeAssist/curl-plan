@@ -140,8 +140,25 @@ struct MeInfo {
 
 // Unified feed post — mirrors the web's uniform dict so seed feed + user posts
 // merge trivially and every post carries a stable String id (likes key on it).
+struct PracticeLog: Codable, Hashable {
+    var date = ""
+    var minutes = ""
+    var drills = ""
+    var focus = ""
+    var observations = ""
+    var isValid: Bool {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian); f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
+        guard let day = f.date(from: date), f.string(from: day) == date,
+              let duration = Int(minutes), duration > 0 else { return false }
+        return !drills.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               !focus.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    var summary: String { "Practice · \(date) · \(minutes) minutes\nFocus: \(focus)\nDrills: \(drills)\n\(observations)" }
+}
+
 struct Post: Identifiable, Codable, Hashable {
-    enum Kind: String, Codable { case result, note, review, spiel }
+    enum Kind: String, Codable { case result, note, review, spiel, practice }
     let id: String
     let kind: Kind
     var author: String?
@@ -149,6 +166,7 @@ struct Post: Identifiable, Codable, Hashable {
     var time: String?        // seed/legacy relative label
     // result / note
     var body: String?
+    var practice: PracticeLog? = nil
     var eventID: String? = nil
     var eventName: String? = nil
     var scoreFor: Int?
@@ -231,8 +249,9 @@ struct AuthState: Codable {
 
 // Composer drafts are private local state, separate from published posts.
 struct PostDraft: Codable, Hashable {
-    enum Kind: String, Codable, CaseIterable { case note = "Note", result = "Result", review = "Review" }
+    enum Kind: String, Codable, CaseIterable { case note = "Note", result = "Result", review = "Review", practice = "Practice" }
     var kind: Kind = .note
+    var practice: PracticeLog? = nil
     var eventID: String? = nil
     var body = ""
     var opponent = ""
@@ -244,7 +263,8 @@ struct PostDraft: Codable, Hashable {
 
     init() {}
     init(post: Post) {
-        kind = post.kind == .result ? .result : post.kind == .review ? .review : .note
+        practice = post.practice
+        kind = post.kind == .practice ? .practice : post.kind == .result ? .result : post.kind == .review ? .review : .note
         eventID = post.eventID
         body = post.body ?? ""
         opponent = post.vs ?? ""
@@ -258,6 +278,7 @@ struct PostDraft: Codable, Hashable {
 
     var isValid: Bool {
         switch kind {
+        case .practice: return practice?.isValid == true
         case .note: return !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .review: return !club.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (1...5).contains(stars)
         case .result:
@@ -549,13 +570,15 @@ final class Store: ObservableObject {
     func savePost(_ draft: PostDraft, editingID: String? = nil) -> Bool {
         guard currentUser() != nil, draft.isValid else { return false }
         if let id = editingID, !canEditPost(id) { return false }
-        let kind: Post.Kind = draft.kind == .note ? .note : draft.kind == .result ? .result : .review
+        let kind: Post.Kind = draft.kind == .practice ? .practice : draft.kind == .note ? .note : draft.kind == .result ? .result : .review
         let existing = editingID.flatMap { id in state.posts.first { $0.id == id } }
         if let existing, existing.kind != kind { return false }
         var post = existing ?? Post(id: Store.uid("p"), kind: kind, author: "me")
         post.at = max(Store.now(), (existing?.at ?? 0).nextUp)
         post.body = draft.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        if kind == .result {
+        if kind == .practice {
+            post.practice = draft.practice; post.body = draft.practice?.summary
+        } else if kind == .result {
             let event = draft.eventID.flatMap { id in state.addedSpiels.first { $0.id == id } }
             if let id = draft.eventID, event == nil && existing?.eventID != id { return false }
             post.eventID = draft.eventID
@@ -813,6 +836,9 @@ struct LocalBackup: Codable {
             let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary
             let roundTrip = try JSONSerialization.jsonObject(with: JSONEncoder().encode(backup)) as? NSDictionary
             guard original == roundTrip else { throw BackupError.invalid }
+            for post in backup.state.posts where post.kind == .practice {
+                guard post.practice?.isValid == true else { throw BackupError.invalid }
+            }
             for post in backup.state.posts where post.kind == .result {
                 guard let f = post.scoreFor, let a = post.scoreAgainst, f >= 0, a >= 0,
                       post.res == (f > a ? "WIN" : f < a ? "LOSS" : "TIE") else { throw BackupError.invalid }

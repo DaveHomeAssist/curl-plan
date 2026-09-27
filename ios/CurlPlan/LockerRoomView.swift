@@ -150,7 +150,7 @@ struct FeedCard: View {
     var body: some View {
         switch post.kind {
         case .result: ResultCard(post: post)
-        case .note:   NoteCard(post: post)
+        case .note, .practice:   NoteCard(post: post)
         case .review: ReviewCard(post: post)
         case .spiel:  SpielPromoCard(post: post)
         }
