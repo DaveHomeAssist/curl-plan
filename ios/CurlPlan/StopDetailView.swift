@@ -495,7 +495,7 @@ private struct ContributionDraftRecovery: ViewModifier {
         }
         .onAppear {
             guard !loaded else { return }
-            draft = store.state.contributionDrafts?[store.contributionDraftKey(stopID, kind: kind)] ?? ContributionDraft()
+            if let saved = store.state.contributionDrafts?[store.contributionDraftKey(stopID, kind: kind)] { draft = saved }
             loaded = true
         }
         .onChange(of: draft) { _, value in

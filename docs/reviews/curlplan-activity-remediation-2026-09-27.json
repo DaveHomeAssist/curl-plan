@@ -322,10 +322,11 @@
       "required_action": "Add structured practice logging with retrieval.",
       "acceptance": "Inspect tabs and form types for practice logging; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Native/browser composers now offer Practice with date, positive whole-number duration, drills, focus and observations. Distinct practice records support existing draft recovery, search, edit/delete and backup validation; game totals count only results. 22 SwiftPM tests and browser actual-function checks passed for invalid dates/durations, draft/reload, correction, deletion, backup and unchanged game totals."
+        "Native/browser composers now offer Practice with date, positive whole-number duration, drills, focus and observations. Distinct practice records support existing draft recovery, search, edit/delete and backup validation; game totals count only results. 22 SwiftPM tests and browser actual-function checks passed for invalid dates/durations, draft/reload, correction, deletion, backup and unchanged game totals.",
+        "Physical Ignacio testPracticeCreateRecoverEditAndDelete passed: enter date/duration/drills/focus/observations, Close/relaunch draft recovery, Post, edit observations, relaunch retrieval, open lesson action, confirmed deletion and fresh-launch absence. Only uniquely tagged test practice removed. Screenshot A19-practice-recovered.png inspected. Evidence /tmp/curlplan-remediation/practice-journey.xcresult."
       ],
       "remaining": [
-        "Complete physical native and Safari practice entry/edit/relaunch/search acceptance. A20 lessons-to-preparation is a separate remaining workflow."
+        "Complete physical Safari practice workflow and native search acceptance. A20 actual lesson transfer is separately incomplete."
       ]
     },
     {
@@ -338,7 +339,8 @@
       "required_action": "Add a visible route from takeaways to a saved next-game goal.",
       "acceptance": "Locker > create practice-related note > search > relaunch; inspect onward preparation route; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure."
+        "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure.",
+        "Physical practice test opened Use in game preparation and confirmed corrected observation displayed as the lesson, then canceled. Target selection/save/readback was not exercised."
       ],
       "remaining": [
         "Complete physical native and Safari source-to-target selection/save/relaunch/readback acceptance."
@@ -497,11 +499,12 @@
         "Browser event forms use persistent per-account drafts for create/edit; Close retains, confirmed discard removes only the draft, successful save and event deletion clear matching drafts. Input/change listeners persist fields. Existing valid times convert to the current browser zone if the zone changed. verify-record-recovery.js passed actual-function checks for reload field recovery, invalid-save retention, storage failure, edit draft independence, successful-save cleanup, confirmed discard, and backup validation.",
         "Added a stricter physical test that waits for sheet closure and reopens without process restart before checking durable discard. Ignacio run event-reopen.xcresult did not reach that assertion: XCTest repeatedly reported missing animation-completion notifications during text entry, waiting 60 seconds per action. Stopped only the owned xcodebuild run with SIGINT; exit 75 confirmed. Log retained at /tmp/curlplan-remediation/event-reopen.log. This is not a passing reopening check.",
         "Native visit/ice-read forms now retain per-club/per-kind drafts, including date, sheet, speed, curl and note. Close retains, alert-confirmed discard preserves existing records, save clears only matching draft. Optional storage bucket preserves old-backup compatibility. 19 SwiftPM core tests passed, including contribution recovery, separate club/kind buckets, signed-out isolation, backup round-trip/legacy acceptance, discard preservation and save cleanup.",
-        "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open."
+        "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open.",
+        "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation.",
-        "Complete physical native contribution and Safari contribution/event recovery acceptance.",
+        "Complete physical Safari contribution/event recovery acceptance; native contribution tests covered note drafts, not changing every date/sheet/speed field.",
         "Immediate sheet reopening after confirmed discard failed in automation before the fresh-launch check; verify presentation timing separately."
       ]
     },

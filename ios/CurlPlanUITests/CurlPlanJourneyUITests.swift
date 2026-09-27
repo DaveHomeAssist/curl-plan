@@ -9,6 +9,89 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testVisitDraftRecoveryAndDiscard() throws { try verifyContributionDraftRecovery(["Log visit"]) }
+    func testIceDraftRecoveryAndDiscard() throws { try verifyContributionDraftRecovery(["Ice read"]) }
+
+    private func verifyContributionDraftRecovery(_ actions: [String]) throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        for action in actions {
+            app.open(URL(string: "curlplan://stop/kelowna")!)
+            XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 8)); app.buttons[action].tap()
+            let note = app.textFields["Note (optional)"]
+            XCTAssertTrue(note.waitForExistence(timeout: 4))
+            guard (note.value as? String ?? "").isEmpty else { throw XCTSkip("Preserve existing contribution draft") }
+            if action == "Ice read" {
+                guard ["", "4–5"].contains(app.textFields["Curl (ft)"].value as? String ?? ""),
+                      ["", "e.g. 3 or A"].contains(app.textFields["Sheet (optional)"].value as? String ?? "") else { throw XCTSkip("Preserve existing ice draft") }
+            } else {
+                guard app.textFields["Date"].value as? String == "Today" else { throw XCTSkip("Preserve existing visit draft") }
+            }
+            let marker = "Recovery " + UUID().uuidString.prefix(8)
+            note.tap(); note.typeText(marker); hideAuditKeyboard()
+            app.buttons["Close"].tap(); app.terminate(); app.launch()
+            app.open(URL(string: "curlplan://stop/kelowna")!)
+            XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 8)); app.buttons[action].tap()
+            XCTAssertEqual(app.textFields["Note (optional)"].value as? String, marker)
+            app.buttons["Discard draft"].tap(); app.alerts.buttons["Keep draft"].tap()
+            XCTAssertEqual(app.textFields["Note (optional)"].value as? String, marker)
+            let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            proof.name = "A30-" + action + "-draft"; proof.lifetime = .keepAlways; add(proof)
+            app.buttons["Discard draft"].tap(); app.alerts.buttons["Discard draft"].tap()
+            app.terminate(); app.launch(); app.open(URL(string: "curlplan://stop/kelowna")!)
+            XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 8)); app.buttons[action].tap()
+            XCTAssertEqual(app.textFields["Note (optional)"].value as? String, "")
+            app.buttons["Close"].tap(); app.terminate(); app.launch()
+        }
+    }
+
+    func testPracticeCreateRecoverEditAndDelete() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        app.buttons["curlplan.compose.open"].tap()
+        let note = app.textFields["What's the word?"]
+        guard note.exists, (note.value as? String ?? "").isEmpty else {
+            throw XCTSkip("Preserve existing composer draft")
+        }
+        app.buttons["Practice"].tap()
+        let marker = "Practice " + UUID().uuidString.prefix(8)
+        for (label, value) in [("Practice date (YYYY-MM-DD)", "2026-09-27"), ("Duration (minutes)", "45"),
+                               ("Drills", marker), ("Focus", "Release"), ("Observations", "Balanced finish")] {
+            let field = app.textFields[label]
+            field.tap(); field.typeText(value); hideAuditKeyboard()
+        }
+        app.buttons["Close"].tap(); app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        app.buttons["curlplan.compose.open"].tap()
+        XCTAssertEqual(app.textFields["Drills"].value as? String, marker)
+        XCTAssertEqual(app.textFields["Duration (minutes)"].value as? String, "45")
+        XCTAssertEqual(app.textFields["Observations"].value as? String, "Balanced finish")
+        app.buttons["Post"].tap()
+        let summary = "Practice · 2026-09-27 · 45 minutes\nFocus: Release\nDrills: " + marker + "\nBalanced finish"
+        XCTAssertTrue(app.staticTexts[summary].waitForExistence(timeout: 4))
+        let actions = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "curlplan.post.actions.")).firstMatch
+        actions.tap(); app.buttons["Edit post"].tap()
+        let observations = app.textFields["Observations"]
+        XCTAssertEqual(observations.value as? String, "Balanced finish")
+        observations.tap(); observations.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        observations.typeText(" next game"); hideAuditKeyboard()
+        app.buttons["Save changes"].tap(); app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertTrue(app.staticTexts[summary + " next game"].waitForExistence(timeout: 4))
+        app.buttons["Use in game preparation"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Balanced finish next game"].waitForExistence(timeout: 4))
+        app.buttons["Cancel"].tap()
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A19-practice-recovered"; proof.lifetime = .keepAlways; add(proof)
+        actions.tap(); app.buttons["Delete post"].tap(); app.alerts.buttons["Delete post"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Locker").waitForExistence(timeout: 8)); tab("Locker").tap()
+        XCTAssertFalse(app.staticTexts[summary + " next game"].exists)
+    }
+
     func testEventPlanningFieldsAreReachable() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]
