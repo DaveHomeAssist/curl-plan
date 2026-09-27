@@ -1317,17 +1317,23 @@ function isFollowing(c){
 }
 function setFollowing(id, val){ store.follows[id] = lwwEntry(val, Date.now()); saveStoreSoon(); }
 
-function spielStatus(sp){ return lwwVal(store.joins[sp.id]) || sp.status; }
-function setSpielStatus(id, status){ store.joins[id] = lwwEntry(status, Date.now()); saveStore(); }
-function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
-function withdrawSpiel(id){
-  var sp = spielById(id);
-  // dropping the override reverts to the seed status (e.g. back to "Invite");
-  // when the seed itself is "You're in", only an explicit override can leave
-  if(sp && sp.status === "You're in") store.joins[id] = lwwEntry("Watching", Date.now());
-  else delete store.joins[id];
-  saveStore();
+function attendanceIntent(value){
+  if(value === "You're in") return "Going";
+  return ["Going","Considering","Not going"].includes(value) ? value : "Considering";
 }
+function spielStatus(sp){
+  var saved = lwwVal(store.joins[sp.id]);
+  if(saved) return attendanceIntent(saved);
+  return store.addedSpiels.some(function(s){return s.id === sp.id;}) ? attendanceIntent(sp.status) : "Considering";
+}
+function setSpielStatus(id, status){
+  if(!currentUser() || !spielById(id) || !["Going","Considering","Not going"].includes(status)) return false;
+  var next = JSON.parse(JSON.stringify(store));
+  next.joins[id] = lwwEntry(status, Date.now());
+  return commitLocal(next);
+}
+function spielById(id){ return allSpiels().filter(function(s){return s.id===id;})[0]; }
+function withdrawSpiel(id){ return setSpielStatus(id, "Not going"); }
 
 function allPosts(){ return store.posts.concat(feed); }
 
@@ -1594,9 +1600,9 @@ function renderPostCard(p){
   }
   if(p.type === "spiel"){
     var sp = spielById(p.spielId);
-    var spielBtn = !sp ? '' : (spielStatus(sp) === "You're in"
-      ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going ✓</button>'
-      : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">I\'m in</button>');
+    var spielBtn = !sp ? '' : (spielStatus(sp) === "Going"
+      ? '<button class="pill-btn ghost" style="margin-left:auto; border-radius:11px; padding:7.5px 16px; font-size:13px;" data-action="leave-spiel" data-id="' + esc(sp.id) + '">Going locally ✓</button>'
+      : '<button class="pill-btn" style="margin-left:auto; border-radius:11px; padding:9px 16px; font-size:13px;" data-action="join-spiel" data-id="' + esc(sp.id) + '">Mark going locally</button>');
     return '<div class="card spiel post" style="padding:14px;">' +
       '<div class="mono" style="font-size:10px; letter-spacing:.14em; color:var(--accent-deep); margin-bottom:7px;">SHARED SPIEL</div>' +
       '<div class="serif" style="font-size:19px; line-height:1.25; color:var(--ink); margin-bottom:11px;">' +
@@ -1657,10 +1663,10 @@ function viewSpiels(){
   var rows = upcoming.concat(dated,undated).map(function(sp){
     var owned = store.addedSpiels.some(function(s){return s.id === sp.id;});
     var status = spielStatus(sp);
-    var solid = status === "You're in";
-    var btn = solid
-      ? '<button class="pill-btn ghost" style="margin-left:auto;" data-action="leave-spiel" data-id="' + sp.id + '">Change local intent</button>'
-      : '<button class="pill-btn" style="margin-left:auto;" data-action="join-spiel" data-id="' + sp.id + '">Mark going locally</button>';
+    var solid = status === "Going";
+    var btn = '<div role="group" aria-label="Local attendance intent" style="display:flex; flex-wrap:wrap; gap:8px;">' + ["Going","Considering","Not going"].map(function(option){
+      return '<button class="pill-btn' + (status === option ? '' : ' ghost') + '" aria-pressed="' + (status === option) + '" data-action="attendance-intent" data-id="' + esc(sp.id) + '" data-status="' + option + '">' + option + '</button>';
+    }).join('') + '</div>';
     if(owned) btn = '<button class="pill-btn ghost" data-action="edit-event" data-id="' + esc(sp.id) + '">Edit event</button><button class="pill-btn ghost" data-action="delete-event" data-id="' + esc(sp.id) + '">Delete event</button>';
     var conflicts = Number.isFinite(sp.startAt) && status !== "Not going" ? eventConflicts(sp.startAt,sp.endAt,sp.id) : [];
     var section = Number.isFinite(sp.startAt) ? (upcomingIDs.includes(sp.id) ? 'Upcoming / in progress' : 'Past / not going') : 'Undated / sample';
@@ -1675,7 +1681,7 @@ function viewSpiels(){
       '</div>' +
       '<div class="row" style="margin-top:12px;">' + avatarStack(sp.going) +
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
-        btn + '</div>' +
+        '</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">' + btn + '</div>' +
       (sp.preparation ? '<p>Preparation: ' + esc(sp.preparation) + '</p>' : '') +
       '<details><summary>Event details and trip planning</summary><p>Personal notes; confirm details with the organizer.</p><dl>' + eventPlanningFields.map(function(f){return '<dt>' + f[1] + '</dt><dd>' + esc(sp.planning && sp.planning[f[0]] || 'Not recorded') + '</dd>';}).join('') + '</dl></details>' +
       (conflicts.length ? '<p>Overlaps with: ' + esc(conflicts.map(function(c){return c.name;}).join(', ')) + '</p>' : '') +
@@ -2652,13 +2658,18 @@ el("screen").addEventListener("click", function(e){
       if(c){ var nv = !isFollowing(c); setFollowing(id, nv); render({keepScroll:true}); toast(nv ? "Following " + c.name : "Unfollowed " + c.name); }
       break;
     }
-    // bonspiel registration
+    // Local attendance intent
     case "join-spiel": {
-      if(id){ setSpielStatus(id, "You're in"); render({keepScroll:true}); toast("You're registered"); }
+      if(id && setSpielStatus(id, "Going")){ render({keepScroll:true}); toast("Going saved on this device; not a registration"); }
       break;
     }
     case "leave-spiel": {
-      if(id){ withdrawSpiel(id); render({keepScroll:true}); toast("Registration withdrawn"); }
+      if(id && withdrawSpiel(id)){ render({keepScroll:true}); toast("Not going saved on this device"); }
+      break;
+    }
+
+    case "attendance-intent": {
+      if(setSpielStatus(id, t.getAttribute("data-status"))){ render({keepScroll:true}); toast("Attendance intent saved on this device"); }
       break;
     }
 

@@ -436,14 +436,24 @@ final class Store: ObservableObject {
     func likeCount(_ p: Post) -> Int { p.likes + (isLiked(p.id) ? 1 : 0) }
     func toggleLike(_ postId: String) { state.likes[postId] = !isLiked(postId) }
 
-    // MARK: Spiel registration (unified across Spiels tab + feed)
+    // MARK: Local attendance intent (unified across Spiels and feed)
 
-    func spielStatus(_ id: String) -> String { state.joins[id] ?? (spiel(id)?.status ?? "Watching") }
-    func setSpielStatus(_ id: String, _ status: String) { state.joins[id] = status }
-    func withdrawSpiel(_ id: String) {
-        if spiel(id)?.status == "You're in" { state.joins[id] = "Watching" }
-        else { state.joins[id] = nil }
+    private func attendanceIntent(_ value: String) -> String {
+        if value == "You're in" { return "Going" }
+        return ["Going", "Considering", "Not going"].contains(value) ? value : "Considering"
     }
+    func spielStatus(_ id: String) -> String {
+        if let saved = state.joins[id] { return attendanceIntent(saved) }
+        // Sample attendees and statuses are not the current user's decision.
+        if let owned = state.addedSpiels.first(where: { $0.id == id }) { return attendanceIntent(owned.status) }
+        return "Considering"
+    }
+    func setSpielStatus(_ id: String, _ status: String) {
+        guard isSignedIn, spiel(id) != nil,
+              ["Going", "Considering", "Not going"].contains(status) else { return }
+        state.joins[id] = status
+    }
+    func withdrawSpiel(_ id: String) { setSpielStatus(id, "Not going") }
 
     // MARK: Create actions (write to the per-account state)
 

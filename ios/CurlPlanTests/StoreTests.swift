@@ -298,10 +298,10 @@ final class StoreTests: XCTestCase {
 
     func testSpielStatusUnifiedAndPersists() {
         let s = Store(); s.exploreDemo()
-        XCTAssertEqual(s.spielStatus("sp2"), "Watching")   // seed
-        s.setSpielStatus("sp2", "You're in")
-        XCTAssertEqual(s.spielStatus("sp2"), "You're in")
-        XCTAssertTrue(Store().spielStatus("sp2") == "You're in")
+        XCTAssertEqual(s.spielStatus("sp2"), "Considering") // Sample is not personal intent
+        s.setSpielStatus("sp2", "Going")
+        XCTAssertEqual(s.spielStatus("sp2"), "Going")
+        XCTAssertTrue(Store().spielStatus("sp2") == "Going")
     }
 
     func testSampleClubRecordsMatchListedGames() {

@@ -9,6 +9,31 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testLocalAttendanceIntentSurvivesRelaunch() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        func openSample() {
+            XCTAssertTrue(tab("Spiels").waitForExistence(timeout: 8)); tab("Spiels").tap()
+            tapAfterScrolling(app.buttons["curlplan.event.details.sp2"], name: "Sample event details")
+            scrollUntilHittable(app.buttons["curlplan.attendance.Going"], name: "Attendance choices")
+        }
+        openSample()
+        let choices = ["Going", "Considering", "Not going"]
+        let original = try XCTUnwrap(choices.first { app.buttons["curlplan.attendance." + $0].value as? String == "Selected" })
+        for choice in choices {
+            app.buttons["curlplan.attendance." + choice].tap()
+            app.terminate(); app.launch(); openSample()
+            XCTAssertEqual(app.buttons["curlplan.attendance." + choice].value as? String, "Selected")
+            XCTAssertTrue(app.staticTexts["Saved on this device only; this does not register you with the organizer."].exists)
+        }
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A3-local-attendance"; proof.lifetime = .keepAlways; add(proof)
+        app.buttons["curlplan.attendance." + original].tap()
+        app.terminate(); app.launch(); openSample()
+        XCTAssertEqual(app.buttons["curlplan.attendance." + original].value as? String, "Selected")
+    }
+
     func testLessonTransferAndLinkedResult() throws {
         XCUIDevice.shared.orientation = .portrait
         let marker = "FLOW20260927A", lesson = "Flow lesson balanced finish", resultNote = "Flow result 20260927A"

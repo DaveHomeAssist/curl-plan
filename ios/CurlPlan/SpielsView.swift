@@ -145,7 +145,7 @@ private struct SpielRow: View {
 
     var body: some View {
         let status = store.spielStatus(spiel.id)
-        let solid = status == "You're in" || status == "Going"
+        let solid = status == "Going"
         VStack(alignment: .leading, spacing: 12) {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 10) {
@@ -234,7 +234,7 @@ struct SpielDetailSheet: View {
     @State private var editing = false
     @State private var deleting = false
     private var owned: Bool { store.state.addedSpiels.contains { $0.id == spielID } }
-    private var statuses: [String] { owned ? ["Going", "Considering", "Not going"] : ["You're in", "Watching", "Invite"] }
+    private var statuses: [String] { ["Going", "Considering", "Not going"] }
 
     var body: some View {
         Group {
@@ -257,7 +257,6 @@ struct SpielDetailSheet: View {
                         Text(spiel.eventKind ?? "Event").font(.headline)
                         Text(spiel.preparation?.isEmpty == false ? spiel.preparation! : "No preparation notes yet.")
                             .font(.body).padding(.vertical, 8)
-                        Text("Attendance intent is saved on this device only.").font(.footnote)
                         HStack {
                             Button("Edit event") { editing = true }.frame(minHeight: 44)
                             Button("Delete event", role: .destructive) { deleting = true }.frame(minHeight: 44)
@@ -285,7 +284,8 @@ struct SpielDetailSheet: View {
                                 .font(.body).padding(.vertical, 4)
                         }
                     }
-                    Text("YOUR STATUS").font(.mono(10, .medium)).tracking(1.5)
+                    Text("Saved on this device only; this does not register you with the organizer.").font(.footnote).padding(.vertical, 8)
+                    Text("LOCAL ATTENDANCE INTENT").font(.mono(10, .medium)).tracking(1.5)
                         .foregroundStyle(settings.muted).padding(.bottom, 8)
                     HStack(spacing: 8) {
                         ForEach(statuses, id: \.self) { opt in
@@ -300,6 +300,9 @@ struct SpielDetailSheet: View {
                                         .strokeBorder(on ? Color.clear : settings.line, lineWidth: 1))
                             }
                             .buttonStyle(.plain)
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("curlplan.attendance.\(opt)")
+                            .accessibilityValue(on ? "Selected" : "Not selected")
                         }
                         Spacer(minLength: 0)
                     }

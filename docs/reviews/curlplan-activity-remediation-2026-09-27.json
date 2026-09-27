@@ -1,5 +1,5 @@
 {
-  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1–A33",
+  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1\u2013A33",
   "started": "2026-09-27",
   "audit_run": "IPAD33-20260927",
   "audit_source_sha256": "7fcb5b2e454fe4530c0249293f2ccacaf90590ca17f785df1e1868b23f558d69",
@@ -28,7 +28,7 @@
       "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
-        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1–1 agrees with its two listed W/L games."
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
       ],
       "remaining": [
         "Physical Safari interaction verification remains open."
@@ -46,7 +46,8 @@
       "evidence": [
         "Physical Ignacio: testOwnedNoteCorrectionAndDraftRecovery passed; draft survived interactive dismissal and process relaunch, published note edited in place and persisted, delete cancellation retained note, confirmed deletion persisted.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png",
-        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI."
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Safari plain textarea paste control also failed: runner UIPasteboard access returned PBErrorDomain code 11 (invalid general pasteboard), exact readback empty instead of WEBFIX 1234. No reliable clipboard write/restoration can be claimed. Unsupported experiment removed; original control and xcresult retained locally. /tmp/curlplan-remediation/safari-paste-control.xcresult. Preview server stopped."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
@@ -58,10 +59,19 @@
       "expected": "Open details, change attendance intent, relaunch and confirm",
       "baseline_verdict": "Pass",
       "group": "data ownership and resilience",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Clarify that status is local attendance intent.",
       "acceptance": "Spiels > Brier Patch Details > Watching > Done > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native and browser now use Going, Considering, Not going for local attendance intent. Removed registration success/withdrawal claims; sample seed statuses no longer imply personal decisions. Explicit legacy overrides remain readable (You're in -> Going; Watching/Invite -> Considering).",
+        "Physical Ignacio: testLocalAttendanceIntentSurvivesRelaunch passed in 35 seconds. Selected each of three choices on Okanagan Classic (sp2), relaunched and read Selected plus local-only disclosure each time; restored original Considering choice and verified after relaunch. testSpielStatusUnifiedAndPersists also passed. /tmp/curlplan-remediation/attendance-physical.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A3-local-attendance.png",
+        "24 SwiftPM core tests passed including legacy compatibility, persistence, explicit withdrawal, invalid choices and backup roundtrip. Actual browser function tests passed including reload and storage-full rollback. Static app, seed, parity and feature-review checks passed."
+      ],
+      "remaining": [
+        "Physical Safari attendance controls and feed/detail consistency journey remain to be exercised.",
+        "Event detail currently places seven unrecorded planning fields before attendance; improve information hierarchy as part of remaining screenflow work."
+      ]
     },
     {
       "id": "A4",
@@ -85,7 +95,7 @@
       "acceptance": "Inspect all four tabs and Settings for game preparation; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native Settings now offers a verified route to the original Classic game planner with separate-data explanation.",
-        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
         "Complete physical Safari game preparation/retrieval acceptance; native saved preparation now verified directly."
@@ -269,9 +279,9 @@
       "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
       "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
         "Native/browser result editors now select a saved event; optional event identity/name snapshot persists through drafts and result edits. Native result card opens event detail with its recorded results; browser card opens linked-event result summary. Rescheduling keeps stable links; deleting an event preserves results and saved event-name snapshot; explicit unlink supported. 21 SwiftPM tests passed, including lifecycle/backup/totals assertions. Browser actual-function checks passed for draft recovery, linked summary rendering, reschedule, deletion, correction and unlink. Native device-target build and app/parity/diff checks passed.",
-        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
         "Complete physical Safari result-link acceptance. Event linkage does not substitute for per-draw identity in multi-game bonspiels."
@@ -289,7 +299,7 @@
       "evidence": [
         "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result.",
         "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
       ],
       "remaining": [
         "Complete physical Safari journeys. Plain textarea control also lost characters (WEBFIX 1234 became WEBFIX), so the input failure reproduces without CurlPlan code; use an alternate verified input method or resolve device automation."
@@ -306,9 +316,9 @@
       "acceptance": "Passport > season totals > Kelowna > compare record and game list; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
-        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8–2 result increased Passport game count by one; corrected to 1–2 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png",
-        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1–1 agrees with its two listed W/L games."
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
       ],
       "remaining": [
         "Physical Safari interaction verification remains open."
@@ -343,7 +353,7 @@
       "evidence": [
         "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure.",
         "Physical practice test opened Use in game preparation and confirmed corrected observation displayed as the lesson, then canceled. Target selection/save/readback was not exercised.",
-        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8–3 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
       ],
       "remaining": [
         "Complete physical Safari source-to-target selection/save/relaunch/readback acceptance."

@@ -44,6 +44,19 @@ function assertPassportGames(count) {
   assert.match(app.viewPassport(), new RegExp('class="num">' + count + '</div><div class="lab">GAMES'));
 }
 assertPassportGames(0);
+assert.equal(app.spielStatus(app.spielById("sp1")), "Considering");
+app.store.joins.sp1 = {v:"You're in",at:1}; app.saveStore();
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Going");
+assert.equal(app.withdrawSpiel("sp1"), true);
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Not going");
+full = true; assert.equal(app.setSpielStatus("sp1", "Going"), false);
+assert.equal(app.spielStatus(app.spielById("sp1")), "Not going");
+full = false; assert.equal(app.setSpielStatus("sp1", "Considering"), true);
+assert.equal(app.setSpielStatus("sp1", "Registered"), false);
+assert.equal(app.setSpielStatus("missing", "Going"), false);
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Considering");
+assert.match(app.viewSpiels(), /data-action="attendance-intent"/);
+
 const seed = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/season-seed.json"), "utf8"));
 for (const stop of seed.stops.filter(s => s.games.length)) {
   const record = stop.games.filter(g => g.res === "W").length + "–" + stop.games.filter(g => g.res === "L").length;

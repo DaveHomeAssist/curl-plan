@@ -296,7 +296,7 @@ private struct ReviewCard: View {
     }
 }
 
-// Shared-spiel promo — registration is unified with the Spiels tab via spielId.
+// Local attendance intent is shared with the Spiels tab via spielId.
 private struct SpielPromoCard: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
@@ -304,7 +304,7 @@ private struct SpielPromoCard: View {
     let post: Post
 
     var body: some View {
-        let joined = post.spielId.map { store.spielStatus($0) == "You're in" } ?? false
+        let joined = post.spielId.map { store.spielStatus($0) == "Going" } ?? false
         return VStack(alignment: .leading, spacing: 11) {
             Text("SHARED SPIEL")
                 .font(.mono(11, .semibold))
@@ -328,9 +328,9 @@ private struct SpielPromoCard: View {
                 if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 if let sid = post.spielId {
                     Button {
-                        if joined { store.withdrawSpiel(sid) } else { store.setSpielStatus(sid, "You're in") }
+                        if joined { store.withdrawSpiel(sid) } else { store.setSpielStatus(sid, "Going") }
                     } label: {
-                        Text(joined ? "Going ✓" : "I'm in")
+                        Text(joined ? "Going locally ✓" : "Mark going locally")
                             .font(.grotesk(13, .bold))
                             .foregroundStyle(joined ? settings.accent : settings.onAccent)
                             .padding(.vertical, 9).padding(.horizontal, 16)
