@@ -403,10 +403,20 @@
       "expected": "Find people, positions and relevant availability",
       "baseline_verdict": "Partial",
       "group": "people and communication",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Verify club entry manually; expose spare availability and scheduling if supported.",
       "acceptance": "Roster > inspect positions/spare labels > Add > enter contact > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Native and browser owned roster contacts now support editing, confirmed deletion, contact details, separate spare flag, and Unknown/Available/Unavailable notes with validated inclusive calendar date ranges. Availability is explicitly a private local note requiring direct confirmation, not a live RSVP. Search includes position, spare flag and availability/date summary. Optional fields preserve old backups; deletion tombstones prevent stale merge resurrection.",
+        "Physical Ignacio: testRosterContactAvailabilityLifecycle passed in 75 seconds. Created only SPARE20260927B (Second, A23 Test Club, BC, test@example.invalid, spare, Available October 1\u20133 2026). Saved/relaunched, edited Evenings after 6 to Evenings after 7, relaunched/read back, canceled deletion, then deleted and verified absence after relaunch. Existing audit contacts preserved. /tmp/curlplan-remediation/roster-physical.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A23-private-spare-contact.png \u2014 inspected; exact rendered club A23 TEST CLUB, position SECOND, dates, contact and corrected note visible.",
+        "25 SwiftPM tests passed including invalid/reversed dates, create/edit identity, persistence, legacy contact backup roundtrip, protected seed entries, stale edit rejection and deletion marker. Actual browser functions passed create/edit/search/backup/storage failure/deletion cancellation and merge checks. App, seed, parity and feature-review checks passed."
+      ],
+      "remaining": [
+        "Physical Safari contact lifecycle and native search by position/availability remain to be exercised.",
+        "Live team invitations, shared scheduling and other people\u2019s RSVP are not implemented; keep these claims gated under the account/social roadmap.",
+        "Profile empty history sections and the inherited You met at your roster wording still need screenflow cleanup."
+      ]
     },
     {
       "id": "A24",

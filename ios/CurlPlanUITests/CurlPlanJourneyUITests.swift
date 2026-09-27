@@ -9,6 +9,54 @@ final class CurlPlanJourneyUITests: XCTestCase {
         app.launch()
     }
 
+    func testRosterContactAvailabilityLifecycle() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let marker = "SPARE20260927B"
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(tab("Roster").waitForExistence(timeout: 8)); tab("Roster").tap()
+        if app.buttons["curlplan.detail.back"].exists { app.buttons["curlplan.detail.back"].tap() }
+        XCTAssertFalse(app.staticTexts[marker].exists, "Preserve any existing matching contact")
+        app.buttons["curlplan.roster.add"].tap()
+        func fill(_ label: String, _ value: String) {
+            let field = app.textFields[label]
+            scrollUntilHittable(field, name: label); field.tap(); field.typeText(value); hideAuditKeyboard()
+        }
+        fill("Name", marker)
+        app.buttons["Second"].tap()
+        fill("Club", "A23 Test Club"); fill("Province", "BC")
+        tapAfterScrolling(app.switches["Spare contact"], name: "Spare flag")
+        fill("Contact details", "test@example.invalid")
+        tapAfterScrolling(app.descendants(matching: .any)["curlplan.roster.availability"].firstMatch, name: "Availability")
+        app.buttons["Available"].tap()
+        fill("Available from (YYYY-MM-DD)", "2026-10-01")
+        fill("Through (YYYY-MM-DD)", "2026-10-03")
+        fill("Availability notes", "Evenings after 6")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts[marker].waitForExistence(timeout: 4)); app.staticTexts[marker].tap()
+        XCTAssertTrue(app.staticTexts["test@example.invalid"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Spare · Available: 2026-10-01 to 2026-10-03 (your note)"].exists)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.staticTexts["test@example.invalid"].waitForExistence(timeout: 8))
+        tapAfterScrolling(app.buttons["Edit contact"], name: "Edit contact")
+        let notes = app.textFields["Availability notes"]
+        scrollUntilHittable(notes, name: "Availability notes"); notes.tap()
+        notes.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        notes.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Evenings after 6".count))
+        notes.typeText("Evenings after 7"); hideAuditKeyboard(); app.buttons["Save"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.staticTexts["Evenings after 7"].waitForExistence(timeout: 8))
+        let proof = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        proof.name = "A23-private-spare-contact"; proof.lifetime = .keepAlways; add(proof)
+        tapAfterScrolling(app.buttons["Delete contact"], name: "Delete contact")
+        app.alerts.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["Evenings after 7"].exists)
+        app.buttons["Delete contact"].tap(); app.alerts.buttons["Delete contact"].tap()
+        app.terminate(); app.launch()
+        XCTAssertTrue(tab("Roster").waitForExistence(timeout: 8)); tab("Roster").tap()
+        XCTAssertFalse(app.staticTexts[marker].exists)
+    }
+
     func testLocalAttendanceIntentSurvivesRelaunch() throws {
         XCUIDevice.shared.orientation = .portrait
         let enter = app.buttons["curlplan.demo.enter"]

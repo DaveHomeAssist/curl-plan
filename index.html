@@ -1703,14 +1703,14 @@ function rosterRows(){
   var q = (ui.rosterQ || "").trim().toLowerCase();
   var list = allCurlers().filter(function(c){
     if(!q) return true;
-    return (c.name + " " + c.club + " " + c.role).toLowerCase().indexOf(q) > -1;
+    return (c.name + " " + c.club + " " + c.role + " " + rosterSummary(c)).toLowerCase().indexOf(q) > -1;
   });
   if(!list.length) return '<div class="empty"><span class="ring"></span><h3>No matches</h3><p>No curlers match your search.</p></div>';
   return list.map(function(c){
     return '<div class="card tile prow" data-action="curler" data-id="' + c.id + '">' +
       avatar(c.initials, 44, 'av') +
       '<div style="flex:1; min-width:0;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '"><div class="nm">' + esc(c.name) + '</div>' +
-        '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+        '<div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div><div>' + esc(rosterSummary(c)) + '</div></div>' +
       '<button class="pill-btn' + (isFollowing(c) ? ' ghost' : '') + '" data-action="follow" data-id="' + c.id + '">' +
         (isFollowing(c) ? 'Following' : 'Follow') + '</button>' +
     '</div>';
@@ -1764,7 +1764,7 @@ function viewStop(id){
     return '<div class="prow">' +
       '<span role="button" tabindex="0" data-action="curler" data-id="' + c.id + '" style="display:flex; cursor:pointer;">' + avatar(c.initials, 40, 'av') + '</span>' +
       '<div style="flex:1; min-width:0; cursor:pointer;" role="button" tabindex="0" data-action="curler" data-id="' + c.id + '">' +
-        '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div></div>' +
+        '<div class="nm">' + esc(c.name) + '</div><div class="ro">' + esc(c.role.toUpperCase()) + ' · ' + esc(c.club.toUpperCase()) + '</div><div>' + esc(rosterSummary(c)) + '</div></div>' +
       btn + '</div>';
   }).join("") : '<div class="ro" style="color:var(--muted);">No connections logged here yet.</div>';
 
@@ -1831,6 +1831,7 @@ function viewCurler(id){
         '<button class="b solid" data-action="follow" data-id="' + c.id + '">' + (isFollowing(c) ? 'Following' : '+ Follow') + '</button>' +
         '<button class="b outline" data-action="message" data-id="' + c.id + '">Message</button>' +
       '</div>' +
+      rosterNotes(c) +
       '<div class="card telemetry">' +
         '<div class="cell"><div class="num" style="font-size:24px;">' + esc(st.record) + '</div><div class="lab">RECORD</div></div><div class="vline"></div>' +
         '<div class="cell"><div class="num accent" style="font-size:24px;">' + esc(st.win) + '</div><div class="lab">WIN</div></div><div class="vline"></div>' +
@@ -2445,27 +2446,75 @@ function deleteEvent(id){
 }
 
 /* ---- create a curler (backported from the iOS port) ---- */
-function openNewCurler(){
-  var roles = ["Skip","Third","Second","Lead","Spare"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
-  openSheet('<h2>Add to roster</h2><p class="sub">Add a curler to your circle.</p>' +
+function validRosterDetails(d){
+  if(!d || typeof d.isSpare !== "boolean" || !["contact","availability","from","through","notes"].every(function(k){return typeof d[k] === "string";})) return false;
+  if(!["Unknown","Available","Unavailable"].includes(d.availability)) return false;
+  if(d.availability === "Unknown") return !d.from && !d.through;
+  function day(v){return /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v;}
+  return day(d.from) && day(d.through) && d.through >= d.from;
+}
+function rosterSummary(c){
+  var d = c.rosterDetails;
+  if(!d) return "Availability unknown";
+  return (d.isSpare ? "Spare · " : "") + (d.availability === "Unknown" ? "Availability unknown" : d.availability + ": " + d.from + " to " + d.through) + " (your note)";
+}
+function rosterNotes(c){
+  var owned = store.addedCurlers.some(function(x){return x.id === c.id;}), d = c.rosterDetails;
+  return '<div class="card" style="padding:14px;"><h2 style="font-size:18px;">' + esc(rosterSummary(c)) + '</h2>' +
+    (d ? '<p>' + esc(d.contact || 'No contact details recorded') + '</p><p style="white-space:pre-line;">' + esc(d.notes) + '</p>' : '') +
+    '<p>Your private notes on this device. Confirm availability directly; no invitation is sent.</p>' +
+    (owned ? '<button class="b outline" data-action="edit-curler" data-id="' + esc(c.id) + '">Edit contact</button><button class="b outline" data-action="delete-curler" data-id="' + esc(c.id) + '">Delete contact</button>' : '') + '</div>';
+}
+var rosterEditingID = null;
+function openNewCurler(id){
+  var existing = id ? store.addedCurlers.find(function(c){return c.id === id;}) : null;
+  if(id && !existing) return false;
+  var roles = ["Skip","Third","Second","Lead","Curler"].map(function(r){ return '<option>' + r + '</option>'; }).join("");
+  if(!openSheet('<h2>' + (existing ? 'Edit contact' : 'Add to roster') + '</h2><p>Private notes on this device. Confirm availability directly; no invitation is sent. Cancel discards unsaved changes.</p>' +
     '<div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="Sam Reid"></div>' +
     '<div class="field split"><div><label for="f-role">Position</label><select id="f-role">' + roles + '</select></div>' +
       '<div><label for="f-prov">Province</label><input id="f-prov" placeholder="BC"></div></div>' +
-    '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' +
-    clubDatalist() +
+    '<div class="field"><label for="f-club">Club</label><input id="f-club" placeholder="Vernon CC" list="club-list"></div>' + clubDatalist() +
+    '<div class="field"><label for="f-spare">Spare contact</label><select id="f-spare"><option>No</option><option>Yes</option></select></div>' +
+    '<div class="field"><label for="f-contact">Contact details</label><input id="f-contact" placeholder="Phone or email (private)"></div>' +
+    '<div class="field"><label for="f-availability">Availability note</label><select id="f-availability"><option>Unknown</option><option>Available</option><option>Unavailable</option></select></div>' +
+    '<p>Dates apply only to Available or Unavailable. Unknown has no date range.</p>' +
+    '<div class="field"><label for="f-from">Available from</label><input id="f-from" type="date"></div>' +
+    '<div class="field"><label for="f-through">Through</label><input id="f-through" type="date"></div>' +
+    '<div class="field"><label for="f-notes">Availability notes</label><textarea id="f-notes"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Cancel</button>' +
-      '<button class="b solid" data-action="submit-new-curler">Add curler</button></div>');
+      '<button class="b solid" data-action="submit-new-curler">Save contact</button></div>')) return false;
+  rosterEditingID = id || null;
+  var d = existing && existing.rosterDetails || {isSpare:existing && existing.role === "Spare",contact:"",availability:"Unknown",from:"",through:"",notes:""};
+  ["name","club","prov"].forEach(function(k){el("f-" + k).value = existing ? existing[k] : "";});
+  el("f-role").value = existing ? (existing.role === "Spare" ? "Curler" : existing.role) : "Skip";
+  el("f-spare").value = d.isSpare ? "Yes" : "No";
+  ["contact","availability","from","through","notes"].forEach(function(k){el("f-" + k).value = d[k];});
+  return true;
 }
 function submitNewCurler(){
-  var name = val("f-name");
-  if(!name){ toast("Add a name"); return; }
-  var c = { id:uid("c"), initials:initialsOf(name) || "?", name:name,
-    role:(el("f-role") ? el("f-role").value : "Curler"),
-    club:val("f-club") || "—", prov:(val("f-prov") || "—").toUpperCase(),
-    metAt:"your roster", following:true,
-    stats:{ record:"0–0", win:"—", clubs:0, mutual:0 }, clubs:[], form:[] };
-  store.addedCurlers.unshift(c); setFollowing(c.id, true); saveStore();
-  closeSheet(); gotoTab("roster"); toast("Added to roster");
+  if(!currentUser()) return false;
+  var name = val("f-name"), role = val("f-role");
+  var d = {isSpare:val("f-spare") === "Yes", contact:val("f-contact"), availability:val("f-availability"), from:val("f-from"), through:val("f-through"), notes:val("f-notes")};
+  if(d.availability === "Unknown"){d.from=""; d.through="";}
+  if(!name || !["Skip","Third","Second","Lead","Curler"].includes(role) || !validRosterDetails(d)){toast("Add a name, position and a valid availability date range."); return false;}
+  var existing = rosterEditingID ? store.addedCurlers.find(function(c){return c.id === rosterEditingID;}) : null;
+  if(rosterEditingID && !existing) return false;
+  var c = Object.assign({},existing || {id:uid("c"),metAt:"your roster",following:true,stats:{record:"0–0",win:"—",clubs:0,mutual:0},clubs:[],form:[]},
+    {initials:initialsOf(name) || "?",name:name,role:role,club:val("f-club"),prov:val("f-prov").toUpperCase(),rosterDetails:d,at:Math.max(Date.now(),(existing && existing.at || 0)+1)});
+  var next = JSON.parse(JSON.stringify(store)), index = next.addedCurlers.findIndex(function(x){return x.id === c.id;});
+  if(index >= 0) next.addedCurlers[index] = c; else next.addedCurlers.unshift(c);
+  if(!commitLocal(next)) return false;
+  closeSheet(); rosterEditingID = null; gotoTab("roster"); toast("Contact saved on this device"); return true;
+}
+function deleteRosterContact(id){
+  var c = store.addedCurlers.find(function(x){return x.id === id;});
+  if(!currentUser() || !c || !window.confirm("Delete this local contact? Existing conversation records stay in your backup.")) return false;
+  var next = JSON.parse(JSON.stringify(store));
+  next.addedCurlers = next.addedCurlers.filter(function(x){return x.id !== id;}); delete next.follows[id];
+  (next.tombstones.addedCurlers = next.tombstones.addedCurlers || {})[id] = Math.max(Date.now(),(c.at || 0)+1);
+  if(!commitLocal(next)) return false;
+  gotoTab("roster"); toast("Contact deleted from this device"); return true;
 }
 /* shared <datalist> of club names for the create pickers (from CLUB_SUGGESTIONS) */
 function clubDatalist(){
@@ -2523,7 +2572,7 @@ function validateBackup(raw){
       try { new Intl.DateTimeFormat(undefined,{timeZone:v.timeZoneID}); } catch(e) { require(false); }
     }
   });
-  s.addedCurlers.forEach(function(v){fields(v,["id","initials","name","role","club","prov","metAt"]); require(typeof v.following === "boolean" && obj(v.stats) && Array.isArray(v.clubs) && v.clubs.every(str) && Array.isArray(v.form)); fields(v.stats,["record","win"]); require(num(v.stats.clubs) && num(v.stats.mutual)); v.form.forEach(function(g){fields(g,["label","score","res"]);});});
+  s.addedCurlers.forEach(function(v){if(v.rosterDetails != null) require(validRosterDetails(v.rosterDetails)); if(v.at != null) require(num(v.at)); fields(v,["id","initials","name","role","club","prov","metAt"]); require(typeof v.following === "boolean" && obj(v.stats) && Array.isArray(v.clubs) && v.clubs.every(str) && Array.isArray(v.form)); fields(v.stats,["record","win"]); require(num(v.stats.clubs) && num(v.stats.mutual)); v.form.forEach(function(g){fields(g,["label","score","res"]);});});
   Object.values(s.drafts).forEach(function(v){require(obj(v)); Object.keys(v).forEach(function(k){require(k === "stars" ? num(v[k]) : str(v[k]));});});
   Object.values(s.tombstones).forEach(function(v){require(obj(v)); Object.values(v).forEach(function(t){require(num(t));});});
   return JSON.parse(JSON.stringify(raw));
@@ -2638,6 +2687,8 @@ el("screen").addEventListener("click", function(e){
     case "edit-event": openNewSpiel(id); break;
     case "delete-event": deleteEvent(id); break;
     case "new-curler":        openNewCurler(); break;
+    case "edit-curler": openNewCurler(id); break;
+    case "delete-curler": deleteRosterContact(id); break;
     case "submit-new-curler": submitNewCurler(); break;
 
     // demo session

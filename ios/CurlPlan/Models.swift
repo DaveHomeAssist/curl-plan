@@ -17,13 +17,36 @@ struct GameLine: Identifiable, Hashable, Codable {
     let res: String     // "W" / "L"
 }
 
+struct RosterDetails: Codable, Hashable {
+    var isSpare = false
+    var contact = ""
+    var availability = "Unknown"
+    var from = ""
+    var through = ""
+    var notes = ""
+    var isValid: Bool {
+        guard ["Unknown", "Available", "Unavailable"].contains(availability) else { return false }
+        if availability == "Unknown" { return from.isEmpty && through.isEmpty }
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian); f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd"; f.isLenient = false
+        guard let start = f.date(from: from), let end = f.date(from: through),
+              f.string(from: start) == from, f.string(from: end) == through else { return false }
+        return end >= start
+    }
+    var summary: String {
+        let period = availability == "Unknown" ? "Availability unknown" : "\(availability): \(from) to \(through)"
+        return (isSpare ? "Spare · " : "") + period + " (your note)"
+    }
+}
+
 struct Curler: Identifiable, Hashable, Codable {
     let id: String
-    let initials: String
-    let name: String
-    let role: String
-    let club: String
-    let prov: String
+    var initials: String
+    var name: String
+    var role: String
+    var club: String
+    var prov: String
     let metAt: String
     var following: Bool          // seed baseline; live state is Store.isFollowing()
     let record: String
@@ -32,6 +55,8 @@ struct Curler: Identifiable, Hashable, Codable {
     let mutual: Int
     let sharedClubs: [String]
     let form: [GameLine]
+    var rosterDetails: RosterDetails? = nil
+    var at: Double? = nil
 }
 
 struct Stop: Identifiable, Hashable {
@@ -567,6 +592,33 @@ final class Store: ObservableObject {
         return c
     }
 
+    @discardableResult
+    func saveRosterContact(id: String? = nil, name: String, role: String, club: String, prov: String, details: RosterDetails) -> Bool {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isSignedIn, !name.isEmpty, details.isValid,
+              ["Skip", "Third", "Second", "Lead", "Curler", "Spare"].contains(role) else { return false }
+        if let id, !state.addedCurlers.contains(where: { $0.id == id }) { return false }
+        var c = id.flatMap { curler($0) } ?? Curler(id: Store.uid("c"), initials: "", name: name, role: role,
+            club: club, prov: prov, metAt: "your roster", following: true,
+            record: "0–0", win: "—", clubs: 0, mutual: 0, sharedClubs: [], form: [])
+        c.initials = Store.initials(name); c.name = name; c.role = role
+        c.club = club.trimmingCharacters(in: .whitespacesAndNewlines)
+        c.prov = prov.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        c.rosterDetails = details; c.at = max(Store.now(), (c.at ?? 0) + 0.001)
+        if let index = state.addedCurlers.firstIndex(where: { $0.id == c.id }) { state.addedCurlers[index] = c }
+        else { state.addedCurlers.insert(c, at: 0) }
+        return true
+    }
+
+    @discardableResult
+    func deleteRosterContact(_ id: String) -> Bool {
+        guard isSignedIn, let contact = state.addedCurlers.first(where: { $0.id == id }) else { return false }
+        state.addedCurlers.removeAll { $0.id == id }
+        state.follows[id] = nil
+        state.tombstones["addedCurlers", default: [:]][id] = max(Store.now(), (contact.at ?? 0) + 0.001)
+        return true
+    }
+
     func addResult(body: String, scoreFor: Int, scoreAgainst: Int, vs: String) {
         let res = scoreFor == scoreAgainst ? "TIE" : (scoreFor > scoreAgainst ? "WIN" : "LOSS")
         let opp = vs.trimmingCharacters(in: .whitespaces)
@@ -875,6 +927,9 @@ struct LocalBackup: Codable {
             let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary
             let roundTrip = try JSONSerialization.jsonObject(with: JSONEncoder().encode(backup)) as? NSDictionary
             guard original == roundTrip else { throw BackupError.invalid }
+            for contact in backup.state.addedCurlers {
+                if let details = contact.rosterDetails, !details.isValid { throw BackupError.invalid }
+            }
             for post in backup.state.posts where post.kind == .practice {
                 guard post.practice?.isValid == true else { throw BackupError.invalid }
             }

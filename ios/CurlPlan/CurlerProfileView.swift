@@ -8,6 +8,8 @@ struct CurlerProfileView: View {
     @ScaledMetric(relativeTo: .caption2) private var identitySize: CGFloat = 92
     let curlerID: String
     @State private var showThread = false
+    @State private var editingContact = false
+    @State private var deletingContact = false
 
     var body: some View {
         Group {
@@ -32,6 +34,7 @@ struct CurlerProfileView: View {
                         VStack(spacing: 16) {
                             identity(c)
                             actions(c)
+                            rosterNotes(c)
                             stats(c)
                             sharedClubs(c)
                             recentForm(c)
@@ -48,7 +51,29 @@ struct CurlerProfileView: View {
         }
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $editingContact) {
+            if let c = store.curler(curlerID) { NewCurlerSheet(existing: c) }
+        }
+        .alert("Delete this local contact?", isPresented: $deletingContact) {
+            Button("Delete contact", role: .destructive) { if store.deleteRosterContact(curlerID) { dismiss() } }
+            Button("Cancel", role: .cancel) {}
+        } message: { Text("This removes your roster entry, not another person’s account. Existing conversation records stay in your backup.") }
         .sheet(isPresented: $showThread) { MessageThreadView(curlerID: curlerID) }
+    }
+
+    private func rosterNotes(_ c: Curler) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(c.rosterDetails?.summary ?? "Availability unknown").font(.headline)
+            if let d = c.rosterDetails {
+                Text(d.contact.isEmpty ? "No contact details recorded" : d.contact).textSelection(.enabled)
+                if !d.notes.isEmpty { Text(d.notes).textSelection(.enabled) }
+            }
+            Text("Your private notes on this device. Confirm availability directly; no invitation is sent.").font(.footnote)
+            if store.state.addedCurlers.contains(where: { $0.id == c.id }) {
+                Button("Edit contact") { editingContact = true }.frame(minHeight: 44)
+                Button("Delete contact", role: .destructive) { deletingContact = true }.frame(minHeight: 44)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(14).cpCard()
     }
 
     private func shareText(_ c: Curler) -> String {
