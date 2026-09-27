@@ -2390,7 +2390,7 @@ function openBackup(){
 function exportBackup(){
   try {
     var data = validateBackup(makeBackup());
-    var url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+    var url = URL.createObjectURL(new Blob([JSON.stringify(data)],{type:"application/json"}));
     var a = document.createElement("a"); a.href=url; a.download="CurlPlan Browser Backup.json"; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},60000);
     toast("Backup download requested. Check Downloads.");
