@@ -33,6 +33,7 @@ struct StopDetailView: View {
                     }
                     .padding(.bottom, 96)
                 }
+                .clipped()
                 .background(settings.screen)
                 .ignoresSafeArea(edges: .top)
             } else {
@@ -103,8 +104,10 @@ struct StopDetailView: View {
                     .font(.serif(34))
                     .foregroundColor(.white)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 22)
-            .padding(.bottom, 20)
+            .padding(.vertical, 12)
+            .background(Color(hex: 0x1F2D36))
         }
     }
 

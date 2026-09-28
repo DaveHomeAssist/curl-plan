@@ -93,6 +93,7 @@ struct RosterView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 96)
             }
+            .clipped()
         }
         .background(settings.screen)
         .navigationBarHidden(true)

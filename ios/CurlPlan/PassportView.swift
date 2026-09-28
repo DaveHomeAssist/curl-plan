@@ -23,6 +23,7 @@ struct PassportView: View {
                 .padding(.top, 6)
                 .padding(.bottom, 96)
             }
+            .clipped()
         }
         .background(settings.screen)
         .navigationBarHidden(true)

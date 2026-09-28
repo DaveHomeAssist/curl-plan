@@ -43,6 +43,7 @@ struct CurlerProfileView: View {
                         .padding(.top, 10)
                         .padding(.bottom, 96)
                     }
+                    .clipped()
                 }
                 .background(settings.screen)
             } else {
