@@ -944,6 +944,47 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebVisitDateAndDraftRecovery() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        func restart() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?visit=" + UUID().uuidString + "#stop/kelowna")!)
+            if safari.buttons["Explore the demo"].waitForExistence(timeout: 2) { safari.buttons["Explore the demo"].tap() }
+            XCTAssertTrue(safari.buttons["Log visit"].waitForExistence(timeout: 10))
+        }
+        restart(); safari.buttons["Log visit"].tap()
+        let date = safari.textFields.matching(NSPredicate(format: "label ==[c] %@", "Date")).firstMatch
+        let note = safari.textViews.matching(NSPredicate(format: "label ==[c] %@", "Note (optional)")).firstMatch
+        let existing = note.value as? String ?? ""
+        guard existing.isEmpty || existing.contains("Draw weight was up") else { throw XCTSkip("Preserve existing visit draft") }
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let expectedDate = formatter.string(from: Date())
+        XCTAssertEqual(date.value as? String, expectedDate)
+        let marker = "visitaudit" + String((0..<6).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+        note.tap(); tapSafariLetters(marker, into: note, in: safari)
+        let savedNote = try XCTUnwrap(note.value as? String)
+        if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() }
+        safari.webViews.firstMatch.buttons["Close"].tap()
+        restart(); safari.buttons["Log visit"].tap()
+        XCTAssertEqual(date.value as? String, expectedDate)
+        XCTAssertEqual(note.value as? String, savedNote)
+        safari.buttons["Save visit"].tap()
+        XCTAssertTrue(safari.staticTexts[savedNote].waitForExistence(timeout: 5))
+        restart()
+        XCTAssertTrue(safari.staticTexts[savedNote].waitForExistence(timeout: 5))
+        XCTAssertTrue(safari.staticTexts[expectedDate].exists)
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A1-web-visit-relaunch"; proof.lifetime = .keepAlways; add(proof)
+        safari.buttons["Log visit"].tap()
+        let empty = note.value as? String ?? ""
+        XCTAssertTrue(empty.isEmpty || empty.contains("Draw weight was up"))
+        safari.webViews.firstMatch.buttons["Close"].tap()
+    }
+
     func testWebEventPlanningRecoveryAndCorrection() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
         let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")

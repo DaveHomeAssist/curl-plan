@@ -2223,7 +2223,8 @@ function openVisit(stopId){
     '<div class="field"><label for="f-note">Note (optional)</label><textarea id="f-note" placeholder="Draw weight was up, great hosts…"></textarea></div>' +
     '<div class="sheet-actions"><button class="b outline" data-action="close-sheet">Close</button>' +
       '<button class="b solid" data-action="submit-visit" data-id="' + stopId + '">Save visit</button><button class="b outline" data-action="discard-draft">Discard draft</button></div>')) return;
-  if(el("f-date")) el("f-date").value = "Today";
+  var now = new Date();
+  if(el("f-date")) el("f-date").value = [now.getFullYear(), String(now.getMonth()+1).padStart(2,"0"), String(now.getDate()).padStart(2,"0")].join("-");
   activeEditor = {kind:"visit", key:editorKey("visit", null, stopId), stopId:stopId};
   if(store.drafts[activeEditor.key]) restoreEditorDraft(store.drafts[activeEditor.key]);
 }

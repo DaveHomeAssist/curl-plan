@@ -23,16 +23,15 @@
       "expected": "Save a date and visit note, relaunch and retrieve it",
       "baseline_verdict": "Pass",
       "group": "record integrity",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Reconcile record summary with game list.",
       "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
-        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games.",
+        "Physical Ignacio Safari 2026-09-28: testWebVisitDateAndDraftRecovery passed 65.456 seconds, zero failures/skips. New visits now default to local calendar date rather than ambiguous literal Today; existing records/drafts preserved. Exact date and unique note recovered after Close/restart, saved and read after another restart; new form note empty. Screenshot visually confirms 2026-09-28 and Visitauditsypmfj under Your visits. Audit visit retained in this local demo origin. See A1-web-results.csv and A1-web-visit-relaunch.png. First attempt failed before data entry on case-sensitive label selector; corrected test used case-insensitive matching."
       ],
-      "remaining": [
-        "Physical Safari interaction verification remains open."
-      ]
+      "remaining": []
     },
     {
       "id": "A2",
@@ -544,7 +543,8 @@
         "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open.",
         "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately.",
         "Physical Safari 3-star review draft text/rating recovered after process restart; exact interrupted marked draft resumed successfully. Blank-review Discard Cancel and confirm passed with44pt controls. web-review-ack.xcresult and web-review-targets.xcresult; contribution/event draft scope remains open.",
-        "Physical Safari event draft recovered exact name and all seven planning fields after Close and process restart in web-event-plan.xcresult. See A13-A14-web-results.csv."
+        "Physical Safari event draft recovered exact name and all seven planning fields after Close and process restart in web-event-plan.xcresult. See A13-A14-web-results.csv.",
+        "Physical Safari visit date/note draft Close/restart recovery and successful-save draft clearing passed in web-visit-label.xcresult (65.456 sec); remaining contribution forms still open."
       ],
       "remaining": [
         "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",
@@ -617,7 +617,8 @@
         "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance.",
         "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open.",
         "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open.",
-        "Physical Safari event Details target measured 21 points before patch and at least 44 points after patch; event Edit/Delete/Details accessibility labels include event name. Full accessibility acceptance remains open."
+        "Physical Safari event Details target measured 21 points before patch and at least 44 points after patch; event Edit/Delete/Details accessibility labels include event name. Full accessibility acceptance remains open.",
+        "Retrieved authoritative prior CI log for run 36310569786 at 45f8cbd: standard iPhone, small iPhone and small iPhone larger-text journeys all passed (201.661, 42.904, 42.641 sec). Standard/small accessibility failed on contrast. A32-ci-45f8cbd.csv records exact findings; latest 34082f7 screenflow run 36499682356 was still running at this checkpoint."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
