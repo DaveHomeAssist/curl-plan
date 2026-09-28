@@ -944,6 +944,83 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testWebEventPlanningRecoveryAndCorrection() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .landscapeRight }
+        func restart() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?events=" + UUID().uuidString + "#spiels")!)
+            if safari.buttons["Explore the demo"].waitForExistence(timeout: 2) { safari.buttons["Explore the demo"].tap() }
+            XCTAssertTrue(safari.buttons["Add event"].waitForExistence(timeout: 10))
+        }
+        func textField(_ label: String) -> XCUIElement { safari.textFields.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch }
+        func textArea(_ label: String) -> XCUIElement { safari.textViews.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch }
+        func hideKeyboard() { if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() } }
+        func planning() { safari.descendants(matching: .any)["Event details and trip planning"].firstMatch.tap() }
+        let labels = ["Format", "Entry requirements", "Organizer", "Draw schedule", "Travel", "Accommodation", "Team arrangements"]
+        let values = ["eight", "confirm", "host", "friday", "carpool", "rooms", "four"]
+        var entered: [String: String] = [:]
+        let eventName: String
+        if let resume = ProcessInfo.processInfo.environment["CURLPLAN_WEB_EVENT_RESUME_NAME"] {
+            eventName = resume
+            restart(); safari.buttons["Edit event: " + eventName].tap(); planning()
+            XCTAssertEqual(textField("Name").value as? String, eventName)
+            for (label, expected) in zip(labels, values) {
+                let actual = try XCTUnwrap(textArea(label).value as? String)
+                XCTAssertEqual(actual.lowercased(), expected)
+                entered[label] = actual
+            }
+            safari.webViews.firstMatch.buttons["Close"].tap()
+        } else {
+            restart(); safari.buttons["Add event"].tap()
+            let name = textField("Name")
+            XCTAssertTrue(name.waitForExistence(timeout: 3))
+            guard (name.value as? String ?? "").isEmpty else { throw XCTSkip("Preserve event draft") }
+            let marker = "event" + String((0..<4).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+            name.tap(); tapSafariLetters(marker, into: name, in: safari); hideKeyboard()
+            eventName = try XCTUnwrap(name.value as? String)
+            let location = textField("Location")
+            location.tap(); tapSafariLetters("club", into: location, in: safari); hideKeyboard()
+            planning()
+            for (label, value) in zip(labels, values) {
+                let field = textArea(label)
+                field.tap(); tapSafariLetters(value, into: field, in: safari); hideKeyboard()
+                entered[label] = try XCTUnwrap(field.value as? String)
+            }
+            safari.webViews.firstMatch.buttons["Close"].tap()
+            restart(); safari.buttons["Add event"].tap(); planning()
+            XCTAssertEqual(name.value as? String, eventName)
+            for label in labels { XCTAssertEqual(textArea(label).value as? String, entered[label]) }
+            safari.buttons["Save event"].tap()
+            let edit = safari.buttons["Edit event: " + eventName]
+            XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        }
+        let edit = safari.buttons["Edit event: " + eventName]
+        restart()
+        let detail = safari.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Event details: " + eventName)).firstMatch
+        XCTAssertGreaterThanOrEqual(detail.frame.height, 44)
+        detail.tap()
+        for value in entered.values { XCTAssertTrue(safari.staticTexts[value].exists) }
+        edit.tap(); planning()
+        let organizer = textArea("Organizer")
+        XCTAssertEqual(organizer.value as? String, entered["Organizer"])
+        organizer.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        tapSafariLetters(" updated", into: organizer, in: safari, prefix: entered["Organizer"]!)
+        hideKeyboard(); safari.buttons["Save event"].tap()
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        restart(); detail.tap()
+        XCTAssertTrue(safari.staticTexts[entered["Organizer"]! + " updated"].exists)
+        for label in labels where label != "Organizer" { XCTAssertTrue(safari.staticTexts[entered[label]!].exists) }
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A13-A14-web-event-planning"; proof.lifetime = .keepAlways; add(proof)
+        let remove = safari.buttons["Delete event: " + eventName]
+        remove.tap(); safari.buttons["Cancel"].tap(); XCTAssertTrue(edit.exists)
+        remove.tap(); safari.buttons["OK"].tap(); XCTAssertFalse(edit.exists)
+        restart(); XCTAssertFalse(edit.exists)
+    }
+
     func testWebReviewControlTargets() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
         let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
@@ -1121,7 +1198,7 @@ final class CurlPlanJourneyUITests: XCTestCase {
             let tab = safari.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "Spiels")).firstMatch
             XCTAssertTrue(tab.waitForExistence(timeout: 10)); tab.tap()
             XCTAssertTrue(safari.staticTexts["Attendance intent is saved on this device; it is not registration."].exists)
-            let details = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Event details and trip planning")).firstMatch
+            let details = safari.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Event details: Brier Patch Open")).firstMatch
             XCTAssertTrue(details.exists); details.tap()
             XCTAssertTrue(safari.staticTexts["Personal notes; confirm details with the organizer."].exists)
             let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())

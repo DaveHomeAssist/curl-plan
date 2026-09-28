@@ -213,10 +213,11 @@
         "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
         "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
         "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png",
-        "Physical Ignacio testEventDatePickerInteraction passed in 43.030 seconds: created a marked event for tomorrow through native calendar controls, verified start/end dates, relaunched/read saved date, edited start to the following day and checked corresponding end date, saved/relaunched/read revised schedule, deleted only own event and verified absence after relaunch. /tmp/curlplan-remediation/date-reschedule.xcresult. Native date pickers now have distinct start/end identifiers. Screenshot A12-date-rescheduled.png and A12-A15-date-overlap-results.csv retained."
+        "Physical Ignacio testEventDatePickerInteraction passed in 43.030 seconds: created a marked event for tomorrow through native calendar controls, verified start/end dates, relaunched/read saved date, edited start to the following day and checked corresponding end date, saved/relaunched/read revised schedule, deleted only own event and verified absence after relaunch. /tmp/curlplan-remediation/date-reschedule.xcresult. Native date pickers now have distinct start/end identifiers. Screenshot A12-date-rescheduled.png and A12-A15-date-overlap-results.csv retained.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
       ],
       "remaining": [
-        "Physical Safari event rescheduling/edit/delete remain; native time-of-day and timezone changes require separate interaction checks."
+        "Physical Safari date rescheduling and time editing remain; native time-of-day and timezone changes require separate interaction checks."
       ]
     },
     {
@@ -225,18 +226,18 @@
       "expected": "Find venue, dates, format, entry requirements and organizer",
       "baseline_verdict": "Partial",
       "group": "planning and progression",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Add the information needed to decide whether to attend.",
       "acceptance": "Spiels > Details > inspect decision-making information > Done; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
         "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
         "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included."
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
       ],
-      "remaining": [
-        "Physical Safari planning entry, correction, persistence and visual acceptance remain; personal notes do not prove organizer-verified details or external bookings."
-      ]
+      "remaining": [],
+      "scope_note": "Verified local user-entered planning in native and Safari; no claim of organizer verification, external bookings or live registration."
     },
     {
       "id": "A14",
@@ -244,18 +245,18 @@
       "expected": "Store draws, travel, hotel and team arrangements",
       "baseline_verdict": "Unavailable",
       "group": "planning and progression",
-      "status": "partially_verified",
+      "status": "verified",
       "required_action": "Add travel, accommodation, draw and team details when trip planning is in scope.",
       "acceptance": "Spiels > Add and Details > inspect travel/team/draw fields; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
         "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
         "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
         "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
-        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included."
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
       ],
-      "remaining": [
-        "Physical Safari planning entry, correction, persistence and visual acceptance remain; personal notes do not prove organizer-verified details or external bookings."
-      ]
+      "remaining": [],
+      "scope_note": "Verified local user-entered planning in native and Safari; no claim of organizer verification, external bookings or live registration."
     },
     {
       "id": "A15",
@@ -542,11 +543,12 @@
         "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png.",
         "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open.",
         "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately.",
-        "Physical Safari 3-star review draft text/rating recovered after process restart; exact interrupted marked draft resumed successfully. Blank-review Discard Cancel and confirm passed with44pt controls. web-review-ack.xcresult and web-review-targets.xcresult; contribution/event draft scope remains open."
+        "Physical Safari 3-star review draft text/rating recovered after process restart; exact interrupted marked draft resumed successfully. Blank-review Discard Cancel and confirm passed with44pt controls. web-review-ack.xcresult and web-review-targets.xcresult; contribution/event draft scope remains open.",
+        "Physical Safari event draft recovered exact name and all seven planning fields after Close and process restart in web-event-plan.xcresult. See A13-A14-web-results.csv."
       ],
       "remaining": [
         "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",
-        "Complete physical Safari contribution/event recovery acceptance; native contribution tests covered note drafts, not changing every date/sheet/speed field.",
+        "Complete remaining physical Safari contribution recovery acceptance; event name/seven planning fields passed, but changing every date/sheet/speed field remains open.",
         "Immediate sheet reopening after confirmed discard failed in automation before the fresh-launch check; verify presentation timing separately."
       ]
     },
@@ -614,7 +616,8 @@
         "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources.",
         "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance.",
         "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open.",
-        "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open."
+        "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open.",
+        "Physical Safari event Details target measured 21 points before patch and at least 44 points after patch; event Edit/Delete/Details accessibility labels include event name. Full accessibility acceptance remains open."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",

@@ -409,6 +409,7 @@ body{
 .stars-pick{ display:flex; gap:4px; }
 .stars-pick button{ background:none; border:0; cursor:pointer; font-size:26px; line-height:1; color:var(--line); padding:0; }
 .stars-pick button.on{ color:var(--accent); }
+summary{ min-height:44px; padding:10px 0; cursor:pointer; }
 .sheet-actions{ display:flex; gap:10px; margin-top:6px; }
 .sheet-actions .b{ flex:1; }
 .b{ min-height:44px; text-align:center; font:700 14px 'Hanken Grotesk'; border-radius:13px; padding:13px; cursor:pointer; border:0; }
@@ -1669,7 +1670,7 @@ function viewSpiels(){
     var btn = '<div role="group" aria-label="Local attendance intent" style="display:flex; flex-wrap:wrap; gap:8px;">' + ["Going","Considering","Not going"].map(function(option){
       return '<button class="pill-btn' + (status === option ? '' : ' ghost') + '" aria-pressed="' + (status === option) + '" aria-label="' + esc(option + ': ' + sp.name) + '" data-action="attendance-intent" data-id="' + esc(sp.id) + '" data-status="' + option + '">' + option + '</button>';
     }).join('') + '</div>';
-    if(owned) btn = '<button class="pill-btn ghost" data-action="edit-event" data-id="' + esc(sp.id) + '">Edit event</button><button class="pill-btn ghost" data-action="delete-event" data-id="' + esc(sp.id) + '">Delete event</button>';
+    if(owned) btn = '<button class="pill-btn ghost" aria-label="' + esc("Edit event: " + sp.name) + '" data-action="edit-event" data-id="' + esc(sp.id) + '">Edit event</button><button class="pill-btn ghost" aria-label="' + esc("Delete event: " + sp.name) + '" data-action="delete-event" data-id="' + esc(sp.id) + '">Delete event</button>';
     var conflicts = Number.isFinite(sp.startAt) && status !== "Not going" ? eventConflicts(sp.startAt,sp.endAt,sp.id) : [];
     var section = Number.isFinite(sp.startAt) ? (upcomingIDs.includes(sp.id) ? 'Upcoming / in progress' : 'Past / not going') : 'Undated / sample';
     return '<div class="card" style="padding:14px;">' + '<div class="eyebrow">' + section + '</div>' +
@@ -1685,7 +1686,7 @@ function viewSpiels(){
         '<span class="meta mono" style="color:var(--muted); font-size:11px;">' + sp.going.length + ' of your circle going</span>' +
         '</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">' + btn + '</div>' +
       (sp.preparation ? '<p>Preparation: ' + esc(sp.preparation) + '</p>' : '') +
-      '<details><summary>Event details and trip planning</summary><p>Personal notes; confirm details with the organizer.</p><dl>' + eventPlanningFields.map(function(f){return '<dt>' + f[1] + '</dt><dd>' + esc(sp.planning && sp.planning[f[0]] || 'Not recorded') + '</dd>';}).join('') + '</dl></details>' +
+      '<details><summary aria-label="' + esc('Event details: ' + sp.name) + '">Event details and trip planning</summary><p>Personal notes; confirm details with the organizer.</p><dl>' + eventPlanningFields.map(function(f){return '<dt>' + f[1] + '</dt><dd>' + esc(sp.planning && sp.planning[f[0]] || 'Not recorded') + '</dd>';}).join('') + '</dl></details>' +
       (conflicts.length ? '<p>Overlaps with: ' + esc(conflicts.map(function(c){return c.name;}).join(', ')) + '</p>' : '') +
     '</div>';
   }).join("");

@@ -1,0 +1,5 @@
+activity,surface,check,result,evidence,scope
+A12/A13/A14/A30,Ignacio Safari,Create seven planning fields; Close/restart draft recovery; acknowledged save,Pass (portion),web-event-plan.xcresult,Initial run stopped afterward on exact-label selector mismatch
+A13/A14,Ignacio Safari,Exact Details accessibility selector,Fail (test selector),web-event-plan.xcresult; web-event-inspect.xcresult,Safari combines accessible label and visible text; corrected to BEGINSWITH
+A32,Ignacio Safari,Details target height,Fixed and verified,web-event-inspect.xcresult; web-event-plan-resume.xcresult,21 points before; at least 44 points after
+A12/A13/A14,Ignacio Safari,Read all fields; correct organizer; restart; cancel delete; confirm delete and restart,Pass,web-event-plan-resume.xcresult; A13-A14-web-event-planning.png,70.686 seconds; zero skips; resumed exact owned event; local planning only
