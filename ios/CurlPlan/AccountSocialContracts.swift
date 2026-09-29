@@ -260,6 +260,30 @@ struct ContentReport: Identifiable, Hashable, Codable {
     var createdAt: String
 }
 
+/// A private account-data snapshot, distinct from the local-device backup format.
+struct AccountExportDocument: Equatable, Codable {
+    var formatVersion: Int
+    var exportedAt: String
+    var account: CurlPlanAccount
+    var profile: AccountProfile
+    var season: AccountSeasonDocument?
+    var ownedSharedObjects: [SharedCurlingObject]
+    var relationships: [RelationshipEdge]
+    var memberships: [SharedMembership]
+    var interactions: [SocialInteraction]
+    var reports: [ContentReport]
+
+    func jsonData() throws -> Data {
+        guard formatVersion == 1 else {
+            throw AccountAPIError(status: 422, code: "EXPORT_FORMAT_UNSUPPORTED",
+                                  message: "This account export format is not supported.", requestID: "client")
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(self)
+    }
+}
+
 struct AccountSocialSnapshot: Equatable, Codable {
     var accounts: [String: CurlPlanAccount]
     var credentials: [String: PasswordCredential]

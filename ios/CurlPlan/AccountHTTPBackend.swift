@@ -110,6 +110,11 @@ final class AccountHTTPBackendTransport {
                    response: AccountEmptyResponse.self)
     }
 
+    func downloadAccountExport(sessionID: String) async -> AccountAPIResponse<AccountExportDocument> {
+        await send(AccountAPIRoutes.downloadAccountExport,
+                   sessionID: sessionID, response: AccountExportDocument.self)
+    }
+
     func exportAccountData(sessionID: String) async -> AccountAPIResponse<[String]> {
         await send(AccountAPIRoutes.exportAccount,
                    sessionID: sessionID,
@@ -402,6 +407,10 @@ final class AccountHTTPBackendClient {
     func signOut() async throws {
         _ = try unwrap(await transport.signOut(sessionID: try requireSessionID()))
         session = nil
+    }
+
+    func downloadAccountExport() async throws -> AccountExportDocument {
+        try unwrap(await transport.downloadAccountExport(sessionID: try requireSessionID()))
     }
 
     func exportAccountData() async throws -> [String] {

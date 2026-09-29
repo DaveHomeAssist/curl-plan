@@ -67,6 +67,7 @@ struct AccountRuntimeState: Equatable {
 struct AccountRuntimeResult: Equatable {
     var message: String
     var restoredSeason: AccountSeasonPayload?
+    var exportData: Data? = nil
 }
 
 @MainActor
@@ -191,6 +192,30 @@ final class AccountRuntime: ObservableObject {
             return AccountRuntimeResult(message: message, restoredSeason: nil)
         } catch {
             return fail(error, fallback: "Backend export failed.")
+        }
+    }
+
+    func downloadAccountData() async -> AccountRuntimeResult {
+        guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        state = .working("Downloading your account data.", accountID: savedAccountID)
+        do {
+            let client = try requireSignedInClient()
+            let document = try await client.downloadAccountExport()
+            guard document.account.id == client.session?.accountID,
+                  document.profile.accountID == document.account.id,
+                  document.season == nil || document.season?.accountID == document.account.id else {
+                throw AccountAPIError(status: 422, code: "EXPORT_ACCOUNT_MISMATCH",
+                                      message: "The export does not belong to this account.", requestID: "client")
+            }
+            let data = try document.jsonData()
+            let message = "Account data downloaded. Choose where to save the JSON file."
+            state = .signedIn(accountID: document.account.id,
+                              sections: ["account", "profile"] + (document.season == nil ? [] : ["season"]),
+                              seasonVersion: document.season?.version, detail: message)
+            return AccountRuntimeResult(message: message, restoredSeason: nil, exportData: data)
+        } catch {
+            return fail(error, fallback: "Account data download failed.")
         }
     }
 
