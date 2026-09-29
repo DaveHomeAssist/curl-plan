@@ -1933,6 +1933,9 @@ function openManagedSheet(sheetId, scrimId, trigger){
   sheet.hidden = false;
   scrim.hidden = false;
   sheet.removeAttribute("inert");
+  sheet.scrollTop = 0;
+  var heading = sheet.querySelector("h2");
+  if(heading) sheet.setAttribute("aria-label", heading.textContent.trim());
   sheet.setAttribute("aria-hidden", "false");
   scrim.setAttribute("aria-hidden", "false");
   if(activeSheet.trigger && activeSheet.trigger.getAttribute("aria-controls") === sheetId){
@@ -1943,9 +1946,10 @@ function openManagedSheet(sheetId, scrimId, trigger){
   void sheet.offsetWidth;
   sheet.classList.add("open");
   scrim.classList.add("open");
-  var controls = visibleSheetControls(sheet);
-  // Settings is already visible; focusing it must not scroll the page under the panel.
-  try{ (controls[0] || sheet).focus({preventScroll:sheetId === "sheet"}); }catch(e){}
+  // Announce the dialog before editing. Focusing an input/select while its
+  // sheet animates can summon Safari's keyboard/picker and displace the panel.
+  // Tab reaches the first control; touch users activate the field themselves.
+  try{ sheet.focus({preventScroll:true}); }catch(e){}
 }
 function closeManagedSheet(restoreFocus){
   if(!activeSheet) return;
@@ -1968,6 +1972,21 @@ function closeManagedSheet(restoreFocus){
   if(restoreFocus !== false && closing.trigger && closing.trigger.isConnected){
     try{ closing.trigger.focus({preventScroll:true}); }catch(e){}
   }
+}
+
+function handleSheetKeydown(e){
+  if(!activeSheet) return;
+  if(e.key === "Escape"){
+    e.preventDefault();
+    if(activeSheet.sheet === el("sheet")) closeSettings(); else closeSheet();
+    return;
+  }
+  if(e.key !== "Tab") return;
+  var controls = visibleSheetControls(activeSheet.sheet);
+  if(!controls.length){ e.preventDefault(); activeSheet.sheet.focus(); return; }
+  var first = controls[0], last = controls[controls.length - 1];
+  if(e.shiftKey && (document.activeElement === first || document.activeElement === activeSheet.sheet)){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && (document.activeElement === last || document.activeElement === activeSheet.sheet)){ e.preventDefault(); first.focus(); }
 }
 
 function buildSettings(){
@@ -2765,20 +2784,7 @@ el("screen").addEventListener("click", function(e){
   }
 });
 
-document.addEventListener("keydown", function(e){
-  if(!activeSheet) return;
-  if(e.key === "Escape"){
-    e.preventDefault();
-    if(activeSheet.sheet === el("sheet")) closeSettings(); else closeSheet();
-    return;
-  }
-  if(e.key !== "Tab") return;
-  var controls = visibleSheetControls(activeSheet.sheet);
-  if(!controls.length){ e.preventDefault(); activeSheet.sheet.focus(); return; }
-  var first = controls[0], last = controls[controls.length - 1];
-  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
-  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
-});
+document.addEventListener("keydown", handleSheetKeydown);
 
 el("sheet-body").addEventListener("input", persistEditorDraft);
 el("sheet-body").addEventListener("change", persistEditorDraft);

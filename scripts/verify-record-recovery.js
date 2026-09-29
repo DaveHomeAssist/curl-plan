@@ -319,4 +319,50 @@ assert.equal(app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation,lesso
 confirmed=true; app.deleteOwnedRecord("post",lessonPost);
 assert.equal(app.useLesson(lessonPost,lessonEvent),false);
 assert.equal(app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation,lessonPreparation);
-console.log("verify-record-recovery: draft reload, correction, rating, ownership, safe deletion, merge, validation, storage failure and account isolation passed");
+
+// Exercise the real dialog lifecycle separately from the record fixtures. This
+// proves focus intent and recovery, not Safari viewport or native-picker behavior.
+{
+  const focus = [], timers = [], nodes = new Map();
+  function node(id, title) {
+    const attributes = new Map(), classes = new Set();
+    const field = {hidden:false, type:"text", getAttribute:() => null, getClientRects:() => [1],
+      focus:options => focus.push({id:id + "-first", options})};
+    const lastField = {...field, focus:options => focus.push({id:id + "-last", options})};
+    return {id, hidden:true, isConnected:true, offsetWidth:320, scrollTop:200,
+      classList:{add:value => classes.add(value), remove:value => classes.delete(value), contains:value => classes.has(value)},
+      getAttribute:key => attributes.get(key) || null,
+      setAttribute:(key,value) => attributes.set(key,value), removeAttribute:key => attributes.delete(key),
+      querySelector:selector => selector === "h2" ? {textContent:title} : null,
+      querySelectorAll:() => [field,lastField], focus:options => focus.push({id, options})};
+  }
+  for(const [id,title] of [["sheet","Settings"],["sheet2","Game preparation"],["scrim",""],["scrim2",""],["trigger",""]]) nodes.set(id,node(id,title));
+  const context = vm.createContext({document:{getElementById:id => nodes.get(id), activeElement:nodes.get("trigger")},
+    window:{setTimeout:callback => timers.push(callback)}, console, setTimeout, clearTimeout});
+  vm.runInContext(functions,context);
+  for(const [id,scrim,title] of [["sheet","scrim","Settings"],["sheet2","scrim2","Game preparation"]]) {
+    context.openManagedSheet(id,scrim,nodes.get("trigger"));
+    assert.equal(focus.at(-1).id,id,"Opening a dialog must not automatically activate its first field");
+    assert.equal(focus.at(-1).options.preventScroll,true,"Opening focus must preserve page position");
+    assert.equal(nodes.get(id).scrollTop,0,"New dialog content must start at the top");
+    assert.equal(nodes.get(id).getAttribute("aria-label"),title,"The announced dialog name must match its heading");
+    for(const shiftKey of [false,true]) {
+      context.document.activeElement = nodes.get(id);
+      let prevented = false;
+      context.handleSheetKeydown({key:"Tab",shiftKey,preventDefault:() => { prevented = true; }});
+      assert.equal(prevented,true,"Tab and Shift-Tab from the dialog must enter its controls, not the background");
+      assert.equal(focus.at(-1).id,id + (shiftKey ? "-last" : "-first"));
+    }
+    context.closeManagedSheet(true);
+    assert.equal(focus.at(-1).id,"trigger");
+    assert.equal(focus.at(-1).options.preventScroll,true);
+    while(timers.length) timers.shift()();
+    assert.equal(nodes.get(id).hidden,true);
+  }
+  context.openManagedSheet("sheet2","scrim2",nodes.get("trigger"));
+  context.closeManagedSheet(false);
+  context.openManagedSheet("sheet2","scrim2",nodes.get("trigger"));
+  while(timers.length) timers.shift()();
+  assert.equal(nodes.get("sheet2").hidden,false,"A prior close timer must not hide a reopened dialog");
+}
+console.log("verify-record-recovery: draft reload, correction, rating, ownership, safe deletion, merge, validation, storage failure, account isolation and dialog focus passed");
