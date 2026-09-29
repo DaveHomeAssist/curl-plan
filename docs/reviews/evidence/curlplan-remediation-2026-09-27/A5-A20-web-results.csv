@@ -1,0 +1,7 @@
+activity,surface,check,result,evidence,scope
+A5/A20,Ignacio Safari,Create event with saved preparation; append unsaved preparation draft,Pass,web-lesson.log,Lessonullhz; Warm up saved; Warm up draft recovered on subsequent restarts
+A5/A20,Ignacio Safari,Create lesson note with visible keyboard,Pass after targeting correction,web-lesson-resume.log,Lessonullhz balanced finish saved and visible after restart; first attempt center tap left newline then L; that exact test draft discarded
+A32,Ignacio Safari,Upcoming game selector target,Fail before repair,web-lesson-resume.log; web-lesson-target.log,25pt before repair; min-height alone did not change native Safari select
+A32,Ignacio Safari,Upcoming game selector target,Pass after repair,web-lesson-select.log; web-lesson-picker.log,44pt after appearance:none with visible chevron and min-height; native HTML select retained
+A5/A20,Ignacio Safari,Select target game and transfer lesson,Fail / incomplete,web-lesson-picker.xcresult; A5-web-selector-displaced.png,Picker not opened by control tap; displaced sheet/blank lower viewport inspected. Source note/event/draft retained for exact resume. No transfer/save acceptance claimed.
+A5/A20,Ignacio Safari,Further physical verification,Pending power,A5-web-selector-displaced.png,Battery 1%; stopped device runs and requested charging; no Mac UI substituted

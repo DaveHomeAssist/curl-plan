@@ -399,10 +399,16 @@ body{
 .field{ margin-bottom:13px; }
 .field label{ display:block; font:500 10px 'DM Mono'; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .field input, .field textarea, .field select{
-  width:100%; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel);
+  width:100%; min-height:44px; font:500 14px 'Hanken Grotesk'; color:var(--ink); background:var(--panel);
   border:1px solid var(--line); border-radius:11px; padding:11px 12px; outline:none;
 }
 .field input:focus, .field textarea:focus, .field select:focus{ border-color:var(--accent); }
+.field select{
+  -webkit-appearance:none; appearance:none; padding-right:36px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;
+  background-size:5px 5px; background-repeat:no-repeat;
+}
 .field textarea{ resize:vertical; min-height:74px; line-height:1.4; }
 .field.split{ display:flex; gap:10px; }
 .field.split > div{ flex:1; }

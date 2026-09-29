@@ -993,6 +993,102 @@ final class CurlPlanJourneyUITests: XCTestCase {
         restart(); XCTAssertTrue(safari.descendants(matching: .any)["Settings"].firstMatch.waitForExistence(timeout: 5)); XCTAssertFalse(enter.exists)
     }
 
+    func testWebLessonTransferPreservesPreparationAndDraft() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        func open(_ tab: String) {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?lesson=" + UUID().uuidString + "#" + tab)!)
+            if safari.buttons["Explore the demo"].waitForExistence(timeout: 2) { safari.buttons["Explore the demo"].tap() }
+        }
+        func hideKeyboard() { if safari.buttons["Hide keyboard"].exists { safari.buttons["Hide keyboard"].tap() } }
+        func input(_ label: String) -> XCUIElement { safari.textFields.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch }
+        func area(_ label: String) -> XCUIElement { safari.textViews.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch }
+        let eventName: String
+        let marker: String
+        let draftPreparation: String
+        let preparation = area("Preparation")
+        if let resume = ProcessInfo.processInfo.environment["CURLPLAN_WEB_LESSON_RESUME_NAME"] {
+            eventName = resume; marker = resume.lowercased()
+            open("spiels")
+            let edit = safari.buttons["Edit event: " + eventName]
+            XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
+            draftPreparation = try XCTUnwrap(preparation.value as? String)
+            XCTAssertEqual(draftPreparation.lowercased(), "warm up draft")
+            safari.webViews.firstMatch.buttons["Close"].tap()
+        } else {
+            open("spiels")
+            XCTAssertTrue(safari.buttons["Add event"].waitForExistence(timeout: 8)); safari.buttons["Add event"].tap()
+            let name = input("Name")
+            XCTAssertTrue(name.waitForExistence(timeout: 4))
+            guard (name.value as? String ?? "").isEmpty else { throw XCTSkip("Preserve existing event draft") }
+            marker = "lesson" + String((0..<5).map { _ in "abcdefghijklmnopqrstuvwxyz".randomElement()! })
+            name.tap(); tapSafariLetters(marker, into: name, in: safari); hideKeyboard()
+            eventName = try XCTUnwrap(name.value as? String)
+            input("Location").tap(); tapSafariLetters("club", into: input("Location"), in: safari); hideKeyboard()
+            preparation.tap(); tapSafariLetters("warm up", into: preparation, in: safari); hideKeyboard()
+            let savedPreparation = try XCTUnwrap(preparation.value as? String)
+            safari.buttons["Save event"].tap()
+            if safari.alerts.firstMatch.waitForExistence(timeout: 1) { safari.buttons["OK"].tap() }
+            let edit = safari.buttons["Edit event: " + eventName]
+            XCTAssertTrue(edit.waitForExistence(timeout: 5))
+            edit.tap()
+            XCTAssertEqual(preparation.value as? String, savedPreparation)
+            preparation.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+            tapSafariLetters(" draft", into: preparation, in: safari, prefix: savedPreparation); hideKeyboard()
+            draftPreparation = try XCTUnwrap(preparation.value as? String)
+            safari.webViews.firstMatch.buttons["Close"].tap()
+        }
+        let edit = safari.buttons["Edit event: " + eventName]
+        open("locker")
+        let lesson: String
+        let existingLesson = safari.staticTexts[eventName + " balanced finish"]
+        if ProcessInfo.processInfo.environment["CURLPLAN_WEB_LESSON_RESUME_NAME"] != nil && existingLesson.exists {
+            lesson = eventName + " balanced finish"
+        } else {
+            XCTAssertTrue(safari.buttons["New post"].waitForExistence(timeout: 5)); safari.buttons["New post"].tap()
+            let body = safari.textViews.firstMatch
+            XCTAssertTrue(body.waitForExistence(timeout: 4))
+            guard (body.value as? String ?? "").isEmpty || (body.value as? String ?? "").contains("Share a thought") else { throw XCTSkip("Preserve existing note draft") }
+            body.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.15)).tap()
+            XCTAssertTrue(safari.keys.matching(NSPredicate(format: "label ==[c] %@", "l")).firstMatch.waitForExistence(timeout: 3))
+            let focusProof = XCTAttachment(screenshot: safari.screenshot())
+            focusProof.name = "A5-web-note-focus"; focusProof.lifetime = .keepAlways; add(focusProof)
+            tapSafariLetters(marker + " balanced finish", into: body, in: safari); hideKeyboard()
+            lesson = try XCTUnwrap(body.value as? String)
+            safari.buttons["Post"].firstMatch.tap()
+        }
+        XCTAssertTrue(safari.staticTexts[lesson].waitForExistence(timeout: 5))
+        safari.buttons["Use in game preparation"].firstMatch.tap()
+        XCTAssertTrue(safari.staticTexts["Game preparation"].waitForExistence(timeout: 5))
+        let choice = safari.otherElements.matching(NSPredicate(format: "label ==[c] %@ AND value == %@", "Upcoming game", "Choose a game")).firstMatch
+        XCTAssertTrue(choice.exists); XCTAssertGreaterThanOrEqual(choice.frame.height, 44); choice.tap()
+        let pickerProof = XCTAttachment(screenshot: safari.screenshot())
+        pickerProof.name = "A5-web-game-picker"; pickerProof.lifetime = .keepAlways; add(pickerProof)
+        let option = safari.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH[c] %@", eventName + " ·")).firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 3)); option.tap()
+        safari.buttons["Add lesson to preparation"].tap()
+        XCTAssertTrue(safari.staticTexts["Lesson added to game preparation"].waitForExistence(timeout: 5))
+        open("spiels"); XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
+        let expected = draftPreparation + "\n\nLesson for this game: " + lesson
+        XCTAssertEqual(preparation.value as? String, expected, "Transfer must preserve the event's unsaved preparation draft")
+        safari.buttons["Save event"].tap()
+        if safari.alerts.firstMatch.waitForExistence(timeout: 1) { safari.buttons["OK"].tap() }
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        open("spiels"); edit.tap()
+        XCTAssertEqual(preparation.value as? String, expected, "Saved lesson and original draft must survive restart")
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A5-A20-web-lesson-preparation"; proof.lifetime = .keepAlways; add(proof)
+        safari.webViews.firstMatch.buttons["Close"].tap()
+        safari.buttons["Delete event: " + eventName].tap(); safari.buttons["OK"].tap()
+        XCTAssertFalse(edit.exists)
+        open("locker")
+        XCTAssertTrue(safari.staticTexts[lesson].waitForExistence(timeout: 5))
+        safari.buttons["Post actions"].firstMatch.tap(); safari.buttons["Delete post"].tap(); safari.buttons["OK"].tap()
+        XCTAssertFalse(safari.staticTexts[lesson].exists)
+    }
+
     func testWebVisitDateAndDraftRecovery() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
         let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
