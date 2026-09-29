@@ -124,6 +124,23 @@ final class AccountRuntimeTests: XCTestCase {
 
     }
 
+    func testSignInRejectsSeasonOwnedByAnotherAccount() async throws {
+        let loader = RecordingRuntimeHTTPDataLoader()
+        let runtime = AccountRuntime(baseURL: URL(string: "https://api.curlplan.test")!,
+                                     defaults: isolatedDefaults(), loader: loader)
+        let session = AccountSession(id: "test-session", accountID: "account-a", deviceID: "test-device",
+                                     createdAt: "now", expiresAt: "later", state: .active)
+        let document = AccountSeasonDocument(id: "foreign-season", accountID: "account-b", schemaVersion: 3,
+                                             version: 1, body: AccountSeasonPayload(), updatedAt: "now")
+        loader.enqueue(status: 200, body: session)
+        loader.enqueue(status: 200, body: document)
+        let result = await runtime.signIn(handle: "testcurler", password: "test-password-87")
+        XCTAssertNil(result.restoredSeason)
+        XCTAssertEqual(runtime.state.kind, .failed)
+        XCTAssertTrue(result.message.contains("SEASON_ACCOUNT_MISMATCH"))
+        XCTAssertEqual(loader.requests.count, 2)
+    }
+
     func testAccountActionsDoNotRacePendingSignInOrSignOut() async throws {
         let loader = RecordingRuntimeHTTPDataLoader()
         let runtime = AccountRuntime(baseURL: URL(string: "http://127.0.0.1:8787")!,

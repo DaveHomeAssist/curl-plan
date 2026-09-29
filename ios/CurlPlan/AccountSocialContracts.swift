@@ -26,6 +26,21 @@ struct AccountSeasonPayload: Hashable, Codable {
         self.profile = profile
         self.state = state
     }
+
+    /// Remote restores must never use AppState's forgiving local migration
+    /// decoder without checking that every supplied field survived decoding.
+    static func validated(_ data: Data) throws -> AccountSeasonPayload {
+        guard data.count <= 5_000_000 else { throw BackupError.invalid }
+        let payload = try JSONDecoder().decode(Self.self, from: data)
+        guard payload.schemaVersion == 3,
+              !payload.profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary,
+              let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(payload)) as? NSDictionary,
+              original == encoded else { throw BackupError.invalid }
+        let backup = LocalBackup(account: "validation", state: payload.state)
+        _ = try LocalBackup.validate(JSONEncoder().encode(backup), account: "validation")
+        return payload
+    }
 }
 
 enum SeasonDomain: String, Hashable, Codable {

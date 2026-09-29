@@ -135,6 +135,7 @@ final class AccountRuntime: ObservableObject {
             defaults.set(normalizedHandle, forKey: Self.handleKey)
             try await client.signIn(handle: normalizedHandle, password: password, deviceID: deviceID())
             let document = try await client.importLocalSeason(season)
+            try validateOwner(document, accountID: account.id)
             let sections = try await client.exportAccountData()
             let message = "Backend account \(shortID(account.id)) imported season version \(document.version)."
             state = .signedIn(accountID: account.id,
@@ -158,10 +159,11 @@ final class AccountRuntime: ObservableObject {
             defaults.set(session.accountID, forKey: Self.accountIDKey)
             defaults.set(normalizedHandle, forKey: Self.handleKey)
             let document = try await fetchSeasonIfPresent(client)
+            if let document { try validateOwner(document, accountID: session.accountID) }
             let sections = try await client.exportAccountData()
             let message: String
             if let document {
-                message = "Backend season version \(document.version) restored from API."
+                message = "Backend season version \(document.version) downloaded. Review it before replacing local records."
             } else {
                 message = "Signed in. No backend season exists yet for this account."
             }
@@ -300,6 +302,14 @@ final class AccountRuntime: ObservableObject {
     private func clearSavedAccount() {
         defaults.removeObject(forKey: Self.accountIDKey)
         defaults.removeObject(forKey: Self.handleKey)
+    }
+
+    private func validateOwner(_ document: AccountSeasonDocument, accountID: String) throws {
+        guard document.accountID == accountID else {
+            throw AccountAPIError(status: 422, code: "SEASON_ACCOUNT_MISMATCH",
+                                  message: "The season does not belong to this account. Local records were not changed.",
+                                  requestID: "client")
+        }
     }
 
     private func deviceID() -> String {

@@ -269,7 +269,7 @@ struct Account: Identifiable, Codable, Hashable {
 }
 
 struct AuthState: Codable {
-    var session: String? = nil     // "demo" | nil
+    var session: String? = nil     // Demo or cached account ID; backend authentication is not persisted.
 }
 
 // Composer drafts are private local state, separate from published posts.
@@ -384,6 +384,9 @@ enum RelativeTime {
 final class Store: ObservableObject {
     @Published private(set) var auth: AuthState { didSet { persistAuth() } }
     @Published private(set) var state: AppState { didSet { persistState() } }
+    // Backend identity is only installed after authentication. A persisted
+    // account ID alone must never reopen a private account after app restart.
+    @Published private(set) var backendIdentity: Account?
 
     private static let authKey = "cp.auth.v1"
     private var stateKey: String { "cp.state.v2:" + (auth.session ?? "anon") }
@@ -419,11 +422,16 @@ final class Store: ObservableObject {
     // MARK: Identity
 
     func currentUser() -> Account? {
-        auth.session == "demo" ? .demo : nil
+        if auth.session == "demo" { return .demo }
+        return backendIdentity?.id == auth.session ? backendIdentity : nil
     }
-    var isSignedIn: Bool { auth.session != nil }
-    var isRealAccount: Bool { false }
-    var me: MeInfo { Seed.me }
+    var isSignedIn: Bool { currentUser() != nil }
+    var isRealAccount: Bool { currentUser().map { !$0.isDemo } ?? false }
+    var me: MeInfo {
+        guard isRealAccount, let account = currentUser() else { return Seed.me }
+        return MeInfo(name: account.name, initials: Store.initials(account.name), role: account.role,
+                      club: account.club, prov: account.prov, season: "Your season", stats: derivedStats())
+    }
 
     /// Personal telemetry comes only from the current local log, including demo additions.
     func derivedStats() -> MeStats {
@@ -798,13 +806,41 @@ final class Store: ObservableObject {
         else { state.messageDrafts[curlerID] = text }
     }
 
-    // MARK: Demo session
+    // MARK: Session and account restore
 
     func exploreDemo() {
+        backendIdentity = nil
         setSession("demo")
     }
 
-    func signOut() { setSession(nil) }
+    func signOut() {
+        backendIdentity = nil
+        setSession(nil)
+    }
+
+    /// Call only after backend authentication; entering an account never copies
+    /// the demo or replaces that account's cached records.
+    func enterBackendAccount(accountID: String, profile: AccountSeasonProfile) throws {
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+        guard !accountID.isEmpty, accountID.count <= 128,
+              !["demo", "anon"].contains(accountID.lowercased()),
+              accountID.unicodeScalars.allSatisfy({ allowed.contains($0) }),
+              !profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw BackupError.invalid }
+        backendIdentity = Account(id: accountID, name: profile.name, club: profile.homeClub,
+                                  role: "Curler", prov: profile.province)
+        setSession(accountID)
+    }
+
+    /// Separate from sign-in so the UI can preview and obtain the user's restore
+    /// choice before replacing records. Keep a verified copy for local recovery.
+    func restoreBackendSeason(_ season: AccountSeasonPayload, accountID: String) throws {
+        guard isRealAccount, currentUser()?.id == accountID else { throw BackupError.invalid }
+        let validated = try AccountSeasonPayload.validated(JSONEncoder().encode(season))
+        let backup = try JSONEncoder().encode(LocalBackup(account: accountID, state: validated.state))
+        try restoreBackup(backup)
+        backendIdentity = Account(id: accountID, name: validated.profile.name, club: validated.profile.homeClub,
+                                  role: "Curler", prov: validated.profile.province)
+    }
 
     /// Switch identity: persist current, repoint the key, load that account's state.
     private func setSession(_ session: String?) {

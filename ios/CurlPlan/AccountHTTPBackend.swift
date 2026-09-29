@@ -357,7 +357,16 @@ final class AccountHTTPBackendTransport {
         }
 
         do {
-            return .success(endpoint: endpoint, status: status, body: try decoder.decode(Body.self, from: data))
+            let decoded = try decoder.decode(Body.self, from: data)
+            if let document = decoded as? AccountSeasonDocument {
+                let raw = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                try validateSeason(document, rawBody: raw?["body"])
+            } else if let export = decoded as? AccountExportDocument, let document = export.season {
+                let raw = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                let season = raw?["season"] as? [String: Any]
+                try validateSeason(document, rawBody: season?["body"])
+            }
+            return .success(endpoint: endpoint, status: status, body: decoded)
         } catch {
             return .failure(endpoint: endpoint,
                             error: AccountAPIError(status: 500,
@@ -365,6 +374,12 @@ final class AccountHTTPBackendTransport {
                                                    message: "Account backend response could not be decoded.",
                                                    requestID: "client"))
         }
+    }
+
+    private func validateSeason(_ document: AccountSeasonDocument, rawBody: Any?) throws {
+        guard document.version > 0, document.schemaVersion == document.body.schemaVersion,
+              let rawBody else { throw BackupError.invalid }
+        _ = try AccountSeasonPayload.validated(JSONSerialization.data(withJSONObject: rawBody))
     }
 
     private func decodeFailure<Body: Equatable>(endpoint: AccountAPIEndpoint,

@@ -74,7 +74,7 @@ struct RootView: View {
             }
         }
         .onAppear { router.restore(accountID: store.currentUser()?.id, store: store) }
-        .onChange(of: store.isSignedIn) { _, _ in router.restore(accountID: store.currentUser()?.id, store: store) }
+        .onChange(of: store.currentUser()?.id) { _, _ in router.restore(accountID: store.currentUser()?.id, store: store) }
         .onOpenURL { router.receive($0, store: store) }
         .alert("Link unavailable", isPresented: $router.invalidLink) {
             Button("OK", role: .cancel) {}
