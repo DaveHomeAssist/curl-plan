@@ -62,6 +62,7 @@ struct SettingsSheet: View {
                         Text("Sign out")
                             .font(.grotesk(12, .bold)).foregroundStyle(settings.ink)
                             .padding(.horizontal, 14).padding(.vertical, 6.5)
+                            .frame(minHeight: 44)
                             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .strokeBorder(settings.ink, lineWidth: 1.5))
                     }

@@ -477,9 +477,9 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textar
 
     <!-- settings sheet -->
     <div class="sheet-scrim" id="scrim" data-action="close-settings" aria-hidden="true" hidden></div>
-    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Appearance" aria-hidden="true" tabindex="-1" hidden inert>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Settings" aria-hidden="true" tabindex="-1" hidden inert>
       <div class="grab"></div>
-      <h2>Appearance</h2>
+      <h2>Settings</h2>
       <p class="sub">Same season, your circle — tune the ice.</p>
       <div class="set-row">
         <div class="k">Theme<small>ICE / ARENA</small></div>
@@ -1413,7 +1413,7 @@ function avatar(initials, size, cls){
 }
 function appearanceButton(initials){
   return '<button type="button" class="appearance-trigger"' +
-    ' data-action="settings" aria-label="Appearance" aria-haspopup="dialog" aria-controls="sheet" aria-expanded="false">' +
+    ' data-action="settings" aria-label="Settings" aria-haspopup="dialog" aria-controls="sheet" aria-expanded="false">' +
     '<span class="avatar" style="width:34px;height:34px;font-size:12px;">' + esc(initials) + '</span></button>';
 }
 function avatarStack(ids){
@@ -1938,7 +1938,8 @@ function openManagedSheet(sheetId, scrimId, trigger){
   sheet.classList.add("open");
   scrim.classList.add("open");
   var controls = visibleSheetControls(sheet);
-  try{ (controls[0] || sheet).focus(); }catch(e){}
+  // Settings is already visible; focusing it must not scroll the page under the panel.
+  try{ (controls[0] || sheet).focus({preventScroll:sheetId === "sheet"}); }catch(e){}
 }
 function closeManagedSheet(restoreFocus){
   if(!activeSheet) return;
@@ -1959,7 +1960,7 @@ function closeManagedSheet(restoreFocus){
     }
   }, 270);
   if(restoreFocus !== false && closing.trigger && closing.trigger.isConnected){
-    try{ closing.trigger.focus(); }catch(e){}
+    try{ closing.trigger.focus({preventScroll:true}); }catch(e){}
   }
 }
 

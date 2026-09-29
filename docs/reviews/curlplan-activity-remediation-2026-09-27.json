@@ -109,10 +109,13 @@
       "expected": "Read entry gate, understand demo limits and enter",
       "baseline_verdict": "Pass",
       "group": "navigation and accessibility",
-      "status": "pending_reconciliation",
+      "status": "verified",
       "required_action": "Keep the demo limitation visible near actions that resemble live social features.",
       "acceptance": "Settings > Sign out > read gate > Explore demo > relaunch; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "Physical Ignacio 2026-09-28: native testDemoGateAndAccountLimitsOnDevice passed23.211sec; Safari testWebDemoGateAndAccountLimits passed26.700sec after fixing Settings focus scrolling. Both verify demo session, sign-out, no credential fields, account/sync/recovery/deletion limitations, signed-out restart, demo re-entry and signed-in restart. Native Sign out enlarged to44pt and measured. Web Appearance renamed Settings because it contains account and backup controls. Screenshots inspected; A6-demo-gate-results.csv retained. Existing app data preserved; no real-account completion claimed."
+      ],
+      "remaining": []
     },
     {
       "id": "A7",
@@ -497,7 +500,12 @@
       "status": "pending_reconciliation",
       "required_action": "Run offline recovery with a wired device connection, then restore networking.",
       "acceptance": "Inspect physical transport; offline disruption withheld because transport is wireless; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "2026-09-28 devicectl device details confirms Ignacio booted/paired and transportType localNetwork, tunnel TCP. Wireless control remains active; no offline disruption performed."
+      ],
+      "remaining": [
+        "Obtain wired physical device control before disabling networking for offline interruption and recovery acceptance."
+      ]
     },
     {
       "id": "A29",
@@ -619,7 +627,8 @@
         "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open.",
         "Physical Safari event Details target measured 21 points before patch and at least 44 points after patch; event Edit/Delete/Details accessibility labels include event name. Full accessibility acceptance remains open.",
         "Retrieved authoritative prior CI log for run 36310569786 at 45f8cbd: standard iPhone, small iPhone and small iPhone larger-text journeys all passed (201.661, 42.904, 42.641 sec). Standard/small accessibility failed on contrast. A32-ci-45f8cbd.csv records exact findings; latest 34082f7 screenflow run 36499682356 was still running at this checkpoint.",
-        "2026-09-28: inspected standard/small CI45f8cbd screenshot and element crops. Standard Passport failing label is visibly occluded by bottom tab bar; small club title sits on textured gradient. Applied explicit viewport clipping to six primary native scroll surfaces and opaque dark club-title backing. Physical Ignacio testPhysicalContrastBothThemes passed eight screen/theme contrast audits in 46.183 sec, zero failures/skips; Ice/Arena stop screenshots inspected. A32-viewport-results.csv records diagnosis and limits. iPhone CI must verify clipping effect; no finding waived or filtered."
+        "2026-09-28: inspected standard/small CI45f8cbd screenshot and element crops. Standard Passport failing label is visibly occluded by bottom tab bar; small club title sits on textured gradient. Applied explicit viewport clipping to six primary native scroll surfaces and opaque dark club-title backing. Physical Ignacio testPhysicalContrastBothThemes passed eight screen/theme contrast audits in 46.183 sec, zero failures/skips; Ice/Arena stop screenshots inspected. A32-viewport-results.csv records diagnosis and limits. iPhone CI must verify clipping effect; no finding waived or filtered.",
+        "A6 discovered actual Safari Settings focus scrolling: default focus moved page under bottom sheet and tap coordinates missed Sign out. preventScroll on Settings initial focus and focus restoration resolved physical interaction; no synthetic DOM click. Native Sign out measured at least44pt after correction."
       ],
       "remaining": [
         "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
@@ -635,10 +644,16 @@
       "expected": "Sign in, restore, sign out and delete when enabled",
       "baseline_verdict": "Unavailable",
       "group": "data ownership and resilience",
-      "status": "pending_reconciliation",
+      "status": "partially_verified",
       "required_action": "Keep real account release gated until create/restore/delete can be tested.",
       "acceptance": "Settings > Sign out > read gate > Explore demo; inspect account capability statement; verify the original successful outcome without silently narrowing scope.",
-      "evidence": []
+      "evidence": [
+        "2026-09-28 private Dominic backend health and scripts/verify-account-remote.mjs passed AS01-03 over real HTTP: disposable account create, wrong-password rejection, logical device-A sign-in/import/sign-out revocation, device-B restore, deletion/session revocation/future sign-in rejection. Disposable account deleted. A33-account-remote-20260928.csv retained. These are logical API sessions, not two physical device UI tests. Native/Safari demo account statements and sign-out/re-entry/restart passed separately underA6."
+      ],
+      "remaining": [
+        "Complete in-app real account create/sign-in/export/restore/delete proof; current primary entry surface remains credential-free demo.",
+        "Public account release still requires public reachability, TLS, rate limiting and password reset infrastructure per account roadmap. Private HTTP API acceptance is not public release acceptance."
+      ]
     }
   ],
   "checkpoint": {

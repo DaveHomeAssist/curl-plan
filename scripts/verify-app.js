@@ -86,7 +86,7 @@ assert(/<main class="phone">/.test(html) && /<\/main>/.test(html), "Main landmar
 assert(/function openManagedSheet\(/.test(html) && /function closeManagedSheet\(/.test(html),
   "Managed sheet lifecycle missing.");
 assert(/e\.key === "Escape"/.test(html), "Escape must close the active sheet.");
-assert(/closing\.trigger\.focus\(\)/.test(html), "Closing a sheet must restore invoking-control focus.");
+assert(/closing\.trigger\.focus\(\{preventScroll:true\}\)/.test(html), "Closing a sheet must restore invoking-control focus without moving the page.");
 assert(/activeSheet\.sheet\.focus\(\)/.test(html) && /e\.key !== "Tab"/.test(html),
   "Modal Tab containment missing.");
 

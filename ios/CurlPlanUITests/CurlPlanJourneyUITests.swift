@@ -944,6 +944,55 @@ final class CurlPlanJourneyUITests: XCTestCase {
     }
 
     // Opt-in physical iPad check against a bounded local preview URL.
+    func testDemoGateAndAccountLimitsOnDevice() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let enter = app.buttons["curlplan.demo.enter"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        app.open(URL(string: "curlplan://stop/kelowna")!)
+        XCTAssertTrue(app.buttons["curlplan.detail.back"].waitForExistence(timeout: 8))
+        app.buttons["curlplan.detail.back"].tap(); app.buttons["Open settings"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "DEMO SESSION")).firstMatch.exists)
+        XCTAssertGreaterThanOrEqual(app.buttons["Sign out"].frame.height, 44)
+        app.buttons["Sign out"].tap()
+        XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Accounts and cloud sync are not live yet")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Real account recovery, deletion, and cross-device restore")).firstMatch.exists)
+        XCTAssertEqual(app.secureTextFields.count, 0); XCTAssertEqual(app.textFields.count, 0)
+        capture("A6-native-demo-gate")
+        app.terminate(); app.launch(); XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        enter.tap(); XCTAssertTrue(tab("Passport").waitForExistence(timeout: 5))
+        app.terminate(); app.launch(); XCTAssertTrue(tab("Passport").waitForExistence(timeout: 5))
+        XCTAssertFalse(enter.exists)
+    }
+
+    func testWebDemoGateAndAccountLimits() throws {
+        guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCUIDevice.shared.orientation = .portrait
+        func restart() {
+            safari.terminate(); safari.launch()
+            safari.open(URL(string: previewURL + "?gate=" + UUID().uuidString + "#passport")!)
+        }
+        restart()
+        let enter = safari.buttons["Explore the demo"]
+        if enter.waitForExistence(timeout: 2) { enter.tap() }
+        XCTAssertTrue(safari.descendants(matching: .any)["Settings"].firstMatch.waitForExistence(timeout: 8)); safari.descendants(matching: .any)["Settings"].firstMatch.tap()
+        XCTAssertTrue(safari.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Demo session")).firstMatch.exists)
+        let settingsProof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        settingsProof.name = "A6-web-settings"; settingsProof.lifetime = .keepAlways; add(settingsProof)
+        safari.buttons["Sign out"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        XCTAssertTrue(safari.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Accounts and cloud sync are not live yet")).firstMatch.exists)
+        XCTAssertTrue(safari.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Real account recovery, deletion, and cross-device restore")).firstMatch.exists)
+        XCTAssertEqual(safari.webViews.firstMatch.secureTextFields.count, 0)
+        XCTAssertEqual(safari.webViews.firstMatch.textFields.count, 0)
+        let proof = XCTAttachment(screenshot: safari.webViews.firstMatch.screenshot())
+        proof.name = "A6-web-demo-gate"; proof.lifetime = .keepAlways; add(proof)
+        restart(); XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        enter.tap(); XCTAssertTrue(safari.descendants(matching: .any)["Settings"].firstMatch.waitForExistence(timeout: 5))
+        restart(); XCTAssertTrue(safari.descendants(matching: .any)["Settings"].firstMatch.waitForExistence(timeout: 5)); XCTAssertFalse(enter.exists)
+    }
+
     func testWebVisitDateAndDraftRecovery() throws {
         guard let previewURL = ProcessInfo.processInfo.environment["CURLPLAN_WEB_AUDIT_URL"] else { throw XCTSkip("Requires iPad preview") }
         let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
