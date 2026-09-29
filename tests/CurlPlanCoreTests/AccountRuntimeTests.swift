@@ -90,6 +90,60 @@ final class AccountRuntimeTests: XCTestCase {
             "/v1/me/export"
         ])
         XCTAssertEqual(loader.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer sess-runtime-b")
+        loader.enqueue(status: 200, body: ["account", "profile", "season"])
+        _ = await runtime.exportAccountData()
+        XCTAssertEqual(runtime.state.kind, .signedIn)
+        XCTAssertEqual(runtime.state.seasonVersion, document.version, "Export must preserve the restored season version")
+
+    }
+
+    func testAccountActionsDoNotRacePendingSignInOrSignOut() async throws {
+        let loader = RecordingRuntimeHTTPDataLoader()
+        let runtime = AccountRuntime(baseURL: URL(string: "http://127.0.0.1:8787")!,
+                                     defaults: isolatedDefaults(), loader: loader)
+        let session = AccountSession(id: "pending-session", accountID: "pending-account",
+                                     deviceID: "device-a", createdAt: "now", expiresAt: "later", state: .active)
+        let season = AccountSeasonPayload()
+        let document = AccountSeasonDocument(id: "pending-season", accountID: session.accountID,
+                                             schemaVersion: season.schemaVersion, version: 7,
+                                             body: season, updatedAt: "now")
+        loader.enqueue(status: 200, body: session)
+        loader.enqueue(status: 200, body: document)
+        loader.enqueue(status: 200, body: ["account", "profile", "season"])
+        let paused = expectation(description: "Sign-in request is in flight")
+        loader.pauseNext = true
+        loader.onPause = { paused.fulfill() }
+        let signIn = Task { await runtime.signIn(handle: "pending", password: "test-password-87") }
+        await fulfillment(of: [paused], timeout: 3)
+        XCTAssertTrue(runtime.isBusy)
+        let rejected = [
+            await runtime.signOut(),
+            await runtime.signIn(handle: "other", password: "other-password-87"),
+            await runtime.createAccount(handle: "other", password: "other-password-87", season: season),
+            await runtime.exportAccountData(),
+            await runtime.deleteAccount()
+        ]
+        XCTAssertTrue(runtime.isBusy, "A competing request must not replace the in-flight state")
+        XCTAssertTrue(rejected.allSatisfy { $0.message.contains("already running") })
+        XCTAssertEqual(loader.requests.count, 1)
+        loader.resume()
+        _ = await signIn.value
+        XCTAssertTrue(runtime.isSignedIn)
+        XCTAssertEqual(runtime.state.seasonVersion, 7)
+        loader.enqueue(status: 204)
+        let revoking = expectation(description: "Sign-out request is in flight")
+        loader.pauseNext = true
+        loader.onPause = { revoking.fulfill() }
+        let signOut = Task { await runtime.signOut() }
+        await fulfillment(of: [revoking], timeout: 3)
+        XCTAssertTrue(runtime.isBusy)
+        let duringRevocation = await runtime.signIn(handle: "other", password: "other-password-87")
+        XCTAssertTrue(duringRevocation.message.contains("already running"))
+        XCTAssertEqual(loader.requests.count, 4)
+        loader.resume()
+        _ = await signOut.value
+        XCTAssertEqual(runtime.state.kind, .signedOut)
+        XCTAssertEqual(loader.requests.last?.url?.path, "/v1/auth/sign-out")
     }
 
     private func isolatedDefaults(file: StaticString = #filePath, line: UInt = #line) -> UserDefaults {
@@ -112,6 +166,12 @@ private final class RecordingRuntimeHTTPDataLoader: AccountHTTPDataLoading {
     private var stubs: [Stub] = []
     private(set) var requests: [URLRequest] = []
     private let encoder = JSONEncoder()
+    var pauseNext = false
+    var onPause: (() -> Void)?
+    private var suspended: CheckedContinuation<Void, Never>?
+
+    func resume() { suspended?.resume(); suspended = nil }
+
 
     func enqueue<Body: Encodable>(status: Int, body: Body) {
         stubs.append(Stub(status: status, data: (try? encoder.encode(body)) ?? Data()))
@@ -123,6 +183,14 @@ private final class RecordingRuntimeHTTPDataLoader: AccountHTTPDataLoading {
 
     func load(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         requests.append(request)
+        if pauseNext {
+            pauseNext = false
+            await withCheckedContinuation { continuation in
+                suspended = continuation
+                onPause?()
+            }
+        }
+
         let stub = stubs.removeFirst()
         let response = HTTPURLResponse(url: request.url!,
                                        statusCode: stub.status,

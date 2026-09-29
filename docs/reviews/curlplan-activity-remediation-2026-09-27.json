@@ -648,11 +648,13 @@
       "required_action": "Keep real account release gated until create/restore/delete can be tested.",
       "acceptance": "Settings > Sign out > read gate > Explore demo; inspect account capability statement; verify the original successful outcome without silently narrowing scope.",
       "evidence": [
-        "2026-09-28 private Dominic backend health and scripts/verify-account-remote.mjs passed AS01-03 over real HTTP: disposable account create, wrong-password rejection, logical device-A sign-in/import/sign-out revocation, device-B restore, deletion/session revocation/future sign-in rejection. Disposable account deleted. A33-account-remote-20260928.csv retained. These are logical API sessions, not two physical device UI tests. Native/Safari demo account statements and sign-out/re-entry/restart passed separately underA6."
+        "2026-09-28 private Dominic backend health and scripts/verify-account-remote.mjs passed AS01-03 over real HTTP: disposable account create, wrong-password rejection, logical device-A sign-in/import/sign-out revocation, device-B restore, deletion/session revocation/future sign-in rejection. Disposable account deleted. A33-account-remote-20260928.csv retained. These are logical API sessions, not two physical device UI tests. Native/Safari demo account statements and sign-out/re-entry/restart passed separately underA6.",
+        "2026-09-28 AccountRuntime regression tests first reproduced export losing seasonVersion and sign-out replacing an in-flight sign-in state (3 failing assertions). Fixed all five account actions to reject overlapping requests without changing the active state; sign-out now marks revocation in progress; successful export preserves seasonVersion. AccountRuntimeTests then passed3 tests/0 failures using one SwiftPM build job. Tests cover all competing actions during suspended sign-in and sign-in during suspended revocation. A33-runtime-results.csv records before/after evidence; no iPad interaction or public release claim."
       ],
       "remaining": [
         "Complete in-app real account create/sign-in/export/restore/delete proof; current primary entry surface remains credential-free demo.",
-        "Public account release still requires public reachability, TLS, rate limiting and password reset infrastructure per account roadmap. Private HTTP API acceptance is not public release acceptance."
+        "Public account release still requires public reachability, TLS, rate limiting and password reset infrastructure per account roadmap. Private HTTP API acceptance is not public release acceptance.",
+        "Backend export currently returns section names, not a downloadable account-data document. Complete actual export payload and user handoff before marking account export accepted."
       ]
     }
   ],

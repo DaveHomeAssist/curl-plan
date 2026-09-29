@@ -121,6 +121,7 @@ final class AccountRuntime: ObservableObject {
 
     func createAccount(handle: String, password: String, season: AccountSeasonPayload) async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         let normalizedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         state = .working("Creating account, opening a backend session, and importing this local season.", accountID: savedAccountID)
         do {
@@ -147,6 +148,7 @@ final class AccountRuntime: ObservableObject {
 
     func signIn(handle: String, password: String) async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         let normalizedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         state = .working("Signing in and asking the backend for the account season.", accountID: savedAccountID)
         do {
@@ -174,6 +176,8 @@ final class AccountRuntime: ObservableObject {
 
     func exportAccountData() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        let seasonVersion = state.seasonVersion
         state = .working("Requesting backend account export sections.", accountID: savedAccountID)
         do {
             let client = try requireSignedInClient()
@@ -182,7 +186,7 @@ final class AccountRuntime: ObservableObject {
             let message = "Backend export includes \(sections.joined(separator: ", "))."
             state = .signedIn(accountID: accountID,
                               sections: sections,
-                              seasonVersion: state.seasonVersion,
+                              seasonVersion: seasonVersion,
                               detail: message)
             return AccountRuntimeResult(message: message, restoredSeason: nil)
         } catch {
@@ -192,6 +196,8 @@ final class AccountRuntime: ObservableObject {
 
     func signOut() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        state = .working("Revoking the backend session.", accountID: savedAccountID)
         do {
             if let client, client.session != nil {
                 try await client.signOut()
@@ -209,6 +215,7 @@ final class AccountRuntime: ObservableObject {
 
     func deleteAccount() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         state = .working("Asking the backend to delete this account and revoke its sessions.", accountID: savedAccountID)
         do {
             let client = try requireSignedInClient()
@@ -277,6 +284,11 @@ final class AccountRuntime: ObservableObject {
         let next = "device-\(UUID().uuidString.lowercased())"
         defaults.set(next, forKey: Self.deviceIDKey)
         return next
+    }
+
+    private func requestInProgressResult() -> AccountRuntimeResult {
+        AccountRuntimeResult(message: "An account request is already running. Wait for it to finish before trying another action.",
+                             restoredSeason: nil)
     }
 
     private func unavailableResult() -> AccountRuntimeResult {
