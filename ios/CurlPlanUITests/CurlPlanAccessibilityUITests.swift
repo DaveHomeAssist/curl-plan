@@ -231,6 +231,10 @@ final class CurlPlanAccessibilityUITests: XCTestCase {
         attachment.name = "accessibility-\(name)"
         attachment.lifetime = .keepAlways
         add(attachment)
+        // Viewport geometry for diagnosing findings on rows near the tab bar.
+        let tabBar = app.tabBars.firstMatch
+        let scrolls = app.scrollViews.allElementsBoundByIndex.map { String(describing: $0.frame) }
+        print("ACCESSIBILITY VIEWPORT [\(name)]: tabBar=\(tabBar.exists ? String(describing: tabBar.frame) : "none"); scrollViews=\(scrolls)")
         try app.performAccessibilityAudit(for: types) { issue in
             // Some Dynamic Type findings refer to elements removed during the audit.
             // Avoid three slow stale-element lookups without suppressing the finding.

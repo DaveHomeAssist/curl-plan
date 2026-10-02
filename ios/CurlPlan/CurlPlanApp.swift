@@ -10,6 +10,13 @@ struct CurlPlanApp: App {
     @StateObject private var store = Store()
     @StateObject private var router = Router()
 
+    init() {
+        // An opaque tab bar makes UIKit end each tab's content at the top of the bar.
+        // With a translucent bar, scroll content extended beneath it: rows hidden
+        // behind the bar stayed in the accessibility tree and failed contrast checks.
+        UITabBar.appearance().isTranslucent = false
+    }
+
     @ViewBuilder private var content: some View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--contrast-control") {
