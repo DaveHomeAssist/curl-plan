@@ -33,6 +33,8 @@ jobs:
         run: node scripts/gen-seed.js --check
       - name: Verify root Hi-Fi app
         run: node scripts/verify-app.js
+      - name: Record correction and draft recovery
+        run: node scripts/verify-record-recovery.js
       - name: Verify archived classic app
         run: node scripts/verify-split.js
       - name: Cross-platform parity checklist

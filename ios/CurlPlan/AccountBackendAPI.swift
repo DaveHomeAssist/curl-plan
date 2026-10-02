@@ -9,6 +9,7 @@ enum AccountAPIRoutes {
     static let createAccount = AccountAPIEndpoint(method: "POST", path: "/v1/accounts")
     static let signIn = AccountAPIEndpoint(method: "POST", path: "/v1/auth/sign-in")
     static let signOut = AccountAPIEndpoint(method: "POST", path: "/v1/auth/sign-out")
+    static let downloadAccountExport = AccountAPIEndpoint(method: "GET", path: "/v1/me/export")
     static let exportAccount = AccountAPIEndpoint(method: "POST", path: "/v1/me/export")
     static let deleteAccount = AccountAPIEndpoint(method: "DELETE", path: "/v1/me")
     static let importSeason = AccountAPIEndpoint(method: "POST", path: "/v1/me/season/import-local")

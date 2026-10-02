@@ -1,0 +1,6 @@
+Test Case '-[CurlPlanUITests.CurlPlanJourneyUITests testDemoTabsDetailsAndRelaunch]' started.
+Test Case '-[CurlPlanUITests.CurlPlanJourneyUITests testDemoTabsDetailsAndRelaunch]' passed (45.626 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.626 (45.627) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.626 (45.628) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 45.626 (45.630) seconds
+** TEST SUCCEEDED **

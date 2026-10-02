@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-09-23T16:03:41.902776+00:00",
+  "deployedMainSha": "1e06cb7be2814912e53cb0116d1e33584feb9ba2",
+  "urls": {
+    "current": "https://davehomeassist.github.io/curl-plan/",
+    "classic": "https://davehomeassist.github.io/curl-plan/classic/"
+  },
+  "browser": "Safari 26.6.1",
+  "platform": "macOS 26.7",
+  "startingData": "fresh current-site local storage for each viewport; existing Classic seed data",
+  "activationMethod": "SafariDriver keyboard",
+  "results": [
+    {
+      "id": "W1-W4-X1-Safari-phone-width",
+      "status": "pass",
+      "expected": "Demo entry, Classic data boundary, Stop detail, in-app Back, and browser Back remain usable.",
+      "actual": {
+        "size": "phone-width",
+        "requestedWindow": [
+          390,
+          844
+        ],
+        "actualViewport": {
+          "outerHeight": 844,
+          "innerWidth": 458,
+          "outerWidth": 390,
+          "innerHeight": 887,
+          "devicePixelRatio": 1.7000000476837158
+        },
+        "classicBoundary": true,
+        "stop": "kelowna",
+        "inAppBack": true,
+        "browserBack": true
+      }
+    },
+    {
+      "id": "W1-W4-X1-Safari-desktop",
+      "status": "pass",
+      "expected": "Demo entry, Classic data boundary, Stop detail, in-app Back, and browser Back remain usable.",
+      "actual": {
+        "size": "desktop",
+        "requestedWindow": [
+          1440,
+          900
+        ],
+        "actualViewport": {
+          "outerHeight": 900,
+          "innerWidth": 1694,
+          "outerWidth": 1440,
+          "innerHeight": 952,
+          "devicePixelRatio": 1.7000000476837158
+        },
+        "classicBoundary": true,
+        "stop": "kelowna",
+        "inAppBack": true,
+        "browserBack": true
+      }
+    },
+    {
+      "id": "Classic-modal-close-Safari-phone-width",
+      "status": "partial",
+      "severity": "Medium",
+      "expected": "The close control has a 44 by 44 target, visible keyboard focus, and closes by keyboard and pointer.",
+      "actual": {
+        "requestedWindow": [
+          390,
+          844
+        ],
+        "actualViewport": {
+          "outerHeight": 844,
+          "innerWidth": 458,
+          "outerWidth": 390,
+          "innerHeight": 887,
+          "devicePixelRatio": 1.7000000476837158
+        },
+        "close": {
+          "label": "Close event modal",
+          "renderedRect": {
+            "width": 43.10919952392578,
+            "height": 43.10919189453125
+          },
+          "styles": [
+            "https://davehomeassist.github.io/curl-plan/classic/assets/css/theme.css",
+            "https://davehomeassist.github.io/curl-plan/classic/assets/css/app.css?v=20260923c"
+          ],
+          "focusVisible": false,
+          "focusReached": true,
+          "computed": {
+            "width": "43.988968px",
+            "height": "43.988968px",
+            "boxShadow": "none"
+          }
+        },
+        "keyboardClosed": true,
+        "tap": "unverified: SafariDriver pointer commands did not dispatch click events"
+      },
+      "retest": {
+        "keyboardFocusReached": true,
+        "keyboardClosePassed": true,
+        "pointerTap": "unverified because SafariDriver pointer commands returned success without dispatching click events",
+        "visibleFocus": "unverified because SafariDriver synthetic keys did not set :focus-visible and macOS page-level key injection was unavailable"
+      }
+    }
+  ],
+  "screenshots": {
+    "status": "unavailable",
+    "reason": "SafariDriver returned only 96 by 117 tab thumbnails, while macOS rejected bounded screencapture requests. The unusable temporary images were deleted."
+  },
+  "notes": [
+    "Safari accepted keyboard activation for the tested controls.",
+    "The requested 390 by 844 Safari window exposed a 458 by 887 CSS viewport on this host; both requested and actual sizes are recorded.",
+    "No production data was written; current-site demo state remained browser-local."
+  ]
+}

@@ -123,6 +123,32 @@ final class AccountHTTPBackendTests: XCTestCase {
         XCTAssertEqual(unavailable.error?.code, "NETWORK_UNAVAILABLE")
     }
 
+    func testHTTPSeasonRejectsLossyRecordsAndUnsupportedEnvelopeVersions() async throws {
+        let loader = RecordingAccountHTTPDataLoader()
+        let transport = AccountHTTPBackendTransport(baseURL: URL(string: "https://api.curlplan.test")!, loader: loader)
+        let payload = AccountSeasonPayload()
+        let document = AccountSeasonDocument(id: "season-a", accountID: "account-a", schemaVersion: 3,
+                                             version: 1, body: payload, updatedAt: "now")
+        let original = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(document)) as? [String: Any])
+        for mutation in ["malformed", "unknown", "schema", "version"] {
+            var raw = original
+            if mutation == "schema" { raw["schemaVersion"] = 4 }
+            else if mutation == "version" { raw["version"] = 0 }
+            else {
+                var body = try XCTUnwrap(raw["body"] as? [String: Any])
+                var state = try XCTUnwrap(body["state"] as? [String: Any])
+                state[mutation == "malformed" ? "posts" : "futureRecords"] = "must not disappear"
+                body["state"] = state; raw["body"] = body
+            }
+            loader.enqueue(status: 200, raw: try JSONSerialization.data(withJSONObject: raw))
+            let result = await transport.season(sessionID: "test-session")
+            XCTAssertEqual(result.error?.code, "DECODE_FAILED", mutation)
+        }
+        loader.enqueue(status: 200, body: document)
+        let accepted = await transport.season(sessionID: "test-session")
+        XCTAssertNil(accepted.error)
+    }
+
     func testHTTPClientRequiresSessionBeforeProtectedCallsWithoutSendingRequest() async throws {
         let loader = RecordingAccountHTTPDataLoader()
         let transport = AccountHTTPBackendTransport(baseURL: URL(string: "https://api.curlplan.test")!, loader: loader)
@@ -153,6 +179,10 @@ private final class RecordingAccountHTTPDataLoader: AccountHTTPDataLoading {
 
     func enqueue<Body: Encodable>(status: Int, body: Body) {
         stubs.append(Stub(status: status, data: (try? encoder.encode(body)) ?? Data(), error: nil))
+    }
+
+    func enqueue(status: Int, raw: Data) {
+        stubs.append(Stub(status: status, data: raw, error: nil))
     }
 
     func enqueue(status: Int) {

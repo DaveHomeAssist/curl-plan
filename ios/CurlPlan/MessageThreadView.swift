@@ -17,8 +17,13 @@ struct MessageThreadView: View {
             Capsule().fill(settings.line).frame(width: 38, height: 4)
                 .frame(maxWidth: .infinity).padding(.top, 12).padding(.bottom, 14)
 
-            Text(curler?.name ?? "Message").font(.serif(24)).foregroundStyle(settings.ink)
-            Text("Local thread — saved on this device, not yet delivered.")
+            HStack {
+                Text(curler?.name ?? "Message").font(.serif(24)).foregroundStyle(settings.ink)
+                Spacer()
+                Button("Close") { dismiss() }.frame(minWidth: 44, minHeight: 44)
+                    .accessibilityIdentifier("curlplan.thread.close")
+            }
+            Text("Local thread — saved on this device, not yet delivered. Close keeps your draft.")
                 .font(.grotesk(13)).foregroundStyle(settings.muted)
                 .padding(.bottom, 14)
 
@@ -43,6 +48,7 @@ struct MessageThreadView: View {
 
             HStack(spacing: 9) {
                 TextField("Message…", text: $draft, axis: .vertical)
+                    .accessibilityLabel("Message")
                     .font(.grotesk(15)).foregroundStyle(settings.ink).tint(settings.accent)
                     .padding(.vertical, 10).padding(.horizontal, 13)
                     .background(settings.panel)
@@ -50,7 +56,7 @@ struct MessageThreadView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(settings.line, lineWidth: 1))
                 Button { send() } label: {
-                    Text("Send").font(.grotesk(12, .bold)).foregroundStyle(.white)
+                    Text("Send").font(.grotesk(12, .bold)).foregroundStyle(settings.onAccent)
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .background(canSend ? settings.accent : settings.muted.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -65,6 +71,8 @@ struct MessageThreadView: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .presentationBackground(settings.card)
+        .onAppear { draft = store.state.messageDrafts[curlerID] ?? "" }
+        .onChange(of: draft) { _, value in store.saveMessageDraft(curlerID, text: value) }
     }
 
     private var canSend: Bool { !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -85,10 +93,10 @@ private struct Bubble: View {
             if mine { Spacer(minLength: 40) }
             VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
                 Text(message.text)
-                    .font(.grotesk(15)).foregroundStyle(mine ? .white : settings.ink)
+                    .font(.grotesk(15)).foregroundStyle(mine ? settings.onAccent : settings.ink)
                 Text(RelativeTime.clock(message.at))
                     .font(.mono(9, .medium)).tracking(0.5)
-                    .foregroundStyle(mine ? Color.white.opacity(0.7) : settings.muted)
+                    .foregroundStyle(mine ? settings.onAccent : settings.muted)
             }
             .padding(.vertical, 9).padding(.horizontal, 13)
             .background(mine ? settings.accent : settings.panel)

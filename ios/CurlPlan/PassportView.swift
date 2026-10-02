@@ -3,7 +3,7 @@ import SwiftUI
 struct PassportView: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
-    @EnvironmentObject var router: Router
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSettings = false
 
     var body: some View {
@@ -13,14 +13,17 @@ struct PassportView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     hero
                     telemetry
+                    Text("Totals reflect your saved visits and results on this device. Sample club records are separate.")
+                        .font(.grotesk(13)).foregroundStyle(settings.muted)
                     SeasonMap()
-                    SectionHeader(title: "Recent stops", action: "All") { router.tab = .spiels }
+                    SectionHeader(title: "Your visits")
                     recentStops
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
                 .padding(.bottom, 96)
             }
+            .clipped()
         }
         .background(settings.screen)
         .navigationBarHidden(true)
@@ -35,9 +38,12 @@ struct PassportView: View {
             }
             Spacer()
             Button { showSettings = true } label: {
-                AvatarView(initials: store.me.initials, size: 34)
+                AvatarView(initials: store.me.initials, size: 44)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Open settings")
         }
         .padding(.horizontal, 20)
         .padding(.top, 6)
@@ -46,7 +52,7 @@ struct PassportView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Eyebrow(text: store.me.season)
+            Eyebrow(text: "Your device log")
             (Text("On the ice, ")
                 + Text("coast to coast").foregroundColor(settings.accent).italic())
                 .font(.serif(34))
@@ -56,47 +62,57 @@ struct PassportView: View {
     }
 
     private var telemetry: some View {
-        let s = store.me.stats
-        return HStack(spacing: 0) {
-            StatCell(value: "\(s.clubs)", label: "CLUBS")
-            VRule()
-            StatCell(value: "\(s.prov)", label: "PROV")
-            VRule()
-            StatCell(value: "\(s.games)", label: "GAMES")
-            VRule()
-            StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+        let s = store.derivedStats()
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                        .accessibilityIdentifier("curlplan.stats.games")
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+                .padding(.horizontal, 8)
+            } else {
+                HStack(spacing: 0) {
+                    StatCell(value: "\(s.clubs)", label: "CLUBS")
+                    VRule()
+                    StatCell(value: "\(s.prov)", label: "PROV")
+                    VRule()
+                    StatCell(value: "\(s.games)", label: "GAMES")
+                        .accessibilityIdentifier("curlplan.stats.games")
+                    VRule()
+                    StatCell(value: "\(s.win)%", label: "WIN", accent: true)
+                }
+            }
         }
         .padding(.vertical, 13)
         .cpCard()
     }
 
-    // Real accounts see the stops they've logged (with a visit count + empty state);
-    // demo keeps the seed record + met-people chrome.
+    // Saved visits and sample clubs are distinct; each destination appears once.
     @ViewBuilder private var recentStops: some View {
-        if store.isRealAccount {
-            let mine = store.visitedStops()
-            if mine.isEmpty {
-                Text("No stops logged yet — tap a pin, then “Log visit,” to start your season map.")
-                    .font(.grotesk(13)).foregroundStyle(settings.muted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(14)
-                    .cpCard()
-            } else {
-                ForEach(mine) { entry in
-                    NavigationLink(value: Route.stop(entry.stop.id)) {
-                        VisitedStopTile(stop: entry.stop, count: entry.count)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("curlplan.stop.\(entry.stop.id)")
-                }
-            }
+        let mine = store.visitedStops()
+        if mine.isEmpty {
+            Text("No visits logged yet — open a sample club and choose Log visit.")
+                .font(.grotesk(13)).foregroundStyle(settings.muted)
+                .padding(14).cpCard()
         } else {
-            ForEach(store.recentStops) { stop in
-                NavigationLink(value: Route.stop(stop.id)) {
-                    RecentStopTile(stop: stop)
+            ForEach(mine) { entry in
+                NavigationLink(value: Route.stop(entry.stop.id)) {
+                    VisitedStopTile(stop: entry.stop, count: entry.count)
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("curlplan.stop.\(stop.id)")
+                .accessibilityIdentifier("curlplan.stop.\(entry.stop.id)")
+            }
+        }
+        let samples = store.recentStops.filter { stop in !mine.contains { $0.id == stop.id } }
+        if !samples.isEmpty {
+            SectionHeader(title: "Sample clubs and games")
+            ForEach(samples) { stop in
+                NavigationLink(value: Route.stop(stop.id)) { RecentStopTile(stop: stop) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("curlplan.stop.\(stop.id)")
             }
         }
     }
@@ -119,7 +135,12 @@ struct RecentStopTile: View {
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 Text(stop.record).font(.serif(17)).foregroundStyle(settings.ink)
-                AvatarStack(initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" }, size: 20, plus: stop.plus)
+                AvatarStack(
+                    initials: stop.met.prefix(2).map { store.curler($0)?.initials ?? "?" },
+                    accessibilityNames: stop.met.prefix(2).compactMap { store.curler($0)?.name },
+                    size: 20,
+                    plus: stop.plus
+                )
             }
         }
         .padding(12)
@@ -151,13 +172,16 @@ struct VisitedStopTile: View {
 
 private struct StopCode: View {
     @EnvironmentObject var settings: AppSettings
+    @ScaledMetric(relativeTo: .caption) private var dimension: CGFloat = 42
     let code: String
     init(_ code: String) { self.code = code }
     var body: some View {
         Text(code)
             .font(.mono(12, .semibold))
             .foregroundStyle(settings.accent)
-            .frame(width: 42, height: 42)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(width: dimension, height: dimension)
             .background(settings.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
@@ -168,15 +192,12 @@ private struct StopCode: View {
 struct SeasonMap: View {
     @EnvironmentObject var settings: AppSettings
     @EnvironmentObject var store: Store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var mapHeight: CGFloat = 212
 
     private var mapMeta: String {
-        if store.isRealAccount {
-            let n = store.visitedStops().count
-            if n == 0 { return "NEW SEASON" }
-            return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
-        }
-        let n = store.demoLoggedStops.count
-        return "\(n) \(n == 1 ? "STOP" : "STOPS") LOGGED"
+        let n = store.visitedStops().count
+        return "\(n) \(n == 1 ? "VISIT LOCATION" : "VISIT LOCATIONS") LOGGED"
     }
 
     var body: some View {
@@ -214,13 +235,17 @@ struct SeasonMap: View {
                         HouseRing(size: s.big ? 21 : 13)
                             .overlay(Circle().strokeBorder(.white.opacity(s.here && !store.isRealAccount ? 0.85 : 0), lineWidth: 3))
                             .shadow(color: .black.opacity(0.4), radius: 2, x: 0, y: 1)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(s.name), \(s.prov)")
+                    .accessibilityHint("Open stop details")
                     .position(x: w * s.x / 100, y: h * s.y / 100)
                 }
             }
         }
-        .frame(height: 212)
+        .frame(height: mapHeight)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(settings.line, lineWidth: 1))
         .overlay(alignment: .topLeading) {
@@ -240,9 +265,10 @@ struct SeasonMap: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Text(mapMeta)
-                .font(.mono(10, .medium))
-                .tracking(1)
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.ink)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.vertical, 5)
                 .padding(.horizontal, 9)
                 .background(settings.card.opacity(0.92))

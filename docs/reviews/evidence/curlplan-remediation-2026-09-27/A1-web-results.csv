@@ -1,0 +1,3 @@
+activity,surface,check,result,evidence,scope
+A1,Ignacio Safari,Visit form label lookup,Fail (test selector),web-visit.xcresult,Stopped before data entry; uppercase accessible label; corrected case-insensitive matching
+A1/A30,Ignacio Safari,Calendar date default; note draft recovery; save/restart readback; fresh draft empty,Pass,web-visit-label.xcresult; A1-web-visit-relaunch.png,65.456 seconds; zero skips; local demo audit visit retained

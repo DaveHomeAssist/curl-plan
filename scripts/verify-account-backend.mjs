@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { startAccountBackendServer } from "../services/account-backend/server.mjs";
@@ -328,6 +328,34 @@ try {
   assert(blockedAdmin.error.code === "INSUFFICIENT_ROLE", "block should revoke delegated admin authority");
   pass("AS 10 block revokes delegated shared-object admin authority");
 
+  const exportResponse = await fetch(`${service.baseURL}/v1/me/export?accountID=${sam.id}`, {
+    headers: { Authorization: `Bearer ${sessionB.id}` }
+  });
+  assert(exportResponse.status === 200, "account document download should succeed");
+  assert(exportResponse.headers.get("cache-control") === "no-store", "private export must not be cached");
+  assert(exportResponse.headers.get("content-disposition")?.includes("attachment"), "export must be a downloadable attachment");
+  const archive = await exportResponse.json();
+  assert(archive.formatVersion === 1 && Number.isFinite(Date.parse(archive.exportedAt)), "export must be versioned and timestamped");
+  assert(archive.account.id === account.id && archive.profile.accountID === account.id, "export scope comes from session, never supplied accountID");
+  assert(archive.season.accountID === account.id && archive.season.body.profile.name === "Dana Mercer", "export must contain saved season data");
+  assert(archive.ownedSharedObjects.some((x) => x.id === scorecard.id), "export must contain owned shared objects");
+  for (const [key, ownerKey] of [["ownedSharedObjects","ownerID"], ["relationships","actorID"], ["memberships","accountID"], ["interactions","actorID"], ["reports","reporterID"]]) {
+    assert(archive[key].every((x) => x[ownerKey] === account.id), `${key} must be account scoped`);
+  }
+  const persisted = JSON.parse(await readFile(storagePath, "utf8"));
+  const exportedText = JSON.stringify(archive);
+  assert(!("credentials" in archive) && !("sessions" in archive), "export must not expose credential or session stores");
+  for (const secret of [danaPassword, samPassword, sessionA.id, sessionB.id, samSession.id,
+    ...Object.values(persisted.credentials).flatMap((x) => [x.salt, x.hash])]) {
+    assert(!exportedText.includes(secret), "export must exclude passwords, password hashes, salts, and bearer tokens");
+  }
+  const samArchive = await request("GET", "/v1/me/export", { expected: 200, token: samSession.id });
+  assert(samArchive.account.id === sam.id && samArchive.season === null, "an account without a season must export null, not another account's season");
+  assert(!samArchive.ownedSharedObjects.some((x) => x.id === scorecard.id), "a different account cannot export the owner's object");
+  await request("GET", "/v1/me/export", { expected: 401 });
+  await request("GET", "/v1/me/export", { expected: 401, token: sessionA.id });
+  pass("AS 01 downloads complete account-scoped JSON without credentials or sessions; missing/revoked tokens denied");
+
   await request("DELETE", "/v1/me", {
     expected: 204,
     token: sessionB.id
@@ -354,6 +382,7 @@ try {
   });
   assert(deletedObjectInteraction.error.code === "NOT_FOUND", "deleted account owned shared object should be removed");
   pass("AS 03 delete account removes owned shared object access");
+  await request("GET", "/v1/me/export", { expected: 401, token: sessionB.id });
 
   await service.close();
   service = await startAccountBackendServer({ storagePath, port: 0 });

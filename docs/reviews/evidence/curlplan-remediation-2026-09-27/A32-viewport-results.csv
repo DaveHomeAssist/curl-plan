@@ -1,0 +1,5 @@
+activity,surface,check,result,evidence,scope
+A32,CI standard iPhone at45f8cbd,Failing label screenshot inspection,Occlusion confirmed,A32-ci-passport-tab-occlusion.png; A32-ci-occluded-label.png,Element crop includes bottom tab bar; contrast root cause inferred from occlusion
+A32,CI small iPhone at45f8cbd,Club title inspection,Texture behind text confirmed,A32-ci-small-stop-before.png; A32-ci-title-texture.png,Added solid background for predictable contrast; root cause not yet confirmed by iPhone rerun
+A32,Physical Ignacio,Passport/club/profile/events in Ice and Arena,Pass,contrast-viewport.xcresult; A32-viewport-Ice-stop.png; A32-viewport-Arena-stop.png,46.183 sec; eight contrast audits; not full accessibility acceptance
+A32,CI standard/small iPhone,Viewport repair acceptance,Pending,Next branch push screenflow run,Unmodified full audit retained

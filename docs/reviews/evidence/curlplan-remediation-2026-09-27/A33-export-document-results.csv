@@ -1,0 +1,4 @@
+activity,surface,check,result,evidence,scope
+A33,Local real HTTP backend,Actual snapshot; account isolation; missing/revoked/deleted auth; no-store/attachment; no credential/session values,Pass,scripts/verify-account-backend.mjs; account-export-http.log,Disposable server/accounts; old POST compatibility retained; not deployed service
+A33,Swift runtime/transport,Authenticated GET; encodable JSON file data; unknown format and foreign-account rejection; request serialization,Pass,tests/CurlPlanCoreTests/AccountRuntimeTests.swift; account-export-runtime.log,3 tests;0 failures; stubbed HTTP; native file-picker acceptance pending
+A33,Account app flow,Save actual backend export through file picker,Pending,docs/account-export.openapi.json,Account UI and deployed endpoint required

@@ -25,45 +25,102 @@ struct HouseRing: View {
 
 struct AvatarView: View {
     let initials: String
-    var size: CGFloat = 34
+    private let baseSize: CGFloat
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: String, size: CGFloat = 34) {
+        self.initials = initials
+        baseSize = size
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
         Text(initials)
-            .font(.system(size: size * 0.36, weight: .bold))
-            .foregroundStyle(Color(hex: 0xEEF3F6))
-            .frame(width: size, height: size)
-            .background(
-                LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
+            .font(.grotesk(baseSize * 0.40, .bold))
+            .foregroundStyle(Color.white)
+            .frame(width: scaledSize, height: scaledSize)
+            .background(Color(hex: 0x222A30))
             .clipShape(Circle())
             .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+            .accessibilityHidden(true)
     }
 }
 
-// Overlapping avatar stack (the "met people" cluster).
+// Compact avatar stack (the "met people" cluster). Keep initials unobscured so
+// every visible avatar remains legible at larger text sizes.
 struct AvatarStack: View {
     @EnvironmentObject var settings: AppSettings
     let initials: [String]
-    var size: CGFloat = 28
-    var plus: String? = nil
+    private let accessibilityNames: [String]
+    private let baseSize: CGFloat
+    private let plus: String?
+    @ScaledMetric(relativeTo: .caption2) private var scaledSize: CGFloat = 0
+
+    init(initials: [String], accessibilityNames: [String]? = nil,
+         size: CGFloat = 28, plus: String? = nil) {
+        self.initials = initials
+        self.accessibilityNames = accessibilityNames ?? initials
+        baseSize = size
+        self.plus = plus
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: .caption2)
+    }
 
     var body: some View {
-        HStack(spacing: -size * 0.32) {
+        HStack(spacing: max(2, scaledSize * 0.08)) {
             ForEach(Array(initials.enumerated()), id: \.offset) { _, ini in
-                AvatarView(initials: ini, size: size)
+                AvatarStackGlyph(text: ini, baseSize: baseSize, scaledSize: scaledSize)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
             if let plus {
-                Text(plus)
-                    .font(.system(size: size * 0.34, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: size, height: size)
-                    .background(settings.accent)
-                    .clipShape(Circle())
+                AvatarStackGlyph(text: plus, baseSize: baseSize, scaledSize: scaledSize, accent: true)
                     .overlay(Circle().strokeBorder(settings.card, lineWidth: 1.5))
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(stackLabel)
+    }
+
+    private var stackLabel: String {
+        let people = accessibilityNames.joined(separator: ", ")
+        guard let plus else { return "People: \(people)" }
+        return "People: \(people), \(plus.dropFirst()) more"
+    }
+}
+
+// Initials are redundant visual shorthand. The parent stack supplies the full
+// VoiceOver label, while this canvas keeps the glyph and its circle scaling as
+// one unit instead of exposing constrained individual text elements.
+private struct AvatarStackGlyph: View {
+    @EnvironmentObject var settings: AppSettings
+    let text: String
+    let baseSize: CGFloat
+    let scaledSize: CGFloat
+    var accent = false
+
+    var body: some View {
+        ZStack {
+            if accent {
+                Circle().fill(settings.accent)
+            } else {
+                Circle().fill(
+                    LinearGradient(colors: [Color(hex: 0x3A444B), Color(hex: 0x222A30)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+            }
+            Canvas { context, size in
+                let glyph = context.resolve(
+                    Text(text)
+                        .font(.grotesk(baseSize * (accent ? 0.34 : 0.36), .bold))
+                        .foregroundColor(accent ? settings.onAccent : .white)
+                )
+                context.draw(glyph,
+                             at: CGPoint(x: size.width / 2, y: size.height / 2),
+                             anchor: .center)
+            }
+        }
+        .frame(width: scaledSize, height: scaledSize)
+        .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1.5))
+        .accessibilityHidden(true)
     }
 }
 
@@ -71,6 +128,7 @@ struct AvatarStack: View {
 
 struct StatCell: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let value: String
     let label: String
     var accent: Bool = false
@@ -82,11 +140,15 @@ struct StatCell: View {
                 .font(.serif(size))
                 .foregroundStyle(accent ? settings.accent : settings.ink)
             Text(label)
-                .font(.mono(9, .medium))
-                .tracking(1.2)
+                .font(.mono(11, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1.2)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
     }
 }
 
@@ -126,14 +188,16 @@ struct CardStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(settings.card)
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .background(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(settings.card)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(accentBorder ? settings.accent : settings.line,
                                   lineWidth: accentBorder ? 1.5 : 1)
             )
-            .shadow(color: .black.opacity(settings.isArena ? 0.35 : 0.10), radius: 14, x: 0, y: 8)
     }
 }
 
@@ -147,17 +211,21 @@ extension View {
 
 struct Eyebrow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(.mono(11, .medium))
-            .tracking(2)
+            .font(.mono(12, .semibold))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0.5 : 2)
             .foregroundStyle(settings.muted)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 struct SectionHeader: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     var action: String? = nil
     var onTap: (() -> Void)? = nil     // when set, the action label becomes a real control
@@ -165,9 +233,10 @@ struct SectionHeader: View {
     var body: some View {
         HStack {
             Text(title.uppercased())
-                .font(.mono(11, .medium))
-                .tracking(2)
+                .font(.mono(12, .semibold))
+                .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
                 .foregroundStyle(settings.muted)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
             if let action {
                 if let onTap {
@@ -186,11 +255,12 @@ struct SectionHeader: View {
 // Win/Loss letter in accent (W) or muted (L).
 struct ResultBadge: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let res: String
     var body: some View {
         Text(res)
-            .font(.mono(9, .bold))
-            .tracking(1)
+            .font(.mono(11, .bold))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
             .foregroundStyle(res == "W" ? settings.accent : settings.muted)
     }
 }
@@ -206,10 +276,12 @@ struct PillButton: View {
         Button(action: action) {
             Text(title)
                 .font(.grotesk(12, .bold))
-                .foregroundStyle(filled ? .white : settings.ink)
+                .foregroundStyle(filled ? settings.onAccent : settings.ink)
+                .fixedSize(horizontal: true, vertical: true)
                 .padding(.horizontal, 14)
                 .padding(.vertical, filled ? 8 : 6.5)
-                .background(filled ? settings.accent : Color.clear)
+                .frame(minWidth: 44, minHeight: 44)
+                .background(filled ? settings.accent : settings.card)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -241,6 +313,7 @@ struct CPField: View {
             Text(label.uppercased())
                 .font(.mono(10, .medium)).tracking(1.5).foregroundStyle(settings.muted)
             TextField(placeholder, text: $text)
+                .accessibilityLabel(label)
                 .font(.grotesk(15)).foregroundStyle(settings.ink)
                 .tint(settings.accent)
                 .keyboardType(keyboard)
@@ -271,7 +344,7 @@ struct CPChips: View {
                     Button { selection = opt } label: {
                         Text(opt)
                             .font(.grotesk(12, .semibold))
-                            .foregroundStyle(on ? .white : settings.ink)
+                            .foregroundStyle(on ? settings.onAccent : settings.ink)
                             .padding(.vertical, 8).padding(.horizontal, 13)
                             .background(on ? settings.accent : settings.panel)
                             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -294,6 +367,7 @@ struct CreateScaffold<Content: View>: View {
     let canSave: Bool
     let onCancel: () -> Void
     let onSave: () -> Void
+    var cancelTitle = "Cancel"
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -309,10 +383,11 @@ struct CreateScaffold<Content: View>: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) { content() }
             }
+            .accessibilityIdentifier("curlplan.editor.scroll")
 
             HStack(spacing: 10) {
                 Button(action: onCancel) {
-                    Text("Cancel").font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
+                    Text(cancelTitle).font(.grotesk(14, .bold)).foregroundStyle(settings.ink)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
                             .strokeBorder(settings.ink, lineWidth: 1.5))
@@ -320,7 +395,7 @@ struct CreateScaffold<Content: View>: View {
                 .buttonStyle(.plain)
 
                 Button(action: onSave) {
-                    Text("Save").font(.grotesk(14, .bold)).foregroundStyle(.white)
+                    Text("Save").font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(canSave ? settings.accent : settings.muted.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
@@ -342,14 +417,21 @@ struct CreateScaffold<Content: View>: View {
 // Read-only star rating (filled accent + empty line), matching the web starsRow().
 struct StarsRow: View {
     @EnvironmentObject var settings: AppSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let count: Int
     var size: CGFloat = 13
     var body: some View {
         let n = max(0, min(5, count))
-        return (Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
-            + Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.line))
-            .font(.system(size: size))
-            .tracking(2)
+        return HStack(spacing: 0) {
+            Text(String(repeating: "★", count: n)).foregroundColor(settings.accent)
+            Text(String(repeating: "★", count: 5 - n)).foregroundColor(settings.muted)
+        }
+            .font(.grotesk(size))
+            .tracking(dynamicTypeSize.isAccessibilitySize ? 0 : 1)
+            .fixedSize(horizontal: true, vertical: true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(n) out of 5 stars")
+            .accessibilityRespondsToUserInteraction(false)
     }
 }
 
@@ -363,9 +445,12 @@ struct StarPicker: View {
                 Button { rating = i } label: {
                     Text("★")
                         .font(.system(size: 26))
+                        .frame(width: 44, height: 44)
                         .foregroundStyle(i <= rating ? settings.accent : settings.line)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(i) \(i == 1 ? "star" : "stars")")
+                .accessibilityValue(i == rating ? "Selected rating" : "")
             }
         }
     }
@@ -390,8 +475,10 @@ struct CPTextArea: View {
                     Text(placeholder)
                         .font(.grotesk(15)).foregroundStyle(settings.muted)
                         .padding(.vertical, 11).padding(.horizontal, 13)
+                        .accessibilityHidden(true)
                 }
                 TextField("", text: $text, axis: .vertical)
+                    .accessibilityLabel(label.isEmpty ? placeholder : label)
                     .font(.grotesk(15)).foregroundStyle(settings.ink)
                     .tint(settings.accent)
                     .padding(.vertical, 11).padding(.horizontal, 13)

@@ -1,0 +1,131 @@
+{
+  "source_commit": "9b166a33569b6826956f82ed545ff56c3208c7e0",
+  "run_url": "https://github.com/DaveHomeAssist/curl-plan/actions/runs/35861563250",
+  "platform": "GitHub Actions macOS 14, Xcode 15.4, iOS 17.0.1 Simulator",
+  "starting_data": "Erased iPhone 15 Pro and iPhone SE (3rd generation), fresh demo entry; larger-text step set the SE to Accessibility Medium before launch.",
+  "expected": "Standard and small I1 journeys complete, including a reachable Stop detail at larger text; focused Passport control audit and full screen accessibility audits pass.",
+  "actual": {
+    "standard_navigation": "passed",
+    "small_navigation": "passed",
+    "small_accessibility_medium_navigation": "failed: after an offscreen Kelowna row tap, ICE READ was not found; the failure snapshot remained on Passport (CurlPlanJourneyUITests.swift:24)",
+    "small_passport_control_audit": "passed: no hit-region or element-description findings",
+    "standard_full_accessibility": "failed",
+    "small_full_accessibility": "failed",
+    "issue_event_counts": {
+      "standard": {
+        "passport": {
+          "Contrast failed": 49,
+          "Dynamic Type font sizes are unsupported": 22,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Text clipped": 6
+        },
+        "stop-detail": {
+          "Dynamic Type font sizes are unsupported": 19,
+          "Dynamic Type font sizes are partially unsupported": 25,
+          "Text clipped": 5,
+          "Label not human-readable": 1,
+          "Contrast failed": 56
+        },
+        "tab-locker": {
+          "Contrast failed": 25,
+          "Dynamic Type font sizes are unsupported": 22,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Text clipped": 6
+        },
+        "tab-spiels": {
+          "Contrast failed": 30,
+          "Dynamic Type font sizes are unsupported": 22,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Text clipped": 6
+        },
+        "tab-roster": {
+          "Contrast failed": 26,
+          "Dynamic Type font sizes are unsupported": 22,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Text clipped": 6
+        },
+        "curler-profile": {
+          "Contrast failed": 26,
+          "Dynamic Type font sizes are unsupported": 18,
+          "Dynamic Type font sizes are partially unsupported": 21,
+          "Text clipped": 4
+        }
+      },
+      "small": {
+        "demo-gate": {
+          "Contrast failed": 1,
+          "Text clipped": 1
+        },
+        "passport": {
+          "Contrast failed": 48,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Dynamic Type font sizes are unsupported": 19,
+          "Text clipped": 4
+        },
+        "stop-detail": {
+          "Contrast failed": 53,
+          "Contrast nearly passed": 1,
+          "Dynamic Type font sizes are partially unsupported": 24,
+          "Dynamic Type font sizes are unsupported": 18,
+          "Text clipped": 3,
+          "Label not human-readable": 1
+        },
+        "tab-locker": {
+          "Contrast failed": 30,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Dynamic Type font sizes are unsupported": 19,
+          "Text clipped": 4
+        },
+        "tab-spiels": {
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Dynamic Type font sizes are unsupported": 19,
+          "Text clipped": 4,
+          "Contrast failed": 29
+        },
+        "tab-roster": {
+          "Contrast failed": 29,
+          "Dynamic Type font sizes are partially unsupported": 20,
+          "Dynamic Type font sizes are unsupported": 19,
+          "Text clipped": 4
+        },
+        "curler-profile": {
+          "Contrast failed": 24,
+          "Dynamic Type font sizes are partially unsupported": 21,
+          "Dynamic Type font sizes are unsupported": 15,
+          "Text clipped": 4
+        }
+      }
+    },
+    "clipped_or_unreadable_labels": {
+      "standard": [
+        "24.1s",
+        "FEB 14–16",
+        "Following",
+        "KEL",
+        "MAR 27–29",
+        "VER"
+      ],
+      "small": [
+        "24.1s",
+        "A WORKING CURLPLAN PRODUCT PREVIEW",
+        "FEB 14–16",
+        "Following",
+        "KEL",
+        "MAR 27–29",
+        "SEASON 2025–26 · IN PROGRESS"
+      ]
+    }
+  },
+  "larger_text_snapshot": {
+    "kelowna_row_frame_points": "{{20, 648}, {335, 113.5}}",
+    "passport_tab_frame_points": "{{0, 608}, {94, 51}}",
+    "interpretation": "The row existed below the visible area and was not scrolled into view before tap. This identifies a test reachability gap; a scrolling retest is required to classify product behavior."
+  },
+  "screenshots": {
+    "larger_text_passport_before_scroll": "native-run-35861563250-large-type-passport-before-scroll.png",
+    "standard_passport": "native-run-35861563250-standard-passport.png",
+    "standard_stop_detail": "native-run-35861563250-standard-stop.png"
+  },
+  "severity": "High release blocker for iOS until large-text reachability and full accessibility findings are retested.",
+  "successful_retest": "The focused Passport hit-region and description test passed on the SE. Large-text navigation and full accessibility have no successful retest yet."
+}

@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-26",
+  "device": "Ignacio, iPad Pro 11-inch (2nd generation)",
+  "os": "iPadOS 18.7.8",
+  "transport": "local network",
+  "app_source": "c7fe3c808c810357817f9207b2a90bbfb0b75c0c",
+  "checkout_base": "c1a25bc76f457c5ff52a21e0431e69cacd74eed8",
+  "test_changes": "iPad top-button fallback and sign-out setup for repeat runs",
+  "starting_data": "existing demo state preserved; sign out then enter demo",
+  "test": "CurlPlanJourneyUITests/testDemoTabsDetailsAndRelaunch",
+  "result": "pass",
+  "duration_seconds": 45.626,
+  "steps": [
+    "enter demo",
+    "Passport to Kelowna Stop",
+    "switch Locker and return to preserved Stop",
+    "Back to Passport",
+    "Spiels",
+    "Roster to Sam profile",
+    "toggle follow",
+    "Back",
+    "terminate and relaunch",
+    "verify session and follow persistence"
+  ],
+  "expected": "reachable controls, consistent Back, saved session and follow state",
+  "actual": "all assertions passed",
+  "initial_failure": "iPhone-only TabBar query missed iPad top buttons; captured hierarchy confirmed controls existed",
+  "voiceover": "disabled; spoken interaction not tested",
+  "visual_limit": "screenshot orientation/cropping appears unreliable; no full visual acceptance claim"
+}
