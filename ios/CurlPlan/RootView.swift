@@ -102,11 +102,8 @@ struct RootView: View {
 }
 
 // A NavigationStack that resolves the shared Route destinations.
-// The tab bar background must be declared inside each tab: SwiftUI ignores
-// toolbarBackground(_:for: .tabBar) on the TabView itself, which left the bar
-// on the translucent system material with scroll content sitting beneath it.
+// Tab bar colors come from TabBarStyle (Theme.swift).
 struct TabStack<Content: View>: View {
-    @EnvironmentObject var settings: AppSettings
     @Binding var path: [Route]
     @ViewBuilder var content: () -> Content
     var body: some View {
@@ -119,7 +116,5 @@ struct TabStack<Content: View>: View {
                     }
                 }
         }
-        .toolbarBackground(settings.card, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
     }
 }

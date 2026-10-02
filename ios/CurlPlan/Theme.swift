@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Color from hex
 
@@ -11,6 +12,59 @@ extension Color {
             blue: Double(hex & 0xFF) / 255.0,
             opacity: 1.0
         )
+    }
+}
+
+// Surface and text values shared by the SwiftUI tokens and the UIKit tab bar.
+enum Palette {
+    static let iceCard: UInt = 0xFFFFFF
+    static let arenaCard: UInt = 0x1B2228
+    static let iceMuted: UInt = 0x465159
+    static let arenaMuted: UInt = 0xB3BCC2
+}
+
+extension UIColor {
+    convenience init(hex: UInt) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255.0,
+            green: CGFloat((hex >> 8) & 0xFF) / 255.0,
+            blue: CGFloat(hex & 0xFF) / 255.0,
+            alpha: 1.0
+        )
+    }
+
+    /// Ice renders in light mode and Arena in dark mode (preferredColorScheme).
+    static func themed(ice: UInt, arena: UInt) -> UIColor {
+        UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: arena) : UIColor(hex: ice) }
+    }
+}
+
+// MARK: - Tab bar chrome
+// The tab bar is a solid card surface with muted unselected items (about 8:1 on
+// card in both themes). The system default was a translucent material with gray
+// items near 2.6:1, and rows partly beneath the bar failed contrast audits.
+// SwiftUI ignores toolbarBackground(_:for: .tabBar) on a TabView and has no
+// unselected-item color, so the bar is styled through UIKit appearance.
+
+enum TabBarStyle {
+    static func appearance() -> UITabBarAppearance {
+        let muted = UIColor.themed(ice: Palette.iceMuted, arena: Palette.arenaMuted)
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor.themed(ice: Palette.iceCard, arena: Palette.arenaCard)
+        for layout in [appearance.stackedLayoutAppearance,
+                       appearance.inlineLayoutAppearance,
+                       appearance.compactInlineLayoutAppearance] {
+            layout.normal.iconColor = muted
+            layout.normal.titleTextAttributes = [.foregroundColor: muted]
+        }
+        return appearance
+    }
+
+    static func apply() {
+        let bar = UITabBar.appearance()
+        bar.standardAppearance = appearance()
+        bar.scrollEdgeAppearance = appearance()
     }
 }
 
@@ -93,10 +147,10 @@ final class AppSettings: ObservableObject {
     var onAccent: Color { isArena ? Color(hex: 0x13181B) : .white }
     var isArena: Bool { theme == .arena }
     var ink: Color { isArena ? Color(hex: 0xEEF3F6) : Color(hex: 0x1B2227) }
-    var muted: Color { isArena ? Color(hex: 0xB3BCC2) : Color(hex: 0x465159) }
+    var muted: Color { isArena ? Color(hex: Palette.arenaMuted) : Color(hex: Palette.iceMuted) }
     var line: Color { isArena ? Color.white.opacity(0.09) : Color(hex: 0xDDE4E8) }
     var screen: Color { isArena ? Color(hex: 0x13181B) : Color(hex: 0xECEFF1) }
-    var card: Color { isArena ? Color(hex: 0x1B2228) : Color.white }
+    var card: Color { isArena ? Color(hex: Palette.arenaCard) : Color(hex: Palette.iceCard) }
     var panel: Color { isArena ? Color(hex: 0x222A31) : Color(hex: 0xE6EEF2) }
     var pebbleOpacity: Double { pebble ? 0.6 : 0 }
 }

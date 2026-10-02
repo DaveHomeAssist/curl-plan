@@ -72,6 +72,29 @@ final class StoreTests: XCTestCase {
         }
     }
 
+    // The tab bar is an opaque card surface whose unselected items use the muted token.
+    func testTabBarChromeUsesThemeTokens() throws {
+        let settings = AppSettings()
+        let oldTheme = settings.theme
+        defer { settings.theme = oldTheme }
+        let appearance = TabBarStyle.appearance()
+        func hex(_ color: UIColor?) -> UInt? {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            guard let color, color.getRed(&r, green: &g, blue: &b, alpha: &a), a == 1 else { return nil }
+            return (UInt((r * 255).rounded()) << 16) | (UInt((g * 255).rounded()) << 8) | UInt((b * 255).rounded())
+        }
+        for (theme, style) in [(AppSettings.AppTheme.ice, UIUserInterfaceStyle.light), (.arena, .dark)] {
+            settings.theme = theme
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            XCTAssertEqual(hex(appearance.backgroundColor?.resolvedColor(with: traits)), hex(UIColor(settings.card)), "\(theme) bar background")
+            for layout in [appearance.stackedLayoutAppearance, appearance.inlineLayoutAppearance, appearance.compactInlineLayoutAppearance] {
+                XCTAssertEqual(hex(layout.normal.iconColor?.resolvedColor(with: traits)), hex(UIColor(settings.muted)), "\(theme) item icon")
+                let title = layout.normal.titleTextAttributes[.foregroundColor] as? UIColor
+                XCTAssertEqual(hex(title?.resolvedColor(with: traits)), hex(UIColor(settings.muted)), "\(theme) item title")
+            }
+        }
+    }
+
     func testDatedEventOrderingConflictsRescheduleAndDeletion() throws {
         let s = Store(); s.exploreDemo()
         func save(_ id: String? = nil, _ name: String, _ start: Double, _ end: Double) -> Bool {
