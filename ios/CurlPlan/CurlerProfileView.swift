@@ -40,7 +40,10 @@ struct CurlerProfileView: View {
                             recentForm(c)
                         }
                         .padding(.horizontal, 20)
-                        .padding(.top, 10)
+                        // Not 10: on a 667 pt phone that put the Recent form header across the
+                        // top edge of the solid tab bar, so the audit cropped it as two
+                        // backgrounds. At 2 the header ends above the bar and its card below it.
+                        .padding(.top, 2)
                         .padding(.bottom, 96)
                     }
                     .clipped()

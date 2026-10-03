@@ -317,6 +317,14 @@ struct StopDetailView: View {
                 }
             }
         }
+        // The list sits on a card, like the games list above it. On a 667 pt phone the first
+        // rows rest across the top edge of the solid tab bar, and the contrast audit crops each
+        // element's frame from the screenshot. Text on the screen color beside a card-colored
+        // bar crops as two backgrounds and fails; text on a card matches the bar.
+        .padding(.vertical, 10)
+        .padding(.horizontal, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cpCard()
     }
 
     private func personLink(_ curler: Curler) -> some View {
