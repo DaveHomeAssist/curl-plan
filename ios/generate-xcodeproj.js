@@ -45,6 +45,18 @@ const UITEST_TARGET = id(), UITEST_PRODUCT_REF = id(), UITEST_GROUP = id(),
       UITEST_DEP = id(), UITEST_PROXY = id();
 const uiTestObjs = uiTestFiles.map(name => ({ name, ref: id(), build: id() }));
 
+// App target resources: the asset catalog (app icon) and the privacy manifest. Without
+// these in the Resources phase the archived app has no Assets.car, no CFBundleIconName and
+// no PrivacyInfo.xcprivacy, and App Store Connect rejects the upload. Allocated after every
+// other object so existing project ids stay stable.
+const resourceCandidates = [
+  { name: "Assets.xcassets", type: "folder.assetcatalog" },
+  { name: "PrivacyInfo.xcprivacy", type: "text.xml" },
+];
+const resourceObjs = resourceCandidates
+  .filter(r => fs.existsSync(path.join(srcDir, r.name)))
+  .map(r => ({ ...r, ref: id(), build: id() }));
+
 const fileRefs = fileObjs.map(f =>
   `\t\t${f.ref} /* ${f.name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "${f.name}"; sourceTree = "<group>"; };`
 ).join("\n");
@@ -53,6 +65,15 @@ const buildFiles = fileObjs.map(f =>
 ).join("\n");
 const groupChildren = fileObjs.map(f => `\t\t\t\t${f.ref} /* ${f.name} */,`).join("\n");
 const sourcesFiles = fileObjs.map(f => `\t\t\t\t${f.build} /* ${f.name} in Sources */,`).join("\n");
+
+const resourceFileRefs = resourceObjs.map(r =>
+  `\t\t${r.ref} /* ${r.name} */ = {isa = PBXFileReference; lastKnownFileType = ${r.type}; path = "${r.name}"; sourceTree = "<group>"; };`
+).join("\n");
+const resourceBuildFiles = resourceObjs.map(r =>
+  `\t\t${r.build} /* ${r.name} in Resources */ = {isa = PBXBuildFile; fileRef = ${r.ref} /* ${r.name} */; };`
+).join("\n");
+const resourceGroupChildren = resourceObjs.map(r => `\n\t\t\t\t${r.ref} /* ${r.name} */,`).join("");
+const resourcesFiles = resourceObjs.map(r => `\t\t\t\t${r.build} /* ${r.name} in Resources */,`).join("\n");
 
 const testFileRefs = testObjs.map(f =>
   `\t\t${f.ref} /* ${f.name} */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "${f.name}"; sourceTree = "<group>"; };`
@@ -72,6 +93,7 @@ const uiTestGroupChildren = uiTestObjs.map(f => `\t\t\t\t${f.ref} /* ${f.name} *
 const uiTestSourcesFiles = uiTestObjs.map(f => `\t\t\t\t${f.build} /* ${f.name} in Sources */,`).join("\n");
 
 const targetBuildSettings = `
+\t\t\t\tASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 \t\t\t\tASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
 \t\t\t\tCODE_SIGN_STYLE = Automatic;
 \t\t\t\tCURRENT_PROJECT_VERSION = 1;
@@ -387,12 +409,12 @@ const pbx = `// !$*UTF8*$!
 \tobjects = {
 
 /* Begin PBXBuildFile section */
-${buildFiles}${testBuildFileSection}${uiTestBuildFileSection}
+${buildFiles}${resourceObjs.length ? "\n" + resourceBuildFiles : ""}${testBuildFileSection}${uiTestBuildFileSection}
 /* End PBXBuildFile section */
 ${depSection}${uiTestDepSection}
 /* Begin PBXFileReference section */
 \t\t${PRODUCT_REF} /* CurlPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurlPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
-${fileRefs}${testFileRefSection}${uiTestFileRefSection}
+${fileRefs}${resourceObjs.length ? "\n" + resourceFileRefs : ""}${testFileRefSection}${uiTestFileRefSection}
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -417,7 +439,7 @@ ${fileRefs}${testFileRefSection}${uiTestFileRefSection}
 \t\t${GROUP_SRC} /* CurlPlan */ = {
 \t\t\tisa = PBXGroup;
 \t\t\tchildren = (
-${groupChildren}
+${groupChildren}${resourceGroupChildren}
 \t\t\t);
 \t\t\tpath = CurlPlan;
 \t\t\tsourceTree = "<group>";
@@ -487,7 +509,7 @@ ${groupChildren}
 \t\t${PHASE_RESOURCES} /* Resources */ = {
 \t\t\tisa = PBXResourcesBuildPhase;
 \t\t\tbuildActionMask = 2147483647;
-\t\t\tfiles = (
+\t\t\tfiles = (${resourceObjs.length ? "\n" + resourcesFiles : ""}
 \t\t\t);
 \t\t\trunOnlyForDeploymentPostprocessing = 0;
 \t\t};
