@@ -29,6 +29,8 @@
 		000000000000000000000042 /* SpielsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000041 /* SpielsView.swift */; };
 		000000000000000000000044 /* StopDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000043 /* StopDetailView.swift */; };
 		000000000000000000000046 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* Theme.swift */; };
+		00000000000000000000005B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000005A /* Assets.xcassets */; };
+		00000000000000000000005D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000005C /* PrivacyInfo.xcprivacy */; };
 		000000000000000000000048 /* MergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* MergeTests.swift */; };
 		00000000000000000000004A /* StoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* StoreTests.swift */; };
 		000000000000000000000057 /* CurlPlanAccessibilityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* CurlPlanAccessibilityUITests.swift */; };
@@ -95,6 +97,8 @@
 		000000000000000000000041 /* SpielsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SpielsView.swift"; sourceTree = "<group>"; };
 		000000000000000000000043 /* StopDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StopDetailView.swift"; sourceTree = "<group>"; };
 		000000000000000000000045 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Theme.swift"; sourceTree = "<group>"; };
+		00000000000000000000005A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		00000000000000000000005C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		000000000000000000000047 /* MergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MergeTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000049 /* StoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StoreTests.swift"; sourceTree = "<group>"; };
 		000000000000000000000011 /* CurlPlanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurlPlanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -149,6 +153,8 @@
 				000000000000000000000041 /* SpielsView.swift */,
 				000000000000000000000043 /* StopDetailView.swift */,
 				000000000000000000000045 /* Theme.swift */,
+				00000000000000000000005A /* Assets.xcassets */,
+				00000000000000000000005C /* PrivacyInfo.xcprivacy */,
 			);
 			path = CurlPlan;
 			sourceTree = "<group>";
@@ -285,6 +291,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				00000000000000000000005B /* Assets.xcassets in Resources */,
+				00000000000000000000005D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -422,6 +430,7 @@
 		00000000000000000000000E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -449,6 +458,7 @@
 		00000000000000000000000F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

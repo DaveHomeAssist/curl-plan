@@ -2,6 +2,12 @@
 
 All material CurlPlan product and engineering changes are recorded here. Dates are release or integration dates; unreleased account work is labeled explicitly.
 
+## 2026-10-04
+
+### Fixed
+
+- iOS packaging: `ios/generate-xcodeproj.js` now adds `Assets.xcassets` and `PrivacyInfo.xcprivacy` to the app target's Resources phase and sets `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`. The archived app previously had no `Assets.car`, no `CFBundleIconName` and no privacy manifest, so App Store Connect rejected the TestFlight upload (missing 120x120 iPhone icon, 152x152 iPad icon and `CFBundleIconName`).
+
 ## 2026-08-26
 
 ### Fixed
