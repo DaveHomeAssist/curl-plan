@@ -1,0 +1,3 @@
+activity,surface,check,result,evidence,scope
+A33,AccountRuntime unit tests,Export preserves restored version; sign-out cannot race pending sign-in,Fail before repair,account-runtime-before.log,3 tests;3 failing assertions; stubbed HTTP boundaries
+A33,AccountRuntime unit tests,All account actions reject overlap; revocation is busy; export preserves version; unconfigured sends no requests,Pass,account-runtime-after.log; tests/CurlPlanCoreTests/AccountRuntimeTests.swift,3 tests;0 failures; one build job; no account UI or real export-file acceptance

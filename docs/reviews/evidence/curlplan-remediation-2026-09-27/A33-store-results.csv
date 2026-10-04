@@ -1,0 +1,7 @@
+activity,surface,check,result,evidence,scope
+A33,Native Store core,Demo/account A/account B isolation; authentication required after restart; correct profile and derived totals,Pass,tests/CurlPlanCoreTests/AccountStoreTests.swift,Unit proof; account UI not exposed
+A33,Native restore core,Matching account required; local recovery copy; malformed and unsupported records rejected without mutation,Pass,tests/CurlPlanCoreTests/AccountStoreTests.swift,Remote raw JSON loss detection; typed Store boundary
+A33,HTTP transport/runtime,Reject lossy payload; schema/version mismatch; foreign account season,Pass,tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift; tests/CurlPlanCoreTests/AccountRuntimeTests.swift,Stubbed network; no live deployment or physical account flow
+A33,SwiftPM core,Full suite,Pass,/tmp/curlplan-remediation/account-store-full-tests.log,32 tests; zero failures; reusable cache
+A33,Native iOS build,Signed generic iOS build-for-testing,Pass,/tmp/curlplan-remediation/account-store-build.log,One Xcode job; compile only; no simulator or active Mac UI
+A33,Parity,Shared source capabilities,Pass,node scripts/verify-parity.js,12 checks; no end-to-end account acceptance

@@ -60,32 +60,32 @@ enum Seed {
              games: [],
              met: []),
         Stop(id: "kelowna", code: "KEL", name: "Kelowna Bonspiel", club: "Kelowna Curling Club", prov: "BC",
-             dates: "JAN 9–11", record: "3–1", here: false, x: 70, y: 32, big: false, plus: "+3",
-             iceSpeed: "Fast", iceSpeedSec: "24.1s", iceCurl: "5–6", iceRec: "3–1",
+             dates: "JAN 9–11", record: "1–1", here: false, x: 70, y: 32, big: false, plus: "+3",
+             iceSpeed: "Fast", iceSpeedSec: "24.1s", iceCurl: "5–6", iceRec: "1–1",
              games: [
                 GameLine(label: "vs Carter", score: "8–4", res: "W"),
                 GameLine(label: "vs Lindqvist", score: "5–7", res: "L")
             ],
              met: ["sam", "jo", "dee"]),
         Stop(id: "vernon", code: "VER", name: "Vernon Cashspiel", club: "Vernon Curling Club", prov: "BC",
-             dates: "DEC 2", record: "2–1", here: false, x: 50, y: 68, big: false, plus: "+2",
-             iceSpeed: "Medium", iceSpeedSec: "25.0s", iceCurl: "4–5", iceRec: "2–1",
+             dates: "DEC 2", record: "1–1", here: false, x: 50, y: 68, big: false, plus: "+2",
+             iceSpeed: "Medium", iceSpeedSec: "25.0s", iceCurl: "4–5", iceRec: "1–1",
              games: [
                 GameLine(label: "vs Reid", score: "6–8", res: "L"),
                 GameLine(label: "vs Mara", score: "7–5", res: "W")
             ],
              met: ["sam", "jo"]),
         Stop(id: "calgary", code: "CAL", name: "Sage Valley Open", club: "Sage Valley CC", prov: "AB",
-             dates: "NOV 14–16", record: "2–2", here: false, x: 30, y: 39, big: false, plus: nil,
-             iceSpeed: "Keen", iceSpeedSec: "23.2s", iceCurl: "6–7", iceRec: "2–2",
+             dates: "NOV 14–16", record: "1–1", here: false, x: 30, y: 39, big: false, plus: nil,
+             iceSpeed: "Keen", iceSpeedSec: "23.2s", iceCurl: "6–7", iceRec: "1–1",
              games: [
                 GameLine(label: "vs Carter", score: "9–7", res: "W"),
                 GameLine(label: "vs Park", score: "4–9", res: "L")
             ],
              met: ["carter"]),
         Stop(id: "winnipeg", code: "WPG", name: "Granite City Classic", club: "Granite City CC", prov: "MB",
-             dates: "OCT 24–26", record: "3–0", here: false, x: 14, y: 64, big: false, plus: nil,
-             iceSpeed: "Fast", iceSpeedSec: "24.4s", iceCurl: "5–6", iceRec: "3–0",
+             dates: "OCT 24–26", record: "2–0", here: false, x: 14, y: 64, big: false, plus: nil,
+             iceSpeed: "Fast", iceSpeedSec: "24.4s", iceCurl: "5–6", iceRec: "2–0",
              games: [
                 GameLine(label: "vs Lindqvist", score: "6–5", res: "W"),
                 GameLine(label: "vs Olsen", score: "8–3", res: "W")

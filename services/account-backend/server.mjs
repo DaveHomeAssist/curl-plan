@@ -198,6 +198,13 @@ async function routeRequest({ request, response, store, url, requestID }) {
     return;
   }
 
+  if (method === "GET" && path === "/v1/me/export") {
+    const { accountID } = requireSession(store, request);
+    response.setHeader("Content-Disposition", 'attachment; filename="CurlPlan Account Export.json"');
+    sendJSON(response, 200, accountExportDocument(store.state, accountID));
+    return;
+  }
+
   if (method === "POST" && path === "/v1/me/export") {
     const { accountID } = requireSession(store, request);
     const sections = ["account", "profile"];
@@ -800,6 +807,29 @@ function isBlockedBetween(state, accountID, targetID) {
 function samePair(edge, accountID, targetID) {
   return (edge.actorID === accountID && edge.targetID === targetID) ||
     (edge.actorID === targetID && edge.targetID === accountID);
+}
+
+// Export public contract fields explicitly; never serialize the credential/session store.
+function accountExportDocument(state, accountID) {
+  const pick = (record, fields) => Object.fromEntries(fields.map((key) => [key, record[key] ?? null]));
+  return {
+    formatVersion: 1,
+    exportedAt: now(),
+    account: pick(state.accounts[accountID], ["id", "createdAt", "status", "deletedAt"]),
+    profile: pick(state.profiles[accountID], ["accountID", "handle", "displayName", "homeClub", "avatarURL", "visibility", "searchable"]),
+    season: state.seasons[accountID]
+      ? pick(state.seasons[accountID], ["id", "accountID", "schemaVersion", "version", "body", "updatedAt"]) : null,
+    ownedSharedObjects: Object.values(state.sharedObjects).filter((x) => x.ownerID === accountID)
+      .map((x) => pick(x, ["id", "kind", "ownerID", "visibility", "version", "title"])),
+    relationships: state.relationships.filter((x) => x.actorID === accountID)
+      .map((x) => pick(x, ["id", "actorID", "targetID", "kind", "state", "createdAt"])),
+    memberships: state.memberships.filter((x) => x.accountID === accountID)
+      .map((x) => pick(x, ["id", "objectID", "accountID", "role", "state"])),
+    interactions: Object.values(state.interactions).filter((x) => x.actorID === accountID)
+      .map((x) => pick(x, ["id", "objectID", "actorID", "kind", "body", "state", "createdAt"])),
+    reports: state.reports.filter((x) => x.reporterID === accountID)
+      .map((x) => pick(x, ["id", "reporterID", "targetID", "reason", "state", "createdAt"]))
+  };
 }
 
 function setBaseHeaders(response) {

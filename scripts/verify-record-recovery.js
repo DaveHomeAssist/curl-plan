@@ -1,0 +1,368 @@
+#!/usr/bin/env node
+"use strict";
+// Exercise the actual inline app functions with storage and form elements only.
+// This verifies record transactions, not browser layout or device interaction.
+const fs = require("node:fs");
+const vm = require("node:vm");
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const { mergeState } = require("../src/merge.js");
+const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+const source = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
+const functions = source.slice(0, source.indexOf("/* ============================================================\n   Event delegation"));
+assert(functions.length > 0);
+const disk = new Map();
+let full = false, confirmed = false;
+function launch() {
+  const nodes = new Map();
+  const sheet = {};
+  Object.defineProperty(sheet, "innerHTML", { set(markup) {
+    sheet.markup = markup;
+    nodes.clear();
+    for (const m of markup.matchAll(/\bid="(f-[^"]+)"/g)) nodes.set(m[1], { value:"", children:[] });
+  }});
+  const c = vm.createContext({
+    console, setTimeout, clearTimeout, TextEncoder,
+    localStorage: { getItem:k => disk.get(k) || null, setItem:(k,v) => { if(full) throw Error("QuotaExceededError"); disk.set(k,v); } },
+    document: { getElementById:id => id === "sheet-body" ? sheet : nodes.get(id) || null },
+    window: { confirm:() => confirmed },
+  });
+  vm.runInContext(functions, c);
+  c.toast = message => { c.message = message; };
+  c.render = () => {};
+  c.gotoTab = () => {};
+  c.openManagedSheet = () => {};
+  c.auth.session = "demo";
+  c.refreshStore();
+  c.field = (id, value) => { const node = nodes.get("f-" + id); assert(node, `Missing field ${id}`); node.value = value; };
+  c.value = id => nodes.get("f-" + id)?.value;
+  c.sheetMarkup = () => sheet.markup;
+  return c;
+}
+let app = launch();
+function assertPassportGames(count) {
+  assert.match(app.viewPassport(), new RegExp('class="num">' + count + '</div><div class="lab">GAMES'));
+}
+assertPassportGames(0);
+assert.equal(app.spielStatus(app.spielById("sp1")), "Considering");
+app.store.joins.sp1 = {v:"You're in",at:1}; app.saveStore();
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Going");
+assert.equal(app.withdrawSpiel("sp1"), true);
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Not going");
+full = true; assert.equal(app.setSpielStatus("sp1", "Going"), false);
+assert.equal(app.spielStatus(app.spielById("sp1")), "Not going");
+full = false; assert.equal(app.setSpielStatus("sp1", "Considering"), true);
+assert.equal(app.setSpielStatus("sp1", "Registered"), false);
+assert.equal(app.setSpielStatus("missing", "Going"), false);
+app = launch(); assert.equal(app.spielStatus(app.spielById("sp1")), "Considering");
+assert.match(app.viewSpiels(), /data-action="attendance-intent"/);
+
+const seed = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/season-seed.json"), "utf8"));
+for (const stop of seed.stops.filter(s => s.games.length)) {
+  const record = stop.games.filter(g => g.res === "W").length + "–" + stop.games.filter(g => g.res === "L").length;
+  assert.equal(stop.record, record, stop.id);
+  assert.equal(stop.ice.rec, record, stop.id);
+}
+app.openNewCurler(); app.field("name", "Roster test"); app.field("role", "Second");
+app.field("club", "Test club"); app.field("prov", "bc"); app.field("spare", "Yes");
+app.field("contact", "test@example.invalid"); app.field("availability", "Available");
+app.field("from", "2026-02-30"); app.field("through", "2026-03-01"); app.field("notes", "Evenings after 6");
+assert.equal(app.submitNewCurler(), false);
+app.field("from", "2026-10-01"); app.field("through", "2026-10-03");
+full = true; assert.equal(app.submitNewCurler(), false); assert.equal(app.store.addedCurlers.length, 0);
+full = false; assert.equal(app.submitNewCurler(), true);
+app = launch(); const contact = app.store.addedCurlers[0];
+assert.equal(contact.rosterDetails.isSpare, true); assert.equal(contact.club, "Test club");
+assert.match(app.viewCurler(contact.id), /Saved on your roster/);
+assert.match(app.viewCurler(contact.id), /No shared club history recorded/);
+assert.match(app.viewCurler(contact.id), /No game history recorded for this contact/);
+assert(!app.viewCurler(contact.id).includes("You met at your roster"));
+app.ui.rosterQ = "Second"; assert.match(app.rosterRows(), /Roster test/);
+app.ui.rosterQ = "Spare"; assert.match(app.rosterRows(), /Roster test/); app.ui.rosterQ = "";
+app.validateBackup(app.makeBackup());
+app.openNewCurler(contact.id); assert.equal(app.value("contact"), "test@example.invalid");
+app.field("availability", "Unavailable"); app.field("notes", "Away"); assert.equal(app.submitNewCurler(), true);
+app = launch(); assert.equal(app.store.addedCurlers.length, 1); assert.equal(app.store.addedCurlers[0].rosterDetails.notes, "Away");
+assert.equal(app.openNewCurler("sam"), false);
+confirmed = false; assert.equal(app.deleteRosterContact(contact.id), false);
+const rosterStale = JSON.parse(JSON.stringify(app.store));
+confirmed = true; full = true; assert.equal(app.deleteRosterContact(contact.id), false);
+full = false; assert.equal(app.deleteRosterContact(contact.id), true);
+app = launch(); assert.equal(app.store.addedCurlers.length, 0);
+assert.equal(mergeState(rosterStale, app.store).addedCurlers.length, 0);
+assert.equal(app.openNewCurler(contact.id), false);
+confirmed = false;
+app.openCompose(); app.field("body", "original");
+assert.equal(app.persistEditorDraft(), true);
+assert.equal(app.closeSheet(), true);
+app = launch(); app.openCompose(); assert.equal(app.value("body"), "original");
+assert.equal(app.submitCompose("note"), true);
+let post = app.store.posts[0]; const id = post.id;
+app.store.likes[id] = {v:true, at:1}; app.saveStore();
+app.openCompose(null, id); app.field("body", "corrected"); app.persistEditorDraft();
+assert.equal(app.store.posts[0].body, "original");
+app = launch(); app.openCompose(null, id); assert.equal(app.value("body"), "corrected");
+assert.equal(app.submitCompose("note"), true);
+assert.equal(app.store.posts[0].id, id); assert.equal(app.store.posts.length, 1);
+assert.equal(app.store.likes[id].v, true);
+app.ui.lockerQ = "corrected"; assert.match(app.lockerCards(), /corrected/);
+app.ui.lockerQ = "original"; assert(!app.lockerCards().includes("corrected"));
+app.ui.lockerQ = "";
+const stale = JSON.parse(JSON.stringify(app.store));
+confirmed = false; assert.equal(app.deleteOwnedRecord("post", id), false);
+confirmed = true; assert.equal(app.deleteOwnedRecord("post", id), true);
+assert.equal(mergeState(stale, app.store).posts.length, 0);
+app = launch(); assert.equal(app.store.posts.length, 0);
+app.openCompose(); app.field("body", "keep me"); app.persistEditorDraft();
+full = true; assert.equal(app.submitCompose("note"), false);
+assert.equal(app.store.posts.length, 0); assert.equal(app.value("body"), "keep me");
+assert.equal(app.closeSheet(), false); assert.match(app.message, /Could not save/);
+full = false; confirmed = false; app.discardEditorDraft(); assert(app.activeEditor);
+confirmed = true; app.discardEditorDraft(); assert.equal(app.activeEditor, null);
+app = launch(); app.openCompose(); assert.equal(app.value("body"), "");
+app.openCompose("result"); app.field("for", "4.5"); app.field("ag", "2");
+assert.equal(app.submitCompose("result"), false);
+app.field("for", "-1"); assert.equal(app.submitCompose("result"), false);
+app.field("for", "8"); assert.equal(app.submitCompose("result"), true);
+assertPassportGames(1);
+assert.equal(app.derivedStats().win, 100);
+post = app.store.posts[0]; app.openCompose(null, post.id); app.field("for", "1");
+assert.equal(app.submitCompose("result"), true); assert.equal(app.store.posts[0].score.res, "LOSS");
+assert.equal(app.derivedStats().win, 0);
+assertPassportGames(1);
+const resultID = post.id;
+assert.equal(app.deleteOwnedRecord("post", resultID), true);
+app = launch(); assertPassportGames(0);
+app.openCompose("result"); app.field("for", "8"); app.field("ag", "2");
+assert.equal(app.submitCompose("result"), true);
+post = app.store.posts[0];
+app.openCompose(null, post.id); app.store.posts = [];
+assert.equal(app.submitCompose("result"), false); app.activeEditor = null;
+assert.equal(app.ownedPost(app.feed[0].id), null);
+app.openReview("kelowna"); app.field("note", "first review"); app.setStars(5);
+assert.equal(app.submitReview("kelowna"), true);
+const reviewId = app.store.reviews.kelowna[0].id;
+app.openReview("kelowna", reviewId); app.field("note", "revised"); app.setStars(2); app.persistEditorDraft();
+app = launch(); app.openReview("kelowna", reviewId);
+assert.equal(app.value("note"), "revised"); assert.equal(app.formStars, 2);
+assert.equal(app.store.reviews.kelowna[0].note, "first review");
+assert.equal(app.submitReview("kelowna"), true); assert.equal(app.store.reviews.kelowna[0].stars, 2);
+const staleReviews = JSON.parse(JSON.stringify(app.store));
+assert.equal(app.deleteOwnedRecord("review", reviewId, "kelowna"), true);
+assert.equal(mergeState(staleReviews, app.store).reviews.kelowna.length, 0);
+app = launch(); assert.equal(app.store.reviews.kelowna.length, 0);
+disk.set(app.storeKey(), JSON.stringify({reviews:{kelowna:[{stars:4,note:"legacy review",at:1}]}}));
+app = launch(); const legacyId = app.store.reviews.kelowna[0].id;
+app = launch(); assert.equal(app.store.reviews.kelowna[0].id, legacyId);
+app.openReview("kelowna", legacyId); app.field("note", "legacy corrected");
+assert.equal(app.submitReview("kelowna"), true);
+app = launch(); assert.equal(app.store.reviews.kelowna.length, 1);
+assert.equal(app.store.reviews.kelowna[0].note, "legacy corrected");
+app.openCompose(); app.field("body", "private draft"); app.persistEditorDraft();
+app.auth.session = null; app.refreshStore(); assert.equal(Object.keys(app.store.drafts).length, 0);
+assert.equal(app.persistEditorDraft(), false);
+app.auth.session = "demo"; app.refreshStore(); app.activeEditor = null;
+app.openIceRead("kelowna"); app.field("date", "2026-02-30"); app.field("curl", "4–5");
+assert.equal(app.submitIceRead("kelowna"), false);
+app.field("date", "2026-09-27"); app.field("sheet", "A"); app.field("note", "late draw");
+full = true; assert.equal(app.submitIceRead("kelowna"), false);
+assert.equal((app.store.iceReads.kelowna || []).length, 0);
+assert.equal(app.value("sheet"), "A");
+full = false; assert.equal(app.submitIceRead("kelowna"), true);
+app = launch(); assert.equal(app.store.iceReads.kelowna[0].date, "2026-09-27");
+assert.equal(app.store.iceReads.kelowna[0].sheet, "A");
+assert.match(app.viewStop("kelowna"), /2026-09-27 · Sheet A/);
+app.store.iceReads.kelowna.push({speed:"Fast",curl:"5",note:"legacy",at:1});
+assert.match(app.viewStop("kelowna"), /Date not recorded · Sheet not recorded/);
+const backup = app.makeBackup();
+const beforePreview = JSON.stringify(app.store);
+app.previewBackup(backup);
+assert.equal(JSON.stringify(app.store), beforePreview);
+const invalidBackup = JSON.parse(JSON.stringify(backup)); invalidBackup.state.posts = "broken";
+assert.throws(() => app.validateBackup(invalidBackup));
+assert.throws(() => app.validateBackup(Object.assign({}, backup, {version:99})));
+assert.throws(() => app.validateBackup(Object.assign({}, backup, {account:"other"})));
+app.store.posts = []; app.saveStore();
+app.previewBackup(backup); confirmed = false;
+assert.equal(app.restoreBackup(), false); assert.equal(app.store.posts.length, 0);
+confirmed = true; full = true;
+assert.equal(app.restoreBackup(), false); assert.equal(app.store.posts.length, 0);
+full = false; assert.equal(app.restoreBackup(), true);
+app = launch(); assert.equal(JSON.stringify(app.store), beforePreview);
+app.previewBackup(JSON.parse(disk.get(app.storeKey()+":beforeRestore")));
+assert.equal(app.restoreBackup(), true); assert.equal(app.store.posts.length, 0);
+app.openNewSpiel();
+app.field("name","League practice"); app.field("where","Club sheet 2");
+app.field("start","2027-01-15T18:00"); app.field("end","2027-01-15T17:00");
+assert.equal(app.submitNewSpiel(), false);
+app.field("end","2027-01-15T20:00"); app.field("preparation","Bring shoes");
+for(const [key,label] of app.eventPlanningFields) app.field(key, label + " personal plan");
+assert.equal(app.closeSheet(), true);
+app = launch(); app.openNewSpiel();
+assert.equal(app.value("name"), "League practice");
+assert.equal(app.value("where"), "Club sheet 2");
+assert.equal(app.value("start"), "2027-01-15T18:00");
+assert.equal(app.value("end"), "2027-01-15T20:00");
+assert.equal(app.value("preparation"), "Bring shoes");
+for(const [key,label] of app.eventPlanningFields) assert.equal(app.value(key),label + " personal plan");
+assert.doesNotThrow(() => app.validateBackup(app.makeBackup()));
+confirmed = false; app.discardEditorDraft(); assert.equal(app.value("name"), "League practice");
+full = true; assert.equal(app.submitNewSpiel(), false);
+assert.equal(app.store.addedSpiels.length, 0);
+assert(app.store.drafts[app.editorKey("event")]);
+full = false;
+
+assert.equal(app.submitNewSpiel(), true);
+const eventID = app.store.addedSpiels[0].id;
+assert.equal(app.store.addedSpiels[0].planning.travel,"Travel personal plan");
+assert.match(app.viewSpiels(),/Accommodation personal plan/);
+assert.equal(app.store.drafts[app.editorKey("event")], undefined);
+app = launch(); assert.equal(app.store.addedSpiels[0].preparation,"Bring shoes");
+assert.equal(app.upcomingEvents(new Date("2027-01-01").getTime())[0].id,eventID);
+app.openNewSpiel(); app.field("name","Overlap"); app.field("where","Other club");
+app.field("start","2027-01-15T19:00"); app.field("end","2027-01-15T21:00");
+confirmed = false; assert.equal(app.submitNewSpiel(),false);
+confirmed = true; assert.equal(app.submitNewSpiel(),true);
+assert.match(app.viewSpiels(), /Overlaps with: League practice/);
+app.openNewSpiel(eventID); app.field("start","2027-01-16T18:00"); app.field("end","2027-01-16T20:00");
+app.field("preparation", "Edited draft"); assert.equal(app.closeSheet(), true);
+app = launch(); app.openNewSpiel(eventID);
+assert.equal(app.value("preparation"), "Edited draft");
+assert.equal(app.store.addedSpiels.find(s => s.id === eventID).preparation, "Bring shoes");
+
+assert.equal(app.submitNewSpiel(eventID),true);
+assert(!app.viewSpiels().includes("Overlaps with:"));
+const staleEvents = JSON.parse(JSON.stringify(app.store));
+confirmed = false; assert.equal(app.deleteEvent(eventID),false);
+confirmed = true; assert.equal(app.deleteEvent(eventID),true);
+assert(!mergeState(staleEvents,app.store).addedSpiels.some(s => s.id === eventID));
+app = launch(); assert(!app.store.addedSpiels.some(s => s.id === eventID));
+assert.equal(app.submitNewSpiel(eventID),false);
+assert.equal(app.deleteEvent("sp1"),false);
+app.openNewSpiel(); app.field("name", "Discard only this draft"); app.persistEditorDraft();
+const savedEventCount = app.store.addedSpiels.length;
+confirmed = true; app.discardEditorDraft();
+app = launch(); assert.equal(app.store.drafts[app.editorKey("event")], undefined);
+assert.equal(app.store.addedSpiels.length, savedEventCount);
+assert.doesNotThrow(() => app.validateBackup(app.makeBackup()));
+app.openVisit("kelowna");
+const visitToday = new Date();
+assert.equal(app.value("date"), [visitToday.getFullYear(), String(visitToday.getMonth()+1).padStart(2,"0"), String(visitToday.getDate()).padStart(2,"0")].join("-"));
+app.field("note", "Visit draft retained"); app.field("date", "2026-09-27");
+assert.equal(app.closeSheet(), true);
+app = launch(); app.openVisit("kelowna");
+assert.equal(app.value("note"), "Visit draft retained");
+assert.equal(app.value("date"), "2026-09-27");
+const visitsBefore=(app.store.visits.kelowna || []).length;
+full=true; assert.equal(app.submitVisit("kelowna"), false);
+assert.equal((app.store.visits.kelowna || []).length, visitsBefore);
+full=false; assert.equal(app.submitVisit("kelowna"), true);
+assert.equal(app.store.drafts[app.editorKey("visit",null,"kelowna")], undefined);
+app.openIceRead("kelowna"); app.field("curl","5"); app.field("sheet","7"); app.field("note","Ice draft retained");
+assert.equal(app.closeSheet(),true);
+app=launch(); app.openIceRead("kelowna");
+assert.equal(app.value("sheet"),"7"); assert.equal(app.value("note"),"Ice draft retained");
+assert.equal(app.submitIceRead("kelowna"),true);
+assert.equal(app.store.drafts[app.editorKey("ice",null,"kelowna")],undefined);
+app.openNewSpiel(); app.field("name","Linked game"); app.field("where","Club");
+app.field("start","2028-01-01T12:00"); app.field("end","2028-01-01T14:00");
+assert.equal(app.submitNewSpiel(),true); const linkedEvent=app.store.addedSpiels[0].id;
+app.openCompose("result"); app.field("for","8"); app.field("ag","3"); app.field("event",linkedEvent);
+app.closeSheet(); app=launch(); app.openCompose("result"); assert.equal(app.value("event"),linkedEvent);
+assert.equal(app.submitCompose("result"),true); const linkedPost=app.store.posts[0].id;
+assert.equal(app.store.posts[0].eventID,linkedEvent);
+app.openResultEvent(linkedEvent); assert.match(app.sheetMarkup(), /Recorded results/); assert.match(app.sheetMarkup(), /8–3/); app.closeSheet();
+app.openNewSpiel(linkedEvent); app.field("start","2028-01-02T12:00"); app.field("end","2028-01-02T14:00");
+assert.equal(app.submitNewSpiel(linkedEvent),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventID,linkedEvent);
+confirmed=true; assert.equal(app.deleteEvent(linkedEvent),true);
+app=launch(); app.openCompose("result",linkedPost); app.field("for","7");
+assert.equal(app.submitCompose("result"),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventName,"Linked game");
+app.openCompose("result",linkedPost); app.field("event",""); assert.equal(app.submitCompose("result"),true);
+assert.equal(app.store.posts.find(p=>p.id===linkedPost).eventID,"");
+assert.doesNotThrow(()=>app.validateBackup(app.makeBackup()));
+app.openCompose("practice");
+assert.equal(app.submitCompose("practice"),false);
+app.field("date","2026-02-30"); app.field("minutes","60"); app.field("drills","Draw to button"); app.field("focus","Release"); app.field("observations","Balanced finish");
+assert.equal(app.submitCompose("practice"),false);
+app.field("date","2026-09-27"); app.field("minutes","0"); assert.equal(app.submitCompose("practice"),false);
+app.field("minutes","60"); app.closeSheet(); app=launch(); app.openCompose("practice");
+assert.equal(app.value("observations"),"Balanced finish");
+const gamesBeforePractice=app.derivedStats().games;
+assert.equal(app.submitCompose("practice"),true); const practicePost=app.store.posts[0].id;
+assert.equal(app.derivedStats().games,gamesBeforePractice);
+assert(app.postMatches(app.store.posts[0],"release"));
+assert.match(app.renderPostCard(app.store.posts[0]),/Draw to button/);
+assert.doesNotThrow(()=>app.validateBackup(app.makeBackup()));
+app.openCompose("practice",practicePost); app.field("observations","Keep wrist quiet");
+assert.equal(app.submitCompose("practice"),true);
+app=launch(); assert.equal(app.store.posts.find(p=>p.id===practicePost).practice.observations,"Keep wrist quiet");
+confirmed=true; assert.equal(app.deleteOwnedRecord("post",practicePost),true);
+assert(!app.store.posts.some(p=>p.id===practicePost));
+app.openNewSpiel(); app.field("name","Next lesson game"); app.field("where","Club");
+app.field("start","2029-01-01T12:00"); app.field("end","2029-01-01T14:00"); app.field("preparation","Bring shoes");
+assert.equal(app.submitNewSpiel(),true); const lessonEvent=app.store.addedSpiels[0].id;
+app.openCompose("note"); app.field("body","Finish balanced"); assert.equal(app.submitCompose("note"),true);
+const lessonPost=app.store.posts[0].id;
+app.openNewSpiel(lessonEvent); app.field("name","Unsaved name"); app.field("preparation","Meet captain"); app.closeSheet();
+app.openLessonPreparation(lessonPost); assert.match(app.sheetMarkup(),/Finish balanced/);
+full=true; assert.equal(app.useLesson(lessonPost,lessonEvent),false);
+assert.equal(app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation,"Bring shoes");
+full=false; assert.equal(app.useLesson(lessonPost,lessonEvent),true);
+app=launch(); const lessonPreparation=app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation;
+assert.equal(lessonPreparation,"Bring shoes\n\nLesson for this game: Finish balanced");
+assert.equal(app.store.drafts[app.editorKey("event",lessonEvent)].preparation,"Meet captain\n\nLesson for this game: Finish balanced");
+assert.equal(app.store.drafts[app.editorKey("event",lessonEvent)].name,"Unsaved name");
+assert.equal(app.useLesson(lessonPost,lessonEvent),true);
+assert.equal(app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation,lessonPreparation);
+confirmed=true; app.deleteOwnedRecord("post",lessonPost);
+assert.equal(app.useLesson(lessonPost,lessonEvent),false);
+assert.equal(app.store.addedSpiels.find(e=>e.id===lessonEvent).preparation,lessonPreparation);
+
+// Exercise the real dialog lifecycle separately from the record fixtures. This
+// proves focus intent and recovery, not Safari viewport or native-picker behavior.
+{
+  const focus = [], timers = [], nodes = new Map();
+  function node(id, title) {
+    const attributes = new Map(), classes = new Set();
+    const field = {hidden:false, type:"text", getAttribute:() => null, getClientRects:() => [1],
+      focus:options => focus.push({id:id + "-first", options})};
+    const lastField = {...field, focus:options => focus.push({id:id + "-last", options})};
+    return {id, hidden:true, isConnected:true, offsetWidth:320, scrollTop:200,
+      classList:{add:value => classes.add(value), remove:value => classes.delete(value), contains:value => classes.has(value)},
+      getAttribute:key => attributes.get(key) || null,
+      setAttribute:(key,value) => attributes.set(key,value), removeAttribute:key => attributes.delete(key),
+      querySelector:selector => selector === "h2" ? {textContent:title} : null,
+      querySelectorAll:() => [field,lastField], focus:options => focus.push({id, options})};
+  }
+  for(const [id,title] of [["sheet","Settings"],["sheet2","Game preparation"],["scrim",""],["scrim2",""],["trigger",""]]) nodes.set(id,node(id,title));
+  const context = vm.createContext({document:{getElementById:id => nodes.get(id), activeElement:nodes.get("trigger")},
+    window:{setTimeout:callback => timers.push(callback)}, console, setTimeout, clearTimeout});
+  vm.runInContext(functions,context);
+  for(const [id,scrim,title] of [["sheet","scrim","Settings"],["sheet2","scrim2","Game preparation"]]) {
+    context.openManagedSheet(id,scrim,nodes.get("trigger"));
+    assert.equal(focus.at(-1).id,id,"Opening a dialog must not automatically activate its first field");
+    assert.equal(focus.at(-1).options.preventScroll,true,"Opening focus must preserve page position");
+    assert.equal(nodes.get(id).scrollTop,0,"New dialog content must start at the top");
+    assert.equal(nodes.get(id).getAttribute("aria-label"),title,"The announced dialog name must match its heading");
+    for(const shiftKey of [false,true]) {
+      context.document.activeElement = nodes.get(id);
+      let prevented = false;
+      context.handleSheetKeydown({key:"Tab",shiftKey,preventDefault:() => { prevented = true; }});
+      assert.equal(prevented,true,"Tab and Shift-Tab from the dialog must enter its controls, not the background");
+      assert.equal(focus.at(-1).id,id + (shiftKey ? "-last" : "-first"));
+    }
+    context.closeManagedSheet(true);
+    assert.equal(focus.at(-1).id,"trigger");
+    assert.equal(focus.at(-1).options.preventScroll,true);
+    while(timers.length) timers.shift()();
+    assert.equal(nodes.get(id).hidden,true);
+  }
+  context.openManagedSheet("sheet2","scrim2",nodes.get("trigger"));
+  context.closeManagedSheet(false);
+  context.openManagedSheet("sheet2","scrim2",nodes.get("trigger"));
+  while(timers.length) timers.shift()();
+  assert.equal(nodes.get("sheet2").hidden,false,"A prior close timer must not hide a reopened dialog");
+}
+console.log("verify-record-recovery: draft reload, correction, rating, ownership, safe deletion, merge, validation, storage failure, account isolation and dialog focus passed");

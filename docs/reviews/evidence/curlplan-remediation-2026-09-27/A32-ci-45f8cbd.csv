@@ -1,0 +1,22 @@
+run,commit,check,result,detail
+36310569786,45f8cbd,standard iPhone journey,Pass,201.661 seconds
+36310569786,45f8cbd,small iPhone journey,Pass,42.904 seconds
+36310569786,45f8cbd,small iPhone larger text journey,Pass,42.641 seconds
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=Kelowna Bonspiel; frame=Optional((86.0, 763.3333333333334, 128.66666666666666, 18.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=BC · JAN 9–11; frame=Optional((86.0, 783.3333333333334, 96.66666666666666, 14.333333333333258)); id="
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=1–1; frame=Optional((338.6666666666667, 757.3333333333334, 22.333333333333314, 20.333333333333258)); id="
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=Vernon Cashspiel; frame=Optional((86.0, 849.6666666666666, 127.66666666666666, 18.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=1–1; frame=Optional((338.6666666666667, 843.6666666666666, 22.333333333333314, 20.33333333333337)); id="
+36310569786,45f8cbd,accessibility,Fail,"[passport]: Contrast failed; details=Contrast failed for element; element=No visits logged yet — open a sample club and choose Log visit.; frame=Optional((34.0, 613.5, 285.5, 34.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[stop-detail]: Contrast failed; details=Contrast failed for element; element=Kelowna Bonspiel; frame=Optional((22.0, 171.0, 258.5, 41.0)); id="
+36310569786,45f8cbd,accessibility,Fail,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36310569786,45f8cbd,accessibility,Fail,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36310569786,45f8cbd,accessibility,Fail,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36310569786,45f8cbd,accessibility,Fail,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36310569786,45f8cbd,accessibility,Fail,[stop-detail]: Contrast failed; details=Contrast failed for element; element=none; frame=nil; id=none
+36310569786,45f8cbd,accessibility,Fail,"[tab-spiels]: Contrast failed; details=Contrast failed for element; element=Winnipeg, MB; frame=Optional((34.0, 617.0, 97.5, 18.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[tab-spiels]: Contrast failed; details=Contrast failed for element; element=1 of your circle going; frame=Optional((73.0, 661.75, 163.5, 14.5)); id="
+36310569786,45f8cbd,accessibility,Fail,"[tab-spiels]: Contrast failed; details=Contrast failed for element; element=Details; frame=Optional((271.0, 647.0, 70.0, 44.0)); id=curlplan.event.details.sp3"
+36310569786,45f8cbd,accessibility,Fail,"[curler-profile]: Contrast failed; details=Contrast failed for element; element=A-final · Kelowna; frame=Optional((33.0, 642.5, 106.5, 16.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[curler-profile]: Contrast failed; details=Contrast failed for element; element=8–5; frame=Optional((298.5, 641.5, 25.0, 18.0)); id="
+36310569786,45f8cbd,accessibility,Fail,"[curler-profile]: Contrast failed; details=Contrast failed for element; element=W; frame=Optional((333.5, 643.25, 8.5, 14.5)); id="

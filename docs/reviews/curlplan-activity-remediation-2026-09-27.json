@@ -1,0 +1,676 @@
+{
+  "goal": "Repair or implement the outcomes needed for CurlPlan activities A1\u2013A33",
+  "started": "2026-09-27",
+  "audit_run": "IPAD33-20260927",
+  "audit_source_sha256": "7fcb5b2e454fe4530c0249293f2ccacaf90590ca17f785df1e1868b23f558d69",
+  "audit_page": "https://app.notion.com/p/7a78d275474e42258ecd3c606c062ea6",
+  "web_audit_page": "https://app.notion.com/p/8618238b94c142cebf58b9f74191db4c",
+  "results_database": "https://app.notion.com/p/3e8255fc8f448007ac64fe409fb97ccd",
+  "baseline_commit": "b9a04d814e7b0d91d2ee7b95f260a6c9686af8b3",
+  "main_reconciled": "3c69fcb7e3df87f1b074d4ca4c208d4711d850db",
+  "rules": [
+    "Baseline grades are historical; do not overwrite them with implementation status.",
+    "A pass requires current behavior and persistence evidence for the scoped activity.",
+    "Use the physical iPad for interactive verification; one local build job and no local simulator.",
+    "Keep account, synchronization and external delivery evidence separate from local demo behavior.",
+    "Do not merge while required CI is failing.",
+    "Use existing audit/project records; do not create competing Notion pages."
+  ],
+  "items": [
+    {
+      "id": "A1",
+      "activity": "Record and retrieve a club visit",
+      "expected": "Save a date and visit note, relaunch and retrieve it",
+      "baseline_verdict": "Pass",
+      "group": "record integrity",
+      "status": "verified",
+      "required_action": "Reconcile record summary with game list.",
+      "acceptance": "Passport > Kelowna > Log visit > date/note > Save > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games.",
+        "Physical Ignacio Safari 2026-09-28: testWebVisitDateAndDraftRecovery passed 65.456 seconds, zero failures/skips. New visits now default to local calendar date rather than ambiguous literal Today; existing records/drafts preserved. Exact date and unique note recovered after Close/restart, saved and read after another restart; new form note empty. Screenshot visually confirms 2026-09-28 and Visitauditsypmfj under Your visits. Audit visit retained in this local demo origin. See A1-web-results.csv and A1-web-visit-relaunch.png. First attempt failed before data entry on case-sensitive label selector; corrected test used case-insensitive matching."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A2",
+      "activity": "Create, find and correct a personal note",
+      "expected": "Create and search a note, relaunch, and find an edit path",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "verified",
+      "required_action": "Add named compose control and functional Edit/Delete menu.",
+      "acceptance": "Locker > Add > Note > text > Post > relaunch > search > inspect correction menu; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testOwnedNoteCorrectionAndDraftRecovery passed; draft survived interactive dismissal and process relaunch, published note edited in place and persisted, delete cancellation retained note, confirmed deletion persisted.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A2-corrected-note-relaunch.png",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Safari plain textarea paste control also failed: runner UIPasteboard access returned PBErrorDomain code 11 (invalid general pasteboard), exact readback empty instead of WEBFIX 1234. No reliable clipboard write/restoration can be claimed. Unsupported experiment removed; original control and xcresult retained locally. /tmp/curlplan-remediation/safari-paste-control.xcresult. Preview server stopped.",
+        "Physical Ignacio Safari: visible keyboard taps passed the plain textarea control (23.917 sec), then testWebPostRecoveryOnPreparedIPad passed (75.832 sec) on current preview: created unique note, Close/reopen recovered exact draft, published, edited, read corrected card, confirmed deletion and absence. Only own prior interrupted audit note and current note removed. Synthetic per-character typeText still failed on plain control; no app input workaround introduced. Evidence: safari-key-labels.xcresult and safari-note-caret.xcresult under /tmp/curlplan-remediation; A2-web-corrected-note.png and A2-safari-note-results.csv retained. Single coordinate tap avoids accidental double-tap selection when editing.",
+        "Physical Ignacio final A2 acceptance: Safari testWebPostRecoveryOnPreparedIPad passed 118.370 sec with zero skips: draft Close, terminate Safari, launch fresh URL on same origin, exact draft recovery, publish/correct, terminate/reload, search exact unique note, confirm original text absent, delete, close search, terminate/reload and verify deletion plus empty new draft. Native testOwnedNoteCorrectionAndDraftRecovery also passed with added corrected-note search and Clear search after relaunch; earlier draft recovery, correction, delete cancellation and durable deletion assertions retained. /tmp/curlplan-remediation/safari-note-reload.xcresult and native-note-search.xcresult. Screenshot A2-web-reload-search.png inspected. Browser search now names Search feed/Close search and labels its input. A2 verified for local demo note workflow on these two surfaces, not cloud sync or social delivery."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A3",
+      "activity": "Plan attendance at a bonspiel",
+      "expected": "Open details, change attendance intent, relaunch and confirm",
+      "baseline_verdict": "Pass",
+      "group": "data ownership and resilience",
+      "status": "verified",
+      "required_action": "Clarify that status is local attendance intent.",
+      "acceptance": "Spiels > Brier Patch Details > Watching > Done > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native and browser now use Going, Considering, Not going for local attendance intent. Removed registration success/withdrawal claims; sample seed statuses no longer imply personal decisions. Explicit legacy overrides remain readable (You're in -> Going; Watching/Invite -> Considering).",
+        "Physical Ignacio: testLocalAttendanceIntentSurvivesRelaunch passed in 35 seconds. Selected each of three choices on Okanagan Classic (sp2), relaunched and read Selected plus local-only disclosure each time; restored original Considering choice and verified after relaunch. testSpielStatusUnifiedAndPersists also passed. /tmp/curlplan-remediation/attendance-physical.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A3-local-attendance.png",
+        "24 SwiftPM core tests passed including legacy compatibility, persistence, explicit withdrawal, invalid choices and backup roundtrip. Actual browser function tests passed including reload and storage-full rollback. Static app, seed, parity and feature-review checks passed.",
+        "Physical Ignacio Safari testWebAttendanceAndFeedNavigation passed 56.711 sec, zero skips: Following/Discover expose and switch selected state; each Brier Patch Open attendance choice survives Safari termination/fresh-page load; feed reflects all choices; feed Going/Not going actions update event controls; original Considering restored and verified after restart. web-attendance-controls.xcresult. Accessible names identify event and intended feed action. Together with native attendance/unified-status tests, verifies local attendance flow, not registration or organizer delivery.",
+        "Screenshot review found nearly invisible event guidance/planning text in Ice: .screen inherited pale outer-frame text. Added color:var(--ink) on app surface. Physical testWebEventReadabilityBothThemes passed 15.031 sec: opened event planning disclosure in Ice and Arena, read local-only/organizer guidance, screenshots inspected. URL theme overrides do not persist; returned to saved theme. A3-web-readable-ice.png/A3-web-readable-arena.png; web-event-readable.xcresult."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A4",
+      "activity": "Find and follow a curler",
+      "expected": "Open profile, follow, verify list and profile after relaunch",
+      "baseline_verdict": "Pass",
+      "group": "people and communication",
+      "status": "verified",
+      "required_action": "Retain current behavior.",
+      "acceptance": "Roster > Sam > Follow > Back > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio Safari testWebFollowPersistenceAndFeedFiltering passed 107.460 sec: search Sam in Roster, open named profile, follow, Back/list agreement, restart/reopen followed profile, verify Sam result in Following, unfollow, restart/reopen unfollowed profile, verify result absent in Following and retained in Discover. Original browser unfollowed state restored and verified after final restart. First attempt followed Sam then failed on ambiguous browser/page Back control; final test scopes Back to web view and uses explicitly recorded original-state override to restore that interrupted change. web-follow-back.xcresult; A24-web-unfollow-discover.png inspected.",
+        "Physical native testUnfollowChangesFollowingFeed passed with profile helper now using Roster > Search your circle > Sam > profile (not a deep link). Search/profile/unfollow/relaunch/Following exclusion/Discover retention passed, then original native Following restored and verified after final relaunch via roster search. /tmp/curlplan-remediation/native-follow-search.xcresult. Browser and native original follow states differ and were each preserved. Acceptance covers local demo follow/filtering, not a social backend relationship."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A5",
+      "activity": "Prepare for a game",
+      "expected": "Find game preparation fields and save/retrieve a plan",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Add native game preparation or a clearly labeled bridge to the planner.",
+      "acceptance": "Inspect all four tabs and Settings for game preparation; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native Settings now offers a verified route to the original Classic game planner with separate-data explanation.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png.",
+        "2026-09-28 physical Safari: created Lessonullhz with saved Warm up preparation and unsaved Warm up draft; repeated restarts recovered the draft. Created Lessonullhz balanced finish note and recovered it after restart. Upcoming game selector measured 25pt; Safari ignored min-height until native appearance was replaced with themed CSS/chevron, then measured44pt. Full lesson flow remains FAIL/incomplete: tapping selector did not open option picker; screenshot shows sheet displaced above blank lower viewport. Exact source/event/draft preserved for retry. First typing attempt left newline plus L due center tap; discarded only that test draft and verified visible-keyboard typing with upper-field coordinate. Device screenshot at20:25 shows1% battery; further interactive tests stopped pending power. See A5-A20-web-results.csv and A5-web-selector-displaced.png. Do not mark A5/A20 complete.",
+        "2026-09-28 follow-up to Safari picker failure: shared dialog lifecycle now names the dialog from its heading, resets internal scroll, and focuses the dialog with preventScroll instead of auto-activating its first input/select during the opening animation. Tab and Shift-Tab from initial dialog focus explicitly enter its controls; invoking-control focus restoration and delayed-close/reopen protection retained. New actual-function regression failed against db169d2 (first field focused) and passes with repair, including both Settings and action dialogs. verify-app, record-recovery and12 parity checks passed. This addresses a likely cause of the observed displacement; no physical picker success claimed because Ignacio last showed1% battery and charging confirmation is pending. A5/A20 remain incomplete until source-to-target transfer/save/relaunch readback passes."
+      ],
+      "remaining": [
+        "Complete physical Safari game preparation/retrieval acceptance; native saved preparation now verified directly."
+      ]
+    },
+    {
+      "id": "A6",
+      "activity": "Understand the app and first action",
+      "expected": "Read entry gate, understand demo limits and enter",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "verified",
+      "required_action": "Keep the demo limitation visible near actions that resemble live social features.",
+      "acceptance": "Settings > Sign out > read gate > Explore demo > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio 2026-09-28: native testDemoGateAndAccountLimitsOnDevice passed23.211sec; Safari testWebDemoGateAndAccountLimits passed26.700sec after fixing Settings focus scrolling. Both verify demo session, sign-out, no credential fields, account/sync/recovery/deletion limitations, signed-out restart, demo re-entry and signed-in restart. Native Sign out enlarged to44pt and measured. Web Appearance renamed Settings because it contains account and backup controls. Screenshots inspected; A6-demo-gate-results.csv retained. Existing app data preserved; no real-account completion claimed."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A7",
+      "activity": "Find next game or event",
+      "expected": "Find date, time, location and preparation for next commitment",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Use structured dates/times and a next-event summary.",
+      "acceptance": "Spiels > list > Details > inspect dates, location and next-action information; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
+    },
+    {
+      "id": "A8",
+      "activity": "Move between sections and return",
+      "expected": "Switch tabs with detail open, return and Back",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "verified",
+      "required_action": "Retain tab detail-state behavior.",
+      "acceptance": "Passport > Kelowna > Locker > Passport > Back; visit all tabs; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testDemoTabsDetailsAndRelaunch passed after navigation changes, including stop detail retained across tab switches, Back, all four tabs, profile, and cold relaunch. Explicit sign-out now clears only navigation state."
+      ]
+    },
+    {
+      "id": "A9",
+      "activity": "Reopen a bookmarked detail",
+      "expected": "Open a supported native detail link or recover invalid target",
+      "baseline_verdict": "Unavailable",
+      "group": "navigation and accessibility",
+      "status": "verified",
+      "required_action": "Add supported native detail links and invalid-link recovery.",
+      "acceptance": "Inspect native Info.plist, app entry and visible controls for detail-link support; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testDetailLinksResumeAndMessageClose passed. curlplan://stop/kelowna and curlplan://curler/sam opened actual native details; a missing target showed Link unavailable and retained navigation.",
+        "StoreTests/testDetailLinksAndNavigationRecovery passed: malformed URL rejection, per-account state, deferred links and restored paths."
+      ],
+      "scope": "Native supported detail links; custom scheme requires the native app and a locally available target."
+    },
+    {
+      "id": "A10",
+      "activity": "Find and return from original planner",
+      "expected": "Find Classic entry and return path",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "verified",
+      "required_action": "Expose a labeled Classic route with separate-data explanation, or incorporate planning.",
+      "acceptance": "Inspect gate, Passport and Settings for Classic access; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: native Settings opened the live Classic planner in Safari, Game Planner was visible, and reactivating CurlPlan returned to Settings.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A10-classic-return.png"
+      ],
+      "scope": "Classic is explicitly separate browser data; no synchronization is claimed."
+    },
+    {
+      "id": "A11",
+      "activity": "Add a league game, practice or event",
+      "expected": "Create dated event and recover it",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Name the Add control and use validated structured dates; make initial status clear.",
+      "acceptance": "Spiels > Add > name/location/dates > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png"
+      ],
+      "remaining": [
+        "Physical date-picker rescheduling and overlap-warning interaction; physical Safari scheduling journey."
+      ]
+    },
+    {
+      "id": "A12",
+      "activity": "Reschedule or cancel an event",
+      "expected": "Change event date or remove event without stale data",
+      "baseline_verdict": "Unavailable",
+      "group": "correction and recovery",
+      "status": "partially_verified",
+      "required_action": "Add editable dates and safe event cancellation/removal.",
+      "acceptance": "Spiels > Details > inspect editing and removal controls; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png",
+        "Physical Ignacio testEventDatePickerInteraction passed in 43.030 seconds: created a marked event for tomorrow through native calendar controls, verified start/end dates, relaunched/read saved date, edited start to the following day and checked corresponding end date, saved/relaunched/read revised schedule, deleted only own event and verified absence after relaunch. /tmp/curlplan-remediation/date-reschedule.xcresult. Native date pickers now have distinct start/end identifiers. Screenshot A12-date-rescheduled.png and A12-A15-date-overlap-results.csv retained.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
+      ],
+      "remaining": [
+        "Physical Safari date rescheduling and time editing remain; native time-of-day and timezone changes require separate interaction checks."
+      ]
+    },
+    {
+      "id": "A13",
+      "activity": "Review bonspiel details",
+      "expected": "Find venue, dates, format, entry requirements and organizer",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "verified",
+      "required_action": "Add the information needed to decide whether to attend.",
+      "acceptance": "Spiels > Details > inspect decision-making information > Done; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
+        "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
+      ],
+      "remaining": [],
+      "scope_note": "Verified local user-entered planning in native and Safari; no claim of organizer verification, external bookings or live registration."
+    },
+    {
+      "id": "A14",
+      "activity": "Organize a bonspiel trip",
+      "expected": "Store draws, travel, hotel and team arrangements",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "verified",
+      "required_action": "Add travel, accommodation, draw and team details when trip planning is in scope.",
+      "acceptance": "Spiels > Add and Details > inspect travel/team/draw fields; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser saved events now support format, entry requirements, organizer, draw schedule, travel, accommodation and team arrangements. Editors group optional details; read views show Not recorded for unknowns and label content as personal notes to confirm with the organizer. Optional native planning object preserves old backups. Drafts retain planning fields. 20 SwiftPM tests passed including draft/save/reload/edit/backup planning round-trip; browser actual-function checks passed for draft reload, saved data and rendered retrieval. Native iOS build passed.",
+        "Physical Ignacio testEventPlanningFieldsAreReachable passed: open New event, expand planning, discover all seven named fields, Close. This read-only reachability check does not prove physical data entry/save/relaunch. Screenshot A13-A14-planning-fields.png retained; result planning-fields-final.xcresult.",
+        "Physical Ignacio: entered and saved all seven planning fields on owned PLAN 786A7960 (sp-f8f71f4c) in planning-field-scroll.xcresult. Subsequent planning-correction.xcresult testEventPlanningEntryAndCorrection passed: reopened the same event after relaunch, scrolled/read every exact value, edited organizer to Audit organizer corrected, relaunched/read back, deleted only this test event, relaunched and verified absence. Earlier attempts exposed automation scrolling/duplicate-label lookup problems; editor scroll and disclosure have distinct identifiers and the helper uses full viewport containment plus edge drags. No existing audit records modified.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A13-A14-planning-persisted.png and A13-A14-planning-results.csv document native entry/retrieval/correction. Date-picker rescheduling and overlap interaction were not included.",
+        "Physical Ignacio Safari, 2026-09-28: initial event run created Eventhmuz with seven planning fields and verified Close/restart draft recovery and acknowledged save, then stopped on an exact accessibility-label selector mismatch. Read-only inspection confirmed the saved record and exposed a 21-point Details target. Added named event actions and a 44-point summary target. Resumed exact owned event after validating all seven values; testWebEventPlanningRecoveryAndCorrection passed in 70.686 seconds with zero skips: saved detail readback, organizer correction, restart persistence, deletion cancellation, confirmed deletion/restart absence. Evidence spans creation and resumed acceptance runs, not one uninterrupted fresh run. A13-A14-web-results.csv and A13-A14-web-event-planning.png retained."
+      ],
+      "remaining": [],
+      "scope_note": "Verified local user-entered planning in native and Safari; no claim of organizer verification, external bookings or live registration."
+    },
+    {
+      "id": "A15",
+      "activity": "Review schedule for conflicts",
+      "expected": "Compare commitments, identify overlaps and past/upcoming",
+      "baseline_verdict": "Fail",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Represent dates as structured values and surface schedule conflicts.",
+      "acceptance": "Spiels > compare date labels > inspect calendar and conflict affordances; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser events now store structured start/end times, time zone, event type, preparation notes and local attendance intent. Next-event summary, chronological groups and overlap warnings are implemented; legacy text-only dates remain explicitly undated.",
+        "22 StoreTests passed, including interval validation, adjacent/overlapping cases, chronological ordering, reschedule persistence, backup roundtrip and invalid-date-backup rejection, stable identity, deletion tombstones, stale-editor rejection and sample protection.",
+        "Physical Ignacio: testEventCreateEditAndDelete passed on final build: dated league event saved/recovered after relaunch, edited in place, delete cancellation retained it and confirmed deletion survived relaunch. Screenshot inspected; only uniquely tagged test event removed.",
+        "Web actual-function checks passed for invalid range, save/reload, next ordering, overlap confirmation/cancellation, rescheduling removing overlap, delete cancellation, stale merge deletion and backup validation.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A11-dated-event.png",
+        "Physical Ignacio testEventOverlapWarningAndReschedule passed: created two marked events with overlapping default intervals, read the second editor warning naming the first, saved/relaunched and read the persisted detail warning, moved the second event to tomorrow through the calendar picker, verified warning cleared in editor and after save/relaunch, deleted both own events and confirmed absence. /tmp/curlplan-remediation/event-overlap.xcresult. Screenshots A15-overlap-warning.png and A15-overlap-resolved.png retained."
+      ],
+      "remaining": [
+        "Physical Safari overlap creation and resolution remain; real organizer conflict resolution is outside local planning notes."
+      ]
+    },
+    {
+      "id": "A16",
+      "activity": "Record a game result",
+      "expected": "Enter opponent, scores and note, relaunch and recover",
+      "baseline_verdict": "Pass",
+      "group": "record integrity",
+      "status": "partially_verified",
+      "required_action": "Give compose a specific accessible name; connect results to scheduled games.",
+      "acceptance": "Locker > Add > Result > scores/opponent/note > Post > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "Native/browser result editors now select a saved event; optional event identity/name snapshot persists through drafts and result edits. Native result card opens event detail with its recorded results; browser card opens linked-event result summary. Rescheduling keeps stable links; deleting an event preserves results and saved event-name snapshot; explicit unlink supported. 21 SwiftPM tests passed, including lifecycle/backup/totals assertions. Browser actual-function checks passed for draft recovery, linked summary rendering, reschedule, deletion, correction and unlink. Native device-target build and app/parity/diff checks passed.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png."
+      ],
+      "remaining": [
+        "Complete physical Safari result-link acceptance. Event linkage does not substitute for per-draw identity in multi-game bonspiels."
+      ]
+    },
+    {
+      "id": "A17",
+      "activity": "Correct or remove result",
+      "expected": "Find edit/delete and verify dependent totals",
+      "baseline_verdict": "Unavailable",
+      "group": "correction and recovery",
+      "status": "partially_verified",
+      "required_action": "Implement result edit/delete and recompute dependent totals.",
+      "acceptance": "Locker > inspect result card ellipsis and source for edit/delete; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "StoreTests/testResultCorrectionAndDeletionRecomputeStats passed on Ignacio: WIN changed to LOSS, derived win total changed, deletion removed game and persisted tombstone; stale editor could not recreate deleted result.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed."
+      ],
+      "remaining": [
+        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control."
+      ]
+    },
+    {
+      "id": "A18",
+      "activity": "Review season progress",
+      "expected": "Reconcile record and games and see impact of saved result",
+      "baseline_verdict": "Partial",
+      "group": "record integrity",
+      "status": "partially_verified",
+      "required_action": "Label sample statistics clearly and reconcile game-level figures; connect personal results when enabled.",
+      "acceptance": "Passport > season totals > Kelowna > compare record and game list; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Sample stop summaries now match their listed games in the shared seed. Web and Swift render saved personal totals separately from sample club records. Web actual-function assertions and 19 StoreTests passed, including sample consistency and result correction/deletion statistics.",
+        "Physical Ignacio: testPersonalResultTotalsAfterCorrectionAndDeletion passed. Saved 8\u20132 result increased Passport game count by one; corrected to 1\u20132 and retrieved after process relaunch; confirmed deletion persisted and restored the baseline game count. Only the uniquely tagged test result was removed.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A18-personal-result-totals.png",
+        "A21 landscape full-screen evidence also confirms the earlier saved visit date/note remain visible after relaunch, and Kelowna sample 1\u20131 agrees with its two listed W/L games."
+      ],
+      "remaining": [
+        "Physical Safari interaction verification remains open."
+      ]
+    },
+    {
+      "id": "A19",
+      "activity": "Log practice session",
+      "expected": "Record drills, duration, focus and observations",
+      "baseline_verdict": "Unavailable",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Add structured practice logging with retrieval.",
+      "acceptance": "Inspect tabs and form types for practice logging; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser composers now offer Practice with date, positive whole-number duration, drills, focus and observations. Distinct practice records support existing draft recovery, search, edit/delete and backup validation; game totals count only results. 22 SwiftPM tests and browser actual-function checks passed for invalid dates/durations, draft/reload, correction, deletion, backup and unchanged game totals.",
+        "Physical Ignacio testPracticeCreateRecoverEditAndDelete passed: enter date/duration/drills/focus/observations, Close/relaunch draft recovery, Post, edit observations, relaunch retrieval, open lesson action, confirmed deletion and fresh-launch absence. Only uniquely tagged test practice removed. Screenshot A19-practice-recovered.png inspected. Evidence /tmp/curlplan-remediation/practice-journey.xcresult."
+      ],
+      "remaining": [
+        "Complete physical Safari practice workflow and native search acceptance. A20 actual lesson transfer is separately incomplete."
+      ]
+    },
+    {
+      "id": "A20",
+      "activity": "Carry lessons into next game",
+      "expected": "Retrieve past notes and connect them to preparation",
+      "baseline_verdict": "Partial",
+      "group": "planning and progression",
+      "status": "partially_verified",
+      "required_action": "Add a visible route from takeaways to a saved next-game goal.",
+      "acceptance": "Locker > create practice-related note > search > relaunch; inspect onward preparation route; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native/browser owned note and practice cards now expose Use in game preparation. Users review the source lesson and explicitly select an upcoming non-practice event. Transfer appends to saved preparation and existing event drafts, preserves other edits, avoids duplicate identical transfers, and keeps saved lessons when source records are deleted. Native confirms success and opens target preparation; empty state offers event creation. 23 SwiftPM tests and browser actual-function tests passed for persistence, draft preservation, idempotence, missing source, source deletion and browser storage failure.",
+        "Physical practice test opened Use in game preparation and confirmed corrected observation displayed as the lesson, then canceled. Target selection/save/readback was not exercised.",
+        "Physical Ignacio testLessonTransferAndLinkedResult passed: create marked event, create note, select upcoming event, append lesson, open preparation, relaunch/retrieve; select same event in Result, save 8\u20133 score/opponent/note, relaunch, open linked event and verify result; delete event and retain result with removed-event label; delete only marked result/note, verify absence after relaunch. This proves native preparation without relying on Classic. Evidence /tmp/curlplan-remediation/linked-journey-final.xcresult and A16-A20-linked-event.png.",
+        "2026-09-28 physical Safari: created Lessonullhz with saved Warm up preparation and unsaved Warm up draft; repeated restarts recovered the draft. Created Lessonullhz balanced finish note and recovered it after restart. Upcoming game selector measured 25pt; Safari ignored min-height until native appearance was replaced with themed CSS/chevron, then measured44pt. Full lesson flow remains FAIL/incomplete: tapping selector did not open option picker; screenshot shows sheet displaced above blank lower viewport. Exact source/event/draft preserved for retry. First typing attempt left newline plus L due center tap; discarded only that test draft and verified visible-keyboard typing with upper-field coordinate. Device screenshot at20:25 shows1% battery; further interactive tests stopped pending power. See A5-A20-web-results.csv and A5-web-selector-displaced.png. Do not mark A5/A20 complete.",
+        "2026-09-28 follow-up to Safari picker failure: shared dialog lifecycle now names the dialog from its heading, resets internal scroll, and focuses the dialog with preventScroll instead of auto-activating its first input/select during the opening animation. Tab and Shift-Tab from initial dialog focus explicitly enter its controls; invoking-control focus restoration and delayed-close/reopen protection retained. New actual-function regression failed against db169d2 (first field focused) and passes with repair, including both Settings and action dialogs. verify-app, record-recovery and12 parity checks passed. This addresses a likely cause of the observed displacement; no physical picker success claimed because Ignacio last showed1% battery and charging confirmation is pending. A5/A20 remain incomplete until source-to-target transfer/save/relaunch readback passes."
+      ],
+      "remaining": [
+        "Complete physical Safari source-to-target selection/save/relaunch/readback acceptance."
+      ]
+    },
+    {
+      "id": "A21",
+      "activity": "Record and retrieve ice conditions",
+      "expected": "Save speed, curl, note and recover by club/sheet/date",
+      "baseline_verdict": "Partial",
+      "group": "record integrity",
+      "status": "partially_verified",
+      "required_action": "Add sheet/date context and labeled fields; retest landscape typing.",
+      "acceptance": "Passport > Kelowna > Ice read > curl/note > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native and web ice readings now store and display the selected calendar date and optional sheet. Older readings remain readable with date/sheet explicitly not recorded.",
+        "Physical Ignacio landscape: testIceReadingDateAndSheetRecovery passed with sheet A21 CFED0BC8, curl 4 and note A21 draw weight check, retrieved after process relaunch. Read-only testSavedIceReadingLandscapeLayout passed and full-screen screenshot inspected.",
+        "20 StoreTests passed, including old-record decoding and new/old readings preserved together after persistence reload. Web actual-function checks passed: invalid date rejected, storage failure preserved form/state, date and sheet recovered and rendered after reload.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A21-landscape-screen.png"
+      ],
+      "remaining": [
+        "Physical Safari interaction verification remains open."
+      ]
+    },
+    {
+      "id": "A22",
+      "activity": "Write or revise club review",
+      "expected": "Save rating and review and discover revision path",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "verified",
+      "required_action": "Provide Edit/Delete for the user's own reviews and verify changed rating/text.",
+      "acceptance": "Passport > Kelowna > Write review > review > Save > relaunch; inspect revision path; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testClubReviewCorrectionAndRecovery passed; created review, edited note/rating, closed and relaunched to recover draft, saved correction, canceled deletion, then confirmed deletion.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A22-corrected-review.png",
+        "16 StoreTests passed on Ignacio; final targeted testReviewCorrectionDraftAndDeletionPersist passed after correcting deletion-marker bucket, including stale-data merge rejection.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Physical Ignacio Safari review acceptance spans explicit runs: web-review-cancel.xcresult created marked Reviewzkcinr and recovered its 3-star draft after restart but immediate termination after Save had no acknowledged saved record; draft remained. Final web-review-ack.xcresult passed 79.341 sec, resumed that exact draft, verified 3 stars, awaited saved-review appearance, relaunched/read, corrected text and rating to5, awaited save, relaunched/reopened/read exact text and exactly one selected rating, canceled deletion and verified after restart, confirmed deletion and verified absence after restart. Earlier owned Reviewjuuemg corrected was removed after exact editor-value ownership check. No user records removed. A22-web-corrected-review.png inspected. Synthetic save-tap/termination timing is retained as an unacknowledged-save observation, not a completed-save data-loss claim.",
+        "Browser rating controls now expose only chosen rating as pressed; cumulative star fill retained. Standalone .b actions now receive shared styling and minimum44px height, fixing tiny Discard draft. Physical testWebReviewControlTargets passed12.689sec: Save/Discard each >=44pt and hittable, blank draft discard cancellation retained editor, confirmed discard closed it. A22-web-review-controls.png inspected; web-review-targets.xcresult. Local review acceptance does not establish external review publication."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A23",
+      "activity": "Organize teammates or find a spare",
+      "expected": "Find people, positions and relevant availability",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "partially_verified",
+      "required_action": "Verify club entry manually; expose spare availability and scheduling if supported.",
+      "acceptance": "Roster > inspect positions/spare labels > Add > enter contact > Save > relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native and browser owned roster contacts now support editing, confirmed deletion, contact details, separate spare flag, and Unknown/Available/Unavailable notes with validated inclusive calendar date ranges. Availability is explicitly a private local note requiring direct confirmation, not a live RSVP. Search includes position, spare flag and availability/date summary. Optional fields preserve old backups; deletion tombstones prevent stale merge resurrection.",
+        "Physical Ignacio: testRosterContactAvailabilityLifecycle passed in 75 seconds. Created only SPARE20260927B (Second, A23 Test Club, BC, test@example.invalid, spare, Available October 1\u20133 2026). Saved/relaunched, edited Evenings after 6 to Evenings after 7, relaunched/read back, canceled deletion, then deleted and verified absence after relaunch. Existing audit contacts preserved. /tmp/curlplan-remediation/roster-physical.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A23-private-spare-contact.png \u2014 inspected; exact rendered club A23 TEST CLUB, position SECOND, dates, contact and corrected note visible.",
+        "25 SwiftPM tests passed including invalid/reversed dates, create/edit identity, persistence, legacy contact backup roundtrip, protected seed entries, stale edit rejection and deletion marker. Actual browser functions passed create/edit/search/backup/storage failure/deletion cancellation and merge checks. App, seed, parity and feature-review checks passed.",
+        "Profile screenflow repair verified by physical testRosterContactAvailabilityLifecycle (72 seconds): Saved on your roster provenance plus explicit empty shared-club and game-history messages. No private contact details added to share text. /tmp/curlplan-remediation/screenflow-layout.xcresult contains this passing test and a separate initially failing large-text event test.",
+        "Physical native search passed in testPreparedRosterContactSearch (49.803 seconds): saved contact found by exact name, club, Second position, Spare flag and 2026-10-01 availability date; clear and no-result recovery verified. Reopened original contact, deleted only owned SPARE20260927B audit fixture and confirmed absence after relaunch. /tmp/curlplan-remediation/card-surfaces-search.xcresult. Initial extended lifecycle exposed a 17-point accessible clear-icon target despite its 44-point frame; explicit contentShape repaired it, and the final search assertions verified >=44 points. Search close/clear controls now have explicit state-appropriate labels."
+      ],
+      "remaining": [
+        "Physical Safari contact lifecycle and search remain to be exercised.",
+        "Live team invitations, shared scheduling and other people\u2019s RSVP are not implemented; keep these claims gated under the account/social roadmap."
+      ]
+    },
+    {
+      "id": "A24",
+      "activity": "Stop following someone",
+      "expected": "Unfollow and verify persistence and feed behavior",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "verified",
+      "required_action": "Add a feed-specific fixture when testing filtering changes.",
+      "acceptance": "Roster > Sam > Unfollow > relaunch > reopen; feed-specific effect not exercised; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio testUnfollowChangesFollowingFeed passed in 44.118 seconds. Sam result visible in Following before unfollow; unfollow survived relaunch; searching Sam Reid in Following returned no posts, while Discover retained the exact seed result. Original follow state restored and verified after another relaunch. /tmp/curlplan-remediation/unfollow-feed.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A24-unfollow-discover.png \u2014 inspected. Feed tabs expose selected state; feed search open/close and clear controls are labeled and have 44-point targets.",
+        "Physical Ignacio Safari testWebFollowPersistenceAndFeedFiltering passed 107.460 sec: search Sam in Roster, open named profile, follow, Back/list agreement, restart/reopen followed profile, verify Sam result in Following, unfollow, restart/reopen unfollowed profile, verify result absent in Following and retained in Discover. Original browser unfollowed state restored and verified after final restart. First attempt followed Sam then failed on ambiguous browser/page Back control; final test scopes Back to web view and uses explicitly recorded original-state override to restore that interrupted change. web-follow-back.xcresult; A24-web-unfollow-discover.png inspected.",
+        "Physical native testUnfollowChangesFollowingFeed passed with profile helper now using Roster > Search your circle > Sam > profile (not a deep link). Search/profile/unfollow/relaunch/Following exclusion/Discover retention passed, then original native Following restored and verified after final relaunch via roster search. /tmp/curlplan-remediation/native-follow-search.xcresult. Browser and native original follow states differ and were each preserved. Acceptance covers local demo follow/filtering, not a social backend relationship."
+      ],
+      "remaining": []
+    },
+    {
+      "id": "A25",
+      "activity": "Share result or review",
+      "expected": "Post and understand visibility and actual publication",
+      "baseline_verdict": "Partial",
+      "group": "people and communication",
+      "status": "pending_reconciliation",
+      "required_action": "Keep local visibility explicit; require receiver-side proof when sharing is enabled.",
+      "acceptance": "Locker > Add > inspect local-publication copy > attempt Result post; verify the original successful outcome without silently narrowing scope.",
+      "evidence": []
+    },
+    {
+      "id": "A26",
+      "activity": "Contact another curler",
+      "expected": "Save message and understand delivery state",
+      "baseline_verdict": "Pass",
+      "group": "people and communication",
+      "status": "partially_verified",
+      "required_action": "Add an explicit Close control; verify receiver-side delivery when messaging is enabled.",
+      "acceptance": "Roster > Sam > Message > text > Send > relaunch > reopen; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: opened Sam message thread and used the explicit Close button successfully.",
+        "StoreTests/testMessageDraftRecoveryAndSend passed: private unsent draft survived reload/sign-out/return; sending cleared it and saved one local message."
+      ],
+      "remaining": [
+        "Exercise message draft entry/recovery in the native UI; external delivery remains unavailable and must not be claimed."
+      ]
+    },
+    {
+      "id": "A27",
+      "activity": "Resume after closing",
+      "expected": "Background/foreground, terminate/relaunch, recover saved work",
+      "baseline_verdict": "Pass",
+      "group": "data ownership and resilience",
+      "status": "verified",
+      "required_action": "Consider restoring the last screen if users expect task continuity.",
+      "acceptance": "Roster > Home button > reactivate > terminate > relaunch > inspect saved state; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: opened Kelowna through a native link, terminated and relaunched the app, and recovered the same detail screen.",
+        "18 StoreTests passed, including per-account navigation and data/draft persistence.",
+        "Final targeted navigation store test and full physical tab/back/relaunch journey passed after separating explicit sign-out from ordinary app relaunch."
+      ]
+    },
+    {
+      "id": "A28",
+      "activity": "Work through connection interruption",
+      "expected": "Use app offline and understand saved/pending state",
+      "baseline_verdict": "Not tested",
+      "group": "data ownership and resilience",
+      "status": "pending_reconciliation",
+      "required_action": "Run offline recovery with a wired device connection, then restore networking.",
+      "acceptance": "Inspect physical transport; offline disruption withheld because transport is wireless; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "2026-09-28 devicectl device details confirms Ignacio booted/paired and transportType localNetwork, tunnel TCP. Wireless control remains active; no offline disruption performed."
+      ],
+      "remaining": [
+        "Obtain wired physical device control before disabling networking for offline interruption and recovery acceptance."
+      ]
+    },
+    {
+      "id": "A29",
+      "activity": "Export and restore records",
+      "expected": "Find usable backup and restore with safe preview",
+      "baseline_verdict": "Unavailable",
+      "group": "data ownership and resilience",
+      "status": "partially_verified",
+      "required_action": "Add backup export and validated restore.",
+      "acceptance": "Settings > inspect backup/restore controls; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Native and browser Settings now offer versioned private JSON backup export, file import with validation and record-count preview, explicit replacement confirmation, and a previous-state recovery copy. Platform/account/version mismatch and malformed records are rejected; credentials are excluded.",
+        "21 StoreTests passed, including preview immutability, restore/relaunch equality, drafts and ice-context preservation, recovery reversal, invalid version/account/payload/size rejection, and signed-out isolation.",
+        "Physical Ignacio: testBackupExportAndImportControls passed through export to On My iPad (CurlPlan A29 5CF9B4C6.json), file selection, visible restore preview, explicit replacement and recovery control. The restored snapshot was exported from the same unchanged device records.",
+        "Web actual-function assertions passed for preview without mutation, invalid schema/version/account rejection, cancellation, storage failure, restore reload equality and previous-record recovery.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A29-restore-preview.png",
+        "CI exposed shared-core compilation failure because LocalBackup/BackupError were in excluded SettingsSheet.swift. Moved unchanged validation types to Models.swift; swift test --jobs 1 passed all 18 account contract tests. Evidence: /tmp/curlplan-remediation/core-repair.log."
+      ],
+      "remaining": [
+        "Verify Safari download and file-picker import on the physical iPad. Browser, native and Classic backup formats intentionally remain distinct; this feature does not claim account synchronization."
+      ]
+    },
+    {
+      "id": "A30",
+      "activity": "Recover from mistakes",
+      "expected": "Check empty validation and unsaved-draft dismissal/recovery",
+      "baseline_verdict": "Fail",
+      "group": "correction and recovery",
+      "status": "partially_verified",
+      "required_action": "Preserve drafts or confirm discard on interactive dismissal; keep empty-field guards.",
+      "acceptance": "Open empty Note/Spiel/Ice forms > inspect disabled Save/Post; attempt draft dismissal and relaunch; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: composer draft recovered after interactive dismissal and process relaunch; publishing cleared draft. Store tests verified explicit discard and account-bucket isolation.",
+        "Physical Ignacio: club-review editing draft and selected two-star rating survived process relaunch; published review remained separate until Save.",
+        "Web: scripts/verify-record-recovery.js passed against actual inline app functions: draft reload, edit identity, search, result totals, rating, legacy review migration, confirmation, deletion merge, invalid scores, full-storage failure and account isolation. Added to CI.",
+        "Native event create/edit forms now persist per-account drafts including names, locations, type, dates, time zone, preparation and attendance intent. Close keeps the draft; explicit discard leaves the saved event unchanged; save/delete clear the matching draft. Backup summary and validation include event drafts; older backups without the optional bucket remain valid.",
+        "24 StoreTests passed, including event draft persistence, invalid-save retention, save/delete cleanup, saved-event preservation on draft discard and backward-compatible backup validation. Physical Ignacio testEventDraftSurvivesRelaunchAndDiscard passed: entry, process relaunch, recovery, Keep draft, confirmed discard, fresh-launch absence. Evidence: event-drafts-final.xcresult, event-drafts-relaunch.xcresult; A30-event-draft-recovery.png.",
+        "Browser event forms use persistent per-account drafts for create/edit; Close retains, confirmed discard removes only the draft, successful save and event deletion clear matching drafts. Input/change listeners persist fields. Existing valid times convert to the current browser zone if the zone changed. verify-record-recovery.js passed actual-function checks for reload field recovery, invalid-save retention, storage failure, edit draft independence, successful-save cleanup, confirmed discard, and backup validation.",
+        "Added a stricter physical test that waits for sheet closure and reopens without process restart before checking durable discard. Ignacio run event-reopen.xcresult did not reach that assertion: XCTest repeatedly reported missing animation-completion notifications during text entry, waiting 60 seconds per action. Stopped only the owned xcodebuild run with SIGINT; exit 75 confirmed. Log retained at /tmp/curlplan-remediation/event-reopen.log. This is not a passing reopening check.",
+        "Native visit/ice-read forms now retain per-club/per-kind drafts, including date, sheet, speed, curl and note. Close retains, alert-confirmed discard preserves existing records, save clears only matching draft. Optional storage bucket preserves old-backup compatibility. 19 SwiftPM core tests passed, including contribution recovery, separate club/kind buckets, signed-out isolation, backup round-trip/legacy acceptance, discard preservation and save cleanup.",
+        "Native iOS device-target build succeeded (contribution-build.log). Browser visit/ice forms now use per-club drafts, Close recovery and confirmed discard; successful contribution saves clear matching drafts. Visit writes now commit before state replacement/closing, retaining the form on storage failure. Actual-function recovery tests passed for both contribution forms and visit quota failure; app/parity/diff checks passed. Physical interaction/layout acceptance remains open.",
+        "Physical Ignacio final contribution run passed both testVisitDraftRecoveryAndDiscard and testIceDraftRecoveryAndDiscard, zero skips: enter unique note draft, Close/relaunch/reopen, verify note, Keep draft, confirmed discard, fresh-launch empty note. Saved contributions were not mutated. Fixed blank-form initialization to avoid creating an empty draft just by opening it. Initial combined test skipped ice because placeholder text was mistaken for real content; corrected preservation guard, then ran both final tests. Evidence contribution-final.xcresult and A30-visit-draft.png/A30-ice-draft.png.",
+        "Physical Safari note draft Close/reopen exact readback passed in safari-note-caret.xcresult. This proves note presentation recovery only; other forms and reload remain open.",
+        "Physical Safari note draft survived process termination and fresh-page reload; published/deleted note did not reappear as a draft after another restart. safari-note-reload.xcresult passed. Other contribution/event draft coverage remains tracked separately.",
+        "Physical Safari 3-star review draft text/rating recovered after process restart; exact interrupted marked draft resumed successfully. Blank-review Discard Cancel and confirm passed with44pt controls. web-review-ack.xcresult and web-review-targets.xcresult; contribution/event draft scope remains open.",
+        "Physical Safari event draft recovered exact name and all seven planning fields after Close and process restart in web-event-plan.xcresult. See A13-A14-web-results.csv.",
+        "Physical Safari visit date/note draft Close/restart recovery and successful-save draft clearing passed in web-visit-label.xcresult (65.456 sec); remaining contribution forms still open."
+      ],
+      "remaining": [
+        "Complete remaining physical Safari journeys using the verified visible-key input method (letters and spaces). Synthetic typeText still loses characters on the plain control.",
+        "Complete remaining physical Safari contribution recovery acceptance; event name/seven planning fields passed, but changing every date/sheet/speed field remains open.",
+        "Immediate sheet reopening after confirmed discard failed in automation before the fresh-launch check; verify presentation timing separately."
+      ]
+    },
+    {
+      "id": "A31",
+      "activity": "Use app comfortably on device",
+      "expected": "Review landscape iPad layout, controls and clipping",
+      "baseline_verdict": "Pass",
+      "group": "navigation and accessibility",
+      "status": "partially_verified",
+      "required_action": "Extend to Dynamic Type and split-view before release.",
+      "acceptance": "Rotate portrait/landscape > capture screens > Arena > relaunch > restore Ice; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Safari inspection exposed editor hidden behind keyboard in desktop phone frame. Touch layout now uses full width and visual viewport height; sheets have bounded scrolling. Device capture confirmed visible form after change.",
+        "Native and browser contact profiles now show truthful local provenance and explicit empty history. Native physical contact lifecycle passed with new assertions; screenshot docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-profile-empty-history.png inspected. Browser actual-render checks passed.",
+        "Event detail now prioritizes attendance and recorded results; seven optional planning fields live in an expandable section. Attendance controls stack for accessibility text sizes and have at least 44-point content height. The presenting row explicitly propagates text size into the sheet.",
+        "Physical Ignacio: testEventScreenflowOrientationsAndLargeType passed in 62 seconds across normal portrait, normal landscape, accessibility5 portrait and accessibility5 landscape. Verified vertical attendance geometry at the larger size, expanded/read/collapsed planning, and scrolled to Done. Debug-only --large-type-audit injects the SwiftUI size; this does not verify system Settings or every screen. Relaunched with normal arguments and restored portrait at test end.",
+        "First run found the sheet was not inheriting injected text size; fixed propagation. Second run exposed XCTest reporting an offscreen disclosure as hittable; recording confirmed the tap dismissed the sheet. Strengthened automation to require full containment in the named detail scroll view before tapping. No accessibility assertions were disabled. Final result: /tmp/curlplan-remediation/screenflow-visibility.xcresult; earlier failures retained.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-portrait.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-normal-landscape.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-portrait.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-large-landscape.png",
+        "Event list now explains absence of upcoming dated events and points to Add event; empty group headings are hidden, undated/sample records preserved. Same empty-state explanation added to web. Actual web view function passed empty/populated branches in VM; not Safari acceptance.",
+        "Physical Ignacio testEventListEmptyUpcomingState passed 14.065 seconds: explanation, no empty upcoming heading, Add event reachable, sample detail open/return. testEventScreenflowOrientationsAndLargeType passed 61.054 seconds across portrait/landscape and normal/accessibility5 text after shared card/font changes. /tmp/curlplan-remediation/event-empty-layout.xcresult.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A31-event-empty-upcoming.png \u2014 inspected."
+      ],
+      "remaining": [
+        "Complete physical Safari typing and portrait/landscape keyboard checks; native split-view and other screens/forms at larger text remain.",
+        "Full accessibility, VoiceOver and keyboard acceptance remain separate from this event-layout proof."
+      ]
+    },
+    {
+      "id": "A32",
+      "activity": "Use keyboard or assistive technology",
+      "expected": "Check labels, target sizes, focus and spoken navigation",
+      "baseline_verdict": "Partial",
+      "group": "navigation and accessibility",
+      "status": "partially_verified",
+      "required_action": "Label settings controls and text fields, then test actual keyboard and VoiceOver journeys.",
+      "acceptance": "Run hit-region/description/clipping audit on four tabs; inspect form/settings hierarchy; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "Physical Ignacio: testContributionAndSettingsLabels passed 2026-09-27; settings controls and compose/visit text fields expose labels; accent targets >=44 points.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-settings-labels.png",
+        "verify-app, verify-parity, generated-seed staleness and feature-review checks passed.",
+        "CI run 36300386911 completed with contrast failures on detail/profile screens; failure log retained locally at /tmp/curlplan-remediation/navigation-ci-failure.log. Assertions remain enabled; release gate is still failing.",
+        "Native filled controls now use theme-aware onAccent foregrounds: dark text on pale Arena accents, white on Ice accents. Applied to buttons, chips, score badges, message bubbles and accent avatar glyphs; message timestamps no longer reduce foreground opacity.",
+        "Physical Ignacio: testThemeTextPairsMeetContrast passed for all Ice/Arena accent combinations, accent/ink/muted text on screen/card/panel surfaces, and filled-control foregrounds (minimum 4.5:1). Plain black/white/muted-text control audit passed. DEBUG-only control retained; release builds exclude it.",
+        "Full physical contrast audit remains failing: baseline 103 failures, post-repair 102 failures across both themes. Reported Ice elements varied despite unchanged Ice palette. These counts do not establish audit conformance or prove false positives. Assertions remain enabled and unfiltered.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-arena-before.png",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-arena-profile.png",
+        "Isolated actual-component controls reproduced statistic contrast failures with original palette, both static and in ScrollView. Font-weight and sans-serif experiments did not reliably fix them and were reverted. The same StatCell passed without the card shadow; plain black and dark-ink numeral controls passed.",
+        "CardStyle now applies shadow to its background shape, not the foreground content. Original serif font retained. Physical testActualComponentContrastControl passed for static and scrolling layouts with all contrast assertions enabled. Pill buttons have explicit card backgrounds for outlined state and minimum 44-point targets; contribution buttons also enlarged to 44 points.",
+        "Physical testPhysicalContributionButtonTargets passed for Log visit, Ice read and Write review. Full testPhysicalContrastBothThemes still FAILED with 35 reports (Ice 3/8/3/5; Arena 3/5/3/5 across Passport/stop/profile/events). Preceding intermediate diagnostic run reported 100; counts alone are not conformance proof. No issue filters or waived assertions. Final result /tmp/curlplan-remediation/contrast-background-shadow.xcresult; original failed diagnostic runs retained.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-component-surfaces.png \u2014 inspected passing component control.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-remaining.csv \u2014 all 35 remaining current full-screen findings with element frames.",
+        "Profile Follow and Message controls now have minimum 44-point heights; Message has an explicit card background. Physical testPhysicalProfileActionTargets passed, including Message open/close and unfiltered profile hit-region audit (13.513 seconds in final-surface-contrast.xcresult).",
+        "Card shadows still extended behind neighboring labels after the earlier foreground-shadow repair. Removing card shadows while preserving backgrounds/borders reduced physical contrast reports from 36 to 17. Solid dark avatar backgrounds, white/larger initials, stronger/larger event locations and attendance text, and a 44-point settings avatar resolved the remaining findings. Original diagnostic runs retained; no assertion filtering or waivers.",
+        "Physical Ignacio testPhysicalContrastBothThemes PASSED (45.697 seconds), covering Passport, stop, profile and events in Ice and Arena, eight screenshots with zero reported contrast findings. /tmp/curlplan-remediation/final-surface-contrast.xcresult. This is contrast acceptance for these rendered screens, not full VoiceOver/keyboard/all-screen accessibility acceptance.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-contrast-pass.csv \u2014 per-screen/theme final results. A32-events-contrast-passed.png and A32-profile-contrast-passed.png inspected for readable metadata, preserved hierarchy and clear card boundaries.",
+        "Older CI run 36304518919 completed with contrast failures on both standard and small iPhones; /tmp/curlplan-remediation/completed-screenflow-failures.log retained. Current changes require a new full CI gate; physical contrast success does not replace it.",
+        "Physical testPhysicalMainTabAccessibility ran all audit types on Passport, Locker, Spiels and Roster and FAILED with 31 findings: {'Dynamic Type font sizes are partially unsupported': 16, 'Contrast failed': 11, 'Text clipped': 1, 'Potentially inaccessible text': 3}. /tmp/curlplan-remediation/main-tab-accessibility.xcresult. Per-finding details saved in A32-main-tab-findings.csv. Some Dynamic Type findings reference removed elements; diagnostic logging now checks existence before reading label/frame/id to avoid repeated stale lookups, without suppressing findings. The earlier contrast-only run does not establish full accessibility conformance.",
+        "Clipping diagnosis on physical Ignacio: vertical fixedSize, body font and vertical padding did not resolve the exact result-body finding. All production experiments reverted. testPhysicalLockerTextClipping exercises normal and accessibility5 with the exact Sam result visible; both failed in /tmp/curlplan-remediation/text-tab-controls.xcresult. Large screenshot shows complete sentence/emoji; this is visual evidence, not automated conformance.",
+        "DEBUG-only minimal native controls isolate two failures without CurlPlan screen layout: standard four-tab TabView reports four Dynamic Type failures; plain body Text with the curling emoji reports clipping while the same sentence without emoji does not. /tmp/curlplan-remediation/text-tab-controls.xcresult (tab control) and /tmp/curlplan-remediation/native-text-control.xcresult. These findings narrow diagnosis to native control/rendering or audit behavior; no issue filters, exemptions or false-positive declarations were added.",
+        "docs/reviews/evidence/curlplan-remediation-2026-09-27/A32-locker-large-text-diagnostic.png and A32-native-text-control.png retain selected diagnostic screenshots. DEBUG routes are excluded from release content. Normal launch arguments restored after diagnostic tests.",
+        "CI run 36307367756 at d587a1b completed failure. Standard journey runner never began executing tests; standard/small iPhone accessibility audits did run and reported contrast failures. A32-ci-d587a1b.csv retains exact named findings. Physical iPad scoped contrast pass does not establish iPhone acceptance. Superseded screenflow runs 36308282347 and 36307707608 received cancellation requests to conserve resources.",
+        "Browser Following/Discover changed from clickable spans to semantic buttons with 44px minimum height and aria-pressed. Physical Safari selected-state switching passed. Event attendance controls identify their event; feed action names distinguish marking Going from Not going. Browser app surface now inherits theme ink instead of pale frame text; event guidance and expanded planning visually verified in both themes. These targeted fixes do not close broader accessibility acceptance.",
+        "Browser roster/club/profile follow controls now name Follow/Unfollow plus curler name and expose pressed state. Roster profile controls and search input are named; search action distinguishes opening/closing. Physical roster/profile interaction passed; separate club-detail control interaction and full accessibility acceptance remain open.",
+        "Browser rating aria-pressed now identifies exactly one rating, independently of cumulative star fill. Generic .b styling covers standalone actions as well as grouped sheet actions. Physical Safari Save/Discard review controls >=44pt and hittable; complete accessibility conformance remains open.",
+        "Physical Safari event Details target measured 21 points before patch and at least 44 points after patch; event Edit/Delete/Details accessibility labels include event name. Full accessibility acceptance remains open.",
+        "Retrieved authoritative prior CI log for run 36310569786 at 45f8cbd: standard iPhone, small iPhone and small iPhone larger-text journeys all passed (201.661, 42.904, 42.641 sec). Standard/small accessibility failed on contrast. A32-ci-45f8cbd.csv records exact findings; latest 34082f7 screenflow run 36499682356 was still running at this checkpoint.",
+        "2026-09-28: inspected standard/small CI45f8cbd screenshot and element crops. Standard Passport failing label is visibly occluded by bottom tab bar; small club title sits on textured gradient. Applied explicit viewport clipping to six primary native scroll surfaces and opaque dark club-title backing. Physical Ignacio testPhysicalContrastBothThemes passed eight screen/theme contrast audits in 46.183 sec, zero failures/skips; Ice/Arena stop screenshots inspected. A32-viewport-results.csv records diagnosis and limits. iPhone CI must verify clipping effect; no finding waived or filtered.",
+        "A6 discovered actual Safari Settings focus scrolling: default focus moved page under bottom sheet and tap coordinates missed Sign out. preventScroll on Settings initial focus and focus restoration resolved physical interaction; no synthetic DOM click. Native Sign out measured at least44pt after correction.",
+        "2026-09-28 20:15 EDT live CI checkpoint: run 36500328192 at 90511c9 has completed Audit standard iPhone accessibility with failure and is continuing Retest small iPhone Passport controls. Full run not yet terminal; prior physical eight-screen contrast passes do not close this CI gate. Superseded screenflow runs 36500938993 and 36501213280 cancellation requested to avoid duplicate work; diagnostic run retained.",
+        "2026-09-28 CI36500328192 at90511c9 terminal FAILURE: standard, small and larger-text screenflow journeys and small Passport controls passed; standard accessibility reported5 contrast findings, small accessibility11. Exact findings in A32-ci-90511c9.csv. Screenshots A32-ci-90511c9-passport.png and A32-ci-90511c9-small-stop.png inspected: standard failing sample-row labels remain partly under tab bar despite clipping; small hero now has opaque title backing, but other findings remain. No findings waived. Safari Upcoming game selector independently repaired from25pt to44pt; complete selection interaction pending.",
+        "2026-09-28 follow-up to Safari picker failure: shared dialog lifecycle now names the dialog from its heading, resets internal scroll, and focuses the dialog with preventScroll instead of auto-activating its first input/select during the opening animation. Tab and Shift-Tab from initial dialog focus explicitly enter its controls; invoking-control focus restoration and delayed-close/reopen protection retained. New actual-function regression failed against db169d2 (first field focused) and passes with repair, including both Settings and action dialogs. verify-app, record-recovery and12 parity checks passed. This addresses a likely cause of the observed displacement; no physical picker success claimed because Ignacio last showed1% battery and charging confirmation is pending. A5/A20 remain incomplete until source-to-target transfer/save/relaunch readback passes."
+      ],
+      "remaining": [
+        "Run the full accessibility CI gate against the repaired commit, including small iPhone checks; earlier failing CI is historical evidence, not current acceptance.",
+        "Verify spoken VoiceOver, keyboard navigation, Dynamic Type and remaining screens/forms.",
+        "Physical eight-screen contrast passed; other routes, states, text sizes and accessibility audit types remain to be exercised.",
+        "Resolve A32-main-tab-findings.csv: Dynamic Type, inaccessible text and contrast in full-audit states. Inspect result-bundle diagnostic images where the element reference is absent.",
+        "Investigate native TabView Dynamic Type and plain Text emoji clipping reproductions independently from app layout; keep full accessibility acceptance unresolved."
+      ]
+    },
+    {
+      "id": "A33",
+      "activity": "Manage account and personal data",
+      "expected": "Sign in, restore, sign out and delete when enabled",
+      "baseline_verdict": "Unavailable",
+      "group": "data ownership and resilience",
+      "status": "partially_verified",
+      "required_action": "Keep real account release gated until create/restore/delete can be tested.",
+      "acceptance": "Settings > Sign out > read gate > Explore demo; inspect account capability statement; verify the original successful outcome without silently narrowing scope.",
+      "evidence": [
+        "2026-09-28 private Dominic backend health and scripts/verify-account-remote.mjs passed AS01-03 over real HTTP: disposable account create, wrong-password rejection, logical device-A sign-in/import/sign-out revocation, device-B restore, deletion/session revocation/future sign-in rejection. Disposable account deleted. A33-account-remote-20260928.csv retained. These are logical API sessions, not two physical device UI tests. Native/Safari demo account statements and sign-out/re-entry/restart passed separately underA6.",
+        "2026-09-28 AccountRuntime regression tests first reproduced export losing seasonVersion and sign-out replacing an in-flight sign-in state (3 failing assertions). Fixed all five account actions to reject overlapping requests without changing the active state; sign-out now marks revocation in progress; successful export preserves seasonVersion. AccountRuntimeTests then passed3 tests/0 failures using one SwiftPM build job. Tests cover all competing actions during suspended sign-in and sign-in during suspended revocation. A33-runtime-results.csv records before/after evidence; no iPad interaction or public release claim.",
+        "2026-09-28 implemented additive authenticated GET /v1/me/export returning a versioned JSON attachment with own account/profile/season, owned shared objects, outgoing relationships, own memberships, authored interactions and submitted reports. Existing POST section-list contract preserved. Explicit server field allowlists exclude credential/session stores. Local HTTP suite passed complete data, session-only scope despite foreign query ID, separate account/no-season isolation, secret exclusion, no-store/attachment headers, missing/revoked/deleted session rejection. Swift HTTP/client/runtime path prepares JSON Data, rejects unknown format/mismatched account, and passed3 AccountRuntimeTests. OpenAPI contract: docs/account-export.openapi.json. Deployment and actual app file-picker handoff remain unverified.",
+        "2026-09-28: Native Store now has an authenticated-identity integration boundary with separate demo/account A/account B records; account IDs cannot collide with reserved or recovery keys; persisted account IDs require reauthentication after restart. Remote restore is separate from entering an account and retains a verified local recovery backup. Transport rejects unsupported envelope versions and payload fields that the tolerant AppState decoder would silently discard; runtime rejects a season owned by another account. Router now restores navigation when account identity changes even if signed-in state remains true. Full SwiftPM suite: 32 tests, zero failures; signed generic iOS test build succeeded; 12 parity checks passed. See A33-store-results.csv. Public account UI remains gated; this is core integration proof, not physical account flow acceptance."
+      ],
+      "remaining": [
+        "Complete in-app real account create/sign-in/export/restore/delete proof; current primary entry surface remains credential-free demo.",
+        "Public account release still requires public reachability, TLS, rate limiting and password reset infrastructure per account roadmap. Private HTTP API acceptance is not public release acceptance.",
+        "Deploy and verify the additive account export document endpoint after applicable gates; integrate the app account flow and file-picker handoff. The local-device backup remains a separate format."
+      ]
+    }
+  ],
+  "checkpoint": {
+    "phase": "Native detail links, navigation recovery, Classic bridge and message Close",
+    "delivery": "PR18 update; merge gated on CI",
+    "next": "Complete remaining record/draft recovery, backup/restore and planning activities; finish Safari interaction proof and required accessibility CI.",
+    "build_cache": "One active device build cache at /tmp/curlplan-remediation/DerivedData; reuse across slices."
+  }
+}

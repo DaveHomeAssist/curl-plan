@@ -1,9 +1,61 @@
 import SwiftUI
 
-// Shared tab selection so any screen (e.g. Passport's "All → Spiels") can switch tabs,
-// and so deep-link / migration flows have a single place to drive navigation.
+// Navigation is private, per-account device state; it is not shared season data.
 final class Router: ObservableObject {
-    @Published var tab: RootView.Tab = .passport
+    @Published var tab: RootView.Tab = .passport { didSet { persist() } }
+    @Published var paths: [RootView.Tab: [Route]] = [:] { didSet { persist() } }
+    @Published var invalidLink = false
+    private let defaults: UserDefaults
+    private var scopeKey: String?
+    private var pendingRoute: Route?
+    private struct Snapshot: Codable { let tab: RootView.Tab; let paths: [RootView.Tab: [Route]] }
+
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+
+    func restore(accountID: String?, store: Store) {
+        let key = accountID.map { "cp.navigation.v1:" + $0 }
+        guard key != scopeKey else { return }
+        if key == nil, let scopeKey { defaults.removeObject(forKey: scopeKey) }
+        let saved = key.flatMap { defaults.data(forKey: $0) }.flatMap { try? JSONDecoder().decode(Snapshot.self, from: $0) }
+        scopeKey = nil
+        paths = saved?.paths.mapValues { $0.filter { valid($0, store: store) } } ?? [:]
+        tab = saved?.tab ?? .passport
+        scopeKey = key
+        if key != nil, let pendingRoute {
+            self.pendingRoute = nil
+            show(pendingRoute)
+        }
+    }
+
+    func path(for tab: RootView.Tab) -> Binding<[Route]> {
+        Binding(get: { self.paths[tab] ?? [] }, set: { self.paths[tab] = $0 })
+    }
+
+    func receive(_ url: URL, store: Store) {
+        guard let route = Route(url: url), valid(route, store: store) else { invalidLink = true; return }
+        if scopeKey == nil { pendingRoute = route }
+        else { show(route) }
+    }
+
+    private func valid(_ route: Route, store: Store) -> Bool {
+        switch route {
+        case .stop(let id): return store.stop(id) != nil
+        case .curler(let id): return store.curler(id) != nil
+        }
+    }
+
+    private func show(_ route: Route) {
+        switch route {
+        case .stop: tab = .passport
+        case .curler: tab = .roster
+        }
+        paths[tab] = [route]
+    }
+
+    private func persist() {
+        guard let scopeKey, let data = try? JSONEncoder().encode(Snapshot(tab: tab, paths: paths)) else { return }
+        defaults.set(data, forKey: scopeKey)
+    }
 }
 
 struct RootView: View {
@@ -11,7 +63,7 @@ struct RootView: View {
     @EnvironmentObject var store: Store
     @EnvironmentObject var router: Router
 
-    enum Tab: String, CaseIterable { case passport, locker, spiels, roster }
+    enum Tab: String, CaseIterable, Codable { case passport, locker, spiels, roster }
 
     var body: some View {
         Group {
@@ -21,38 +73,41 @@ struct RootView: View {
                 AuthView()
             }
         }
+        .onAppear { router.restore(accountID: store.currentUser()?.id, store: store) }
+        .onChange(of: store.currentUser()?.id) { _, _ in router.restore(accountID: store.currentUser()?.id, store: store) }
+        .onOpenURL { router.receive($0, store: store) }
+        .alert("Link unavailable", isPresented: $router.invalidLink) {
+            Button("OK", role: .cancel) {}
+        } message: { Text("This CurlPlan link is invalid or its club or curler is not available on this device.") }
     }
 
     private var appShell: some View {
-        ZStack(alignment: .bottom) {
-            settings.screen.ignoresSafeArea()
-
-            // all four stacks stay alive so pushed routes and scroll positions
-            // survive tab switches; only the active one is visible and hit-testable
-            ZStack {
-                pane(.passport) { PassportView() }
-                pane(.locker) { LockerRoomView() }
-                pane(.spiels) { SpielsView() }
-                pane(.roster) { RosterView() }
-            }
-
-            CPTabBar(tab: $router.tab)
+        TabView(selection: $router.tab) {
+            TabStack(path: router.path(for: .passport)) { PassportView() }
+                .tabItem { Label("Passport", systemImage: "map.fill") }
+                .tag(Tab.passport)
+            TabStack(path: router.path(for: .locker)) { LockerRoomView() }
+                .tabItem { Label("Locker", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(Tab.locker)
+            TabStack(path: router.path(for: .spiels)) { SpielsView() }
+                .tabItem { Label("Spiels", systemImage: "calendar") }
+                .tag(Tab.spiels)
+            TabStack(path: router.path(for: .roster)) { RosterView() }
+                .tabItem { Label("Roster", systemImage: "person.2.fill") }
+                .tag(Tab.roster)
         }
+        .tint(settings.accent)
     }
 
-    private func pane<Content: View>(_ t: Tab, @ViewBuilder content: @escaping () -> Content) -> some View {
-        TabStack(content: content)
-            .opacity(router.tab == t ? 1 : 0)
-            .allowsHitTesting(router.tab == t)
-            .accessibilityHidden(router.tab != t)
-    }
 }
 
 // A NavigationStack that resolves the shared Route destinations.
+// Tab bar colors come from TabBarStyle (Theme.swift).
 struct TabStack<Content: View>: View {
+    @Binding var path: [Route]
     @ViewBuilder var content: () -> Content
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content()
                 .navigationDestination(for: Route.self) { route in
                     switch route {
@@ -61,55 +116,5 @@ struct TabStack<Content: View>: View {
                     }
                 }
         }
-    }
-}
-
-struct CPTabBar: View {
-    @EnvironmentObject var settings: AppSettings
-    @Binding var tab: RootView.Tab
-
-    var body: some View {
-        HStack(spacing: 0) {
-            item(.passport, "Passport", symbol: nil)
-            item(.locker, "Locker", symbol: "bubble.left.and.bubble.right.fill")
-            item(.spiels, "Spiels", symbol: "calendar")
-            item(.roster, "Roster", symbol: "person.2.fill")
-        }
-        .padding(.top, 11)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        .background(
-            settings.card
-                .overlay(Rectangle().fill(settings.line).frame(height: 1), alignment: .top)
-                .ignoresSafeArea(.container, edges: .bottom)
-        )
-    }
-
-    private func item(_ t: RootView.Tab, _ title: String, symbol: String?) -> some View {
-        let active = tab == t
-        return Button {
-            tab = t
-        } label: {
-            VStack(spacing: 5) {
-                Group {
-                    if let symbol {
-                        Image(systemName: symbol)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(active ? settings.accent : settings.ink)
-                    } else {
-                        HouseRing(size: 21).saturation(active ? 1 : 0.4)
-                    }
-                }
-                .frame(height: 22)
-                Text(title)
-                    .font(.grotesk(10, active ? .semibold : .medium))
-                    .foregroundStyle(active ? settings.accent : settings.ink)
-            }
-            .frame(maxWidth: .infinity)
-            .opacity(active ? 1 : 0.55)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("curlplan.tab.\(t.rawValue)")
     }
 }

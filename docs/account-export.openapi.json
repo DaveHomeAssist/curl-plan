@@ -1,0 +1,446 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CurlPlan account export",
+    "version": "1.0.0",
+    "description": "Additive GET export. Existing POST /v1/me/export remains a section-name list. No request body or account selector; identity comes only from the bearer session. Export contains own account/profile/season, owned objects, outgoing relationships, own memberships, authored interactions and submitted reports. Credentials, tokens, other accounts and moderation-private data are excluded. Private development service; public release remains gated."
+  },
+  "paths": {
+    "/v1/me/export": {
+      "get": {
+        "operationId": "downloadAccountExport",
+        "security": [
+          {
+            "bearerSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete private JSON attachment; null season if never imported. The snapshot is not the local-device backup format.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string",
+                  "const": "attachment; filename=\"CurlPlan Account Export.json\""
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountExport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, revoked or deleted-account session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "status": 401,
+                    "code": "SESSION_INVALID",
+                    "message": "Session is missing or invalid.",
+                    "requestID": "example-request"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend failure; no internal details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerSession": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "createdAt",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accountID",
+          "handle",
+          "displayName",
+          "homeClub",
+          "visibility",
+          "searchable"
+        ],
+        "properties": {
+          "accountID": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "homeClub": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "avatarURL": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searchable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Season": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "accountID",
+          "updatedAt",
+          "schemaVersion",
+          "version",
+          "body"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accountID": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "body": {
+            "type": "object",
+            "description": "The complete saved season payload, governed by its schemaVersion."
+          }
+        }
+      },
+      "SharedObject": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "ownerID",
+          "visibility",
+          "title",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "ownerID": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          }
+        }
+      },
+      "Relationship": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "actorID",
+          "targetID",
+          "kind",
+          "state",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actorID": {
+            "type": "string"
+          },
+          "targetID": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "Membership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "objectID",
+          "accountID",
+          "role",
+          "state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectID": {
+            "type": "string"
+          },
+          "accountID": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
+      "Interaction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "objectID",
+          "actorID",
+          "kind",
+          "body",
+          "state",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectID": {
+            "type": "string"
+          },
+          "actorID": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reporterID",
+          "targetID",
+          "reason",
+          "state",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reporterID": {
+            "type": "string"
+          },
+          "targetID": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "AccountExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "formatVersion",
+          "exportedAt",
+          "account",
+          "profile",
+          "season",
+          "ownedSharedObjects",
+          "relationships",
+          "memberships",
+          "interactions",
+          "reports"
+        ],
+        "properties": {
+          "formatVersion": {
+            "type": "integer",
+            "const": 1
+          },
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "season": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Season"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownedSharedObjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedObject"
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Relationship"
+            }
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Membership"
+            }
+          },
+          "interactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Interaction"
+            }
+          },
+          "reports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Report"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "code",
+              "message",
+              "requestID"
+            ],
+            "properties": {
+              "status": {
+                "type": "integer"
+              },
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestID": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

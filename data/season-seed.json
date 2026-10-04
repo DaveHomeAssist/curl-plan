@@ -73,8 +73,8 @@
     },
     {
       "id": "kelowna", "code": "KEL", "name": "Kelowna Bonspiel", "club": "Kelowna Curling Club", "prov": "BC",
-      "dates": "JAN 9–11", "record": "3–1", "x": 70, "y": 32, "plus": "+3",
-      "ice": { "speed": "Fast", "speedSec": "24.1s", "curl": "5–6", "rec": "3–1" },
+      "dates": "JAN 9–11", "record": "1–1", "x": 70, "y": 32, "plus": "+3",
+      "ice": { "speed": "Fast", "speedSec": "24.1s", "curl": "5–6", "rec": "1–1" },
       "games": [
         { "opp": "vs Carter", "score": "8–4", "res": "W" },
         { "opp": "vs Lindqvist", "score": "5–7", "res": "L" }
@@ -83,8 +83,8 @@
     },
     {
       "id": "vernon", "code": "VER", "name": "Vernon Cashspiel", "club": "Vernon Curling Club", "prov": "BC",
-      "dates": "DEC 2", "record": "2–1", "x": 50, "y": 68, "plus": "+2",
-      "ice": { "speed": "Medium", "speedSec": "25.0s", "curl": "4–5", "rec": "2–1" },
+      "dates": "DEC 2", "record": "1–1", "x": 50, "y": 68, "plus": "+2",
+      "ice": { "speed": "Medium", "speedSec": "25.0s", "curl": "4–5", "rec": "1–1" },
       "games": [
         { "opp": "vs Reid", "score": "6–8", "res": "L" },
         { "opp": "vs Mara", "score": "7–5", "res": "W" }
@@ -93,8 +93,8 @@
     },
     {
       "id": "calgary", "code": "CAL", "name": "Sage Valley Open", "club": "Sage Valley CC", "prov": "AB",
-      "dates": "NOV 14–16", "record": "2–2", "x": 30, "y": 39,
-      "ice": { "speed": "Keen", "speedSec": "23.2s", "curl": "6–7", "rec": "2–2" },
+      "dates": "NOV 14–16", "record": "1–1", "x": 30, "y": 39,
+      "ice": { "speed": "Keen", "speedSec": "23.2s", "curl": "6–7", "rec": "1–1" },
       "games": [
         { "opp": "vs Carter", "score": "9–7", "res": "W" },
         { "opp": "vs Park", "score": "4–9", "res": "L" }
@@ -103,8 +103,8 @@
     },
     {
       "id": "winnipeg", "code": "WPG", "name": "Granite City Classic", "club": "Granite City CC", "prov": "MB",
-      "dates": "OCT 24–26", "record": "3–0", "x": 14, "y": 64,
-      "ice": { "speed": "Fast", "speedSec": "24.4s", "curl": "5–6", "rec": "3–0" },
+      "dates": "OCT 24–26", "record": "2–0", "x": 14, "y": 64,
+      "ice": { "speed": "Fast", "speedSec": "24.4s", "curl": "5–6", "rec": "2–0" },
       "games": [
         { "opp": "vs Lindqvist", "score": "6–5", "res": "W" },
         { "opp": "vs Olsen", "score": "8–3", "res": "W" }

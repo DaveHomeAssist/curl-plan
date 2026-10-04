@@ -1,0 +1,9 @@
+screen,theme,audit,result,reported_findings,evidence
+passport,Ice,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+stop,Ice,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+profile,Ice,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+events,Ice,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+passport,Arena,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+stop,Arena,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+profile,Arena,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult
+events,Arena,contrast,Pass,0,/tmp/curlplan-remediation/final-surface-contrast.xcresult

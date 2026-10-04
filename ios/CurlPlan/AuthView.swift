@@ -23,6 +23,7 @@ struct AuthView: View {
                             .font(.serif(32)).foregroundStyle(settings.ink)
                             .multilineTextAlignment(.center)
                         Eyebrow(text: "A working CurlPlan product preview")
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, 20)
 
@@ -34,7 +35,7 @@ struct AuthView: View {
 
                         Button { store.exploreDemo() } label: {
                             Text("Explore the demo")
-                                .font(.grotesk(14, .bold)).foregroundStyle(.white)
+                                .font(.grotesk(14, .bold)).foregroundStyle(settings.onAccent)
                                 .frame(maxWidth: .infinity, minHeight: 44)
                                 .background(settings.accent)
                                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))

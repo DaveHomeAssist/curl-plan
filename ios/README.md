@@ -76,3 +76,48 @@ the shared six screens, house-ring system, Ice/Arena theming, accent + pebble.
 > (`CurlPlanTests`: Store + Merge) on every push. **Runtime status: unproven** — the app
 > has never been launched interactively. The remaining work is a human run pass, not a
 > compile pass.
+
+### Detail links and task recovery
+
+The native app accepts `curlplan://stop/<id>` and `curlplan://curler/<id>` links.
+Share controls expose these links. Missing or malformed targets show a recoverable
+alert. Links opened at the demo gate are deferred until entry. Each local account
+keeps its selected tab and detail stacks across relaunch. Explicit sign-out clears
+navigation while preserving saved demo records.
+
+Settings links to the original Classic calendar/game planner in Safari. Classic
+uses separate browser storage; this is not a native-data synchronization feature.
+Local message drafts survive closing their sheet and sending clears the draft.
+
+`testDetailLinksResumeAndMessageClose` checks the native route and Classic return
+journey. The Safari typing control is opt-in through
+`CURLPLAN_WEB_TYPING_CONTROL_URL` in the UI test runner environment; serve the
+plain textarea fixture under `docs/reviews/evidence/curlplan-remediation-2026-09-27/`
+to distinguish automation input loss from application behavior.
+
+## Device backup and restore
+
+Settings → Backup and restore exports a private JSON file containing saved records,
+messages, drafts, and local overrides (not account credentials or seed samples).
+Import validates the `curlplan-ios` version 1 envelope and current account, then
+shows record counts before a separate replacement confirmation. A previous-state
+copy remains available through **Preview previous device records**. Restoring that
+copy swaps the current and previous states. Files larger than 5 MB, unsupported
+versions, and records that would be silently discarded during decoding are rejected.
+Browser and Classic storage use different formats; this is not cross-device sync.
+
+The browser Settings has its own `curlplan-web` version 1 backup flow and recovery
+copy. A browser export requests a download; users must retain that file outside site
+storage to survive clearing browser data. Native and browser backups are private,
+unencrypted files and can include drafts and messages.
+
+## Dated events
+
+Spiels → Add event supports league games, practices, bonspiels and other events.
+New events require a name, location and an end time after the start. Native editing
+preserves the event's time zone; browser editing explicitly uses the current browser
+time zone while preserving the represented instants. Preparation notes and local
+attendance intent are saved with the event. Upcoming/in-progress, past/not-going and
+undated/sample records remain distinguishable. Overlap checks treat touching endpoints
+as non-overlapping and exclude Not going events. Only user-created events can be
+edited or deleted; deletion writes a merge tombstone. Old text-only dates are not guessed.

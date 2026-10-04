@@ -26,6 +26,21 @@ struct AccountSeasonPayload: Hashable, Codable {
         self.profile = profile
         self.state = state
     }
+
+    /// Remote restores must never use AppState's forgiving local migration
+    /// decoder without checking that every supplied field survived decoding.
+    static func validated(_ data: Data) throws -> AccountSeasonPayload {
+        guard data.count <= 5_000_000 else { throw BackupError.invalid }
+        let payload = try JSONDecoder().decode(Self.self, from: data)
+        guard payload.schemaVersion == 3,
+              !payload.profile.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let original = try JSONSerialization.jsonObject(with: data) as? NSDictionary,
+              let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(payload)) as? NSDictionary,
+              original == encoded else { throw BackupError.invalid }
+        let backup = LocalBackup(account: "validation", state: payload.state)
+        _ = try LocalBackup.validate(JSONEncoder().encode(backup), account: "validation")
+        return payload
+    }
 }
 
 enum SeasonDomain: String, Hashable, Codable {
@@ -258,6 +273,30 @@ struct ContentReport: Identifiable, Hashable, Codable {
     var reason: String
     var state: ReportState
     var createdAt: String
+}
+
+/// A private account-data snapshot, distinct from the local-device backup format.
+struct AccountExportDocument: Equatable, Codable {
+    var formatVersion: Int
+    var exportedAt: String
+    var account: CurlPlanAccount
+    var profile: AccountProfile
+    var season: AccountSeasonDocument?
+    var ownedSharedObjects: [SharedCurlingObject]
+    var relationships: [RelationshipEdge]
+    var memberships: [SharedMembership]
+    var interactions: [SocialInteraction]
+    var reports: [ContentReport]
+
+    func jsonData() throws -> Data {
+        guard formatVersion == 1 else {
+            throw AccountAPIError(status: 422, code: "EXPORT_FORMAT_UNSUPPORTED",
+                                  message: "This account export format is not supported.", requestID: "client")
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(self)
+    }
 }
 
 struct AccountSocialSnapshot: Equatable, Codable {

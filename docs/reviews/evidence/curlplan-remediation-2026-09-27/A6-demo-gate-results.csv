@@ -1,0 +1,5 @@
+activity,surface,check,result,evidence,scope
+A6/A33,Ignacio native,Sign-out/limitations/signed-out restart/re-entry/signed-in restart;44ptSign out,Pass,demo-gates.xcresult; A6-native-demo-gate.png,23.211sec; demo only
+A6,Ignacio Safari,Settings selector,Fail (test selector),demo-gates.xcresult,Safari reports popup as Other; changed query to any element
+A6/A32,Ignacio Safari,Sign out after opening Settings,Fail before fix,demo-web-role.xcresult; demo-web-tap.xcresult; A6-web-settings-before-focus-fix.png,Default focus scrolled page; normal and coordinate taps missed
+A6/A33,Ignacio Safari,Settings focus/sign-out/limitations/signed-out restart/re-entry/signed-in restart,Pass,demo-web-focus.xcresult; A6-web-settings.png; A6-web-demo-gate.png,26.700sec; preventScroll fixed page movement; demo only

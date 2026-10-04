@@ -67,6 +67,7 @@ struct AccountRuntimeState: Equatable {
 struct AccountRuntimeResult: Equatable {
     var message: String
     var restoredSeason: AccountSeasonPayload?
+    var exportData: Data? = nil
 }
 
 @MainActor
@@ -121,6 +122,7 @@ final class AccountRuntime: ObservableObject {
 
     func createAccount(handle: String, password: String, season: AccountSeasonPayload) async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         let normalizedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         state = .working("Creating account, opening a backend session, and importing this local season.", accountID: savedAccountID)
         do {
@@ -133,6 +135,7 @@ final class AccountRuntime: ObservableObject {
             defaults.set(normalizedHandle, forKey: Self.handleKey)
             try await client.signIn(handle: normalizedHandle, password: password, deviceID: deviceID())
             let document = try await client.importLocalSeason(season)
+            try validateOwner(document, accountID: account.id)
             let sections = try await client.exportAccountData()
             let message = "Backend account \(shortID(account.id)) imported season version \(document.version)."
             state = .signedIn(accountID: account.id,
@@ -147,6 +150,7 @@ final class AccountRuntime: ObservableObject {
 
     func signIn(handle: String, password: String) async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         let normalizedHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         state = .working("Signing in and asking the backend for the account season.", accountID: savedAccountID)
         do {
@@ -155,10 +159,11 @@ final class AccountRuntime: ObservableObject {
             defaults.set(session.accountID, forKey: Self.accountIDKey)
             defaults.set(normalizedHandle, forKey: Self.handleKey)
             let document = try await fetchSeasonIfPresent(client)
+            if let document { try validateOwner(document, accountID: session.accountID) }
             let sections = try await client.exportAccountData()
             let message: String
             if let document {
-                message = "Backend season version \(document.version) restored from API."
+                message = "Backend season version \(document.version) downloaded. Review it before replacing local records."
             } else {
                 message = "Signed in. No backend season exists yet for this account."
             }
@@ -174,6 +179,8 @@ final class AccountRuntime: ObservableObject {
 
     func exportAccountData() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        let seasonVersion = state.seasonVersion
         state = .working("Requesting backend account export sections.", accountID: savedAccountID)
         do {
             let client = try requireSignedInClient()
@@ -182,7 +189,7 @@ final class AccountRuntime: ObservableObject {
             let message = "Backend export includes \(sections.joined(separator: ", "))."
             state = .signedIn(accountID: accountID,
                               sections: sections,
-                              seasonVersion: state.seasonVersion,
+                              seasonVersion: seasonVersion,
                               detail: message)
             return AccountRuntimeResult(message: message, restoredSeason: nil)
         } catch {
@@ -190,8 +197,34 @@ final class AccountRuntime: ObservableObject {
         }
     }
 
+    func downloadAccountData() async -> AccountRuntimeResult {
+        guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        state = .working("Downloading your account data.", accountID: savedAccountID)
+        do {
+            let client = try requireSignedInClient()
+            let document = try await client.downloadAccountExport()
+            guard document.account.id == client.session?.accountID,
+                  document.profile.accountID == document.account.id,
+                  document.season == nil || document.season?.accountID == document.account.id else {
+                throw AccountAPIError(status: 422, code: "EXPORT_ACCOUNT_MISMATCH",
+                                      message: "The export does not belong to this account.", requestID: "client")
+            }
+            let data = try document.jsonData()
+            let message = "Account data downloaded. Choose where to save the JSON file."
+            state = .signedIn(accountID: document.account.id,
+                              sections: ["account", "profile"] + (document.season == nil ? [] : ["season"]),
+                              seasonVersion: document.season?.version, detail: message)
+            return AccountRuntimeResult(message: message, restoredSeason: nil, exportData: data)
+        } catch {
+            return fail(error, fallback: "Account data download failed.")
+        }
+    }
+
     func signOut() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
+        state = .working("Revoking the backend session.", accountID: savedAccountID)
         do {
             if let client, client.session != nil {
                 try await client.signOut()
@@ -209,6 +242,7 @@ final class AccountRuntime: ObservableObject {
 
     func deleteAccount() async -> AccountRuntimeResult {
         guard isConfigured else { return unavailableResult() }
+        guard !isBusy else { return requestInProgressResult() }
         state = .working("Asking the backend to delete this account and revoke its sessions.", accountID: savedAccountID)
         do {
             let client = try requireSignedInClient()
@@ -270,6 +304,14 @@ final class AccountRuntime: ObservableObject {
         defaults.removeObject(forKey: Self.handleKey)
     }
 
+    private func validateOwner(_ document: AccountSeasonDocument, accountID: String) throws {
+        guard document.accountID == accountID else {
+            throw AccountAPIError(status: 422, code: "SEASON_ACCOUNT_MISMATCH",
+                                  message: "The season does not belong to this account. Local records were not changed.",
+                                  requestID: "client")
+        }
+    }
+
     private func deviceID() -> String {
         if let existing = defaults.string(forKey: Self.deviceIDKey) {
             return existing
@@ -277,6 +319,11 @@ final class AccountRuntime: ObservableObject {
         let next = "device-\(UUID().uuidString.lowercased())"
         defaults.set(next, forKey: Self.deviceIDKey)
         return next
+    }
+
+    private func requestInProgressResult() -> AccountRuntimeResult {
+        AccountRuntimeResult(message: "An account request is already running. Wait for it to finish before trying another action.",
+                             restoredSeason: nil)
     }
 
     private func unavailableResult() -> AccountRuntimeResult {
