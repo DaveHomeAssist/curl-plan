@@ -347,7 +347,7 @@ final class StoreTests: XCTestCase {
         XCTAssertFalse(s.isFollowing("sam"))
     }
 
-    func testScreenshotSeasonPreloadsLoggedClubsAndResults() {
+    func testScreenshotSeasonPreloadsLoggedClubsAndResults() throws {
         let s = Store(); s.exploreDemo()
         s.installScreenshotSeasonIfEmpty()
         let stats = s.derivedStats()
@@ -364,6 +364,26 @@ final class StoreTests: XCTestCase {
         s.installScreenshotSeasonIfEmpty()
         XCTAssertEqual(s.state.posts.count, 4, "A second install must not duplicate the log")
         XCTAssertEqual(s.derivedStats().games, 4)
+        let expectedDay = [
+            "shot-kelowna": "2026-01-11",
+            "shot-vernon": "2025-12-02",
+            "shot-calgary": "2025-11-16",
+            "shot-winnipeg": "2025-10-26",
+        ]
+        let utc = DateFormatter()
+        utc.locale = Locale(identifier: "en_US_POSIX")
+        utc.timeZone = TimeZone(secondsFromGMT: 0)
+        utc.dateFormat = "yyyy-MM-dd"
+        let pacific = DateFormatter()
+        pacific.locale = Locale(identifier: "en_US_POSIX")
+        pacific.timeZone = TimeZone(identifier: "America/Vancouver")
+        pacific.dateFormat = "yyyy-MM-dd"
+        for post in s.state.posts {
+            let day = try XCTUnwrap(expectedDay[post.id])
+            let when = Date(timeIntervalSince1970: try XCTUnwrap(post.at))
+            XCTAssertEqual(utc.string(from: when), day, post.id)
+            XCTAssertEqual(pacific.string(from: when), day, post.id)
+        }
     }
 
     func testDerivedStatsFromDemoLog() {

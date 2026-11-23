@@ -826,13 +826,14 @@ final class Store: ObservableObject {
     func installScreenshotSeasonIfEmpty() {
         guard state.visits.isEmpty, state.posts.isEmpty, state.threads.isEmpty else { return }
         let now = Date().timeIntervalSince1970
-        // Same calendar days as the seeded draws, so the feed and the visit log agree.
+        // Noon UTC is still that calendar day in Pacific through Central European time.
+        // 6 p.m. Pacific is the next morning in UTC, which is what the simulator was showing.
         func played(_ day: String) -> Double {
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.timeZone = TimeZone(identifier: "America/Vancouver")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
             formatter.dateFormat = "yyyy-MM-dd"
-            return (formatter.date(from: day)?.timeIntervalSince1970 ?? now) + 18 * 3600
+            return (formatter.date(from: day)?.timeIntervalSince1970 ?? now) + 12 * 3600
         }
         var next = state
         next.visits = [

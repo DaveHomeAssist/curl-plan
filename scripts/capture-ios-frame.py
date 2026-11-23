@@ -42,10 +42,20 @@ def capture_device():
     return UDID
 
 
+def looks_like_ipad(device):
+    listing = run(["xcrun", "simctl", "list", "devices"]).stdout
+    return any(device in line and "iPad" in line for line in listing.splitlines())
+
+
 def status_bar(device):
-    base = [
-        "xcrun", "simctl", "status_bar", device, "override",
-        "--time", "9:41",
+    # iPad draws the date beside the clock. Hiding it is the UIKit override;
+    # an ISO time also replaces today's date when the hide preference is ignored.
+    run([
+        "xcrun", "simctl", "spawn", device, "defaults", "write",
+        "com.apple.UIKit", "StatusBarHidesDate", "-bool", "YES",
+    ])
+    times = ["2007-01-09T09:41:00Z", "9:41"] if looks_like_ipad(device) else ["9:41"]
+    tail = [
         "--dataNetwork", "wifi",
         "--wifiMode", "active",
         "--wifiBars", "3",
@@ -54,8 +64,16 @@ def status_bar(device):
         "--batteryState", "charged",
         "--batteryLevel", "100",
     ]
-    if run(base + ["--operatorName", " "]).returncode != 0:
-        run(base)
+    for time_value in times:
+        base = ["xcrun", "simctl", "status_bar", device, "override", "--time", time_value, *tail]
+        result = run(base + ["--operatorName", " "])
+        if result.returncode != 0:
+            result = run(base)
+        if result.returncode == 0:
+            print(f"status bar {time_value} on {device}", flush=True)
+            return
+        print(result.stderr, flush=True)
+    print(f"status bar override failed for {device}", flush=True)
 
 
 def handle(path: Path):
