@@ -180,8 +180,8 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         try FileManager.default.createDirectory(at: requests, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: reply.deletingLastPathComponent(), withIntermediateDirectories: true)
         var payload: [String: String] = ["reply": reply.path]
-        if let pendingAppearance {
-            payload["appearance"] = pendingAppearance
+        if let appearance = pendingAppearance {
+            payload["appearance"] = appearance
             pendingAppearance = nil
         }
         let data = try JSONSerialization.data(withJSONObject: payload)
