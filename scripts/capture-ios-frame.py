@@ -17,8 +17,12 @@ REQUESTS = Path(sys.argv[2])
 REQUESTS.mkdir(parents=True, exist_ok=True)
 
 
-def run(args):
-    return subprocess.run(args, check=False, text=True, capture_output=True)
+def run(args, timeout=20):
+    try:
+        return subprocess.run(args, check=False, text=True, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        print(f"timeout: {' '.join(args)}", flush=True)
+        return subprocess.CompletedProcess(args, 1, "", str(error))
 
 
 def booted():
@@ -48,13 +52,16 @@ def looks_like_ipad(device):
 
 
 def status_bar(device):
-    # iPad draws the date beside the clock. Hiding it is the UIKit override;
-    # an ISO time also replaces today's date when the hide preference is ignored.
+    # iPad draws today's date beside the clock. Hide that label, and also hand
+    # status_bar an ISO instant. Xcode 16.4 rejects a trailing Z; it wants a
+    # numeric offset. 09:41Z is 9:41 on the UTC runner and not today's date.
     run([
         "xcrun", "simctl", "spawn", device, "defaults", "write",
         "com.apple.UIKit", "StatusBarHidesDate", "-bool", "YES",
-    ])
-    times = ["2007-01-09T09:41:00Z", "9:41"] if looks_like_ipad(device) else ["9:41"]
+    ], timeout=8)
+    times = ["9:41"]
+    if looks_like_ipad(device):
+        times = ["2007-01-09T09:41:00-00:00", "2007-01-09T09:41:00.000-00:00", "9:41"]
     tail = [
         "--dataNetwork", "wifi",
         "--wifiMode", "active",
@@ -66,9 +73,9 @@ def status_bar(device):
     ]
     for time_value in times:
         base = ["xcrun", "simctl", "status_bar", device, "override", "--time", time_value, *tail]
-        result = run(base + ["--operatorName", " "])
+        result = run(base + ["--operatorName", " "], timeout=8)
         if result.returncode != 0:
-            result = run(base)
+            result = run(base, timeout=8)
         if result.returncode == 0:
             print(f"status bar {time_value} on {device}", flush=True)
             return

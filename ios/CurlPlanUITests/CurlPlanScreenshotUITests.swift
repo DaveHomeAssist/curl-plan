@@ -206,11 +206,11 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         let partial = requests.appendingPathComponent(id + ".partial")
         try data.write(to: partial)
         try FileManager.default.moveItem(at: partial, to: requests.appendingPathComponent(id + ".json"))
-        let deadline = Date().addingTimeInterval(25)
+        let deadline = Date().addingTimeInterval(45)
         while Date() < deadline {
-            if FileManager.default.fileExists(atPath: reply.path) {
-                let size = try pngSize(at: reply)
-                if size.width > 0 { return reply }
+            if FileManager.default.fileExists(atPath: reply.path),
+               let size = try? pngSize(at: reply), size.width > 0 {
+                return reply
             }
             Thread.sleep(forTimeInterval: 0.2)
         }
