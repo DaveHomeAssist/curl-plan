@@ -338,6 +338,34 @@ final class StoreTests: XCTestCase {
         }
     }
 
+    func testNormalDemoStartsWithAnEmptyDeviceLog() {
+        let s = Store(); s.exploreDemo()
+        XCTAssertEqual(s.derivedStats().games, 0)
+        XCTAssertEqual(s.derivedStats().clubs, 0)
+        XCTAssertTrue(s.visitedStops().isEmpty)
+        XCTAssertTrue(s.thread("sam").isEmpty)
+        XCTAssertFalse(s.isFollowing("sam"))
+    }
+
+    func testScreenshotSeasonPreloadsLoggedClubsAndResults() {
+        let s = Store(); s.exploreDemo()
+        s.installScreenshotSeasonIfEmpty()
+        let stats = s.derivedStats()
+        XCTAssertEqual(stats.clubs, 4)
+        XCTAssertEqual(stats.prov, 3)
+        XCTAssertEqual(stats.games, 4)
+        XCTAssertEqual(stats.win, 75)
+        XCTAssertEqual(s.visitedStops().map(\.id), ["kelowna", "vernon", "calgary", "winnipeg"])
+        XCTAssertTrue(s.isFollowing("sam"))
+        XCTAssertEqual(s.thread("sam").map(\.text), [
+            "Kelowna was lightning. You in for the Brier Patch?",
+            "I'm in. I'll bring the spare broom.",
+        ])
+        s.installScreenshotSeasonIfEmpty()
+        XCTAssertEqual(s.state.posts.count, 4, "A second install must not duplicate the log")
+        XCTAssertEqual(s.derivedStats().games, 4)
+    }
+
     func testDerivedStatsFromDemoLog() {
         let s = Store(); s.exploreDemo()
         s.addResult(body: "", scoreFor: 8, scoreAgainst: 4, vs: "Northern")  // WIN

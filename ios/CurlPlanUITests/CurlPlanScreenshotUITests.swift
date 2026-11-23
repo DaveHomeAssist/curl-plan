@@ -25,7 +25,7 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         try note.write(to: config.output.appendingPathComponent("device.txt"), atomically: true, encoding: .utf8)
 
         app = XCUIApplication()
-        app.launchArguments = []
+        app.launchArguments = ["--screenshot-season"]
         applyChrome(appearance: "light")
         app.launch()
         XCUIDevice.shared.orientation = .portrait
@@ -72,8 +72,8 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         tap(tab("Locker"), "Locker tab")
         XCTAssertTrue(app.staticTexts["Locker Room"].waitForExistence(timeout: 8))
         tap(app.buttons["curlplan.feed.discover"], "Discover")
-        let result = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Took the A-final at Kelowna")).firstMatch
-        XCTAssertTrue(result.waitForExistence(timeout: 8), "Seeded Kelowna result should be on Discover")
+        let result = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Took Carter on the Kelowna pebble")).firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 8), "Logged Kelowna result should lead the feed")
         try save(review: review("03-locker-room.png"), store: store("02-locker-room.png"))
 
         tap(app.buttons["curlplan.compose.open"], "Compose")
@@ -99,8 +99,8 @@ final class CurlPlanScreenshotUITests: XCTestCase {
 
         tap(app.buttons["Message"], "Message")
         XCTAssertTrue(app.buttons["curlplan.thread.close"].waitForExistence(timeout: 8))
-        let hello = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Say hello")).firstMatch
-        XCTAssertTrue(hello.waitForExistence(timeout: 8), "Empty seeded thread")
+        let hello = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "spare broom")).firstMatch
+        XCTAssertTrue(hello.waitForExistence(timeout: 8), "Logged message thread")
         try save(review: review("08-message-thread.png"), store: nil)
         tap(app.buttons["curlplan.thread.close"], "Close message")
 
@@ -120,6 +120,8 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Open settings"].waitForExistence(timeout: 20), "Passport header")
         let hero = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "coast to coast")).firstMatch
         XCTAssertTrue(hero.waitForExistence(timeout: 8), "Passport hero")
+        XCTAssertTrue(app.staticTexts["4 VISIT LOCATIONS LOGGED"].waitForExistence(timeout: 8), "Logged season map")
+        XCTAssertFalse(app.staticTexts["No visits logged yet — open a sample club and choose Log visit."].exists)
     }
 
     private func switchTheme(to name: String, appearance: String) throws {

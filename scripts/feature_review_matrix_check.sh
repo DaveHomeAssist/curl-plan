@@ -121,6 +121,9 @@ while IFS= read -r path; do
     ios/CurlPlanTests/MergeTests.swift)
       add_rows test-support FR-SYNC FR-CLAIMS
       ;;
+    ios/CurlPlanTests/StoreTests.swift)
+      add_rows test-support FR-SETUP FR-PASSPORT FR-STOPS FR-RESULTS FR-ROSTER FR-CIRCLE FR-LOCKER FR-CLAIMS
+      ;;
     tests/CurlPlanCoreTests/AccountBackendAPITests.swift|tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|tests/CurlPlanCoreTests/AccountRuntimeTests.swift|tests/CurlPlanCoreTests/AccountSocialContractTests.swift|Tests/CurlPlanCoreTests/AccountBackendAPITests.swift|Tests/CurlPlanCoreTests/AccountBackendPersistenceTests.swift|Tests/CurlPlanCoreTests/AccountHTTPBackendTests.swift|Tests/CurlPlanCoreTests/AccountRuntimeTests.swift|Tests/CurlPlanCoreTests/AccountSocialContractTests.swift)
       add_rows test-support FR-ACCOUNT FR-SYNC FR-PUBLIC-ID FR-RELATIONSHIP FR-SHARED-OBJECTS FR-SOCIAL FR-TRUST-SAFETY FR-CLAIMS
       ;;
