@@ -826,28 +826,35 @@ final class Store: ObservableObject {
     func installScreenshotSeasonIfEmpty() {
         guard state.visits.isEmpty, state.posts.isEmpty, state.threads.isEmpty else { return }
         let now = Date().timeIntervalSince1970
-        func daysAgo(_ days: Double) -> Double { now - days * 86400 }
+        // Same calendar days as the seeded draws, so the feed and the visit log agree.
+        func played(_ day: String) -> Double {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(identifier: "America/Vancouver")
+            formatter.dateFormat = "yyyy-MM-dd"
+            return (formatter.date(from: day)?.timeIntervalSince1970 ?? now) + 18 * 3600
+        }
         var next = state
         next.visits = [
-            "kelowna": [VisitEntry(date: "2026-01-11", note: "Fast ice, 5–6 ft of curl.", at: daysAgo(2))],
-            "vernon": [VisitEntry(date: "2025-12-02", note: "Medium ice, 4–5 ft.", at: daysAgo(40))],
-            "calgary": [VisitEntry(date: "2025-11-16", note: "Keen ice, 6–7 ft.", at: daysAgo(70))],
-            "winnipeg": [VisitEntry(date: "2025-10-26", note: "Fast ice, 5–6 ft.", at: daysAgo(100))],
+            "kelowna": [VisitEntry(date: "2026-01-11", note: "Fast ice, 5–6 ft of curl.", at: played("2026-01-11"))],
+            "vernon": [VisitEntry(date: "2025-12-02", note: "Medium ice, 4–5 ft.", at: played("2025-12-02"))],
+            "calgary": [VisitEntry(date: "2025-11-16", note: "Keen ice, 6–7 ft.", at: played("2025-11-16"))],
+            "winnipeg": [VisitEntry(date: "2025-10-26", note: "Fast ice, 5–6 ft.", at: played("2025-10-26"))],
         ]
         // Newest first: the feed shows device posts ahead of the sample feed.
         // 3 wins and 1 loss → 75%. Four clubs across BC, AB, and MB.
         next.posts = [
-            Post(id: "shot-kelowna", kind: .result, author: "me", at: now - 2 * 3600,
+            Post(id: "shot-kelowna", kind: .result, author: "me", at: played("2026-01-11"),
                  body: "Took Carter on the Kelowna pebble. Fast all morning.",
                  scoreFor: 8, scoreAgainst: 4, res: "WIN", vs: "vs Carter"),
-            Post(id: "shot-vernon", kind: .result, author: "me", at: daysAgo(40),
+            Post(id: "shot-vernon", kind: .result, author: "me", at: played("2025-12-02"),
                  body: "Reid had the draw weight at Vernon. We were late all game.",
                  scoreFor: 6, scoreAgainst: 8, res: "LOSS", vs: "vs Reid"),
-            Post(id: "shot-calgary", kind: .result, author: "me", at: daysAgo(70),
+            Post(id: "shot-calgary", kind: .result, author: "me", at: played("2025-11-16"),
                  body: "Sage Valley was keen. We edged Carter.",
                  scoreFor: 9, scoreAgainst: 7, res: "WIN", vs: "vs Carter"),
-            Post(id: "shot-winnipeg", kind: .result, author: "me", at: daysAgo(100),
-                 body: "Granite City was honest. We took both.",
+            Post(id: "shot-winnipeg", kind: .result, author: "me", at: played("2025-10-26"),
+                 body: "Granite City was honest. Clean win.",
                  scoreFor: 8, scoreAgainst: 3, res: "WIN", vs: "vs Olsen"),
         ]
         next.follows["sam"] = true

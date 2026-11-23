@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ios-screenflow-audit.yml"
+      - "ios/CurlPlan/Models.swift"
       - "ios/CurlPlanUITests/**"
       - "scripts/select-ios-simulator.sh"
       - "scripts/check-ios-screenshots.py"
