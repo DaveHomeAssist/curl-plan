@@ -808,9 +808,62 @@ final class Store: ObservableObject {
 
     // MARK: Session and account restore
 
+    /// Screenshot runs pass this argument. A normal launch never does, so a fresh
+    /// demo still starts with an empty device log.
+    static let screenshotSeasonArgument = "--screenshot-season"
+
     func exploreDemo() {
         backendIdentity = nil
         setSession("demo")
+        if ProcessInfo.processInfo.arguments.contains(Store.screenshotSeasonArgument) {
+            installScreenshotSeasonIfEmpty()
+        }
+    }
+
+    /// Logged visits and results drawn from the seeded clubs and games. Used only
+    /// by the screenshot gallery so Passport, the map, and the feed look lived-in.
+    /// A second call does not add another copy.
+    func installScreenshotSeasonIfEmpty() {
+        guard state.visits.isEmpty, state.posts.isEmpty, state.threads.isEmpty else { return }
+        let now = Date().timeIntervalSince1970
+        // Noon UTC is still that calendar day in Pacific through Central European time.
+        // 6 p.m. Pacific is the next morning in UTC, which is what the simulator was showing.
+        func played(_ day: String) -> Double {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            formatter.dateFormat = "yyyy-MM-dd"
+            return (formatter.date(from: day)?.timeIntervalSince1970 ?? now) + 12 * 3600
+        }
+        var next = state
+        next.visits = [
+            "kelowna": [VisitEntry(date: "2026-01-11", note: "Fast ice, 5–6 ft of curl.", at: played("2026-01-11"))],
+            "vernon": [VisitEntry(date: "2025-12-02", note: "Medium ice, 4–5 ft.", at: played("2025-12-02"))],
+            "calgary": [VisitEntry(date: "2025-11-16", note: "Keen ice, 6–7 ft.", at: played("2025-11-16"))],
+            "winnipeg": [VisitEntry(date: "2025-10-26", note: "Fast ice, 5–6 ft.", at: played("2025-10-26"))],
+        ]
+        // Newest first: the feed shows device posts ahead of the sample feed.
+        // 3 wins and 1 loss → 75%. Four clubs across BC, AB, and MB.
+        next.posts = [
+            Post(id: "shot-kelowna", kind: .result, author: "me", at: played("2026-01-11"),
+                 body: "Took Carter on the Kelowna pebble. Fast all morning.",
+                 scoreFor: 8, scoreAgainst: 4, res: "WIN", vs: "vs Carter"),
+            Post(id: "shot-vernon", kind: .result, author: "me", at: played("2025-12-02"),
+                 body: "Reid had the draw weight at Vernon. We were late all game.",
+                 scoreFor: 6, scoreAgainst: 8, res: "LOSS", vs: "vs Reid"),
+            Post(id: "shot-calgary", kind: .result, author: "me", at: played("2025-11-16"),
+                 body: "Sage Valley was keen. We edged Carter.",
+                 scoreFor: 9, scoreAgainst: 7, res: "WIN", vs: "vs Carter"),
+            Post(id: "shot-winnipeg", kind: .result, author: "me", at: played("2025-10-26"),
+                 body: "Granite City was honest. Clean win.",
+                 scoreFor: 8, scoreAgainst: 3, res: "WIN", vs: "vs Olsen"),
+        ]
+        next.follows["sam"] = true
+        next.threads["sam"] = [
+            Message(from: "sam", text: "Kelowna was lightning. You in for the Brier Patch?", at: now - 3 * 3600),
+            Message(from: "me", text: "I'm in. I'll bring the spare broom.", at: now - 2 * 3600),
+        ]
+        state = next
     }
 
     func signOut() {
