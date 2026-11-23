@@ -52,7 +52,7 @@ sync. CI fails if they're stale (`node scripts/gen-seed.js --check`).
   `generate-xcodeproj.js`. After adding/removing Swift files, re-run
   `node generate-xcodeproj.js` to rewire the target.
 - **Authored on Windows, compiled by CI:** the Swift here was written without a local
-  Xcode, but the `ios` CI job (macos-14) regenerates the project, runs `xcodebuild
+  Xcode, but the `ios` CI job (macos-15, Xcode 16.4) regenerates the project, runs `xcodebuild`
   build`, and runs the `CurlPlanTests` unit tests on a simulator for every push — green
   on the current head. What has *not* happened is an interactive run: nobody has
   launched the app and driven the screens. See
@@ -71,7 +71,7 @@ the shared six screens, house-ring system, Ice/Arena theming, accent + pebble.
 
 `scripts/verify-parity.js` (CI) asserts each capability exists on both platforms.
 
-> **Compile status:** green. The `ios` CI job (macos-14) runs `generate-xcodeproj.js`,
+> **Compile status:** green. The `ios` CI job (macos-15, Xcode 16.4) runs `generate-xcodeproj.js`,
 > `xcodebuild build`, `swift test` (SwiftPM account contracts), and `xcodebuild test`
 > (`CurlPlanTests`: Store + Merge) on every push. **Runtime status: unproven** — the app
 > has never been launched interactively. The remaining work is a human run pass, not a

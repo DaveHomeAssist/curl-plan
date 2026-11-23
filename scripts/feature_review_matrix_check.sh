@@ -148,6 +148,9 @@ while IFS= read -r path; do
     docs/*.md)
       add_rows docs-only
       ;;
+    ios/README.md)
+      add_rows docs-only
+      ;;
     ios/*|tests/*|Tests/*)
       mark_unmapped "$path"
       ;;
