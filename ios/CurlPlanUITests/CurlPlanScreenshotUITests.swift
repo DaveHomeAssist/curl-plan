@@ -7,6 +7,7 @@ final class CurlPlanScreenshotUITests: XCTestCase {
     private let configURL = URL(fileURLWithPath: "/tmp/curlplan-screenshot-config.json")
     private var config: ShotConfig!
     private var app: XCUIApplication!
+    private var pendingAppearance: String?
 
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -153,28 +154,9 @@ final class CurlPlanScreenshotUITests: XCTestCase {
             XCTFail("Unexpected alert before \(targets.joined(separator: ", "))")
         }
         XCUIDevice.shared.orientation = .portrait
-        applyChrome(appearance: nil)
-        Thread.sleep(forTimeInterval: 0.9)
-        let temp = config.output.appendingPathComponent("_frame.png")
-        // XCUIScreen is the device under test, so a clone cannot steal the frame.
-        // simctl is the fallback when that image is not the device's pixel size.
-        try XCUIScreen.main.screenshot().pngRepresentation.write(to: temp)
-        var size = try pngSize(at: temp)
-        print("XCUIScreen \(size.width)x\(size.height)")
-        if size.width != config.width || size.height != config.height {
-            let simURL = config.output.appendingPathComponent("_sim.png")
-            let udid = try captureUDID()
-            try xcrun(["simctl", "io", udid, "screenshot", "--type=png", "--mask=black", simURL.path])
-            let simSize = try pngSize(at: simURL)
-            print("simctl \(simSize.width)x\(simSize.height) \(udid)")
-            if simSize.width == config.width && simSize.height == config.height {
-                try FileManager.default.removeItem(at: temp)
-                try FileManager.default.moveItem(at: simURL, to: temp)
-                size = simSize
-            } else {
-                try? FileManager.default.removeItem(at: simURL)
-            }
-        }
+        Thread.sleep(forTimeInterval: 0.8)
+        let temp = try requestHostShot()
+        let size = try pngSize(at: temp)
         for relative in targets {
             let dest = config.output.appendingPathComponent(relative)
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -189,87 +171,38 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         XCTAssertEqual(size.height, config.height, "\(targets.joined(separator: ", ")) height")
     }
 
-    private func applyChrome(appearance: String?) {
-        do {
-            let booted = try bootedSimulators().map(\.udid)
-            let targets = booted.isEmpty ? [config.udid] : booted
-            for udid in targets {
-                if let appearance {
-                    try xcrun(["simctl", "ui", udid, "appearance", appearance])
-                }
-                let base = [
-                    "simctl", "status_bar", udid, "override",
-                    "--time", "9:41",
-                    "--dataNetwork", "wifi",
-                    "--wifiMode", "active",
-                    "--wifiBars", "3",
-                    "--cellularMode", "active",
-                    "--cellularBars", "4",
-                    "--batteryState", "charged",
-                    "--batteryLevel", "100",
-                ]
-                do {
-                    try xcrun(base + ["--operatorName", " "])
-                } catch {
-                    try xcrun(base)
-                }
+    /// Ask the Mac-side watcher (scripts/capture-ios-frame.py) for a framebuffer PNG.
+    /// The test bundle is compiled against the iOS SDK, so it cannot start simctl itself.
+    private func requestHostShot() throws -> URL {
+        let id = UUID().uuidString
+        let reply = config.output.appendingPathComponent("_shots/\(id).png")
+        let requests = config.output.appendingPathComponent("_requests")
+        try FileManager.default.createDirectory(at: requests, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: reply.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var payload: [String: String] = ["reply": reply.path]
+        if let pendingAppearance {
+            payload["appearance"] = pendingAppearance
+            pendingAppearance = nil
+        }
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        let partial = requests.appendingPathComponent(id + ".partial")
+        try data.write(to: partial)
+        try FileManager.default.moveItem(at: partial, to: requests.appendingPathComponent(id + ".json"))
+        let deadline = Date().addingTimeInterval(25)
+        while Date() < deadline {
+            if FileManager.default.fileExists(atPath: reply.path) {
+                let size = try pngSize(at: reply)
+                if size.width > 0 { return reply }
             }
-        } catch {
-            print("CHROME SKIPPED \(error.localizedDescription)")
+            Thread.sleep(forTimeInterval: 0.2)
         }
+        throw NSError(domain: "curlplan.simctl", code: 1, userInfo: [
+            NSLocalizedDescriptionKey: "Host did not capture \(reply.path)"
+        ])
     }
 
-    private func captureUDID() throws -> String {
-        let booted = try bootedSimulators()
-        print("BOOTED \(booted.map { "\($0.name) \($0.udid)" }.joined(separator: " | "))")
-        let clones = booted.filter { $0.name.localizedCaseInsensitiveContains("clone") }
-        if let clone = clones.first(where: { $0.name.contains(config.deviceName) }) ?? clones.first {
-            return clone.udid
-        }
-        if booted.contains(where: { $0.udid == config.udid }) {
-            return config.udid
-        }
-        if let only = booted.first, booted.count == 1 {
-            return only.udid
-        }
-        XCTFail("No booted simulator for \(config.deviceName)")
-        return config.udid
-    }
-
-    private func bootedSimulators() throws -> [(name: String, udid: String)] {
-        let text = try xcrun(["simctl", "list", "devices", "booted"])
-        let pattern = try NSRegularExpression(pattern: #"^\s+(.*?) \(([A-F0-9-]{36})\)"#)
-        var rows: [(name: String, udid: String)] = []
-        for line in text.split(separator: "\n") {
-            let value = String(line)
-            let range = NSRange(value.startIndex..., in: value)
-            guard let match = pattern.firstMatch(in: value, range: range),
-                  let name = Range(match.range(at: 1), in: value),
-                  let udid = Range(match.range(at: 2), in: value) else { continue }
-            rows.append((String(value[name]), String(value[udid])))
-        }
-        return rows
-    }
-
-    @discardableResult
-    private func xcrun(_ arguments: [String]) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-        process.arguments = arguments
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        try process.run()
-        process.waitUntilExit()
-        let text = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        if process.terminationStatus != 0 {
-            throw NSError(
-                domain: "curlplan.simctl",
-                code: Int(process.terminationStatus),
-                userInfo: [NSLocalizedDescriptionKey: "xcrun \(arguments.joined(separator: " ")) failed: \(text)"]
-            )
-        }
-        return text
+    private func applyChrome(appearance: String?) {
+        if let appearance { pendingAppearance = appearance }
     }
 
     private func pngSize(at url: URL) throws -> (width: Int, height: Int) {

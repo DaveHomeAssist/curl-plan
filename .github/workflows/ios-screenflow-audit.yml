@@ -9,6 +9,7 @@ on:
       - "ios/CurlPlanUITests/**"
       - "scripts/select-ios-simulator.sh"
       - "scripts/check-ios-screenshots.py"
+      - "scripts/capture-ios-frame.py"
   workflow_dispatch:
 
 # GitHub retired macos-14 on 2026-11-02. macos-15 is the supported arm64 image.
@@ -96,17 +97,30 @@ jobs:
           export UDID NAME WIDTH HEIGHT
           python3 -c 'import json,os; open("/tmp/curlplan-screenshot-config.json","w").write(json.dumps({"output":os.environ["SHOT_ROOT"],"udid":os.environ["UDID"],"deviceName":os.environ["NAME"],"width":int(os.environ["WIDTH"]),"height":int(os.environ["HEIGHT"]),"captureReview":os.environ["REVIEW"]=="true","storeDir":os.environ["STORE_DIR"]}))'
       - name: Capture review and App Store screenshots
+        env:
+          SHOT_ROOT: ${{ runner.temp }}/curlplan-screenshots
+          SIM_UDID: ${{ steps.device.outputs.udid }}
         shell: bash
         run: |
+          set -euo pipefail
           defaults write com.apple.dt.Xcode IDEDisableAutomaticTestingDeviceCloning -bool YES || true
+          mkdir -p "$SHOT_ROOT/_requests"
+          python3 scripts/capture-ios-frame.py "$SIM_UDID" "$SHOT_ROOT/_requests" > "$SHOT_ROOT/capture.log" 2>&1 &
+          watcher=$!
+          set +e
           xcodebuild test \
             -project ios/CurlPlan.xcodeproj \
             -scheme CurlPlan \
-            -destination "platform=iOS Simulator,id=${{ steps.device.outputs.udid }}" \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -parallel-testing-enabled NO \
             -resultBundlePath "$RUNNER_TEMP/curlplan-screenshots.xcresult" \
             -only-testing:CurlPlanUITests/CurlPlanScreenshotUITests/testCaptureGallery \
             CODE_SIGNING_ALLOWED=NO
+          status=$?
+          set -e
+          touch "$SHOT_ROOT/_requests/done"
+          wait "$watcher" || true
+          exit "$status"
       - name: Check exact pixel dimensions
         if: always() && steps.device.outcome == 'success'
         env:
