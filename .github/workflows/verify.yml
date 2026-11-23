@@ -47,12 +47,20 @@ jobs:
         run: make account-backend-verify
 
   ios:
-    runs-on: macos-14
+    # GitHub retired macos-14 (label macos-14-arm64-us-default) on 2026-11-02.
+    # macos-15 is the supported arm64 image. Pin Xcode 16.4 (the image default):
+    # it is above the project's Xcode 15.4 floor and still builds the iOS 17 target.
+    # Xcode 26 is also installed on this image and is not selected.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '20'
+      - name: Select Xcode 16.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+          xcodebuild -version
       - name: Regenerate Xcode project (auto-wires all Swift files)
         run: node ios/generate-xcodeproj.js
       - name: Build CurlPlan (iOS Simulator)

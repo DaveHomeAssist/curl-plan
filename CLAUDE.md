@@ -124,7 +124,7 @@ compose, interactive likes, spielId-unified registration, personalized Passport 
 derived stats, functional search, and create-spiel/curler — plus Following/Discover on
 both. The full plan is in [docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md](docs/IMPLEMENTATION_PLAN_2026-07-06_ios-web-parity.md).
 All Swift was authored on Windows. The **compile pass is done and green**: the `ios` CI
-job (macos-14) regenerates the project and runs `xcodebuild build`, `swift test`
+job (macos-15, Xcode 16.4) regenerates the project and runs `xcodebuild build`, `swift test`
 (SwiftPM `CurlPlanCoreTests`), and `xcodebuild test` (`CurlPlanTests` — Store + Merge)
 on every push. What remains is an **interactive run pass** (nobody has launched the
 app) — see `docs/IMPLEMENTATION_PLAN_2026-08-26_ios-xcode-pass.md`.
@@ -246,6 +246,7 @@ All collections share one localStorage key as a single JSON blob.
 [2026-07-06] [CurlPlan] [feat] Phase 5 — iOS AuthView (sign in/up/demo, pw meter), auth-gated RootView, Settings account row + sign out, personalized Passport (derived stats, visited stops, empty state, demo-only map chrome)
 [2026-07-06] [CurlPlan] [feat] Phase 6 — web backports: functional Locker + Roster search (focus-preserving list re-render), create-spiel/curler sheets with club datalist, Following/Discover made functional on BOTH platforms
 [2026-07-06] [CurlPlan] [test] Phase 7 — scripts/verify-parity.js (12 capabilities, CI-gated), ios/CurlPlanTests/StoreTests.swift; docs refreshed (READMEs, CLAUDE.md)
+[2026-11-23] [CurlPlan] [fix] Move the Verify ios job off the retired macos-14 runner onto macos-15 with Xcode 16.4 pinned
 
 ## Session naming
 
