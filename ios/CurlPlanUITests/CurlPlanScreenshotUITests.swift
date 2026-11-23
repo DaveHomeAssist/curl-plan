@@ -59,8 +59,13 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         try showPassport()
         try save(review: review("02-passport.png"), store: store("01-passport.png"))
 
-        app.open(URL(string: "curlplan://stop/kelowna")!)
-        XCTAssertTrue(app.staticTexts["ICE READ"].waitForExistence(timeout: 12), "Kelowna stop detail")
+        // app.open relaunches the process and drops the route, so follow the row.
+        let kelowna = app.buttons["curlplan.stop.kelowna"]
+        reveal(kelowna, "Kelowna stop")
+        kelowna.tap()
+        XCTAssertTrue(app.buttons["curlplan.detail.back"].waitForExistence(timeout: 8), "Kelowna back")
+        let kelownaTitle = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Kelowna")).firstMatch
+        XCTAssertTrue(kelownaTitle.waitForExistence(timeout: 8), "Kelowna stop detail")
         try save(review: review("06-stop-detail.png"), store: store("03-stop-detail.png"))
         tap(app.buttons["curlplan.detail.back"], "Back from stop")
 
@@ -85,7 +90,9 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sam Reid"].waitForExistence(timeout: 8), "Seeded roster")
         try save(review: review("05-roster.png"), store: store("06-roster.png"))
 
-        app.open(URL(string: "curlplan://curler/sam")!)
+        let sam = app.buttons["curlplan.curler.sam"]
+        reveal(sam, "Sam Reid")
+        sam.tap()
         XCTAssertTrue(app.buttons["Message"].waitForExistence(timeout: 12), "Sam Reid profile")
         try save(review: review("07-curler-profile.png"), store: store("04-curler-profile.png"))
         guard config.captureReview else { return }
@@ -135,6 +142,15 @@ final class CurlPlanScreenshotUITests: XCTestCase {
         let phoneTab = app.tabBars.buttons[title]
         if phoneTab.exists { return phoneTab }
         return app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
+    }
+
+    private func reveal(_ element: XCUIElement, _ name: String) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return }
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.waitForExistence(timeout: 2), name)
+        XCTAssertTrue(element.isHittable, "\(name) must remain reachable by scrolling")
     }
 
     private func tap(_ element: XCUIElement, _ name: String) {
