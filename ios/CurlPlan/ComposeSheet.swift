@@ -158,7 +158,7 @@ struct ComposeSheet: View {
 
 }
 
-// Club text field with autocomplete suggestions from the shared CLUB list.
+// Club text field with autocomplete suggestions from the iOS directory.
 struct ClubField: View {
     @EnvironmentObject var settings: AppSettings
     @Binding var text: String

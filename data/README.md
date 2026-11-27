@@ -14,7 +14,7 @@ they're stale. This is what keeps the web and iOS apps from drifting.
 
 ## `curling-clubs.json`
 
-Seed dataset for **location / club choices** (club pickers, location autocomplete,
+Web seed dataset for **location / club choices** (club pickers, location autocomplete,
 map placement). 166 clubs across 42 US states.
 
 - **Source:** Notion — `HUB | Curling → Curling Clubs + Bonspiels → DB | Curling Clubs`.
@@ -52,3 +52,15 @@ map placement). 166 clubs across 42 US states.
 
 Fields are omitted when empty, so guard for `undefined` on the optional keys.
 `id` is stable per club name and safe to use as a select value or foreign key.
+
+## `ios-curling-clubs.json`
+
+The iOS club autocomplete starts with Plainfield Curling Club in South Plainfield,
+New Jersey. The club's [official website](https://njcurling.org/) identifies its
+name and location. The source was checked November 27, 2026. The release entry
+uses only the name, city, state and official website. No club logos, photos
+or descriptions are included.
+
+Run `node scripts/gen-seed.js` to regenerate the iOS suggestion list. The web
+directory continues to use `curling-clubs.json`. The native club field accepts
+typed names in addition to the suggestion.
